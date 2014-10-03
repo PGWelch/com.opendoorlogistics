@@ -23,8 +23,8 @@ final public class AppConstants {
 	public static final int APP_VERSION_REVISION = 2;
 	
 	public static final String SHAPEFILES_DIRECTORY = "data" + File.separator + "shapefiles" + File.separator;
-	
-//	public static String GRAPHHOPPER_DIRECTORY = "data" + File.separator + "graphhopper" + File.separator;
+
+	public static final String GRAPHHOPPER_DIRECTORY = "data" + File.separator + "graphhopper" + File.separator;
 	
 	public static final String OSM_COPYRIGHT = "© OpenStreetMap contributors";
 	

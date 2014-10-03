@@ -27,9 +27,9 @@ import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.ArgumentType;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.FunctionArgument;
+import com.opendoorlogistics.core.geometry.GreateCircle;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.Spatial;
-import com.opendoorlogistics.core.gis.GeoUtils;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.scripts.execution.adapters.FunctionsBuilder;
 import com.opendoorlogistics.core.scripts.execution.adapters.IndexedDatastores;
@@ -272,7 +272,7 @@ final public class FmLookupNearest extends FunctionImpl {
 				// critical error
 				return Functions.EXECUTION_ERROR;
 			} else if (other.getFirst() != null) {
-				double dist = GeoUtils.greatCircleApprox(ll, other.getFirst());
+				double dist = GreateCircle.greatCircleApprox(ll, other.getFirst());
 				if (dist < closest) {
 					closest = dist;
 					closestRow = row;

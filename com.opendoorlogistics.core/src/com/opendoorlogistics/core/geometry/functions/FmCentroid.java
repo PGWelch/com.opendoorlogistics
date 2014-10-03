@@ -9,7 +9,6 @@
 package com.opendoorlogistics.core.geometry.functions;
 
 import com.opendoorlogistics.core.formulae.Function;
-import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.formulae.Functions.Fm1GeometryParam;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.vividsolutions.jts.geom.Geometry;

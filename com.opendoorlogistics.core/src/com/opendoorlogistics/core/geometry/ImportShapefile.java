@@ -101,29 +101,6 @@ public final class ImportShapefile {
 		return ds;
 	}
 
-	static private File validateLinkFileToLoad(String filename){
-		File file = new File(filename);
-
-		// try to get the shapefile data directory
-		if(!file.isAbsolute()){
-			File dataDirectory = new File(AppConstants.SHAPEFILES_DIRECTORY);
-			if(dataDirectory.exists()==false){
-			//	throw new RuntimeException("Failed to process shapefile link: " + filename+ System.lineSeparator() +
-			//		"The link is relative but the shapefile library directory does not exist: " + dataDirectory.getAbsolutePath());
-				return null;
-			}
-			
-			file = new File(dataDirectory, filename);
-		}
-		
-
-		if(file.exists()==false){
-			//throw new RuntimeException("Cannot find shapefile named in link: " +filename);
-			return null;
-		}
-		return file;
-		
-	}
 	
 	public static DataStore openDataStore(File file){
 		Map<String, URL> map = new HashMap<String, URL>();
@@ -150,7 +127,7 @@ public final class ImportShapefile {
 
 		HashMap<ShapefileLink, Geometry> ret = new HashMap<>();
 
-		file = validateLinkFileToLoad(file.getPath());
+		file = RelativeFiles.validateRelativeFiles(file.getPath(), AppConstants.SHAPEFILES_DIRECTORY);
 		if(file==null){
 			return ret;
 		}
@@ -286,7 +263,7 @@ public final class ImportShapefile {
 		}){
 			ShapefileLink link = new ShapefileLink(filename, "", "");
 			try {
-				File validated = validateLinkFileToLoad(link.getFile());
+				File validated = RelativeFiles.validateRelativeFiles(link.getFile(), AppConstants.SHAPEFILES_DIRECTORY);
 				String saveAs = RelativeFiles.getFilenameToSaveInLink(validated, AppConstants.SHAPEFILES_DIRECTORY);
 				System.out.println("Load from: "+  validated + " Save as:" + saveAs);
 			} catch (Throwable e) {

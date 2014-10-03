@@ -9,9 +9,9 @@ package com.opendoorlogistics.core.api.impl;
 import com.opendoorlogistics.api.geometry.Geometry;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
+import com.opendoorlogistics.core.geometry.GreateCircle;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.Spatial;
-import com.opendoorlogistics.core.gis.GeoUtils;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -40,6 +40,6 @@ public class GeometryImpl implements Geometry {
 
 	@Override
 	public double calculateGreatCircleDistance(LatLong from, LatLong to) {
-		return GeoUtils.greatCircleApprox(from, to);
+		return GreateCircle.greatCircleApprox(from, to);
 	}
 }

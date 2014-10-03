@@ -25,6 +25,8 @@ public class ApplicationCache {
 	public static final String ROUTE_GEOMETRY_CACHE = "route-geometry-cache";
 	public static final String GEOMETRY_MERGER_CACHE = "geometry-merge-cache";
 	public static final String GEOMETRY_BORDER_CACHE = "geometry-border-cache";
+	public static final String A_TO_B_DISTANCE_METRES_CACHE = "a-to-b-distance-metres-cache";
+	public static final String A_TO_B_TIME_SECONDS_CACHE = "a-to-b-time-seconds-cache";
 	
 	public static ApplicationCache singleton(){
 		return singleton;
@@ -36,6 +38,8 @@ public class ApplicationCache {
 		create(ROUTE_GEOMETRY_CACHE, 64 *MB);
 		create(GEOMETRY_MERGER_CACHE, 64* MB);
 		create(GEOMETRY_BORDER_CACHE, 64* MB);
+		create(A_TO_B_DISTANCE_METRES_CACHE, 12*MB);
+		create(A_TO_B_TIME_SECONDS_CACHE, 12*MB);
 	}
 	
 	public RecentlyUsedCache get(String cacheId){

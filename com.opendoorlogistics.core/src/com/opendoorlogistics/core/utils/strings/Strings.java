@@ -335,6 +335,13 @@ final public class Strings {
 		}
 	}
 
+	public static String[] addToArray(String [] arr, String s){
+		String []ret = new String[arr.length+1];
+		System.arraycopy(arr, 0, ret, 0, arr.length);
+		ret[arr.length] = s;
+		return ret;
+	}
+	
 	/**
 	 * Standardised comparison of two strings. 
 	 * The comparison compares the standardised version of the two strings.

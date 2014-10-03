@@ -23,16 +23,19 @@ import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.distances.graphhopper.CHMatrixGeneration;
 import com.opendoorlogistics.core.distances.graphhopper.MatrixResult;
-import com.opendoorlogistics.core.gis.GeoUtils;
+import com.opendoorlogistics.core.geometry.GreateCircle;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.ProcessingApiDecorator;
 import com.opendoorlogistics.core.scripts.wizard.TagUtils;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
+import com.opendoorlogistics.core.utils.io.RelativeFiles;
 import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
@@ -160,8 +163,10 @@ public final class DistancesSingleton implements Disposable{
 	 */
 	private synchronized void initGraphhopperGraph(DistancesConfiguration request, final ProcessingApi processingApi) {
 		String dir = request.getGraphhopperConfig().getGraphDirectory();
-		File current = new File(dir);
-
+		
+		File current =RelativeFiles.validateRelativeFiles(dir, AppConstants.GRAPHHOPPER_DIRECTORY);
+		current = current.getAbsoluteFile();
+		
 		if(processingApi!=null){
 			processingApi.postStatusMessage("Loading the road network graph: " + current.getAbsolutePath());			
 		}
@@ -191,7 +196,7 @@ public final class DistancesSingleton implements Disposable{
 		
 		// load the graph if needed
 		if(lastCHGraph==null){
-			lastCHGraph = new CHMatrixGeneration(dir);
+			lastCHGraph = new CHMatrixGeneration(current.getAbsolutePath());
 		}
 	}
 
@@ -207,7 +212,7 @@ public final class DistancesSingleton implements Disposable{
 			for (int ito = 0; ito < n; ito++) {
 				Map.Entry<String, LatLong> to = list.get(ito);
 
-				double distanceMetres = GeoUtils.greatCircleApprox(from.getValue(), to.getValue());
+				double distanceMetres = GreateCircle.greatCircleApprox(from.getValue(), to.getValue());
 
 				distanceMetres *= request.getGreatCircleConfig().getDistanceMultiplier();
 
@@ -247,12 +252,13 @@ public final class DistancesSingleton implements Disposable{
 		return singleton;
 	}
 
-	private static class RouteGeomCacheKey{
+	private static class AToBCacheKey{
 		final private DistancesConfiguration request;
 		final private LatLong from;
 		final private LatLong to;
+		final static int ESTIMATED_SIZE_BYTES=200;
 		
-		RouteGeomCacheKey(DistancesConfiguration request, LatLong from, LatLong to) {
+		AToBCacheKey(DistancesConfiguration request, LatLong from, LatLong to) {
 			this.request = request.deepCopy();
 			this.from = new LatLongImpl(from);
 			this.to = new LatLongImpl(to);
@@ -276,7 +282,7 @@ public final class DistancesSingleton implements Disposable{
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			RouteGeomCacheKey other = (RouteGeomCacheKey) obj;
+			AToBCacheKey other = (AToBCacheKey) obj;
 			if (from == null) {
 				if (other.from != null)
 					return false;
@@ -343,17 +349,70 @@ public final class DistancesSingleton implements Disposable{
 
 	}
 
+	public synchronized double calculateDistanceMetres(DistancesConfiguration request, LatLong from, LatLong to, ProcessingApi processingApi){
+		if(request.getMethod() == CalculationMethod.GREAT_CIRCLE){
+			return GreateCircle.greatCircleApprox(from, to);
+		}
+		
+		AToBCacheKey key = new AToBCacheKey(request, from, to);
+		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.A_TO_B_DISTANCE_METRES_CACHE);
+		Double ret = (Double) cache.get(key);
+		if (ret != null) {
+			return ret;
+		}
+
+		initGraphhopperGraph(request, processingApi);
+		
+		ret = lastCHGraph.calculateDistanceMetres(from, to);
+		if(ret!=null){
+			cacheAToBDouble(key, ret, cache);
+		}
+		
+		return ret;
+	}
+
+	public synchronized ODLTime calculateDrivingTime(DistancesConfiguration request, LatLong from, LatLong to, ProcessingApi processingApi){
+		if(request.getMethod() != CalculationMethod.ROAD_NETWORK){
+			throw new IllegalArgumentException();
+		}
+		
+		AToBCacheKey key = new AToBCacheKey(request, from, to);
+		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.A_TO_B_TIME_SECONDS_CACHE);
+		ODLTime ret = (ODLTime) cache.get(key);
+		if (ret != null) {
+			return ret;
+		}
+
+		initGraphhopperGraph(request, processingApi);
+		
+		ret = lastCHGraph.calculateTime(from, to);
+		if(ret!=null){
+			int estimatedSize = 16 + AToBCacheKey.ESTIMATED_SIZE_BYTES;
+			cache.put(key, ret,estimatedSize);
+		}
+		
+		return ret;
+	}
+	
+	/**
+	 * @param key
+	 * @param ret
+	 * @param cache
+	 */
+	protected void cacheAToBDouble(AToBCacheKey key, Double ret, RecentlyUsedCache cache) {
+		int estimatedSize = 8 + AToBCacheKey.ESTIMATED_SIZE_BYTES;
+		cache.put(key, ret,estimatedSize);
+	}
+
+	
 	public synchronized ODLGeom calculateRouteGeom(DistancesConfiguration request, LatLong from, LatLong to, ProcessingApi processingApi){
 		if(request.getMethod() == CalculationMethod.GREAT_CIRCLE){
 			ODLGeom geom = processingApi.getApi().geometry().createLineGeometry(from, to);
 			return geom;
 		}
+
 		
-		if(request.getMethod()!=CalculationMethod.ROAD_NETWORK){
-			throw new IllegalArgumentException("Can only calculate route geometry if the distance calculation is set to road network.");
-		}
-		
-		RouteGeomCacheKey key = new RouteGeomCacheKey(request, from, to);
+		AToBCacheKey key = new AToBCacheKey(request, from, to);
 		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.ROUTE_GEOMETRY_CACHE);
 		ODLGeom ret = (ODLGeom) cache.get(key);
 		if (ret != null) {
@@ -364,7 +423,7 @@ public final class DistancesSingleton implements Disposable{
 		
 		ret = lastCHGraph.calculateRouteGeom(from, to);
 		if(ret!=null){
-			int estimatedSize = 40 * ret.getPointsCount();
+			int estimatedSize = 40 * ret.getPointsCount() + AToBCacheKey.ESTIMATED_SIZE_BYTES;
 			cache.put(key, ret,estimatedSize);
 		}
 		

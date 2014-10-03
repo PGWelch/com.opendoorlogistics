@@ -37,6 +37,7 @@ import com.opendoorlogistics.api.components.ContinueProcessingCB;
 import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
+import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.Spatial;
@@ -127,24 +128,72 @@ public class CHMatrixGeneration implements Disposable {
 	}
 
 
+	public GHResponse getResponse(GHPoint from , GHPoint to){
+		GHRequest req = new GHRequest(from, to).setVehicle("car");
+		GHResponse rsp = hopper.route(req);
+		if (rsp.hasErrors()) {
+			return null;
+		}
+
+		// route was found? e.g. if disconnected areas (like island)
+		// no route can ever be found
+		if (!rsp.isFound()) {
+			return null;
+		}
+
+		return rsp;
+	}
+	
+	/**
+	 * Return the distance in metres or positive infinity if route not found found
+	 * @param from
+	 * @param to
+	 * @return
+	 */
+	public double calculateDistanceMetres(LatLong from ,LatLong to){
+		GHResponse resp = getResponse(from, to);
+		if(resp!=null){
+			return resp.getDistance();
+		}
+		return Double.POSITIVE_INFINITY;
+	}
+
+	
+	/**
+	 * Return the time or null if route not found
+	 * @param from
+	 * @param to
+	 * @return
+	 */	
+	public ODLTime calculateTime(LatLong from ,LatLong to){
+		GHResponse resp = getResponse(from, to);
+		if(resp!=null){
+			return new ODLTime(resp.getMillis());
+		}
+		return null;
+	}
+	
+	/**
+	 * @param from
+	 * @param to
+	 * @return
+	 */
+	protected GHResponse getResponse(LatLong from, LatLong to) {
+		GHResponse resp = getResponse(new GHPoint(from.getLatitude(), from.getLongitude()), new GHPoint(to.getLatitude(), to.getLongitude()));
+		return resp;
+	}
+	
 	public MatrixResult calculateMatrixOneByOne(GHPoint[] points) {
 		int n = points.length;
 		MatrixResult ret = new MatrixResult(n);
 		for (int fromIndex = 0; fromIndex < n; fromIndex++) {
 			for (int toIndex = 0; toIndex < n; toIndex++) {
-				GHRequest req = new GHRequest(points[fromIndex], points[toIndex]).setVehicle("car");
-				GHResponse rsp = hopper.route(req);
-
-				if (rsp.hasErrors()) {
+				GHPoint from = points[fromIndex];
+				GHPoint to = points[toIndex];
+				GHResponse rsp = getResponse(from, to);
+				if(rsp==null){
 					continue;
 				}
-
-				// route was found? e.g. if disconnected areas (like island)
-				// no route can ever be found
-				if (!rsp.isFound()) {
-					continue;
-				}
-
 				ret.setDistanceMetres(fromIndex, toIndex, rsp.getDistance());
 				ret.setTimeMilliseconds(fromIndex, toIndex, rsp.getMillis());
 			}

@@ -12,7 +12,7 @@ import static java.lang.Math.toRadians;
 
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.components.cluster.kmeans.KMeanPoint;
-import com.opendoorlogistics.core.gis.GeoUtils;
+import com.opendoorlogistics.core.geometry.GreateCircle;
 
 final public class KMeanPointLngLat extends KMeanPoint implements LatLong{
 
@@ -62,7 +62,7 @@ final public class KMeanPointLngLat extends KMeanPoint implements LatLong{
 	public double distance(KMeanPoint km){
 		KMeanPointLngLat other = (KMeanPointLngLat)km;
 	//	return DefaultEllipsoid.WGS84.orthodromicDistance(longitude, latitude, other.longitude, other.latitude);
-		return GeoUtils.greatCircle(this, other, false);
+		return GreateCircle.greatCircle(this, other, false);
 	}
 
 	@Override

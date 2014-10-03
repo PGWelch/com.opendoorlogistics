@@ -9,10 +9,16 @@ package com.opendoorlogistics.core.formulae.definitions;
 import java.lang.reflect.Constructor;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import com.opendoorlogistics.core.distances.functions.FmDistance;
+import com.opendoorlogistics.core.distances.functions.FmDrivingDistance;
+import com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeom;
+import com.opendoorlogistics.core.distances.functions.FmDrivingTime;
+import com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeomFromLine;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionFactory;
 import com.opendoorlogistics.core.formulae.FunctionUtils;
@@ -73,10 +79,10 @@ import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.Functi
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.FunctionType;
 import com.opendoorlogistics.core.geometry.functions.FmCentroid;
 import com.opendoorlogistics.core.geometry.functions.FmGeom;
+import com.opendoorlogistics.core.geometry.functions.FmGeom.GeomType;
 import com.opendoorlogistics.core.geometry.functions.FmGeomBorder;
 import com.opendoorlogistics.core.geometry.functions.FmLatitude;
 import com.opendoorlogistics.core.geometry.functions.FmLongitude;
-import com.opendoorlogistics.core.geometry.functions.FmRouteGeom;
 import com.opendoorlogistics.core.geometry.functions.FmShapefileLookup;
 import com.opendoorlogistics.core.gis.postcodes.UKPostcodes.UKPostcodeLevel;
 import com.opendoorlogistics.core.scripts.TableReference;
@@ -171,7 +177,25 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmLerp.class, "lerp", "Linearly interpolate between value a and value b based on value c (which is in the range 0 to 1).", "a","b","c");
 		addStandardFunction(FmTemperatureColours.class, "cold2hot", "Return a colour from cold (blue) to hot (red) based on the input number, which should be in the range 0 to 1.", "fraction");
 		
-		addStandardFunction(FmRouteGeom.class, "routegeom", "Given an input line geometry, calculate the road network route between the start and end." , "line_geometry" , "road_network_graph_directory");
+		// add distance functions
+		addStandardFunction(FmDrivingRouteGeomFromLine.class, "routegeom", "Given an input line geometry, calculate the road network route between the start and end." , "line_geometry" , "road_network_graph_directory");
+		for(String [] params : new String[][]{
+				new String[]{"geometry1",  "geometry2"},
+				new String[]{"latitude1", "longitude1", "latitude2", "longitude2"},
+
+		}){
+			addStandardFunction(FmDistance.Km.class, "distanceKm", "Calculate distance in kilometres between points.", params);
+			addStandardFunction(FmDistance.Miles.class, "distanceMiles", "Calculate distance in miles between points.", params);
+			addStandardFunction(FmDistance.Metres.class, "distanceMetres", "Calculate distance in metres between points.", params);
+			
+			String []extParams = Strings.addToArray(params, "road_network_graph_directory");
+			addStandardFunction(FmDrivingDistance.Km.class, "drivingDistanceKm", "Calculate driving distance in kilometres between points.", extParams);
+			addStandardFunction(FmDrivingDistance.Miles.class, "drivingDistanceMiles", "Calculate driving distance in miles between points.", extParams);
+			addStandardFunction(FmDrivingDistance.Metres.class, "drivingDistanceMetres", "Calculate driving distance in metres between points.", extParams);
+			addStandardFunction(FmDrivingTime.class, "drivingTime", "Calculate driving time between points.", extParams);
+			addStandardFunction(FmDrivingRouteGeom.class, "routegeom", "Calculate the road network route between points.", extParams);
+			
+		}
 		
 		// create time functions
 		addStandardFunction(FmTime.class, "time", "Create a time form the current system time.");			
@@ -191,7 +215,12 @@ public final class FunctionDefinitionLibrary {
 		for(final FmGeom.GeomType type:FmGeom.GeomType.values()){
 			FunctionDefinition dfn = new FunctionDefinition(FunctionType.FUNCTION, type.name().toLowerCase());
 			dfn.setDescription("Create a geometry object of type " + type.name().toLowerCase() + " from longitude and latitudes.");
-			dfn.addVarArgs("longOrLat", ArgumentType.GENERAL, "Pairs of longitude and latitude values.");
+			if(type == GeomType.POINT){
+				dfn.addArg("Longitude");
+				dfn.addArg("Latitude");
+			}else{
+				dfn.addVarArgs("longAndLat", ArgumentType.GENERAL, "Pairs of longitude and latitude values.");				
+			}
 			dfn.setFactory(new FunctionFactory() {
 				
 				@Override

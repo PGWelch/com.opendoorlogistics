@@ -8,6 +8,8 @@ package com.opendoorlogistics.core.utils.io;
 
 import java.io.File;
 
+import com.opendoorlogistics.core.AppConstants;
+
 public class RelativeFiles {
 
 	/**
@@ -42,5 +44,31 @@ public class RelativeFiles {
 			}
 		}
 		return linkFile;
+	}
+	
+	/**
+	 * Test if the input file is relative, if so make it absolute relative
+	 * to the default directory (if the default directory exists).
+	 * @param filename
+	 * @param defaultDirectory
+	 * @return
+	 */
+	static public File validateRelativeFiles(String filename, String defaultDirectory){
+		File file = new File(filename);
+
+		// try to get the default data directory
+		if(!file.isAbsolute()){
+			File dataDirectory = new File(defaultDirectory);
+			if(dataDirectory.exists()==false){
+				return null;
+			}			
+			file = new File(dataDirectory, filename);
+		}
+		
+		if(file.exists()==false){
+			return null;
+		}
+		return file;
+		
 	}
 }

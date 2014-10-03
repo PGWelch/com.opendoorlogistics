@@ -190,5 +190,4 @@ public abstract class FunctionImpl implements Function {
 		return combined;
 	}
 
-
 }
