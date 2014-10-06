@@ -206,6 +206,10 @@ final public class Strings {
 	 * @return
 	 */
 	public static String std(String s) {
+		if(s==null){
+			return "";
+		}
+		
 		// trim whitespace at start and end and convert to lowercase
 		s = s.trim().toLowerCase();
 

@@ -27,6 +27,9 @@ public final class FmCentroid extends Fm1GeometryParam {
 	@Override
 	protected Object execute(Geometry geometry) {
 		com.vividsolutions.jts.geom.Point pnt = geometry.getCentroid();
+		
+		// to do.. use a grid projection to calculate
+		
 		return new ODLGeomImpl(pnt);
 	}
 
