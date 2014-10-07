@@ -975,6 +975,23 @@ final public class DatastoreRenderer {
 	// }
 	// return path;
 	// }
+	
+	static boolean hasPoint(Geometry g){
+		if(GeometryCollection.class.isInstance(g)){
+			int n = g.getNumGeometries();
+			for(int i =0 ; i < n ;i++){
+				if(hasPoint(g.getGeometryN(i))){
+					return true;
+				}
+			}
+		}
+		if( Point.class.isInstance(g)){
+			return true;
+		}
+		
+		return false;
+	}
+	
 
 	static BufferedImage createBaseImage(int imageWidth, int imageHeight, long renderFlags) {
 		BufferedImage image = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_ARGB);
@@ -1003,8 +1020,11 @@ final public class DatastoreRenderer {
 			// case of American Samoa and the mainland USA being the multipolygon, otherwise USA is
 			// always rendered as its bounding box spans the Earth...
 
+			// Ensure we ensure all bounds have at least one pixel width & size as points have zero width by default
+			// and this gives no intersection...
 			Envelope bb = geometry.getEnvelopeInternal();
-			Rectangle2D bounds = new Rectangle2D.Double(bb.getMinX(), bb.getMinY(), bb.getWidth(), bb.getHeight());
+			Rectangle2D bounds = new Rectangle2D.Double(bb.getMinX(), bb.getMinY(), bb.getWidth() + obj.getPixelWidth(),bb.getHeight() + obj.getPixelWidth());
+			bounds = adjustBoundsForSymbolRendering(obj,geometry, bounds);
 			if (bounds.intersects(viewport)) {
 
 				Stroke oldStroke = g.getStroke();
@@ -1086,6 +1106,15 @@ final public class DatastoreRenderer {
 		return hit;
 	}
 
+	private static Rectangle2D adjustBoundsForSymbolRendering(DrawableObject obj,Geometry geometry, Rectangle2D geometryBounds){
+		if(geometry==null || hasPoint(geometry)){
+			long width = obj.getPixelWidth()+1; // 1 extra for good luck and rounding!
+			long halfWidth = width/2;
+			return new Rectangle2D.Double(geometryBounds.getMinX() - halfWidth, geometryBounds.getMinY() - halfWidth, geometryBounds.getWidth() + width, geometryBounds.getHeight() + width);			
+		}
+		return geometryBounds;
+	}
+	
 	private boolean renderGeometry(Graphics2D g, final LatLongToScreen converter, DrawableObject pnt, boolean isSelected) {
 		boolean rendered = false;
 
@@ -1098,8 +1127,9 @@ final public class DatastoreRenderer {
 		if (transformed == null) {
 			return false;
 		}
-		// check for intersection with viewport
+		// Check for intersection with viewport. For geometry collections this checks for all at once 
 		Rectangle2D bounds = transformed.getWorldBitmapBounds();
+		bounds = adjustBoundsForSymbolRendering(pnt,transformed.getJTSGeometry(),bounds);
 		Rectangle2D viewport = converter.getViewportWorldBitmapScreenPosition();
 		if (bounds.intersects(viewport) == false) {
 			return false;

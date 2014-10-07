@@ -22,19 +22,13 @@ import com.opendoorlogistics.core.geometry.operations.GeomUnion;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.utils.Numbers;
 
-final public class FmAggregate extends FunctionImpl {
+final public class FmAggregate extends FmAbstractGroupAggregate {
 	private final AggregateType type;
-	private final TLongObjectHashMap<TLongArrayList> groupRowIdToSourceRowIds;
-	private final int srcDsIndex;
-	private final int srcTableId;
 
 	
 	public FmAggregate(TLongObjectHashMap<TLongArrayList> groupRowIdToSourceRowIds, int srcDsIndex, int srcTableId, AggregateType type, Function... children) {
-		super(children);
-		this.groupRowIdToSourceRowIds = groupRowIdToSourceRowIds;
+		super(groupRowIdToSourceRowIds,srcDsIndex,srcTableId,children);
 		this.type = type;
-		this.srcDsIndex = srcDsIndex;
-		this.srcTableId = srcTableId;
 	}
 
 	public enum AggregateType {
@@ -86,19 +80,15 @@ final public class FmAggregate extends FunctionImpl {
 
 	@Override
 	public Object execute(FunctionParameters parameters) {
-		TableParameters p = (TableParameters) parameters;
 
-		ODLTableReadOnly groupedTable = p.getDefaultTable();
-		if (groupedTable == null) {
+		if(!checkGroupedByTableExists(parameters)){
 			return Functions.EXECUTION_ERROR;
 		}
 
-		// get id of the grouped row and use this to get the list of ungrouped (source) rows
-		long groupRowId =p.getRowId();
-		TLongArrayList srcRowIds = groupRowIdToSourceRowIds.get(groupRowId);
+		TLongArrayList srcRowIds = getSourceRows(parameters);
 
 		// process the case where no source rows available
-		if (srcRowIds == null) {
+		if (srcRowIds == null || srcRowIds.size()==0) {
 			switch (type) {
 			case GROUPCOUNT:
 				return 0;
@@ -122,12 +112,12 @@ final public class FmAggregate extends FunctionImpl {
 		}
 
 		// get source table
-		ODLTableReadOnly srcTable = p.getTableById(srcDsIndex, srcTableId);
-		if (srcTable == null) {
+		ODLTableReadOnly srcTable = getSourceTable(parameters);
+		if(srcTable==null){
 			return Functions.EXECUTION_ERROR;
 		}
-
-		// execute the child formulae against all rows in this table
+		
+		// execute the child formulae against all rows in this source table
 		Object first = null;
 		Object last = null;
 		double sum = 0;
@@ -173,9 +163,8 @@ final public class FmAggregate extends FunctionImpl {
 			if (srcTable.containsRowId(srcRowId)==false) {
 				return Functions.EXECUTION_ERROR;
 			}
-
-			TableParameters unaggregateParams = new TableParameters( p.getDatastores(), srcDsIndex, srcTableId,srcRowId,-1);
-			Object val = child(0).execute(unaggregateParams);
+			
+			Object val = executeFunctionOnSourceTable(parameters, srcRowId, child(0));
 			if (val == Functions.EXECUTION_ERROR) {
 				return Functions.EXECUTION_ERROR;
 			}
@@ -257,6 +246,7 @@ final public class FmAggregate extends FunctionImpl {
 			throw new UnsupportedOperationException();
 		}
 	}
+
 
 	@Override
 	public String toString() {

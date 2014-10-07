@@ -24,26 +24,21 @@ import com.opendoorlogistics.core.utils.Pair;
 final public class RecentlyUsedCache {
 	private long timeIndex=0;
 	private long totalBytes;
-	//private static long DEFAULT_BYTES_LIMIT = 64 * 1024 * 1024;
 	private final long bytesLimit;
 	private HashMap<Object, CacheEntry> cached = new HashMap<>();
 	
 	public RecentlyUsedCache(long bytesLimit){
 		this.bytesLimit = bytesLimit;
 	}
-	
-//	public RecentlyUsedCache(){
-//		this(DEFAULT_BYTES_LIMIT);
-//	}
-	
+
 	private static class CacheEntry implements Comparable<CacheEntry>{
 		static final int CONTAINER_OVERHEAD_BYTES = 8 + 16 + 4 + 8 + 8; // rough guess....
 		final Object key;
 		final SoftReference<Object> data;
-		final int nbBytes;
+		final long nbBytes;
 		long lastUsed;
 		
-		CacheEntry(Object key,Object obj, int nbBytes) {
+		CacheEntry(Object key,Object obj, long nbBytes) {
 			this.key = key;
 			this.data = new SoftReference<Object>(obj);
 			this.nbBytes = nbBytes + CONTAINER_OVERHEAD_BYTES;
@@ -88,7 +83,7 @@ final public class RecentlyUsedCache {
 	}
 	
 
-	public synchronized void put(Object objectKey, Object value, int nbBytes){
+	public synchronized void put(Object objectKey, Object value, long nbBytes){
 		timeIndex++;
 		CacheEntry obj = new CacheEntry(objectKey, value, nbBytes);
 		obj.lastUsed = timeIndex;

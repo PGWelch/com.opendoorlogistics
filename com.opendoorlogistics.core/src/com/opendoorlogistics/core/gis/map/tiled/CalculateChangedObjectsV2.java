@@ -14,10 +14,12 @@ import gnu.trove.set.hash.TLongHashSet;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.strings.Strings;
+import com.vividsolutions.jts.geom.Point;
 
 public class CalculateChangedObjectsV2 {
 	private TLongObjectHashMap<List<DrawableObject>> drawables = new TLongObjectHashMap<>();
@@ -116,43 +118,49 @@ public class CalculateChangedObjectsV2 {
 					ret.addAll(oldList);
 				}
 				else {
-					boolean addBoth=false;
+					boolean addBothLists=false;
 					
 					if(oldList.size()!=newList.size()){
 						// different sized lists.. must have changed
-						addBoth = true;
+						addBothLists = true;
 					}
 					
-					if(!addBoth){
+					if(!addBothLists){
 						if(oldList.size()== 1 && newList.size()==1){
 							// special case where only one object in each.. easy to check
-							addBoth = isDifferent(oldList.get(0), newList.get(0));
+							addBothLists = isDifferent(oldList.get(0), newList.get(0));
 						}else{
+
 							// match lists
 							ArrayList<DrawableObject> newCopy = new ArrayList<>(newList);
 							int n = oldList.size();
-							for(int i =0 ; i<n && addBoth==false;i++){
+							for(int i =0 ; i<n && addBothLists==false;i++){
+								
+								// parse the copy of the list trying to match old to new objects
 								int n2 = newCopy.size();
 								int match=-1;
 								for(int j=0;j<n2;j++){
-									if(isDifferent(oldList.get(i), newCopy.get(j))){
+									if(isDifferent(oldList.get(i), newCopy.get(j))==false){
 										match = j;
 										break;
 									}
 								}
 								
+//								System.out.println("" + id + " - " + oldList.get(i).getGeometry());
+//								System.out.println("" + id + " - " + newList.get(i).getGeometry());
+								
 								if(match!=-1){
 									// found match
 									newCopy.remove(match);
 								}else{
-									addBoth = true;
+									addBothLists = true;
 								}
 							}
 						}
 						
 					}
 					
-					if(addBoth){
+					if(addBothLists){
 						ret.addAll(oldList);
 						ret.addAll(newList);			
 					}
@@ -166,6 +174,7 @@ public class CalculateChangedObjectsV2 {
 		// replace internal list
 		drawables = newMap;
 
+	//	System.out.println("Total different: " + ret.size());
 		return ret;
 	}
 
@@ -178,6 +187,11 @@ public class CalculateChangedObjectsV2 {
 			modified = oldObj.getLatitude() != newObj.getLatitude() || oldObj.getLongitude() != newObj.getLongitude();
 		}
 
+//		if(oldObj.getGeometry()!=null && newObj.getGeometry()!=null && Point.class.isInstance(((ODLGeomImpl)oldObj.getGeometry()).getJTSGeometry())
+//			&& Point.class.isInstance(((ODLGeomImpl)oldObj.getGeometry()).getJTSGeometry())){
+//			System.out.println(oldObj.getGlobalRowId());
+//		}
+		
 		// check geometry (geometry is immutable so just check its the same object)
 		if (!modified) {
 			modified = oldObj.getGeometry() != newObj.getGeometry();

@@ -65,9 +65,9 @@ public final class CachedGeometry {
 		com.vividsolutions.jts.geom.Point centroid = wbInitial.getCentroid();
 		this.centroid = new Point2D.Double(centroid.getX(), centroid.getY());
 
-		// get bounds
+		// get bounds ensuring we have non-zero width and height in pixel space otherwise points don't draw...
 		Envelope bb = geometry.getEnvelopeInternal();
-		wbBounds = new Rectangle2D.Double(bb.getMinX(), bb.getMinY(), bb.getWidth(), bb.getHeight());
+		wbBounds = new Rectangle2D.Double(bb.getMinX(), bb.getMinY(),Math.max( bb.getWidth(),1),Math.max( bb.getHeight(),1));
 
 		// flag whether to geometry
 		simplified = simplify;

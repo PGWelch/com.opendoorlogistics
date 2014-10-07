@@ -8,10 +8,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.scripts.formulae;
 
-import java.util.ArrayList;
-
 import com.opendoorlogistics.api.ExecutionReport;
-import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.formulae.Function;
@@ -20,29 +17,24 @@ import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.ArgumentType;
-import com.opendoorlogistics.core.geometry.operations.GeomUnion;
+import com.opendoorlogistics.core.geometry.operations.GeomWeightedCentroid;
 import com.opendoorlogistics.core.scripts.execution.adapters.FunctionsBuilder;
 import com.opendoorlogistics.core.scripts.execution.adapters.FunctionsBuilder.ProcessedLookupReferences;
 import com.opendoorlogistics.core.scripts.execution.adapters.FunctionsBuilder.ToProcessLookupReferences;
 import com.opendoorlogistics.core.scripts.execution.adapters.IndexedDatastores;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 
-/**
- * Function lookupgeomunion does a lookup of objects in another table based on the key field and unions them
- * 
- * @author Phil
- *
- */
-public class FmLookupGeomUnion extends FmAbstractLookup {
+public class FmLookupWeightedCentroid extends FmAbstractLookup {
 	public static FunctionDefinition createDefinition(final IndexedDatastores<? extends ODLTableReadOnly> datastores, final int defaultDatastoreIndex, final ExecutionReport result) {
 
-		final String keyword = "lookupGeomUnion";
+		final String keyword = "lookupWeightedCentroid";
 		final FunctionDefinition dfn = new FunctionDefinition(keyword);
-		dfn.setDescription("Perform a geometry union of the polygon geometries in the foreign table.");
-		dfn.addArg("search_value", ArgumentType.GENERAL, "Value to search for in the other table.");
+		dfn.setDescription("Get the weighted centroid of the geometries in the foreign table.");
+		dfn.addArg("search_value", ArgumentType.GENERAL, "Key value to search for in the other table.");
 		dfn.addArg("foreign_table", ArgumentType.TABLE_REFERENCE_CONSTANT, "Reference to the foreign table to search in.");
 		dfn.addArg("search_field", ArgumentType.STRING_CONSTANT, "Name of the foreign table's field to search for the value in.");
 		dfn.addArg("geometry_field_name", ArgumentType.STRING_CONSTANT, "Name of the geometry field in the foreign table.");
+		dfn.addArg("weight_field_name", ArgumentType.STRING_CONSTANT, "Weight of the geometry value in the foreign table.");
 		dfn.addArg("ESPG_SRID", ArgumentType.GENERAL, "Spatial Reference System Identifier (SRID) from the ESPG SRID database.");
 
 		// only build the factory if we have actual datastore to build against
@@ -54,11 +46,11 @@ public class FmLookupGeomUnion extends FmAbstractLookup {
 
 					ToProcessLookupReferences toProcess = new ToProcessLookupReferences();
 					toProcess.tableReferenceFunction = children[1];
-					toProcess.fieldnameFunctions = new Function[] { children[2], children[3] };
+					toProcess.fieldnameFunctions = new Function[] { children[2], children[3] , children[4]};
 
 					ProcessedLookupReferences processed = FunctionsBuilder.processLookupReferenceNames(keyword, datastores, defaultDatastoreIndex, toProcess, result);
 
-					return new FmLookupGeomUnion(processed.datastoreIndx, processed.tableId, processed.columnIndices[0], processed.columnIndices[1], children[0], children[4]);
+					return new FmLookupWeightedCentroid(processed.datastoreIndx, processed.tableId, processed.columnIndices[0], processed.columnIndices[1],processed.columnIndices[2], children[0], children[5]);
 				}
 
 			});
@@ -68,10 +60,12 @@ public class FmLookupGeomUnion extends FmAbstractLookup {
 	}
 
 	private final int otherTablePrimaryKeyColumn;
+	private final int otherTableWeightColumn;
 
-	private FmLookupGeomUnion(int datastoreIndex, int otherTableId, int otherTablePrimaryKeyColumn, int otherTableReturnKeyColummn, Function foreignKeyValue, Function espgCode) {
-		super(datastoreIndex, otherTableId, otherTableReturnKeyColummn, foreignKeyValue, espgCode);
+	private FmLookupWeightedCentroid(int datastoreIndex, int otherTableId, int otherTablePrimaryKeyColumn, int otherTableGeomColumn,int otherTableWeightColumn, Function foreignKeyValue, Function espgCode) {
+		super(datastoreIndex, otherTableId, otherTableGeomColumn, foreignKeyValue, espgCode);
 		this.otherTablePrimaryKeyColumn = otherTablePrimaryKeyColumn;
+		this.otherTableWeightColumn = otherTableWeightColumn;
 	}
 
 	@Override
@@ -87,21 +81,11 @@ public class FmLookupGeomUnion extends FmAbstractLookup {
 		}
 
 		long[] list = table.find(otherTablePrimaryKeyColumn, childExe[0]);
-		int nr = list.length;
-		ArrayList<ODLGeom> geoms = new ArrayList<>(nr);
-		for (int i = 0; i < nr; i++) {
-			long id = list[i];
-			Object otherVal = table.getValueById(id, otherTableReturnKeyColummn);
-			if (otherVal != null) {
-				ODLGeom geom = (ODLGeom) ColumnValueProcessor.convertToMe(ODLColumnType.GEOM, otherVal);
-				if (geom == null) {
-					return Functions.EXECUTION_ERROR;
-				}
-				geoms.add(geom);
-			}
+		String espg = (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, childExe[1]);		
+		if(espg==null){
+			return Functions.EXECUTION_ERROR;			
 		}
-
-		String espg = (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, childExe[1]);
-		return new GeomUnion().union(geoms, espg);
+		
+		return new GeomWeightedCentroid().calculate(table, list, otherTableReturnKeyColummn, otherTableWeightColumn, espg);
 	}
 }

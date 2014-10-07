@@ -13,11 +13,6 @@ import java.util.Collection;
 import java.util.HashSet;
 
 import org.geotools.geometry.jts.JTS;
-import org.geotools.referencing.ReferencingFactoryFinder;
-import org.geotools.referencing.operation.DefaultCoordinateOperationFactory;
-import org.opengis.referencing.crs.CRSAuthorityFactory;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.operation.CoordinateOperation;
 
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.core.cache.ApplicationCache;
@@ -131,12 +126,7 @@ public class GeomUnion {
 	private ODLGeom calculateUnion(Iterable<ODLGeom> inputGeoms, String ESPGCode){
 		try {
 			Spatial.initSpatial();
-
-			CRSAuthorityFactory crsFac = ReferencingFactoryFinder.getCRSAuthorityFactory("EPSG", null);
-			CoordinateReferenceSystem wgs84crs = crsFac.createCoordinateReferenceSystem("4326");
-			CoordinateReferenceSystem gridcrs = crsFac.createCoordinateReferenceSystem(ESPGCode);
-			CoordinateOperation latLongToGrid = new DefaultCoordinateOperationFactory().createOperation(wgs84crs, gridcrs);
-			CoordinateOperation gridToLongLat = new DefaultCoordinateOperationFactory().createOperation(gridcrs, wgs84crs);
+			GridTransforms transforms = new GridTransforms(ESPGCode);
 			
 			PrecisionModel pm = new PrecisionModel(PrecisionModel.FLOATING_SINGLE);
 			GeometryPrecisionReducer reducer = new GeometryPrecisionReducer(pm);	
@@ -150,7 +140,7 @@ public class GeomUnion {
 						com.vividsolutions.jts.geom.Geometry g = gimpl.getJTSGeometry();
 
 						// convert to grid
-						g= JTS.transform(g, latLongToGrid.getMathTransform());
+						g= JTS.transform(g, transforms.getWGS84ToGrid().getMathTransform());
 				
 						// reduce precision as it stops holes appearing with our UK postcode data
 						g = reducer.reduce(g);
@@ -170,7 +160,7 @@ public class GeomUnion {
 			Geometry combinedGrid = combineIntoOneGeometry(gridGeoms);
 			
 			// transform back
-			Geometry combinedWGS84 = JTS.transform(combinedGrid, gridToLongLat.getMathTransform());
+			Geometry combinedWGS84 = JTS.transform(combinedGrid, transforms.getGridToWGS84().getMathTransform());
 			
 			return new ODLGeomImpl(combinedWGS84);
 		} catch (Exception e) {

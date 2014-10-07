@@ -711,7 +711,7 @@ final public class AdapterBuilder {
 
 		// create function library with the aggregate functions
 		final FunctionDefinitionLibrary library = buildFunctionLibrary(defaultDsIndex);
-		FunctionsBuilder.buildAggregate(library, groupRowIdToSourceRowIds, srcTableRef.dsIndex, srcTable.getImmutableId());
+		FunctionsBuilder.buildGroupAggregates(library, groupRowIdToSourceRowIds, srcTableRef.dsIndex, srcTable.getImmutableId());
 
 		// Also create a special user variable provider which acts differently if we're
 		// in the source or grouped table. The aggregate functions (e.g. lookupsum() ) will sum

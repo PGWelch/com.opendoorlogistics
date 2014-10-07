@@ -17,9 +17,9 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.formulae.Function;
-import com.opendoorlogistics.core.formulae.Functions.FmConst;
 import com.opendoorlogistics.core.formulae.FunctionFactory;
 import com.opendoorlogistics.core.formulae.FunctionUtils;
+import com.opendoorlogistics.core.formulae.Functions.FmConst;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.ArgumentType;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.FunctionType;
@@ -31,12 +31,14 @@ import com.opendoorlogistics.core.scripts.TableReference;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.formulae.FmAggregate;
 import com.opendoorlogistics.core.scripts.formulae.FmAggregate.AggregateType;
+import com.opendoorlogistics.core.scripts.formulae.FmGroupWeightedCentroid;
 import com.opendoorlogistics.core.scripts.formulae.FmImage;
+import com.opendoorlogistics.core.scripts.formulae.FmIsSelectedInMap;
 import com.opendoorlogistics.core.scripts.formulae.FmLookup;
 import com.opendoorlogistics.core.scripts.formulae.FmLookup.LookupType;
-import com.opendoorlogistics.core.scripts.formulae.FmIsSelectedInMap;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupGeomUnion;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupNearest;
+import com.opendoorlogistics.core.scripts.formulae.FmLookupWeightedCentroid;
 import com.opendoorlogistics.core.scripts.formulae.FmRow;
 import com.opendoorlogistics.core.scripts.formulae.FmRowId;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
@@ -46,19 +48,22 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 final public class FunctionsBuilder {
 	public static void buildNonAggregateFormulae(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTable> datastores,
 			final int defaultDatastoreIndex, final ExecutionReport result) {
-		buildLookups(library, datastores, defaultDatastoreIndex, result);
+		buildBasicLookups(library, datastores, defaultDatastoreIndex, result);
 		buildImage(library, datastores, result);
 		for(FunctionDefinition dfn : FmLookupNearest.createDefinitions(datastores, defaultDatastoreIndex, result)){
 			library.add(dfn);
 		}
 		library.add(FmLookupGeomUnion.createDefinition(datastores, defaultDatastoreIndex, result));
+		library.add(FmLookupWeightedCentroid.createDefinition(datastores, defaultDatastoreIndex, result));
 		library.addStandardFunction(FmIsSelectedInMap.class, "isSelected", "Returns true (i.e. 1) if the row is selected in the map.");
 		library.addStandardFunction(FmRowId.class, "rowid", "Global identifier of the row.");
 		library.addStandardFunction(FmRow.class, "row", "One-based index of the current row.");
 	}
 
-	public static void buildAggregate(FunctionDefinitionLibrary library, final TLongObjectHashMap<TLongArrayList> groupRowIdToSourceRowIds,
+	public static void buildGroupAggregates(FunctionDefinitionLibrary library, final TLongObjectHashMap<TLongArrayList> groupRowIdToSourceRowIds,
 			final int srcDsIndex, final int srcTableId) {
+		
+		// build standard group-bys
 		for (final AggregateType type : AggregateType.values()) {
 			FunctionDefinition dfn = new FunctionDefinition(FunctionType.FUNCTION, type.formulaName());
 			switch(type){
@@ -73,9 +78,7 @@ final public class FunctionsBuilder {
 			default:
 				dfn.addArg("value");		
 			}
-//			if (type != AggregateType.GROUPCOUNT) {
-//				dfn.addArg("value");
-//			}
+
 			dfn.setDescription(type.getDescription());
 			library.add(dfn);
 
@@ -90,6 +93,23 @@ final public class FunctionsBuilder {
 				});
 			}
 		}
+		
+		// build group-by weighted centroid
+		FunctionDefinition dfn = new FunctionDefinition(FunctionType.FUNCTION, "groupWeightedCentroid");
+		dfn.setDescription("Only available within a group by clause. Get the weighted centroid of the geometries in the group.");
+		dfn.addArg("geometry_field");		
+		dfn.addArg("weight_field");		
+		dfn.addArg("ESPG_code");
+		if (groupRowIdToSourceRowIds != null) {
+			dfn.setFactory(new FunctionFactory() {
+
+				@Override
+				public Function createFunction(Function... children) {
+					return new FmGroupWeightedCentroid(groupRowIdToSourceRowIds, srcDsIndex, srcTableId, children[0],children[1],children[2]);
+				}
+			});	
+		}
+		library.add(dfn);
 	}
 
 	private static void buildImage(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTable> datastores,
@@ -369,7 +389,7 @@ final public class FunctionsBuilder {
 		return ret;
 	}
 
-	private static void buildLookups(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTableReadOnly> datastores,
+	private static void buildBasicLookups(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTableReadOnly> datastores,
 			final int defaultDatastoreIndex, final ExecutionReport result) {
 
 
@@ -443,7 +463,7 @@ final public class FunctionsBuilder {
 		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
 		library.build();
 		buildNonAggregateFormulae(library, null, -1, null);
-		buildAggregate(library, null, -1, -1);
+		buildGroupAggregates(library, null, -1, -1);
 		return library;
 	}
 }

@@ -20,7 +20,10 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.core.cache.ApplicationCache;
+import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
+import com.opendoorlogistics.core.tables.utils.SizesInBytesEstimator;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
 import com.vividsolutions.jts.geom.Geometry;
@@ -36,7 +39,7 @@ public final class Spatial {
 	private static CoordinateReferenceSystem wgs84crs;
 	private static CRSAuthorityFactory crsFac;
 	private static final SimpleSoftReferenceMap<ShapefileLink,GeomWithCache> shapefileLinkCache = new SimpleSoftReferenceMap<>(100);
-	private static final SimpleSoftReferenceMap<File, ODLDatastore<? extends ODLTableReadOnly>> shapefileLookupCache = new SimpleSoftReferenceMap<>();
+//	private static final SimpleSoftReferenceMap<File, ODLDatastore<? extends ODLTableReadOnly>> shapefileLookupCache = new SimpleSoftReferenceMap<>();
 	
 	public static synchronized void initSpatial(){
 		if(!init){
@@ -120,6 +123,7 @@ public final class Spatial {
 	 * @param searchfield Field within the type to search within.
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	static public synchronized ODLGeomImpl lookupshapefile(String filename,String searchvalue, String type, String searchfield ){
 		Spatial.initSpatial();
 		
@@ -127,13 +131,14 @@ public final class Spatial {
 		boolean ok = true;
 		ODLDatastore<? extends ODLTableReadOnly> ds=null;
 		File file = new File(filename);
-		ds = shapefileLookupCache.get(file);
+		ds = (ODLDatastore<? extends ODLTableReadOnly>)shapefileCache().get(file);
 		if(ds==null){
 			ODLDatastoreAlterable<ODLTableAlterable> alterableDs =  ODLDatastoreImpl.alterableFactory.create();
 			ImportShapefile.importShapefile(file,false,alterableDs);			
 			ds = alterableDs;
 			if(alterableDs.getTableCount()>0){
-				shapefileLookupCache.put(file, ds);
+				long size = SizesInBytesEstimator.estimateBytes(ds);
+				shapefileCache().put(file, ds,size);
 			}
 		}
 		
@@ -168,5 +173,9 @@ public final class Spatial {
 	
 	static{
 		initSpatial();
+	}
+	
+	private static RecentlyUsedCache shapefileCache(){
+		return ApplicationCache.singleton().get(ApplicationCache.IMPORTED_SHAPEFILE_CACHE);
 	}
 }

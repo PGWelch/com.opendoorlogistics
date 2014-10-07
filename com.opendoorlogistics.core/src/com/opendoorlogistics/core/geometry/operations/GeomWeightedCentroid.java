@@ -1,0 +1,156 @@
+/*******************************************************************************
+ * Copyright (c) 2014 Open Door Logistics (www.opendoorlogistics.com)
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser Public License 3.0
+ * which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/lgpl.html
+ * 
+ ******************************************************************************/
+package com.opendoorlogistics.core.geometry.operations;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+
+import com.opendoorlogistics.api.geometry.ODLGeom;
+import com.opendoorlogistics.api.tables.ODLColumnType;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.core.cache.ApplicationCache;
+import com.opendoorlogistics.core.cache.RecentlyUsedCache;
+import com.opendoorlogistics.core.formulae.Functions;
+import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.tables.ColumnValueProcessor;
+import com.opendoorlogistics.core.utils.Pair;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.Point;
+
+public class GeomWeightedCentroid {
+	private static class CacheKey {
+		final HashSet<Pair<ODLGeom, Double>> items;
+		final String espg;
+
+		public CacheKey(Collection<Pair<ODLGeom, Double>> items, String espg) {
+			super();
+			this.items = new HashSet<>(items);
+			this.espg = espg;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((espg == null) ? 0 : espg.hashCode());
+			result = prime * result + ((items == null) ? 0 : items.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			CacheKey other = (CacheKey) obj;
+
+			if (espg == null) {
+				if (other.espg != null)
+					return false;
+			} else if (!espg.equals(other.espg))
+				return false;
+			if (items == null) {
+				if (other.items != null)
+					return false;
+			} else if (!items.equals(other.items))
+				return false;
+			return true;
+		}
+
+	}
+
+	public ODLGeom calculate(ODLTableReadOnly table, long[] rowIds, int geomColIndx, int weightColIndx, String ESPGCode) {
+		if (rowIds == null || rowIds.length == 0) {
+			return null;
+		}
+
+		// put input values into a collection
+		ArrayList<Pair<ODLGeom, Double>> geoms = new ArrayList<>(rowIds.length);
+		for (long id : rowIds) {
+			// get geometry
+			Object geomVal = table.getValueById(id, geomColIndx);
+			if (geomVal == null) {
+				return null;
+			}
+			ODLGeom geom = (ODLGeom) ColumnValueProcessor.convertToMe(ODLColumnType.GEOM, geomVal);
+			if (geom == null) {
+				return null;
+			}
+
+			// get weight
+			Object weightVal = table.getValueById(id, weightColIndx);
+			Double d = 1.0;
+			if (weightVal != null) {
+				d = (Double) ColumnValueProcessor.convertToMe(ODLColumnType.DOUBLE, weightVal);
+				if (d == null) {
+					return null;
+				}
+			}
+
+			geoms.add(new Pair<ODLGeom, Double>(geom, d));
+		}
+
+		return calculate(geoms, ESPGCode);
+	}
+
+	public ODLGeom calculate(Collection<Pair<ODLGeom, Double>> geoms, String ESPGCode) {
+		// check cache
+		CacheKey record = new CacheKey(geoms, ESPGCode);
+		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.GEOM_CENTROID_CACHE);
+		ODLGeom ret = (ODLGeom) cache.get(record);
+		if (ret == null) {
+
+			// ODLGeom ret =null;
+			GridTransforms transforms = new GridTransforms(ESPGCode);
+
+			// transform all geoms and get their individual centroids
+			double weightSum = 0;
+			double xSum = 0;
+			double ySum = 0;
+			for (Pair<ODLGeom, Double> pair : geoms) {
+				Geometry g = ((ODLGeomImpl) pair.getFirst()).getJTSGeometry();
+				if (g == null) {
+					return null;
+				}
+
+				g = transforms.wgs84ToGrid(g);
+				Point pnt = g.getCentroid();
+				double w = pair.getSecond();
+				weightSum += w;
+				xSum += pnt.getX() * w;
+				ySum += pnt.getY() * w;
+			}
+
+			if (weightSum > 0) {
+				Point pGrid = new GeometryFactory().createPoint(new Coordinate(xSum / weightSum, ySum / weightSum));
+				Point pTrans = (Point) transforms.gridToWGS84(pGrid);
+				ret = new ODLGeomImpl(pTrans);
+
+				// estimate size as size of keys as these will be the most expensive..
+				long nbBytes = 0;
+				for (Pair<ODLGeom, Double> pair : geoms) {
+					nbBytes += ((ODLGeomImpl) pair.getFirst()).getEstimatedSizeInBytes();
+				}
+				nbBytes += 100; // add some extra for hashset, cache record etc
+				cache.put(record, ret, nbBytes);
+			}
+		}
+
+//		if(ret!=null){
+//			System.out.println(ret);
+//		}
+		return ret;
+	}
+}

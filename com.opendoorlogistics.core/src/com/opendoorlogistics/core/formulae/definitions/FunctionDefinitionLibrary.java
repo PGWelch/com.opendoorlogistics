@@ -7,9 +7,7 @@
 package com.opendoorlogistics.core.formulae.definitions;
 
 import java.lang.reflect.Constructor;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -17,8 +15,8 @@ import java.util.List;
 import com.opendoorlogistics.core.distances.functions.FmDistance;
 import com.opendoorlogistics.core.distances.functions.FmDrivingDistance;
 import com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeom;
-import com.opendoorlogistics.core.distances.functions.FmDrivingTime;
 import com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeomFromLine;
+import com.opendoorlogistics.core.distances.functions.FmDrivingTime;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionFactory;
 import com.opendoorlogistics.core.formulae.FunctionUtils;

@@ -21,16 +21,29 @@ import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
+import com.vividsolutions.jts.geom.Geometry;
 
 public class CachedGeomImageRenderer {
 	private final RecentImageCache geomCache = new RecentImageCache(RecentImageCache.ZipType.LZ4, 64*1024*1024);
 	private final DatastoreRenderer renderer = new DatastoreRenderer();
 	
+
 	public boolean renderObject(Graphics2D g, LatLongToScreen converter, DrawableObject obj, boolean isSelected){
+		// test if we have points
+		boolean hasPoint = obj.getGeometry()==null;
+		if(!hasPoint){
+			Geometry geom = ((ODLGeomImpl)obj.getGeometry()).getJTSGeometry();
+			if(geom!=null){
+				hasPoint = DatastoreRenderer.hasPoint(geom);				
+			}
+		}
 		
-		if(obj.getGeometry()==null){
+		// if we have one or more points than draw as normal datastore renderer instead of caching
+		if(hasPoint){
 			// draw using normal datastore renderer
-			if (DatastoreRenderer.hasValidLatLong(obj)) {
+			if(obj.getGeometry()!=null){
+				renderer.renderObject(g, converter, obj, isSelected);
+			}else if (DatastoreRenderer.hasValidLatLong(obj)) {
 				renderer.renderSymbol(g, obj, converter.getOnScreenPixelPosition(obj), isSelected);
 			}
 		}else{
@@ -50,8 +63,8 @@ public class CachedGeomImageRenderer {
 			// get the region to be drawn
 			Rectangle2D drawRegion = wBBBounds.createIntersection(geomBounds);
 
+			// just draw a filled rectangle if its really small
 			if(cachedGeometry.isDrawFilledBounds() || (drawRegion.getWidth()<=1 && drawRegion.getHeight()<=1)){
-				// just draw a filled rectangle if its really small
 				int minX = (int)Math.floor(drawRegion.getMinX());
 				int minY = (int)Math.floor(drawRegion.getMinY());
 				int maxX = (int)Math.ceil(drawRegion.getMaxX());
