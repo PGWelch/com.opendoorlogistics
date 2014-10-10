@@ -105,7 +105,7 @@ public class CachedGeomImageRenderer {
 		private int pixelWidth;
 		private boolean selected;
 		
-		static final int ESTIMATED_SIZE_IN_BYTES  = (8*4) + 8 + 8 + 4 + 4 + 4;
+	//	static final int ESTIMATED_SIZE_IN_BYTES  = (8*4) + 8 + 8 + 4 + 4 + 4;
 		
 		BWCacheKey(Rectangle2D wBBBounds, Object zoom,DrawableObject obj, boolean isSelected) {
 			this.wBBBounds = wBBBounds;
