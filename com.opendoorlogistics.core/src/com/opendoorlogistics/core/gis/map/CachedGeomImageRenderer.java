@@ -23,12 +23,12 @@ import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
 import com.vividsolutions.jts.geom.Geometry;
 
-public class CachedGeomImageRenderer {
+public class CachedGeomImageRenderer implements ObjectRenderer{
 	private final RecentImageCache geomCache = new RecentImageCache(RecentImageCache.ZipType.LZ4, 64*1024*1024);
 	private final DatastoreRenderer renderer = new DatastoreRenderer();
 	
-
-	public boolean renderObject(Graphics2D g, LatLongToScreen converter, DrawableObject obj, boolean isSelected){
+	@Override
+	public boolean renderObject(Graphics2D g, LatLongToScreen converter, DrawableObject obj, boolean isSelected, long renderFlags){
 		// test if we have points
 		boolean hasPoint = obj.getGeometry()==null;
 		if(!hasPoint){
@@ -42,7 +42,7 @@ public class CachedGeomImageRenderer {
 		if(hasPoint){
 			// draw using normal datastore renderer
 			if(obj.getGeometry()!=null){
-				renderer.renderObject(g, converter, obj, isSelected);
+				renderer.renderObject(g, converter, obj, isSelected,0);
 			}else if (DatastoreRenderer.hasValidLatLong(obj)) {
 				renderer.renderSymbol(g, obj, converter.getOnScreenPixelPosition(obj), isSelected);
 			}
@@ -192,6 +192,14 @@ public class CachedGeomImageRenderer {
 		return colourImage;
 	}
 
+	/**
+	 * Create a black and white image of the geometry to be coloured later-on
+	 * @param obj
+	 * @param cachedGeometry
+	 * @param renderCol
+	 * @param drawRegion
+	 * @return
+	 */
 	private BufferedImage createBWImage(DrawableObject obj, CachedGeometry cachedGeometry, final Color renderCol, Rectangle2D drawRegion) {
 		// ensure image size is at least one
 		int imgWidth = (int)Math.max(1, Math.ceil(drawRegion.getWidth()));
@@ -207,7 +215,7 @@ public class CachedGeomImageRenderer {
 				gImage.setColor(bwCol);
 				gImage.fillRect(0, 0, imgWidth, imgHeight);
 			} else {
-				DatastoreRenderer.renderOrHitTestJTSGeometry(gImage, obj, cachedGeometry.getJTSGeometry(), bwCol, DatastoreRenderer.getPolyOutlineCol(bwCol), drawRegion, null);
+				DatastoreRenderer.renderOrHitTestJTSGeometry(gImage, obj, cachedGeometry.getJTSGeometry(), bwCol, DatastoreRenderer.getPolyOutlineCol(bwCol), drawRegion, null,0);
 			}				
 		} 
 		finally{

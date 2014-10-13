@@ -65,7 +65,7 @@ import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.math.MathUtil;
 
-final public class DatastoreRenderer {
+final public class DatastoreRenderer implements ObjectRenderer{
 	// private static final int STANDARD_OUTLINE_INNER_WIDTH = 2;
 	// private static final int STANDARD_OUTLINE_OUTER_WIDTH = 4;
 	// private static final int LARGER_OUTLINE_INNER_WIDTH = 4;
@@ -356,7 +356,7 @@ final public class DatastoreRenderer {
 		for (DrawableObject pnt : pnts) {
 			if (pnt != null) {
 				boolean isSelected = selectedObjectIds != null ? selectedObjectIds.contains(pnt.getGlobalRowId()) : false;
-				renderObject(g, converter, pnt, isSelected);
+				renderObject(g, converter, pnt, isSelected,0);
 			}
 		}
 
@@ -509,7 +509,7 @@ final public class DatastoreRenderer {
 							} else {
 
 								// complex render-based test...
-								found = renderOrHitTestJTSGeometry(g, pnt, cachedGeometry.getJTSGeometry(), null, null, wbView, selRectOnScreen);
+								found = renderOrHitTestJTSGeometry(g, pnt, cachedGeometry.getJTSGeometry(), null, null, wbView, selRectOnScreen, 0);
 							}
 
 							if (found) {
@@ -528,13 +528,17 @@ final public class DatastoreRenderer {
 	}
 
 	/**
-	 * Fill the polygon, also widening it slightly so adjacent polygons on-screen will not show gaps between them
+	 * Fill the polygon, also widening it slightly so adjacent polygons on-screen will not show gaps between them.
+	 * 
+	 * This method should be removed in the future. We currently practically-speaking never render without polygon borders,
+	 * which hide the gaps anyway.
 	 * 
 	 * @param shape
 	 * @param exterior
 	 * @param col
 	 * @param g2d
 	 */
+	@Deprecated
 	private static void fillWidenedPolygon(Shape shape, Path2D exterior, final Color col, Graphics2D g2d, int viewportWidth, int viewportHeight) {
 		Rectangle2D bounds = exterior.getBounds();
 
@@ -976,7 +980,7 @@ final public class DatastoreRenderer {
 	// return path;
 	// }
 	
-	static boolean hasPoint(Geometry g){
+	static public boolean hasPoint(Geometry g){
 		if(GeometryCollection.class.isInstance(g)){
 			int n = g.getNumGeometries();
 			for(int i =0 ; i < n ;i++){
@@ -1001,10 +1005,12 @@ final public class DatastoreRenderer {
 		return image;
 	}
 
-	static boolean renderOrHitTestJTSGeometry(Graphics2D g, DrawableObject obj, Geometry geometry, Color col, Color outlineCol, Rectangle2D viewport, Rectangle hitTestOnScreen) {
+	static boolean renderOrHitTestJTSGeometry(Graphics2D g, DrawableObject obj, Geometry geometry, Color col, Color outlineCol, Rectangle2D viewport, Rectangle hitTestOnScreen, long renderFlags) {
 
 		boolean hit = false;
-
+		boolean skipBorders = (renderFlags & RenderProperties.SKIP_BORDER_RENDERING) == RenderProperties.SKIP_BORDER_RENDERING; 
+		boolean bordersOnly = (renderFlags & RenderProperties.RENDER_BORDERS_ONLY) == RenderProperties.RENDER_BORDERS_ONLY;
+		
 		if (geometry == null) {
 			throw new RuntimeException("Null geometry");
 		}
@@ -1012,7 +1018,7 @@ final public class DatastoreRenderer {
 		if (GeometryCollection.class.isInstance(geometry)) {
 			int ng = geometry.getNumGeometries();
 			for (int i = 0; i < ng; i++) {
-				hit |= renderOrHitTestJTSGeometry(g, obj, geometry.getGeometryN(i), col, outlineCol, viewport, hitTestOnScreen);
+				hit |= renderOrHitTestJTSGeometry(g, obj, geometry.getGeometryN(i), col, outlineCol, viewport, hitTestOnScreen,renderFlags);
 			}
 		} else {
 			// Do further bounding box hit test; speeds up case where we have multigeometries
@@ -1033,25 +1039,30 @@ final public class DatastoreRenderer {
 				}
 
 				if (Point.class.isInstance(geometry)) {
-					Point2D onscreen = toOnscreen(((Point) geometry).getCoordinate(), viewport);
-					int width = (int) obj.getPixelWidth();
-					if (hitTestOnScreen == null) {
-						drawOutlinedSymbol(g, getSymbolType(obj), onscreen, width, col, obj.getDrawOutline() == 1);
-					} else {
-						hit |= g.hit(hitTestOnScreen, createShape(getSymbolType(obj), onscreen, width), false);
+					if(!bordersOnly){
+						Point2D onscreen = toOnscreen(((Point) geometry).getCoordinate(), viewport);
+						int width = (int) obj.getPixelWidth();
+						if (hitTestOnScreen == null) {
+							drawOutlinedSymbol(g, getSymbolType(obj), onscreen, width, col, obj.getDrawOutline() == 1);
+						} else {
+							hit |= g.hit(hitTestOnScreen, createShape(getSymbolType(obj), onscreen, width), false);
+						}
 					}
 
 				} else if (LineString.class.isInstance(geometry)) {
-					LineString ls = (LineString) geometry;
-					Path2D path = toOnscreenPath(ls.getCoordinateSequence(), viewport);
+					if(!bordersOnly){
+						LineString ls = (LineString) geometry;
+						Path2D path = toOnscreenPath(ls.getCoordinateSequence(), viewport);
 
-					BasicStroke stroke = new BasicStroke(obj.getPixelWidth(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-					g.setStroke(stroke);
-					if (hitTestOnScreen == null) {
-						g.draw(path);
-					} else {
-						hit |= g.hit(hitTestOnScreen, path, true);
+						BasicStroke stroke = new BasicStroke(obj.getPixelWidth(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+						g.setStroke(stroke);
+						if (hitTestOnScreen == null) {
+							g.draw(path);
+						} else {
+							hit |= g.hit(hitTestOnScreen, path, true);
+						}						
 					}
+
 
 				} else if (Polygon.class.isInstance(geometry)) {
 					Polygon polygon = (Polygon) geometry;
@@ -1072,14 +1083,18 @@ final public class DatastoreRenderer {
 
 					if (hitTestOnScreen == null) {
 						// g.fill(shape);
-						fillWidenedPolygon(shape, exterior, col, g, (int) Math.ceil(viewport.getWidth()), (int) Math.ceil(viewport.getHeight()));
+						//fillWidenedPolygon(shape, exterior, col, g, (int) Math.ceil(viewport.getWidth()), (int) Math.ceil(viewport.getHeight()));
+						if(!bordersOnly){							
+							g.setColor(col);
+							g.fill(shape);
+						}
 					} else {
 						hit |= g.hit(hitTestOnScreen, shape, false);
 						hit |= shape.intersects(hitTestOnScreen);
 					}
 
 					// Draw the outline
-					if (obj.getDrawOutline() != 0) {
+					if (obj.getDrawOutline() != 0 && skipBorders==false) {
 						BasicStroke stroke = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
 						g.setStroke(stroke);
 
@@ -1115,7 +1130,7 @@ final public class DatastoreRenderer {
 		return geometryBounds;
 	}
 	
-	private boolean renderGeometry(Graphics2D g, final LatLongToScreen converter, DrawableObject pnt, boolean isSelected) {
+	private boolean renderGeometry(Graphics2D g, final LatLongToScreen converter, DrawableObject pnt, boolean isSelected, long renderFlags) {
 		boolean rendered = false;
 
 		ODLGeomImpl geom = pnt.getGeometry();
@@ -1144,16 +1159,9 @@ final public class DatastoreRenderer {
 			int y = (int) Math.round(bounds.getMinY() - viewport.getMinY());
 			g.fillRect(x, y, (int) Math.round(bounds.getWidth()), (int) Math.round(bounds.getHeight()));
 		} else {
-			renderOrHitTestJTSGeometry(g, pnt, transformed.getJTSGeometry(), renderCol, getPolyOutlineCol(renderCol), viewport, null);
+			renderOrHitTestJTSGeometry(g, pnt, transformed.getJTSGeometry(), renderCol, getPolyOutlineCol(renderCol), viewport, null,renderFlags);
 		}
 		rendered = true;
-
-		// if(isFreshRender){
-		// System.out.println("Drawing " + pnt.getLabel() + " at zoom " + converter.getZoomHashmapKey()
-		// + ", view " + viewport.toString()
-		// + ", bounds " + bounds.toString()
-		// );
-		// }
 
 		return rendered;
 	}
@@ -1182,7 +1190,8 @@ final public class DatastoreRenderer {
 		return true;
 	}
 
-	boolean renderObject(Graphics2D g, LatLongToScreen converter, DrawableObject pnt, boolean isSelected) {
+	@Override
+	public boolean renderObject(Graphics2D g, LatLongToScreen converter, DrawableObject pnt, boolean isSelected, long renderFlags) {
 
 		boolean rendered = false;
 		if (pnt.getGeometry() == null) {
@@ -1195,7 +1204,7 @@ final public class DatastoreRenderer {
 			// for(int i =0 ;i<100;i++){
 			// rendered = renderGeometry(g, converter, pnt, isSelected, cache);
 			// }
-			rendered = renderGeometry(g, converter, pnt, isSelected);
+			rendered = renderGeometry(g, converter, pnt, isSelected,renderFlags);
 		}
 
 		return rendered;
