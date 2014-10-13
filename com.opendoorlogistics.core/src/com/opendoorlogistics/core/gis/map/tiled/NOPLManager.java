@@ -8,12 +8,15 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.gis.map.tiled;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
+import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
 import com.opendoorlogistics.core.gis.map.ObjectRenderer;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
+import com.opendoorlogistics.core.gis.map.tiled.DrawableObjectLayer.LayerType;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.strings.StandardisedCache;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
@@ -21,8 +24,19 @@ import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 public class NOPLManager {
-	StandardisedStringTreeMap<LayerCache> currentLayers = new StandardisedStringTreeMap<>();
-
+	final private StandardisedStringTreeMap<LayerCache> currentLayers = new StandardisedStringTreeMap<>();
+	final private ObjectRenderer renderer =new DatastoreRenderer(){
+		
+		/**
+		 * Layer rendering handles poly colour itself so we need to ensure
+		 * the render doesn't set it here...
+		 */
+		@Override
+		protected Color getPolygonBorderColour(Color polyCol){
+			return polyCol;
+		}
+	};
+	
 	private class LayerCache{
 		final RecentlyUsedCache tileCache = new RecentlyUsedCache(64 * 1024 * 1024);
 		final DrawableObjectLayer layer;
@@ -32,16 +46,24 @@ public class NOPLManager {
 		}	
 	}
 	
-	public void update(Iterable<DrawableObjectLayer> newLayers){
+	synchronized List<DrawableObjectLayer> update(Iterable<? extends DrawableObject> newDrawables){
+
+		// get new layers by splitting the drawables
+		List<DrawableObjectLayer> newLayers = splitDrawablesIntoLayers(newDrawables);
+		
 		StandardisedStringSet newLayerIds = new StandardisedStringSet();
 		
-		// parse all new layers
+		// parse all new NOVLP layers
 		for(DrawableObjectLayer newLayer:newLayers){
+			if(newLayer.getType() != LayerType.NOVLPL){
+				continue;
+			}
+			
 			String groupId = Strings.std(newLayer.getNOVLPLGroupId());
 			newLayerIds.add(groupId);
 			
 			boolean addLayer=false;
-			LayerCache cachedLayer = currentLayers.get(groupId);
+			LayerCache cachedLayer = synchronisedGetLayer(groupId);
 			if(cachedLayer==null){
 				// The layer is new so add it.
 				addLayer = true;
@@ -54,6 +76,10 @@ public class NOPLManager {
 							// Remove the old cached layer and then add the new one.
 							currentLayers.remove(groupId);
 							addLayer = true;
+							
+							// To do ... if the old layer is a subset of the new layer this still works, we can just add
+							// the new images...
+							
 							break;
 						}
 					}
@@ -72,6 +98,8 @@ public class NOPLManager {
 				this.currentLayers.remove(id);
 			}
 		}
+		
+		return newLayers;
 	}
 	
 
@@ -80,7 +108,7 @@ public class NOPLManager {
 	 * @param drawables
 	 * @return
 	 */
-	List<DrawableObjectLayer> splitDrawablesIntoLayers(Iterable<? extends DrawableObject> drawables){
+	private List<DrawableObjectLayer> splitDrawablesIntoLayers(Iterable<? extends DrawableObject> drawables){
 		StandardisedCache standardiser = new StandardisedCache();
 
 		// split by consecutive NOLP group key
@@ -135,8 +163,10 @@ public class NOPLManager {
 	 * @param renderer
 	 * @return
 	 */
-	NOVLPolyLayerTile getTile(String layerId, TilePosition position,LatLongToScreen converter,ObjectRenderer renderer){
-		LayerCache layerCache = currentLayers.get(layerId);
+	NOVLPolyLayerTile getTile(String layerId, TilePosition position,LatLongToScreen converter){
+		
+		// get layer, synchronising so we wait for any update to have finished
+		LayerCache layerCache = synchronisedGetLayer(layerId);
 		if(layerCache == null){
 			return null;
 		}
@@ -148,5 +178,16 @@ public class NOPLManager {
 		}
 		
 		return ret;
+	}
+
+
+	/**
+	 * Retrieve the layer in a thread-synchronised manner
+	 * @param layerId
+	 * @return
+	 */
+	synchronized private LayerCache synchronisedGetLayer(String layerId) {
+		LayerCache layerCache = currentLayers.get(layerId);
+		return layerCache;
 	}
 }

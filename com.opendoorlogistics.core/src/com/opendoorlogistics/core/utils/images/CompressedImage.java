@@ -141,24 +141,24 @@ public class CompressedImage {
 		return baos.toByteArray();
 	}
 
-	private static String printUnsignedByte(byte b) {
-		StringBuilder sb = new StringBuilder();
-		while (b > 0) {
-			sb.insert(0, b % 2 == 0 ? 0 : 1);
-			b >>= 1;
-		}
-		for (int i = 8 - sb.length(); i > 0; i--) {
-			sb.insert(0, 0);
-		}
-		return sb.toString();
-	}
-
-	private static String byteArrayToHex(byte[] a) {
-		StringBuilder sb = new StringBuilder();
-		for (byte b : a)
-			sb.append(String.format("%02x", b & 0xff));
-		return sb.toString();
-	}
+//	private static String printUnsignedByte(byte b) {
+//		StringBuilder sb = new StringBuilder();
+//		while (b > 0) {
+//			sb.insert(0, b % 2 == 0 ? 0 : 1);
+//			b >>= 1;
+//		}
+//		for (int i = 8 - sb.length(); i > 0; i--) {
+//			sb.insert(0, 0);
+//		}
+//		return sb.toString();
+//	}
+//
+//	private static String byteArrayToHex(byte[] a) {
+//		StringBuilder sb = new StringBuilder();
+//		for (byte b : a)
+//			sb.append(String.format("%02x", b & 0xff));
+//		return sb.toString();
+//	}
 
 	private static Image uncompressImage(final int width, final int height, byte[] bytes) {
 

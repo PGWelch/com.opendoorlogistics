@@ -9,9 +9,9 @@ package com.opendoorlogistics.core.cache;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import com.opendoorlogistics.core.utils.Pair;
 
@@ -25,8 +25,8 @@ final public class RecentlyUsedCache {
 	private long timeIndex=0;
 	private long totalBytes;
 	private final long bytesLimit;
-	private HashMap<Object, CacheEntry> cached = new HashMap<>();
-	
+	private WeakHashMap<Object, CacheEntry> cached = new WeakHashMap<>();
+
 	public RecentlyUsedCache(long bytesLimit){
 		this.bytesLimit = bytesLimit;
 	}

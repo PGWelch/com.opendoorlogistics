@@ -65,7 +65,7 @@ import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.math.MathUtil;
 
-final public class DatastoreRenderer implements ObjectRenderer{
+public class DatastoreRenderer implements ObjectRenderer{
 	// private static final int STANDARD_OUTLINE_INNER_WIDTH = 2;
 	// private static final int STANDARD_OUTLINE_OUTER_WIDTH = 4;
 	// private static final int LARGER_OUTLINE_INNER_WIDTH = 4;
@@ -84,12 +84,6 @@ final public class DatastoreRenderer implements ObjectRenderer{
 	private final SimpleSoftReferenceMap<DrawnSymbol, DrawnSymbol> circleImageCache = new SimpleSoftReferenceMap<>();
 	private static final Symbols symbols = new Symbols();
 
-	// private boolean renderFade=true;
-	// private boolean allowDelayedGeometryRendering=false;
-
-	// public RecentImageCache getRecentCache() {
-	// return recentCache;
-	// }
 
 	/**
 	 * Remove small gaps between polygons by detecting any 0-alpha pixel surrounded by a majority of non 0-alpha pixels
@@ -832,46 +826,6 @@ final public class DatastoreRenderer implements ObjectRenderer{
 		}
 	}
 
-	// private static Shape convertToShape(ODLSimpleGeom geom, LatLongToScreen converter, Rectangle screenClipBounds) {
-	// int n = geom.size();
-	// switch (geom.getGeomType()) {
-	// case POINT:
-	// throw new IllegalArgumentException();
-	//
-	// case LINE:
-	// case POLYGON:
-	// // get list of all points
-	// if (n >= 2) {
-	// PointsList pnts = new PointsList();
-	// for (int i = 0; i < n; i++) {
-	// Point2D pnt = converter.getOnScreenPixelPosition(geom.get(i));
-	// pnts.add(pnt);
-	// }
-	//
-	// if (screenClipBounds == null || pnts.getBounds().intersects(screenClipBounds)) {
-	// n = pnts.size();
-	// Path2D.Double path = new Path2D.Double();
-	// for (int i = 0; i < n; i++) {
-	// Point2D pnt = pnts.get(i);
-	// if (i == 0) {
-	// path.moveTo(pnt.getX(), pnt.getY());
-	// } else {
-	// path.lineTo(pnt.getX(), pnt.getY());
-	// }
-	// }
-	//
-	// if (geom.getGeomType() == SimpleGeomType.POLYGON) {
-	// path.closePath();
-	// }
-	// return path;
-	// }
-	// }
-	// break;
-	// }
-	//
-	// return null;
-	// }
-
 	private static Point2D toOnscreen(Coordinate worldBitmapCoord, Rectangle2D viewport) {
 		return new Point2D.Double(worldBitmapCoord.x - viewport.getX(), worldBitmapCoord.y - viewport.getY());
 	}
@@ -891,94 +845,6 @@ final public class DatastoreRenderer implements ObjectRenderer{
 		}
 		return path;
 	}
-
-	// private static Point2D.Double diff(Point2D.Double a , Point2D.Double b){
-	// return new Point2D.Double(a.x-b.x, a.y-b.y);
-	// }
-
-	// private static Path2D.Double toOnscreenPathV2(CoordinateSequence cs, Rectangle2D viewport) {
-	// int n = cs.size();
-	//
-	// class PointsList{
-	// ArrayList<Point2D.Double> pnts = new ArrayList<>();
-	// double x(int i){
-	// return pnts.get(i).x;
-	// }
-	//
-	// double y(int i){
-	// return pnts.get(i).y;
-	// }
-	//
-	// Point2D.Double get(int i){
-	// return pnts.get(i);
-	// }
-	//
-	// int size(){
-	// return pnts.size();
-	// }
-	//
-	// void remove(int i){
-	// pnts.remove(i);
-	// }
-	//
-	// Point2D.Double next(int i){
-	// if(i+1<pnts.size()){
-	// return pnts.get(i);
-	// }
-	// return pnts.get(0);
-	// }
-	//
-	// Point2D.Double previous(int i){
-	// if(i>0){
-	// return pnts.get(i-1);
-	// }
-	// return pnts.get(pnts.size()-1);
-	// }
-	//
-	// }
-	//
-	// PointsList list = new PointsList();
-	//
-	// // put in points list
-	// for (int i = 0; i < n; i++) {
-	// Coordinate coord = cs.getCoordinate(i);
-	// double x = coord.x - viewport.getX();
-	// double y = coord.y - viewport.getY();
-	// list.pnts.add(new Point2D.Double(x, y));
-	// }
-	//
-	// // remove duplications
-	// int i =0 ;
-	// while(i<list.size()){
-	// if(list.get(i).equals(list.next(i))){
-	// list.remove(i);
-	// }else{
-	// i++;
-	// }
-	// }
-	//
-	// // expand
-	// PointsList expanded = new PointsList();
-	// for(i =0 ; i< list.size();i++){
-	// Point2D.Double current = list.get(i);
-	// Point2D.Double previous = list.previous(i);
-	// Point2D.Double next = list.next(i);
-	//
-	// Point2D.Double pd = diff(current, previous);
-	// Point2D.Double nd = diff(current, next);
-	// }
-	//
-	// // turn into path
-	// Path2D.Double path = new Path2D.Double();
-	// for (i = 0; i < n; i++) {
-	// if (i == 0) {
-	// path.moveTo(list.x(i),list.y(i));
-	// } else {
-	// path.lineTo(list.x(i),list.y(i));
-	// }
-	// }
-	// return path;
-	// }
 	
 	static public boolean hasPoint(Geometry g){
 		if(GeometryCollection.class.isInstance(g)){
@@ -1151,7 +1017,7 @@ final public class DatastoreRenderer implements ObjectRenderer{
 		}
 
 		// get render colour
-		final Color renderCol = isSelected ? SELECTION_COLOUR : getRenderColour(pnt);
+		final Color renderCol = getRenderColour(pnt,isSelected);
 
 		if (transformed.isDrawFilledBounds()) {
 			g.setColor(renderCol);
@@ -1159,17 +1025,21 @@ final public class DatastoreRenderer implements ObjectRenderer{
 			int y = (int) Math.round(bounds.getMinY() - viewport.getMinY());
 			g.fillRect(x, y, (int) Math.round(bounds.getWidth()), (int) Math.round(bounds.getHeight()));
 		} else {
-			renderOrHitTestJTSGeometry(g, pnt, transformed.getJTSGeometry(), renderCol, getPolyOutlineCol(renderCol), viewport, null,renderFlags);
+			renderOrHitTestJTSGeometry(g, pnt, transformed.getJTSGeometry(), renderCol, getPolygonBorderColour(renderCol), viewport, null,renderFlags);
 		}
 		rendered = true;
 
 		return rendered;
 	}
 
-	static Color getPolyOutlineCol(Color col) {
-		return Colours.multiplyNonAlpha(col, SELECTION_DARKEN_OUTLINE_FACTOR);
+	static public Color getDefaultPolygonBorderColour(Color polyCol) {
+		return Colours.multiplyNonAlpha(polyCol, SELECTION_DARKEN_OUTLINE_FACTOR);
 	}
 
+	protected Color getPolygonBorderColour(Color polyCol){
+		return getDefaultPolygonBorderColour(polyCol);
+	}
+	
 	public static CachedGeometry getCachedGeometry(ODLGeomImpl geom, LatLongToScreen converter, boolean createIfNotCached) {
 		if (geom.isValid() == false) {
 			return null;
@@ -1226,9 +1096,7 @@ final public class DatastoreRenderer implements ObjectRenderer{
 		if (getPointIntersectsScreen(g, pnt, screenPos)) {
 
 			// get colour
-			Color col = getRenderColour(pnt);
-
-			DrawnSymbol image = new DrawnSymbol(getSymbolType(pnt), pnt.getDrawOutline() == 1, isSelected ? SELECTION_COLOUR : col, (int) pnt.getPixelWidth(), isSelected);
+			DrawnSymbol image = new DrawnSymbol(getSymbolType(pnt), pnt.getDrawOutline() == 1, getRenderColour(pnt,isSelected), (int) pnt.getPixelWidth(), isSelected);
 			DrawnSymbol cached = null;
 			if (circleImageCache != null) {
 				synchronized (this) {
@@ -1283,7 +1151,11 @@ final public class DatastoreRenderer implements ObjectRenderer{
 		return rectangle;
 	}
 
-	static Color getRenderColour(DrawableObject pnt) {
+	public static Color getRenderColour(DrawableObject pnt, boolean isSelected) {
+		if(isSelected){
+			return SELECTION_COLOUR;
+		}
+		
 		Color col = pnt.getColour();
 		if (!Strings.isEmpty(pnt.getColourKey())) {
 			col = Colours.getRandomColour(pnt.getColourKey());

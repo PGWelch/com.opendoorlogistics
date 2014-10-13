@@ -11,6 +11,7 @@ package com.opendoorlogistics.core.gis.map.tiled;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.hash.TLongHashSet;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -21,9 +22,9 @@ import java.awt.image.BufferedImage;
 import java.awt.image.FilteredImageSource;
 import java.awt.image.ImageProducer;
 import java.awt.image.RGBImageFilter;
-import java.util.List;
 
 import com.opendoorlogistics.api.geometry.ODLGeom;
+import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
 import com.opendoorlogistics.core.gis.map.ObjectRenderer;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
@@ -43,17 +44,21 @@ public class NOVLPolyLayerTile {
 	private final TObjectIntHashMap<ODLGeom> ids;
 	private final CompressedImage filled;
 	private final CompressedImage borders;
-	
-	public long getSizeInBytes(){
+	private final int h;
+	private final int w;
+
+	long getSizeInBytes(){
 		return ids.size() * 8 + filled.getSizeBytes() + borders.getSizeBytes();
 	}
 	
 	private static class ColourDecorator extends DrawableObjectDecorator{
 		private Color color;
-
-		public ColourDecorator(DrawableObject decorated, Color color) {
+		private long drawOutline; 
+		
+		public ColourDecorator(DrawableObject decorated, Color color, long drawOutline) {
 			super(decorated);
 			this.color = color;
+			this.drawOutline = drawOutline;
 		}
 		
 		@Override
@@ -73,7 +78,7 @@ public class NOVLPolyLayerTile {
 		
 		@Override
 		public long getDrawOutline() {
-			return 0;
+			return drawOutline;
 		}
 
 	}
@@ -100,14 +105,16 @@ public class NOVLPolyLayerTile {
 			
 			ids.put(geom, nextId++);
 		}
+		
+		Rectangle2D viewable = converter.getViewportWorldBitmapScreenPosition();
+		w = (int)viewable.getWidth();
+		h = (int)viewable.getHeight();
 	
 		// draw all objects on the tile with different colour for each based on id and not showing borders
-		BufferedImage img = createDrawnImage(converter, renderer,RenderProperties.SKIP_BORDER_RENDERING);
-		filled = new CompressedImage(img, CompressedType.LZ4);
-		
+		filled = createDrawnImage(converter, renderer,false);
+
 		// now do the same for the borders (doing separately allows coping with opaque)
-		img = createDrawnImage(converter, renderer,RenderProperties.RENDER_BORDERS_ONLY);
-		borders = new CompressedImage(img, CompressedType.LZ4);
+		borders = createDrawnImage(converter, renderer,true);
 		
 	}
 
@@ -120,29 +127,52 @@ public class NOVLPolyLayerTile {
 	 * @param ret
 	 * @return
 	 */
-	private BufferedImage createDrawnImage(LatLongToScreen converter, ObjectRenderer renderer, long renderFlags) {
-		Rectangle2D viewable = converter.getViewportWorldBitmapScreenPosition();
-		int w = (int)viewable.getWidth();
-		int h = (int)viewable.getHeight();
+	private CompressedImage createDrawnImage(LatLongToScreen converter, ObjectRenderer renderer,boolean bordersOnly) {
+//	private BufferedImage createDrawnImage(LatLongToScreen converter, ObjectRenderer renderer,boolean bordersOnly) {
 		BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = img.createGraphics();
+
 		try {
 			g.setClip(0, 0, w, h);
 			for(DrawableObject obj:layer){
 				if(obj.getGeometry()!=null){
-					int id = ids.get(obj.getGeometry());
-					Color dummyIdColour = new Color(id);
-					renderer.renderObject(g, converter, new ColourDecorator(obj, dummyIdColour), false,renderFlags);
+					int id = ids.get(obj.getGeometry());			
+					Color dummyIdColour = createColourId(id);
+					g.setColor(dummyIdColour);			        
+					renderer.renderObject(g, converter, new ColourDecorator(obj, dummyIdColour, bordersOnly?1:0), false,bordersOnly?RenderProperties.RENDER_BORDERS_ONLY:RenderProperties.SKIP_BORDER_RENDERING);
 				}
 			}
 		} finally {
 			g.dispose();
-
 		}
-		return img;
+		
+		return new CompressedImage(img, CompressedType.LZ4);
+	//	return img;
+	}
+
+
+	/**
+	 * @param id
+	 * @return
+	 */
+	private static Color createColourId(int id) {
+//		int ia = (0xFF000000) >> 24;
+		int ir = (id & 0x00FF0000) >> 16;
+		int ig = (id & 0x0000FF00) >> 8;
+		int ib = id & 0x000000FF;
+
+		
+//        value = ((a & 0xFF) << 24) |
+//                ((r & 0xFF) << 16) |
+//                ((g & 0xFF) << 8)  |
+//                ((b & 0xFF) << 0);
+
+		return new Color(ir,ig,ib,255);
 	}
 	
-	public boolean draw(Iterable<DrawableObject> polys, Graphics2D g2d, int x, int y){
+	//static final HashSet<Integer> distinctRgbs = new HashSet<>();
+	
+	boolean draw(Iterable<DrawableObject> polys, Graphics2D g2d,TLongHashSet selectedIds, int x, int y){
 		
 		// get colour state of each geom and put this in a map using our ids
 		final TIntObjectHashMap< Color> colours = new TIntObjectHashMap<>();
@@ -156,29 +186,63 @@ public class NOVLPolyLayerTile {
 				return false;
 			}
 			
-			Color col = obj.getColour();
+			Color col = DatastoreRenderer.getRenderColour(obj, selectedIds.contains(obj.getGlobalRowId()));
+			
 			colours.put(id, col);
 		}
 		
+		BufferedImage baseImg = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D gTmp = baseImg.createGraphics();
 
-		// Create colour filter which filters out anything not visible and colours everything else
-		RGBImageFilter rgbFilter =new RGBImageFilter() {
+		try {
+			BufferedImage img =null;
+			img = toImage(filled.get(), createRGBFilter(colours,false));
+			gTmp.drawImage(img, x, y,null);
+			
+			// draw borders
+			img = toImage(borders.get(),  createRGBFilter(colours,true));
+			gTmp.drawImage(img, x, y,null);
+		} finally {
+			gTmp.dispose();
+		}
+		
+
+		g2d.drawImage(baseImg, x, y,null);
+		
+		return true;
+	}
+
+
+	/**
+	 * @param colours
+	 * @return
+	 */
+	private RGBImageFilter createRGBFilter(final TIntObjectHashMap<Color> colours,final boolean isBorderRendering) {
+		return new RGBImageFilter() {
 			int lastInputRGB;
 			int lastOutputRGB;
 			
 			@Override
 			public int filterRGB(int x, int y, int rgb) {
+				// remove alpha channel as can't get it to work right.... may give max 16 million objects
+				rgb = rgb & 0x00FFFFFF;
+				
 				if(rgb!=0){
 					
 					// Do a speedup to stop to many hashtable queries. 
 					// Often we will call this method for the same object twice in a row
 					if(rgb == lastInputRGB){
 						return lastOutputRGB;
-					}
-					
+					}		
+
 					// Get colour from input map using rgb as id
-					Color col = colours.get(rgb);	
+					Color col = colours.get(rgb);
 					if(col!=null){
+						
+						if(isBorderRendering){
+							col = DatastoreRenderer.getDefaultPolygonBorderColour(col);
+						}
+						
 						lastInputRGB = rgb;
 						rgb = col.getRGB();
 						lastOutputRGB = rgb;
@@ -191,24 +255,23 @@ public class NOVLPolyLayerTile {
 				return rgb;
 			}
 		};
-		
-		BufferedImage img = toImage(filled.get(), rgbFilter);
-		g2d.drawImage(img, x, y,null);
-		
-		// draw borders
-		img = toImage(borders.get(), rgbFilter);
-		g2d.drawImage(img, x, y,null);
-		
-		return true;
 	}
 
 
-	private BufferedImage toImage(Image uncompressed, RGBImageFilter rgbFilter) {
+	private static BufferedImage toImage(Image uncompressed, RGBImageFilter rgbFilter) {
 		ImageProducer ip = new FilteredImageSource(uncompressed.getSource(), rgbFilter);
 		Image coloured = Toolkit.getDefaultToolkit().createImage(ip);
 		return ImageUtils.toBufferedImage(coloured);
 	}
 
-	
+//	public static void main(String [] args){
+//		int val = 1;
+//		Random random = new Random(123);
+//		while(val < Integer.MAX_VALUE / 2){
+//			Color col = createColourId(val);
+//			System.out.println("val = " + val + " -> " + col.getRGB() + " -> " + new Color(val).getRGB());
+//			val += (int)Math.round(val * random.nextDouble());
+//		}
+//	}
 
 }

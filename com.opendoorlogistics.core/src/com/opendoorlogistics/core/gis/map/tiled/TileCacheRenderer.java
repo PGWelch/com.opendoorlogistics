@@ -198,8 +198,12 @@ final public class TileCacheRenderer implements Disposable {
 					
 					if(layer.getType() == LayerType.NOVLPL){
 						// draw the layer tile
-						NOVLPolyLayerTile tile = noplmanager.getTile(layer.getNOVLPLGroupId(), position, converter, workerThreadRenderer);
-						tile.draw(layer, g, 0, 0);
+						NOVLPolyLayerTile tile = noplmanager.getTile(layer.getNOVLPLGroupId(), position, converter);
+						
+						// check poly layer tile exists, if not then this tile is probably out-of-date 
+						if(tile!=null){
+							tile.draw(layer, g,renderInfo.selectedObjectIds, 0, 0);							
+						}
 					}
 					else{
 						// draw each object one-by-one
@@ -417,11 +421,8 @@ final public class TileCacheRenderer implements Disposable {
 			edtRender = true;
 		}
 		
-		// Finally split into layers
-		drawableLayers = noplmanager.splitDrawablesIntoLayers(pnts);
-		
 		// Update the layer manager
-		noplmanager.update(drawableLayers);
+		drawableLayers = noplmanager.update(pnts);
 	}
 
 	private synchronized void clearTiles() {

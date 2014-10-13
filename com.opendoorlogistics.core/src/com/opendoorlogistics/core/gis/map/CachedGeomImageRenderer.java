@@ -78,9 +78,9 @@ public class CachedGeomImageRenderer implements ObjectRenderer{
 	
 				// if no image available, create image it (for the intersection between the object and the tile)
 				// and cache it.
-				final Color renderCol = isSelected ? DatastoreRenderer.SELECTION_COLOUR : DatastoreRenderer.getRenderColour(obj);
+				final Color renderCol = DatastoreRenderer.getRenderColour(obj,isSelected);
 				if(bwImage==null){
-					BufferedImage bufBwImage =  createBWImage(obj, cachedGeometry, renderCol, drawRegion);;
+					BufferedImage bufBwImage =  createBWImage(obj, cachedGeometry, renderCol, drawRegion);
 					bwImage = bufBwImage;	
 					geomCache.put(cacheKey, bufBwImage);
 				}
@@ -215,7 +215,7 @@ public class CachedGeomImageRenderer implements ObjectRenderer{
 				gImage.setColor(bwCol);
 				gImage.fillRect(0, 0, imgWidth, imgHeight);
 			} else {
-				DatastoreRenderer.renderOrHitTestJTSGeometry(gImage, obj, cachedGeometry.getJTSGeometry(), bwCol, DatastoreRenderer.getPolyOutlineCol(bwCol), drawRegion, null,0);
+				DatastoreRenderer.renderOrHitTestJTSGeometry(gImage, obj, cachedGeometry.getJTSGeometry(), bwCol, DatastoreRenderer.getDefaultPolygonBorderColour(bwCol), drawRegion, null,0);
 			}				
 		} 
 		finally{
