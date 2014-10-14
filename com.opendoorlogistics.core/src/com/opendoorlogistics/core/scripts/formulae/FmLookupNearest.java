@@ -315,7 +315,9 @@ final public class FmLookupNearest extends FunctionImpl {
 				return ret;
 			}
 		}
-		// get all geometries, transformed into the coord system and with bounding circles
+		
+		// Get all geometries, transformed into the coord system and with bounding circles.
+		// Place them in a binary heap, sorted by their minimum possible distance according to bounding circle
 		int nr = table.getRowCount();
 		BinaryHeap sortedHeap = new BinaryHeap();
 		for (int row = 0; row < nr; row++) {
@@ -373,10 +375,11 @@ final public class FmLookupNearest extends FunctionImpl {
 		while(sortedHeap.size()>0){
 			RowElement row = (RowElement)sortedHeap.pop();
 			if(row.minDistance > closestDistance){
-				// we can stop searching now!
+				// We can stop searching now as the minimum possible distance is greater than our closest
 				break;
 			}
 			
+			// Explicitly get the distance
 			double distance = searchObject.geometry.distance(row.geom.geometry);
 			if(distance < closestDistance){
 				closestDistance = distance;
