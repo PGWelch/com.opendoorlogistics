@@ -299,7 +299,7 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		// Create a TileFactoryInfo for OpenStreetMap
 		TileFactoryInfo info = new OSMTileFactoryInfo();
 		tileFactory = new DefaultTileFactory(info);
-		tileFactory.setThreadPoolSize(4);
+		tileFactory.setThreadPoolSize(2);
 
 		// Setup local file cache
 		JXMapUtils.initLocalFileCache();

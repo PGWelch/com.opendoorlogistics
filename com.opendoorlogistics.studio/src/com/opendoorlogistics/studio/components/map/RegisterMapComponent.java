@@ -196,6 +196,7 @@ final public class RegisterMapComponent {
 
 		@Override
 		public void dispose() {
+			super.dispose();
 			if (appFrame.getLoaded() != null) {
 				appFrame.getLoaded().unregisterMapSelectionList(this);
 			}
