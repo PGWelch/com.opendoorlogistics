@@ -114,7 +114,7 @@ public class GeomUnion {
 				
 			if(ret!=null){
 				// estimate size of geometry in bytes
-				int size=((ODLGeomImpl)ret).getEstimatedSizeInBytes();
+				long size=((ODLGeomImpl)ret).getEstimatedSizeInBytes();
 				size += estimatedKeySize;
 				cache.put(key, ret, size);				
 			}

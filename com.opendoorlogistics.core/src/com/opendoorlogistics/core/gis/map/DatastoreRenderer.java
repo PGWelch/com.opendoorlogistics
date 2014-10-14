@@ -43,7 +43,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.opendoorlogistics.core.AppConstants;
+import com.opendoorlogistics.core.cache.ApplicationCache;
+import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.gis.map.CachedGeometry.CachedGeomKey;
 import com.opendoorlogistics.core.gis.map.Legend.LegendAlignment;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
@@ -1044,11 +1047,23 @@ public class DatastoreRenderer implements ObjectRenderer{
 		if (geom.isValid() == false) {
 			return null;
 		}
-		CachedGeometry transformed = (CachedGeometry) geom.getFromCache(converter.getZoomHashmapKey());
+		
+//		CachedGeometry transformed = (CachedGeometry) geom.getFromCache(converter.getZoomHashmapKey());
+//		if (transformed == null && createIfNotCached) {
+//			// Keep geometry simplication off as it actually tends to slow things down, particulary for route editing with road networks
+//			transformed = new CachedGeometry(geom, false, converter);
+//			geom.putInCache(converter.getZoomHashmapKey(), transformed);
+//		}
+//		return transformed;
+
+		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.CACHED_PROJECTED_RENDERER_GEOMETRY);
+		CachedGeomKey key = new CachedGeomKey(geom, converter.getZoomHashmapKey());
+		CachedGeometry transformed = (CachedGeometry) cache.get(key);
+		
 		if (transformed == null && createIfNotCached) {
 			// Keep geometry simplication off as it actually tends to slow things down, particulary for route editing with road networks
-			transformed = new CachedGeometry(geom, false, converter);
-			geom.putInCache(converter.getZoomHashmapKey(), transformed);
+			transformed = new CachedGeometry(geom, true, converter);			
+			cache.put(key, transformed, transformed.getSizeInBytes(false));
 		}
 		return transformed;
 	}

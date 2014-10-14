@@ -128,18 +128,14 @@ public final class ODLGeomImpl implements ODLGeom{
 		return jts.getNumPoints();
 	}
 	
-	public int getEstimatedSizeInBytes(){
+	public long getEstimatedSizeInBytes(){
 		Geometry geom = getJTSGeometry();
 		if(geom==null){
 			return 20;
 		}
 		
-		// estimate size of geometry in bytes
-		int size=0;
-		size += 4*8; // geometries store an envelope object
-		size += geom.getNumPoints() * 3 * 8; // all points (point has 3 doubles - x, y, z)
-		size += 100; // add some extra to account for pointers etc
-		
-		return size;
+		return Spatial.getEstimatedSizeInBytes(geom);
 	}
+
+
 }

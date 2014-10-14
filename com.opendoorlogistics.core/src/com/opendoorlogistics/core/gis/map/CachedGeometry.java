@@ -11,7 +11,9 @@ import java.awt.geom.Rectangle2D;
 
 import org.geotools.geometry.jts.JTS;
 
+import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.Spatial;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.TransformGeomToWorldBitmap;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -28,7 +30,7 @@ import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
  */
 public final class CachedGeometry {
 	private final Rectangle2D wbBounds;
-	private final static double SIMPLIFY_SQD_LIMIT = 0.1;
+	private final static double SIMPLIFY_SQD_LIMIT = 0.5;
 	private final Geometry wbInitial;
 	private final boolean simplified;
 	private FinalGeometry wbFinal;
@@ -41,6 +43,66 @@ public final class CachedGeometry {
 		private Geometry jtsGeometry;
 	}
 
+
+	public long getSizeInBytes(boolean includeInitialGeometrySize){
+		long ret=0;
+		if(includeInitialGeometrySize){
+			ret += Spatial.getEstimatedSizeInBytes(wbInitial);
+		}
+		
+		Geometry finalGeom =  getJTSGeometry();
+		if(finalGeom!=null){
+			ret += Spatial.getEstimatedSizeInBytes(finalGeom);
+		}
+		
+		ret += 4*4 + 1 + 16 + 16;
+		return ret;
+	}
+	
+	
+	public static class CachedGeomKey{
+		private final ODLGeom geom;
+		private final Object otherKey;
+		
+		public CachedGeomKey(ODLGeom geom, Object otherKey) {
+			this.geom = geom;
+			this.otherKey = otherKey;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((geom == null) ? 0 : geom.hashCode());
+			result = prime * result + ((otherKey == null) ? 0 : otherKey.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			CachedGeomKey other = (CachedGeomKey) obj;
+			if (geom == null) {
+				if (other.geom != null)
+					return false;
+			} else if (!geom.equals(other.geom))
+				return false;
+			if (otherKey == null) {
+				if (other.otherKey != null)
+					return false;
+			} else if (!otherKey.equals(other.otherKey))
+				return false;
+			return true;
+		}
+		
+		
+	}
+	
 	/**
 	 * Initialise the cached geometry and transform to screen coordinates
 	 * so we can get the bounds. Simplifying the geometry is not done until later.

@@ -178,4 +178,15 @@ public final class Spatial {
 	private static RecentlyUsedCache shapefileCache(){
 		return ApplicationCache.singleton().get(ApplicationCache.IMPORTED_SHAPEFILE_CACHE);
 	}
+	
+
+	public static long getEstimatedSizeInBytes(Geometry geom) {
+		// estimate size of geometry in bytes
+		int size=0;
+		size += 4*8; // geometries store an envelope object
+		size += geom.getNumPoints() * 3 * 8; // all points (point has 3 doubles - x, y, z)
+		size += 100; // add some extra to account for pointers etc
+		
+		return size;
+	}
 }
