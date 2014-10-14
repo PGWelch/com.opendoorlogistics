@@ -47,19 +47,20 @@ public class CachedGeomImageRenderer implements ObjectRenderer{
 				renderer.renderSymbol(g, obj, converter.getOnScreenPixelPosition(obj), isSelected);
 			}
 		}else{
+
+			// do intersection check to see if we should draw
+			Rectangle2D geomBounds =DatastoreRenderer.getWorldBitmapBounds(obj.getGeometry(), converter);
+			Rectangle2D wBBBounds = converter.getViewportWorldBitmapScreenPosition();
+			if(wBBBounds==null || geomBounds.intersects(wBBBounds)==false){
+				return false;
+			}
+
 			// get transformed geometry
 			CachedGeometry cachedGeometry = DatastoreRenderer.getCachedGeometry(obj.getGeometry(), converter,true);
 			if(cachedGeometry==null){
 				return false;
 			}
 	
-			// do intersection check to see if we should draw
-			Rectangle2D geomBounds = cachedGeometry.getWorldBitmapBounds();
-			Rectangle2D wBBBounds = converter.getViewportWorldBitmapScreenPosition();
-			if(geomBounds.intersects(wBBBounds)==false){
-				return false;
-			}
-			
 			// get the region to be drawn
 			Rectangle2D drawRegion = wBBBounds.createIntersection(geomBounds);
 

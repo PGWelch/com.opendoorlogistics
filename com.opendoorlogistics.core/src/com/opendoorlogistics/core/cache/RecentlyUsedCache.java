@@ -26,8 +26,11 @@ final public class RecentlyUsedCache {
 	private long totalBytes;
 	private final long bytesLimit;
 	private WeakHashMap<Object, CacheEntry> cached = new WeakHashMap<>();
-
-	public RecentlyUsedCache(long bytesLimit){
+	private final String name;
+	private boolean logToConsole=false;
+	
+	public RecentlyUsedCache(String name,long bytesLimit){
+		this.name = name;
 		this.bytesLimit = bytesLimit;
 	}
 
@@ -49,6 +52,10 @@ final public class RecentlyUsedCache {
 			// oldest first
 			return Long.compare(o.lastUsed, lastUsed);
 		}
+	}
+	
+	private String getDisplayId(){
+		return "" + name + "-" + System.identityHashCode(this);
 	}
 	
 	private void clearIfNeeded(){
@@ -77,6 +84,10 @@ final public class RecentlyUsedCache {
 					i++;
 				}
 				
+				if(logToConsole){
+					System.out.println(getDisplayId() + " - cleared, total bytes now " + totalBytes+ " ("  + (totalBytes/(1024*1024)) + " MB) in "+ cached.size() + " entries.");
+				}
+				
 		//		System.out.println("CLEARED");
 			}
 		}
@@ -88,6 +99,15 @@ final public class RecentlyUsedCache {
 		CacheEntry obj = new CacheEntry(objectKey, value, nbBytes);
 		obj.lastUsed = timeIndex;
 		cached.put(objectKey, obj);
+		
+		if(logToConsole){
+			long mb = totalBytes / (1024*1024);
+			long newMB  = (totalBytes+obj.nbBytes) / (1024*1024);
+			if(mb!=newMB){
+				System.out.println(getDisplayId() + " - now " + (totalBytes+nbBytes) + " bytes (" + newMB + " MB) in " + cached.size() + " entries.");				
+			}
+		}
+		
 		totalBytes += obj.nbBytes;
 		clearIfNeeded();
 	}
@@ -111,7 +131,7 @@ final public class RecentlyUsedCache {
 	}
 	
 	public static void main(String []args){
-		RecentlyUsedCache lus = new RecentlyUsedCache(10*(8 + CacheEntry.CONTAINER_OVERHEAD_BYTES));
+		RecentlyUsedCache lus = new RecentlyUsedCache("test",10*(8 + CacheEntry.CONTAINER_OVERHEAD_BYTES));
 		int n = 1000;
 		for(int i =0 ; i < n;i++){
 			Integer val = new Integer(i);
@@ -171,4 +191,11 @@ final public class RecentlyUsedCache {
 			totalBytes -= container.nbBytes;
 		}
 	}
+
+
+	public void setLogToConsole(boolean logToConsole) {
+		this.logToConsole = logToConsole;
+	}
+	
+	
 }

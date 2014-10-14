@@ -45,7 +45,7 @@ public class ApplicationCache {
 		create(A_TO_B_TIME_SECONDS_CACHE, 12*MB);
 		create(IMPORTED_SHAPEFILE_CACHE, 128*MB);
 		create(GEOM_CENTROID_CACHE, 16 * MB);
-		create(CACHED_PROJECTED_RENDERER_GEOMETRY, 512 * MB);
+		create(CACHED_PROJECTED_RENDERER_GEOMETRY, 512 * MB).setLogToConsole(true);
 	}
 	
 	public RecentlyUsedCache get(String cacheId){
@@ -57,7 +57,7 @@ public class ApplicationCache {
 			throw new RuntimeException("Cache already exists with id: " + cacheId);
 		}
 		
-		RecentlyUsedCache ret = new RecentlyUsedCache(maxSizeInBytes);
+		RecentlyUsedCache ret = new RecentlyUsedCache(cacheId,maxSizeInBytes);
 		caches.put(cacheId,ret );
 		return ret;
 	}

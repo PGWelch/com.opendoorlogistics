@@ -32,7 +32,7 @@ final public class RecentImageCache {
 
 	public RecentImageCache(ZipType zipType, int sizeInBytes){
 		this.zipType = zipType;
-		this.lastUsedCache = new RecentlyUsedCache( sizeInBytes);
+		this.lastUsedCache = new RecentlyUsedCache("recent-image-cache", sizeInBytes);
 	}
 	
 	public RecentImageCache(ZipType zipType){

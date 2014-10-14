@@ -21,6 +21,7 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
 
 /**
@@ -29,26 +30,13 @@ import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
  *
  */
 public final class CachedGeometry {
-	private final Rectangle2D wbBounds;
-	private final static double SIMPLIFY_SQD_LIMIT = 0.5;
-	private final Geometry wbInitial;
-	private final boolean simplified;
-	private FinalGeometry wbFinal;
-	private final Point2D.Double centroid;
 	private Point2D.Double lineStringMidpoint;
 	private double linestringLength=Double.NaN;
-	
-	private class FinalGeometry {
-		private boolean drawFilledBounds;
-		private Geometry jtsGeometry;
-	}
+	private final boolean drawFilledBounds;
+	private final Geometry wbFinal;
 
-
-	public long getSizeInBytes(boolean includeInitialGeometrySize){
+	public long getSizeInBytes(){
 		long ret=0;
-		if(includeInitialGeometrySize){
-			ret += Spatial.getEstimatedSizeInBytes(wbInitial);
-		}
 		
 		Geometry finalGeom =  getJTSGeometry();
 		if(finalGeom!=null){
@@ -110,66 +98,52 @@ public final class CachedGeometry {
 	 * @param simplify
 	 * @param latLongToScreen
 	 */
-	CachedGeometry(ODLGeomImpl geom, boolean simplify, LatLongToScreen latLongToScreen) {
+	CachedGeometry(ODLGeomImpl geom, LatLongToScreen latLongToScreen) {
 		if (geom.isValid() == false) {
 			throw new RuntimeException();
 		}
 
 		// geometry starts in long-lat; transform to world bitmap
-		Geometry geometry = geom.getJTSGeometry();
+		Geometry initialGeometry = geom.getJTSGeometry();
 		try {
-			geometry = JTS.transform(geom.getJTSGeometry(), new TransformGeomToWorldBitmap(latLongToScreen));
+			initialGeometry = JTS.transform(geom.getJTSGeometry(), new TransformGeomToWorldBitmap(latLongToScreen));
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
-		wbInitial = geometry;
-
-		com.vividsolutions.jts.geom.Point centroid = wbInitial.getCentroid();
-		this.centroid = new Point2D.Double(centroid.getX(), centroid.getY());
 
 		// get bounds ensuring we have non-zero width and height in pixel space otherwise points don't draw...
-		Envelope bb = geometry.getEnvelopeInternal();
-		wbBounds = new Rectangle2D.Double(bb.getMinX(), bb.getMinY(),Math.max( bb.getWidth(),1),Math.max( bb.getHeight(),1));
+		Envelope bb = initialGeometry.getEnvelopeInternal();
+		Rectangle2D wbBounds = new Rectangle2D.Double(bb.getMinX(), bb.getMinY(),Math.max( bb.getWidth(),1),Math.max( bb.getHeight(),1));
 
-		// flag whether to geometry
-		simplified = simplify;
+		double simpleTol = Spatial.getRendererSimplifyDistanceTolerancePixels();
+		if (simpleTol>0) {
 
-	}
-
-	/**
-	 * Performs lazy (on-demand) initialisation of the final geometry
-	 * 
-	 * @return
-	 */
-	private synchronized FinalGeometry getFinalGeometry() {
-		if (wbFinal == null) {
-			wbFinal = new FinalGeometry();
-			if (simplified) {
-
-				// treat as circle
-				if (wbBounds.getWidth() < SIMPLIFY_SQD_LIMIT && wbBounds.getHeight() < SIMPLIFY_SQD_LIMIT) {
-					wbFinal.jtsGeometry = createSimplificationCircle();
-					wbFinal.drawFilledBounds = true;
-				} else {
-					wbFinal.jtsGeometry = TopologyPreservingSimplifier.simplify(wbInitial, SIMPLIFY_SQD_LIMIT);
-
-					// if empty (because its too small), just treat as a point
-					if (wbFinal.jtsGeometry.getNumPoints() == 0) {
-						wbFinal.jtsGeometry = createSimplificationCircle();
-						wbFinal.drawFilledBounds = true;
-					} else {
-						wbFinal.drawFilledBounds = false;
-					}
-				}
+			// treat as circle if really small
+			if (wbBounds.getWidth() < simpleTol && wbBounds.getHeight() < simpleTol) {
+				wbFinal = createSimplificationCircle(wbBounds);
+				drawFilledBounds = true;
 			} else {
-				wbFinal.drawFilledBounds = false;
-				wbFinal.jtsGeometry = wbInitial;
+				Geometry simplified = TopologyPreservingSimplifier.simplify(initialGeometry, simpleTol);
+
+				// if empty (because its too small), just treat as a point
+				if (simplified.getNumPoints() == 0) {
+					wbFinal = createSimplificationCircle(wbBounds);
+					drawFilledBounds = true;
+				} else {
+					wbFinal = simplified;
+					drawFilledBounds = false;
+				}
 			}
+		} else {
+			// use initial unsimplified geometry
+			drawFilledBounds = false;
+			wbFinal = initialGeometry;
 		}
-		return wbFinal;
 	}
 
-	private Geometry createSimplificationCircle() {
+
+
+	private Geometry createSimplificationCircle(Rectangle2D wbBounds) {
 		Geometry geometry;
 		GeometryFactory factory = new GeometryFactory();
 		geometry = factory.createPoint(new Coordinate(wbBounds.getCenterX(), wbBounds.getCenterY()));
@@ -177,7 +151,7 @@ public final class CachedGeometry {
 	}
 
 	Geometry getJTSGeometry() {
-		return getFinalGeometry().jtsGeometry;
+		return wbFinal;
 	}
 
 	/**
@@ -186,21 +160,9 @@ public final class CachedGeometry {
 	 * @return
 	 */
 	boolean isDrawFilledBounds() {
-		return getFinalGeometry().drawFilledBounds;
+		return drawFilledBounds;
 	}
 
-	boolean isSimplified() {
-		return simplified;
-	}
-
-	public Rectangle2D getWorldBitmapBounds() {
-		return wbBounds;
-	}
-
-	Point2D getCentroid() {
-		return centroid;
-	}
-	
 	public boolean isLineString(){
 		Geometry geometry = getJTSGeometry();
 		if(geometry!=null){
@@ -229,14 +191,15 @@ public final class CachedGeometry {
 		}
 		
 		if(!isLineString()){
-			throw new RuntimeException("Cannot calculate the centre of a line for a non-line geometry.");
+			return null;
 		}
 		
 		// check for empty geometry 
 		LineString geometry = (LineString)getJTSGeometry();
 		double length = geometry.getLength();
 		if(length==0){
-			lineStringMidpoint = centroid;
+			Point pnt = geometry.getCentroid();
+			lineStringMidpoint = new Point2D.Double(pnt.getX(), pnt.getY());
 			return lineStringMidpoint;
 		}
 		

@@ -6,8 +6,18 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.geometry;
 
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.util.HashMap;
+
+import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
+import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
+import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
+import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Point;
 
 /**
  * Immutable geometry class. Geometry may not be modified after
@@ -17,8 +27,12 @@ import com.vividsolutions.jts.geom.Geometry;
  */
 public final class ODLGeomImpl implements ODLGeom{
 	private final ShapefileLink shapefileLink;
-	private GeomWithCache geomWithCache;
+	private volatile GeomWithCache geomWithCache;
 	private volatile boolean attemptedResolve=false;
+	private volatile HashMap<Object, Rectangle2D> worldBitmapBoundsByZoomLevel;
+	private volatile HashMap<Object, Point2D> worldBitmapCentroidsByZoomLevel;	
+	private volatile Envelope wgsBounds;
+	private volatile LatLong wgsCentroid;
 	
 	public ODLGeomImpl(Geometry jtsGeometry) {
 		this.geomWithCache = new GeomWithCache(jtsGeometry);
@@ -137,5 +151,91 @@ public final class ODLGeomImpl implements ODLGeom{
 		return Spatial.getEstimatedSizeInBytes(geom);
 	}
 
+	public synchronized Point2D getWorldBitmapCentroid(LatLongToScreen latLongToScreen){
+		Point2D ret = null;
+		if(worldBitmapCentroidsByZoomLevel!=null){
+			ret = worldBitmapCentroidsByZoomLevel.get(latLongToScreen.getZoomHashmapKey());
+			if(ret!=null){
+				return ret;
+			}
+		}
+	
+		// Get the wgs centroid if not yet available
+		if(wgsCentroid==null){
+			
+			// Check we have WGS geometry
+			if(getJTSGeometry()==null){
+				return null;
+			}
+		
+			Point pnt = getJTSGeometry().getCentroid();
+			wgsCentroid = new LatLongImpl(pnt.getY(), pnt.getX());
+		}
+
+		// Translate it to world bitmap for this zoom
+		ret = latLongToScreen.getWorldBitmapPixelPosition(wgsCentroid);
+		
+		// Create cache map if not yet existing
+		if(worldBitmapCentroidsByZoomLevel==null){
+			worldBitmapCentroidsByZoomLevel = new HashMap<>(20);
+		}
+		
+		worldBitmapCentroidsByZoomLevel.put(latLongToScreen.getZoomHashmapKey(), ret);
+	
+		return ret;
+	}
+	
+	public synchronized Rectangle2D getWorldBitmapBounds(LatLongToScreen latLongToScreen){
+		Rectangle2D ret=null;
+		
+		// Return pre-calculated if we have it
+		if(worldBitmapBoundsByZoomLevel!=null){
+			ret = worldBitmapBoundsByZoomLevel.get(latLongToScreen.getZoomHashmapKey());
+			if(ret!=null){
+				return ret;
+			}
+		}
+		
+		// Get wgs bounds 
+		if(wgsBounds==null){
+	
+			// Check we have WGS geometry
+			if(getJTSGeometry()==null){
+				return null;
+			}
+			
+			wgsBounds = getJTSGeometry().getEnvelopeInternal();
+		}
+		
+		// Convert min and max points remembering x=longitude, y = latitude
+		Point2D min = latLongToScreen.getWorldBitmapPixelPosition(new LatLongImpl(wgsBounds.getMinY(), wgsBounds.getMinX()));
+		Point2D max = latLongToScreen.getWorldBitmapPixelPosition(new LatLongImpl(wgsBounds.getMaxY(), wgsBounds.getMaxX()));
+
+		// I'm not sure if the coordinate directions might flip so I'm playing it safe here
+		double minX = Math.min(min.getX(), max.getX());
+		double minY = Math.min(min.getY(), max.getY());
+		double maxX = Math.max(min.getX(), max.getX());
+		double maxY = Math.max(min.getY(), max.getY());
+		
+		// Get bounding rectangle
+		ret = new Rectangle2D.Double(minX,minY, maxX - minX , maxY - minY);
+		
+		// Cache it
+		if(worldBitmapBoundsByZoomLevel==null){
+			// OSM has 20 zoom levels by default
+			worldBitmapBoundsByZoomLevel = new HashMap<>(20);
+		}
+		worldBitmapBoundsByZoomLevel.put(latLongToScreen.getZoomHashmapKey(), ret);
+
+		return ret;
+	}
+	
+	public boolean isLineString(){
+		Geometry geometry = getJTSGeometry();
+		if(geometry!=null){
+			return LineString.class.isInstance(geometry);
+		}
+		return false;
+	}
 
 }

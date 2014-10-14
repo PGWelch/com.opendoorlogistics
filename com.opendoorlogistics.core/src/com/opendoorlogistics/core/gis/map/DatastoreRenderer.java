@@ -229,28 +229,29 @@ public class DatastoreRenderer implements ObjectRenderer{
 					count++;
 					allLineStrings = false;
 				} else {
-					CachedGeometry transformed = getCachedGeometry(obj.getGeometry(), converter, true);
-					if (transformed != null) {
-						if (transformed.isLineString()) {
-							double length = transformed.getLineStringLength();
-							if (length > longestLineStringLength) {
-								longestLineStringLength = length;
-								longestLineString = obj;
-							}
-						} else {
-							allLineStrings = false;
-						}
-
-						// add to sum
-						Point2D centroid = transformed.getCentroid();
-						centroids.add(centroid);
+					
+					// check for linestrings and record the longest
+					ODLGeomImpl geom = obj.getGeometry();
+					if(geom.isLineString()){
+						CachedGeometry transformed = getCachedGeometry(obj.getGeometry(), converter, true);
+						double length = transformed.getLineStringLength();
+						if (length > longestLineStringLength) {
+							longestLineStringLength = length;
+							longestLineString = obj;
+						}						
+					}else{
+						allLineStrings = false;	
+					}
+					
+					// add to sum
+					Point2D centroid = geom.getWorldBitmapCentroid(converter);
+					centroids.add(centroid);					
+					if(centroid!=null){
 						sum.x += centroid.getX();
 						sum.y += centroid.getY();
-						count++;
-					} else {
-						allLineStrings = false;
-						centroids.add(null);
+						count++;	
 					}
+
 				}
 			}
 
@@ -297,11 +298,16 @@ public class DatastoreRenderer implements ObjectRenderer{
 						visible = getPointIntersectsScreen(g, obj, converter.getOnScreenPixelPosition(obj));
 					} else {
 
-						CachedGeometry transformed = getCachedGeometry(obj.getGeometry(), converter, true);
-						if (transformed != null) {
-							Rectangle2D bounds = transformed.getWorldBitmapBounds();
+						Rectangle2D bounds = getWorldBitmapBounds(obj.getGeometry(), converter);
+						if(bounds!=null){
 							visible = bounds.intersects(viewport);
 						}
+						
+//						CachedGeometry transformed = getCachedGeometry(obj.getGeometry(), converter, true);
+//						if (transformed != null) {
+//							Rectangle2D bounds = transformed.getWorldBitmapBounds();
+//							visible = bounds.intersects(viewport);
+//						}
 					}
 					if (visible) {
 						lowLevelRenderer.renderDrawableText(g, converter, obj, textQuadtree);
@@ -448,10 +454,6 @@ public class DatastoreRenderer implements ObjectRenderer{
 		// get the screen viewport's world bitmap bounds
 		Rectangle2D wbView = converter.getViewportWorldBitmapScreenPosition();
 
-		// translate the selection rectangle to world bitmap coords
-		// Rectangle2D wbSel = new Rectangle2D.Double(wbView.getMinX() + selRectOnScreen.getMinX(),
-		// wbView.getMinY() + selRectOnScreen.getMinY(), selRectOnScreen.getWidth(), selRectOnScreen.getHeight());
-
 		try {
 			for (DrawableObject pnt : pnts) {
 
@@ -489,31 +491,63 @@ public class DatastoreRenderer implements ObjectRenderer{
 					}
 				} else {
 					// get the on-screen bounds of the object
-					CachedGeometry cachedGeometry = getCachedGeometry(pnt.getGeometry(), converter, true);
-					if (cachedGeometry != null) {
-
-						Rectangle2D wbb = cachedGeometry.getWorldBitmapBounds();
+					Rectangle2D wbb = getWorldBitmapBounds(pnt.getGeometry(), converter);
+					if(wbb!=null){
+						
 						Rectangle2D onScreenBounds = new Rectangle2D.Double(wbb.getMinX() - wbView.getMinX(), wbb.getMinY() - wbView.getMinY(), wbb.getWidth(), wbb.getHeight());
-						if (onScreenBounds.intersects(selRectOnScreen)) {
-							boolean found = false;
+						boolean found = false;
+						if (selRectOnScreen.contains(onScreenBounds)) {
+							
+							// object is definitely contained, don't need to test further
+							found = true;
+						}
+						else if (onScreenBounds.intersects(selRectOnScreen)) {
+							
+							// need to do geometry testing
+							CachedGeometry cachedGeometry = getCachedGeometry(pnt.getGeometry(), converter, true);
+							if(cachedGeometry!=null){
 
-							if (selRectOnScreen.contains(onScreenBounds)) {
-								// selection rectangle contains the bounds
-								found = true;
-							} else if (cachedGeometry.isDrawFilledBounds()) {
-								// the entire bounds will be drawn; just check for intersection
-								found = selRectOnScreen.intersects(onScreenBounds);
-							} else {
+								if (cachedGeometry.isDrawFilledBounds()) {
+									// the entire bounds will be drawn; just check for intersection
+									found = selRectOnScreen.intersects(onScreenBounds);
+								} else {
 
-								// complex render-based test...
-								found = renderOrHitTestJTSGeometry(g, pnt, cachedGeometry.getJTSGeometry(), null, null, wbView, selRectOnScreen, 0);
-							}
+									// complex render-based test...
+									found = renderOrHitTestJTSGeometry(g, pnt, cachedGeometry.getJTSGeometry(), null, null, wbView, selRectOnScreen, 0);
+								}
 
-							if (found) {
-								ret.add(pnt);
 							}
 						}
+						
+						if (found) {
+							ret.add(pnt);
+						}
 					}
+					
+//					if (cachedGeometry != null) {
+//
+//						Rectangle2D wbb = cachedGeometry.getWorldBitmapBounds();
+//						Rectangle2D onScreenBounds = new Rectangle2D.Double(wbb.getMinX() - wbView.getMinX(), wbb.getMinY() - wbView.getMinY(), wbb.getWidth(), wbb.getHeight());
+//						if (onScreenBounds.intersects(selRectOnScreen)) {
+//							boolean found = false;
+//
+//							if (selRectOnScreen.contains(onScreenBounds)) {
+//								// selection rectangle contains the bounds
+//								found = true;
+//							} else if (cachedGeometry.isDrawFilledBounds()) {
+//								// the entire bounds will be drawn; just check for intersection
+//								found = selRectOnScreen.intersects(onScreenBounds);
+//							} else {
+//
+//								// complex render-based test...
+//								found = renderOrHitTestJTSGeometry(g, pnt, cachedGeometry.getJTSGeometry(), null, null, wbView, selRectOnScreen, 0);
+//							}
+//
+//							if (found) {
+//								ret.add(pnt);
+//							}
+//						}
+//					}
 				}
 			}
 		} finally {
@@ -599,8 +633,9 @@ public class DatastoreRenderer implements ObjectRenderer{
 	private class LowLevelTextRenderer {
 
 		Point2D getScreenPos(LatLongToScreen converter, DrawableObject pnt, Font font, Point2D.Double size) {
-			Point2D screenPos;
-			if (pnt.getGeometry() == null) {
+			Point2D screenPos=null;
+			ODLGeomImpl geom = pnt.getGeometry();
+			if (geom == null) {
 				screenPos = converter.getOnScreenPixelPosition(pnt);
 
 				// get text screen positioning, offsetting by a fraction of the font size and at least the point's pixel half-width
@@ -609,23 +644,26 @@ public class DatastoreRenderer implements ObjectRenderer{
 				screenPos = new Point2D.Double(screenPos.getX() + offset, screenPos.getY());
 
 			} else {
-				// draw text in the centre of the object, adjusting for text size
-				CachedGeometry cachedGeometry = getCachedGeometry(pnt.getGeometry(), converter, true);
-				if (cachedGeometry == null) {
-					return null;
-				}
+				
+				// get the world bitmap position
+				Point2D wbPos=null;
+				if(geom.isLineString()){
+					// draw text in the centre of the object, adjusting for text size
+					CachedGeometry cachedGeometry = getCachedGeometry(pnt.getGeometry(), converter, true);
+					if (cachedGeometry == null) {
+						return null;
+					}
 
-				Point2D wbPos = null;
-				if (cachedGeometry.isLineString()) {
-					wbPos = cachedGeometry.getLineStringMidPoint();
+					wbPos = cachedGeometry.getLineStringMidPoint();	
 				}
-
-				if (wbPos == null) {
-					wbPos = cachedGeometry.getCentroid();
+				if(wbPos==null){
+					wbPos = geom.getWorldBitmapCentroid(converter);
 				}
-
-				Rectangle2D view = converter.getViewportWorldBitmapScreenPosition();
-				screenPos = new Point2D.Double(wbPos.getX() - view.getMinX() - size.getX() / 2, wbPos.getY() - view.getMinY() - size.getY() / 2);
+				
+				if(wbPos!=null){
+					Rectangle2D view = converter.getViewportWorldBitmapScreenPosition();
+					screenPos = new Point2D.Double(wbPos.getX() - view.getMinX() - size.getX() / 2, wbPos.getY() - view.getMinY() - size.getY() / 2);					
+				}
 			}
 
 			return screenPos;
@@ -899,7 +937,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 			// and this gives no intersection...
 			Envelope bb = geometry.getEnvelopeInternal();
 			Rectangle2D bounds = new Rectangle2D.Double(bb.getMinX(), bb.getMinY(), bb.getWidth() + obj.getPixelWidth(),bb.getHeight() + obj.getPixelWidth());
-			bounds = adjustBoundsForSymbolRendering(obj,geometry, bounds);
+			bounds = expandBoundsForSymbolRendering(obj,geometry, bounds);
 			if (bounds.intersects(viewport)) {
 
 				Stroke oldStroke = g.getStroke();
@@ -990,7 +1028,14 @@ public class DatastoreRenderer implements ObjectRenderer{
 		return hit;
 	}
 
-	private static Rectangle2D adjustBoundsForSymbolRendering(DrawableObject obj,Geometry geometry, Rectangle2D geometryBounds){
+	/**
+	 * Expand the bounds to take account of symbol rendering.
+	 * @param obj
+	 * @param geometry
+	 * @param geometryBounds
+	 * @return
+	 */
+	private static Rectangle2D expandBoundsForSymbolRendering(DrawableObject obj,Geometry geometry, Rectangle2D geometryBounds){
 		if(geometry==null || hasPoint(geometry)){
 			long width = obj.getPixelWidth()+1; // 1 extra for good luck and rounding!
 			long halfWidth = width/2;
@@ -1006,14 +1051,13 @@ public class DatastoreRenderer implements ObjectRenderer{
 		if (geom == null) {
 			return false;
 		}
-
-		CachedGeometry transformed = getCachedGeometry(geom, converter, true);
-		if (transformed == null) {
+	
+		// Check for intersection with viewport. For geometry collections this checks for all at once 
+		Rectangle2D bounds =getWorldBitmapBounds(geom, converter);
+		if(bounds==null){
 			return false;
 		}
-		// Check for intersection with viewport. For geometry collections this checks for all at once 
-		Rectangle2D bounds = transformed.getWorldBitmapBounds();
-		bounds = adjustBoundsForSymbolRendering(pnt,transformed.getJTSGeometry(),bounds);
+		bounds = expandBoundsForSymbolRendering(pnt,geom.getJTSGeometry(),bounds);
 		Rectangle2D viewport = converter.getViewportWorldBitmapScreenPosition();
 		if (bounds.intersects(viewport) == false) {
 			return false;
@@ -1022,6 +1066,12 @@ public class DatastoreRenderer implements ObjectRenderer{
 		// get render colour
 		final Color renderCol = getRenderColour(pnt,isSelected);
 
+		// get geometry in world bitmap projection
+		CachedGeometry transformed = getCachedGeometry(geom, converter, true);
+		if (transformed == null) {
+			return false;
+		}
+		
 		if (transformed.isDrawFilledBounds()) {
 			g.setColor(renderCol);
 			int x = (int) Math.round(bounds.getMinX() - viewport.getMinX());
@@ -1043,27 +1093,29 @@ public class DatastoreRenderer implements ObjectRenderer{
 		return getDefaultPolygonBorderColour(polyCol);
 	}
 	
+	public static Rectangle2D getWorldBitmapBounds(ODLGeomImpl geom, LatLongToScreen converter){
+		// enable calculating of bounds without getting the cached geometry to speed up querying 
+		return geom.getWorldBitmapBounds(converter);
+		
+//		CachedGeometry cachedGeometry = getCachedGeometry(geom, converter, true);
+//		if(cachedGeometry!=null){
+//			return cachedGeometry.getWorldBitmapBounds();
+//		}
+//		return null;
+	}
+	
 	public static CachedGeometry getCachedGeometry(ODLGeomImpl geom, LatLongToScreen converter, boolean createIfNotCached) {
 		if (geom.isValid() == false) {
 			return null;
 		}
-		
-//		CachedGeometry transformed = (CachedGeometry) geom.getFromCache(converter.getZoomHashmapKey());
-//		if (transformed == null && createIfNotCached) {
-//			// Keep geometry simplication off as it actually tends to slow things down, particulary for route editing with road networks
-//			transformed = new CachedGeometry(geom, false, converter);
-//			geom.putInCache(converter.getZoomHashmapKey(), transformed);
-//		}
-//		return transformed;
 
 		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.CACHED_PROJECTED_RENDERER_GEOMETRY);
 		CachedGeomKey key = new CachedGeomKey(geom, converter.getZoomHashmapKey());
 		CachedGeometry transformed = (CachedGeometry) cache.get(key);
 		
 		if (transformed == null && createIfNotCached) {
-			// Keep geometry simplication off as it actually tends to slow things down, particulary for route editing with road networks
-			transformed = new CachedGeometry(geom, true, converter);			
-			cache.put(key, transformed, transformed.getSizeInBytes(false));
+			transformed = new CachedGeometry(geom, converter);			
+			cache.put(key, transformed, transformed.getSizeInBytes());
 		}
 		return transformed;
 	}

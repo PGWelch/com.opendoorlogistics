@@ -50,8 +50,8 @@ final public class TileCacheRenderer implements Disposable {
 	// private final DatastoreRenderer workerThreadRenderer = new DatastoreRenderer(true, RecentImageCache.ZipType.LZ4);
 	private final ObjectRenderer workerThreadRenderer = new CachedGeomImageRenderer();
 	private final ExecutorService service;
-	private final RecentlyUsedCache updatedCompletedTileMap = new RecentlyUsedCache(64 * 1024 * 1024);
-	private final RecentlyUsedCache outdatedCompleteTileMap = new RecentlyUsedCache(16 * 1024 * 1024);
+	private final RecentlyUsedCache updatedCompletedTileMap = new RecentlyUsedCache("updated-completed-tile-map",64 * 1024 * 1024);
+	private final RecentlyUsedCache outdatedCompleteTileMap = new RecentlyUsedCache("outdated-complete-tile-map",16 * 1024 * 1024);
 	private final ConcurrentHashMap<Object, CachedTile> processingTileMap = new ConcurrentHashMap<>();
 	private final HashSet<TileReadyListener> tileReadyListeners = new HashSet<>();
 	private final BufferedImage loadingImage = createLoadingImage();
@@ -473,14 +473,20 @@ final public class TileCacheRenderer implements Disposable {
 			for (DrawableObject obj : changeset) {
 				Rectangle2D bounds = null;
 				if (obj.getGeometry() != null) {
-					CachedGeometry cachedGeometry = DatastoreRenderer.getCachedGeometry(obj.getGeometry(), currentView, false);
-					if (cachedGeometry == null) {
-						// transformed geometry unknown for one or more objects and can't calculate this
-						// on EDT as too slow .. hence just clear all tiles
+					
+//					CachedGeometry cachedGeometry = DatastoreRenderer.getCachedGeometry(obj.getGeometry(), currentView, false);
+//					if (cachedGeometry == null) {
+//						// transformed geometry unknown for one or more objects and can't calculate this
+//						// on EDT as too slow .. hence just clear all tiles
+//						clearAll = true;
+//						break;
+//					}
+					
+					bounds = DatastoreRenderer.getWorldBitmapBounds(obj.getGeometry(), currentView);
+					if(bounds==null){
 						clearAll = true;
-						break;
+						break;	
 					}
-					bounds = cachedGeometry.getWorldBitmapBounds();
 				} else {
 					bounds = DatastoreRenderer.getWorldBitmapPointBoundingRectangle(obj, currentView);
 				}

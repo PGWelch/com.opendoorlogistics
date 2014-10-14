@@ -97,7 +97,7 @@ public final class ImportShapefile {
 	
 	public static ODLDatastoreAlterable<ODLTableAlterable> importShapefile(File file, boolean isLinkedGeometry) {
 		ODLDatastoreAlterable<ODLTableAlterable> ds = ODLDatastoreImpl.alterableFactory.create();
-		importShapefile(file,isLinkedGeometry, ds);
+		importShapefile(file,isLinkedGeometry, ds,false);
 		return ds;
 	}
 
@@ -119,14 +119,17 @@ public final class ImportShapefile {
 	 * @param ds
 	 */
 	@SuppressWarnings("deprecation")
-	public static HashMap<ShapefileLink, Geometry> importShapefile(File file,boolean isLinkedGeometry, ODLDatastoreAlterable<? extends ODLTableAlterable> ds) {
+	public static HashMap<ShapefileLink, Geometry> importShapefile(File file,boolean isLinkedGeometry, ODLDatastoreAlterable<? extends ODLTableAlterable> ds, boolean returnGeometry) {
 		Spatial.initSpatial();
 
 		SimpleFeatureIterator it = null;
 		DataStore shapefile = null;
 
-		HashMap<ShapefileLink, Geometry> ret = new HashMap<>();
-
+		HashMap<ShapefileLink, Geometry> ret = null;
+		if(returnGeometry){
+			 ret = new HashMap<>();
+		}
+		
 		file = RelativeFiles.validateRelativeFiles(file.getPath(), AppConstants.SHAPEFILES_DIRECTORY);
 		if(file==null){
 			return ret;
@@ -203,13 +206,24 @@ public final class ImportShapefile {
 							// process geometry
 							ShapefileLink link =null;
 							if(value!=null && Geometry.class.isInstance(value)){
-								// always transform geometry to wgs84
-								value =  JTS.transform((Geometry)value, toWGS84);
 								
-								// and save to return object
+								if(!isLinkedGeometry || ret!=null){
+									// Transform the geometry to wgs84 if we need it 
+									value =  JTS.transform((Geometry)value, toWGS84);									
+								}else{
+									// Geometry not needed
+									value = null;
+								}
+
+								// Create geometry link
 								link = new ShapefileLink(linkFile, type, sf.getID());
-								ret.put(link, (Geometry)value);
 								
+								// Save the transformed geometry if flagged
+								if(ret!=null){
+									ret.put(link, (Geometry)value);									
+								}
+								
+								// If we're using linked geometry the value for the table is the link
 								if(isLinkedGeometry){
 									value = link;									
 								}

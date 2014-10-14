@@ -38,7 +38,7 @@ public class NOPLManager {
 	};
 	
 	private class LayerCache{
-		final RecentlyUsedCache tileCache = new RecentlyUsedCache(64 * 1024 * 1024);
+		final RecentlyUsedCache tileCache = new RecentlyUsedCache("nopl-layer-tile-cache",64 * 1024 * 1024);
 		final DrawableObjectLayer layer;
 		
 		LayerCache(DrawableObjectLayer layer) {

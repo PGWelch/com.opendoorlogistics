@@ -20,6 +20,7 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.core.AppProperties;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
@@ -39,6 +40,8 @@ public final class Spatial {
 	private static CoordinateReferenceSystem wgs84crs;
 	private static CRSAuthorityFactory crsFac;
 	private static final SimpleSoftReferenceMap<ShapefileLink,GeomWithCache> shapefileLinkCache = new SimpleSoftReferenceMap<>(100);
+	private static final double SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_PIXELS;
+	
 //	private static final SimpleSoftReferenceMap<File, ODLDatastore<? extends ODLTableReadOnly>> shapefileLookupCache = new SimpleSoftReferenceMap<>();
 	
 	public static synchronized void initSpatial(){
@@ -47,7 +50,9 @@ public final class Spatial {
 			System.setProperty("org.geotools.referencing.forceXY", "true");
 			crsFac = ReferencingFactoryFinder.getCRSAuthorityFactory("EPSG", null);		
 			try {
-				wgs84crs = crsFac.createCoordinateReferenceSystem("4326");				
+				wgs84crs = crsFac.createCoordinateReferenceSystem("4326");	
+				
+	
 			} catch (Throwable e) {
 				throw new RuntimeException(e);
 			}
@@ -94,7 +99,7 @@ public final class Spatial {
 		GeomWithCache ret = shapefileLinkCache.get(link);
 		if(ret==null){
 			// parse and cache the entire file as we would normally use many objects in the same file
-			for(Map.Entry<ShapefileLink, Geometry> entry : ImportShapefile.importShapefile(new File(link.getFile()),false, null).entrySet()){
+			for(Map.Entry<ShapefileLink, Geometry> entry : ImportShapefile.importShapefile(new File(link.getFile()),false, null,true).entrySet()){
 				if(entry.getValue()!=null){
 					ShapefileLink importedLink = entry.getKey();					
 					GeomWithCache gwc =  new GeomWithCache(entry.getValue());
@@ -134,7 +139,7 @@ public final class Spatial {
 		ds = (ODLDatastore<? extends ODLTableReadOnly>)shapefileCache().get(file);
 		if(ds==null){
 			ODLDatastoreAlterable<ODLTableAlterable> alterableDs =  ODLDatastoreImpl.alterableFactory.create();
-			ImportShapefile.importShapefile(file,false,alterableDs);			
+			ImportShapefile.importShapefile(file,false,alterableDs,false);			
 			ds = alterableDs;
 			if(alterableDs.getTableCount()>0){
 				long size = SizesInBytesEstimator.estimateBytes(ds);
@@ -173,6 +178,13 @@ public final class Spatial {
 	
 	static{
 		initSpatial();
+		
+		// load simplify tolerance from properties
+		Double val = AppProperties.getDouble(AppProperties.SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_PIXELS);
+		if(val==null){
+			val = 0.0;
+		}
+		SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_PIXELS = val;
 	}
 	
 	private static RecentlyUsedCache shapefileCache(){
@@ -188,5 +200,13 @@ public final class Spatial {
 		size += 100; // add some extra to account for pointers etc
 		
 		return size;
+	}
+	
+	/**
+	 * Get the application-wide simplification tolerance limit in pixels, which is set via user properties 
+	 * @return
+	 */
+	public static double getRendererSimplifyDistanceTolerancePixels(){
+		return SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_PIXELS;
 	}
 }
