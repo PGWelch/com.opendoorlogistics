@@ -28,7 +28,9 @@ final public class AppConstants {
 	
 	public static final String OSM_COPYRIGHT = "© OpenStreetMap contributors";
 	
-	public static final String ODL_PROPERTIES_FILES = "odl.properties";
+	public static final String ODL_EXTERNAL_PROPERTIES_FILE = "odl.properties";
+	
+	public static final String ODL_EMBEDED_PROPERTIES_FILE = "/resources/odl-defaults.properties";
 	
 	public static final Version getAppVersion(){
 		return new Version(APP_VERSION_MAJOR,APP_VERSION_MINOR,APP_VERSION_REVISION);

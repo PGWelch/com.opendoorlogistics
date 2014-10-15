@@ -118,14 +118,6 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		}
 	}
 	
-//	private LegendCreator legendCreator = new LegendCreator() {
-//		
-//		@Override
-//		public BufferedImage createLegend(Iterable<? extends DrawableObject> pnts) {
-//			return Legend.createLegendImageFromDrawables( pnts) ;
-//		}
-//	};
-	
 	public static interface GetToolTipCB{
 		String getToolTipText(ReadOnlyMapControl control,List<DrawableObject> selectedObjs);
 	}
@@ -136,44 +128,10 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		isDisposed = true;
 	}
 	
-//	public static interface LegendCreator{
-//		BufferedImage createLegend(Iterable<? extends DrawableObject> pnts);
-//	}
-	
 	public interface ZoomBestFitManager{
 		void zoomBestFit(ReadOnlyMapControl viewer, double maxFraction);
 	}
 	
-//	public void setLegendCreator(LegendCreator legendCreator) {
-//		this.legendCreator = legendCreator;
-//	}
-
-//	protected final LatLongToScreen converter = new LatLongToScreenImpl() {
-//
-//		@Override
-//		public Rectangle2D getViewportWorldBitmapScreenPosition(){
-//			return viewport;
-//		}
-//
-//		@Override
-//		public Point2D getWorldBitmapPixelPosition(LatLong latLong) {
-//			GeoPosition pos = new GeoPosition(latLong.getLatitude(), latLong.getLongitude());
-//			Point2D point = getTileFactory().geoToPixel(pos, getZoom());
-//			return point;
-//		}
-//
-//		@Override
-//		public GeoPosition getLongLat(int pixelX, int pixelY) {
-//			GeoPosition pos = getTileFactory().pixelToGeo(new Point2D.Float(pixelX + viewport.x, pixelY + viewport.y), getZoom());
-//			return pos;
-//		}
-//
-//		@Override
-//		protected int getZoomLevel() {
-//			return getZoom();
-//		}
-//	};
-
 	/**
 	 * Create a converter object that's immutable - i.e. later changes to the view
 	 * or zoom are not reflected in the object.

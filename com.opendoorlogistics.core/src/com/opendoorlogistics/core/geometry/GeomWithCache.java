@@ -9,7 +9,7 @@ package com.opendoorlogistics.core.geometry;
 import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
 import com.vividsolutions.jts.geom.Geometry;
 
-public final class GeomWithCache {
+final class GeomWithCache {
 	private final SimpleSoftReferenceMap<Object,Object> cache = new SimpleSoftReferenceMap<>(10);
 	//private final WeakHashMap<Object,Object> cache = new WeakHashMap<>();
 	private final Geometry jtsGeometry;

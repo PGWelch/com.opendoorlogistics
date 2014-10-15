@@ -19,6 +19,7 @@ import com.opendoorlogistics.core.gis.map.transforms.TransformGeomToWorldBitmap;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
@@ -91,6 +92,27 @@ public final class CachedGeometry {
 		
 	}
 	
+	private static final boolean isAllLineStrings(Geometry g){
+		if(g==null){
+			return false;
+		}
+		
+		if(LineString.class.isInstance(g)){
+			return true;
+		}
+		
+		if(GeometryCollection.class.isInstance(g)){
+			int n = g.getNumGeometries();
+			for(int i =0 ; i<n;i++){
+				if(!isAllLineStrings(g.getGeometryN(i))){
+					return false;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
 	/**
 	 * Initialise the cached geometry and transform to screen coordinates
 	 * so we can get the bounds. Simplifying the geometry is not done until later.
@@ -115,7 +137,10 @@ public final class CachedGeometry {
 		Envelope bb = initialGeometry.getEnvelopeInternal();
 		Rectangle2D wbBounds = new Rectangle2D.Double(bb.getMinX(), bb.getMinY(),Math.max( bb.getWidth(),1),Math.max( bb.getHeight(),1));
 
-		double simpleTol = Spatial.getRendererSimplifyDistanceTolerancePixels();
+		double simpleTol = Spatial.getRendererSimplifyDistanceTolerance();
+		if(isAllLineStrings(initialGeometry)){
+			simpleTol = Spatial.getRendererSimplifyDistanceToleranceLineString();
+		}
 		if (simpleTol>0) {
 
 			// treat as circle if really small

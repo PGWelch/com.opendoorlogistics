@@ -20,8 +20,8 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 
 /**
- * Immutable geometry class. Geometry may not be modified after
- * its created, only replaced.
+ * Immutable geometry class. An ODLGeom may not be modified after creation.
+ * Internally this class uses the JTS geometry class.
  * @author Phil
  *
  */
@@ -39,10 +39,10 @@ public final class ODLGeomImpl implements ODLGeom{
 		this.shapefileLink = null;
 	}
 
-	public ODLGeomImpl(GeomWithCache gwc) {
-		this.geomWithCache = gwc;
-		this.shapefileLink = null;
-	}
+//	public ODLGeomImpl(GeomWithCache gwc) {
+//		this.geomWithCache = gwc;
+//		this.shapefileLink = null;
+//	}
 	
 	
 	public ODLGeomImpl(ShapefileLink shapefileLink){

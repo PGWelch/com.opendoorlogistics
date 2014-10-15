@@ -40,7 +40,8 @@ public final class Spatial {
 	private static CoordinateReferenceSystem wgs84crs;
 	private static CRSAuthorityFactory crsFac;
 	private static final SimpleSoftReferenceMap<ShapefileLink,GeomWithCache> shapefileLinkCache = new SimpleSoftReferenceMap<>(100);
-	private static final double SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_PIXELS;
+	private static final double SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE;
+	private static final double SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_LINESTRING;
 	
 //	private static final SimpleSoftReferenceMap<File, ODLDatastore<? extends ODLTableReadOnly>> shapefileLookupCache = new SimpleSoftReferenceMap<>();
 	
@@ -179,12 +180,10 @@ public final class Spatial {
 	static{
 		initSpatial();
 		
+
 		// load simplify tolerance from properties
-		Double val = AppProperties.getDouble(AppProperties.SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_PIXELS);
-		if(val==null){
-			val = 0.0;
-		}
-		SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_PIXELS = val;
+		SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE = AppProperties.getDouble(AppProperties.SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE,0.0);
+		SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_LINESTRING = AppProperties.getDouble(AppProperties.SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_LINESTRING,0.0);
 	}
 	
 	private static RecentlyUsedCache shapefileCache(){
@@ -206,7 +205,11 @@ public final class Spatial {
 	 * Get the application-wide simplification tolerance limit in pixels, which is set via user properties 
 	 * @return
 	 */
-	public static double getRendererSimplifyDistanceTolerancePixels(){
-		return SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_PIXELS;
+	public static double getRendererSimplifyDistanceTolerance(){
+		return SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE;
+	}
+	
+	public static double getRendererSimplifyDistanceToleranceLineString(){
+		return SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_LINESTRING;
 	}
 }

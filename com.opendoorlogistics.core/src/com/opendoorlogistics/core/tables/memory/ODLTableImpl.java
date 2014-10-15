@@ -6,15 +6,13 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.tables.memory;
 
-import gnu.trove.list.array.TLongArrayList;
-
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
-import com.opendoorlogistics.core.tables.ODLTableFactory;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
+import com.opendoorlogistics.core.tables.ODLTableFactory;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.DeepCopyable;
 import com.opendoorlogistics.core.utils.IntIDGenerator;

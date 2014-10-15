@@ -10,6 +10,8 @@ package com.opendoorlogistics.core;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
 
@@ -24,23 +26,12 @@ public class AppProperties {
 	private static Properties applicationProperties;
 	
 	static{
-		try {
-			File file = new File(AppConstants.ODL_PROPERTIES_FILES);
-			if(file.exists()){
-				applicationProperties = new Properties();
-				FileInputStream in = new FileInputStream(file);
-				applicationProperties.load(in);
-				in.close();									
-				System.out.println("Loaded properties file: " + file.getAbsolutePath());
-				for(Map.Entry<Object,Object> entry:applicationProperties.entrySet()){
-					System.out.println("\t" + entry.getKey() + "=" + entry.getValue());
-				}
-			}else{
-				System.out.println("No properties file found at " + file.getAbsolutePath());				
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		applicationProperties = new Properties();
+		loadEmbedded(applicationProperties);
+		loadExternal(applicationProperties);
+		for(Map.Entry<Object,Object> entry:applicationProperties.entrySet()){
+			System.out.println("\t" + entry.getKey() + "=" + entry.getValue());
+		}		
 	}
 
 	public static Properties get(){
@@ -51,9 +42,10 @@ public class AppProperties {
 	
 	public static final String SPATIAL_RENDERER_KEY = SPATIAL_KEY + ".renderer";
 
-	public static final String SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_PIXELS = SPATIAL_RENDERER_KEY+ ".simplify_distance_tolerance_pixels";
+	public static final String SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE = SPATIAL_RENDERER_KEY+ ".simplify_distance_tolerance";
 	
-	
+	public static final String SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_LINESTRING = SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE+ ".linestring";
+
 	public static Double getDouble(String key){
 		if(applicationProperties!=null){
 			Object val = applicationProperties.get(key);
@@ -64,4 +56,49 @@ public class AppProperties {
 		return null;
 	}
 
+	public static Double getDouble(String key, double defaultValueIfKeyMissing){
+		Double ret = getDouble(key);
+		if(ret==null){
+			ret = defaultValueIfKeyMissing;
+		}
+		return ret;
+	}
+	
+	private static void loadEmbedded(Properties addTo){
+		InputStream stream =null;
+		try {
+			stream = Object.class.getResourceAsStream(AppConstants.ODL_EMBEDED_PROPERTIES_FILE);
+			addTo.load(stream);
+			System.out.println("Loaded embededd properties.");
+		} catch (Exception e) {
+		}finally{
+			if(stream!=null){
+				try {
+					stream.close();					
+				} catch (Exception e2) {
+				}
+			}
+		}
+	}
+	
+	private static void loadExternal(Properties addTo){
+		File file = new File(AppConstants.ODL_EXTERNAL_PROPERTIES_FILE);
+		if(file.exists()){
+			FileInputStream in=null;
+			try {
+				in = new FileInputStream(file);
+				addTo.load(in);
+				System.out.println("Loaded properties file: " + file.getAbsolutePath());				
+			} catch (Exception e) {
+			}finally{
+				if(in!=null){
+					try {
+						in.close();						
+					} catch (Exception e2) {
+					}
+				}
+			}
+		}
+
+	}
 }
