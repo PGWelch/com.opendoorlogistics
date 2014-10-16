@@ -18,6 +18,7 @@ import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 import com.opendoorlogistics.core.geometry.Spatial;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
@@ -162,7 +163,7 @@ public class GeomUnion {
 			// transform back
 			Geometry combinedWGS84 = JTS.transform(combinedGrid, transforms.getGridToWGS84().getMathTransform());
 			
-			return new ODLGeomImpl(combinedWGS84);
+			return new ODLLoadedGeometry(combinedWGS84);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

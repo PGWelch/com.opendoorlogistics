@@ -15,7 +15,7 @@ public interface LatLongToScreen {
 	Point2D getOnScreenPixelPosition(LatLong latLong);
 	Point2D getWorldBitmapPixelPosition(LatLong latLong);
 	Rectangle2D getViewportWorldBitmapScreenPosition();
-	LatLong getLongLat(int pixelX, int pixelY);
+	LatLong getLongLat(double pixelX, double pixelY);
 	
 	/**
 	 * A hash-map compatible key which identifies the zoom level.

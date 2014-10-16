@@ -20,6 +20,7 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
+import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
@@ -49,19 +50,33 @@ final public class MapUtils {
 		return pnts;
 	}
 
-	public static List<LatLong> getLatLongs(Iterable<? extends DrawableObject> drawables,String legendKeyFilter){
-		ArrayList<LatLong> ret = new ArrayList<>();
+//	public static List<LatLong> getLatLongs(Iterable<? extends DrawableObject> drawables,String legendKeyFilter){
+//		ArrayList<LatLong> ret = new ArrayList<>();
+//		for (DrawableObject pnt : drawables) {
+//			if(Strings.isEmpty(legendKeyFilter) || Strings.equalsStd(pnt.getLegendKey(), legendKeyFilter)){
+//				if(pnt.getGeometry()==null){
+//					ret.add(pnt);
+//				}else if(pnt.getGeometry().isValid()){
+//					for(Coordinate coord:pnt.getGeometry().getJTSGeometry().getCoordinates()){
+//						ret.add(new LatLongImpl(coord.y,coord.x));
+//					}
+//				}				
+//			}
+//		}			
+//		return ret;
+//	}
+	
+	public static LatLongBoundingBox getLatLongBoundingBox(Iterable<? extends DrawableObject> drawables,String legendKeyFilter){
+		LatLongBoundingBox ret = new LatLongBoundingBox();
 		for (DrawableObject pnt : drawables) {
 			if(Strings.isEmpty(legendKeyFilter) || Strings.equalsStd(pnt.getLegendKey(), legendKeyFilter)){
 				if(pnt.getGeometry()==null){
 					ret.add(pnt);
-				}else if(pnt.getGeometry().isValid()){
-					for(Coordinate coord:pnt.getGeometry().getJTSGeometry().getCoordinates()){
-						ret.add(new LatLongImpl(coord.y,coord.x));
-					}
+				}else if(pnt.getGeometry().getWGSCentroid()!=null){
+					ret.add(pnt.getGeometry().getWGSCentroid());
 				}				
 			}
-		}			
+		}	
 		return ret;
 	}
 	

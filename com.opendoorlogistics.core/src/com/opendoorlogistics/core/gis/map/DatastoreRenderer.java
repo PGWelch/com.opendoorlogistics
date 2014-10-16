@@ -42,14 +42,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
+import com.opendoorlogistics.core.geometry.JTSUtils;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
-import com.opendoorlogistics.core.gis.map.CachedGeometry.CachedGeomKey;
+import com.opendoorlogistics.core.geometry.ODLGeomImpl.AtomicGeomType;
+import com.opendoorlogistics.core.gis.map.OnscreenGeometry.CachedGeomKey;
 import com.opendoorlogistics.core.gis.map.Legend.LegendAlignment;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
+import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.IntUtils;
@@ -233,7 +237,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 					// check for linestrings and record the longest
 					ODLGeomImpl geom = obj.getGeometry();
 					if(geom.isLineString()){
-						CachedGeometry transformed = getCachedGeometry(obj.getGeometry(), converter, true);
+						OnscreenGeometry transformed = getCachedGeometry(obj.getGeometry(), converter, true);
 						double length = transformed.getLineStringLength();
 						if (length > longestLineStringLength) {
 							longestLineStringLength = length;
@@ -298,7 +302,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 						visible = getPointIntersectsScreen(g, obj, converter.getOnScreenPixelPosition(obj));
 					} else {
 
-						Rectangle2D bounds = getWorldBitmapBounds(obj.getGeometry(), converter);
+						Rectangle2D bounds = getRenderedWorldBitmapBounds(obj, converter);
 						if(bounds!=null){
 							visible = bounds.intersects(viewport);
 						}
@@ -491,7 +495,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 					}
 				} else {
 					// get the on-screen bounds of the object
-					Rectangle2D wbb = getWorldBitmapBounds(pnt.getGeometry(), converter);
+					Rectangle2D wbb = getRenderedWorldBitmapBounds(pnt, converter);
 					if(wbb!=null){
 						
 						Rectangle2D onScreenBounds = new Rectangle2D.Double(wbb.getMinX() - wbView.getMinX(), wbb.getMinY() - wbView.getMinY(), wbb.getWidth(), wbb.getHeight());
@@ -504,7 +508,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 						else if (onScreenBounds.intersects(selRectOnScreen)) {
 							
 							// need to do geometry testing
-							CachedGeometry cachedGeometry = getCachedGeometry(pnt.getGeometry(), converter, true);
+							OnscreenGeometry cachedGeometry = getCachedGeometry(pnt.getGeometry(), converter, true);
 							if(cachedGeometry!=null){
 
 								if (cachedGeometry.isDrawFilledBounds()) {
@@ -649,7 +653,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 				Point2D wbPos=null;
 				if(geom.isLineString()){
 					// draw text in the centre of the object, adjusting for text size
-					CachedGeometry cachedGeometry = getCachedGeometry(pnt.getGeometry(), converter, true);
+					OnscreenGeometry cachedGeometry = getCachedGeometry(pnt.getGeometry(), converter, true);
 					if (cachedGeometry == null) {
 						return null;
 					}
@@ -887,22 +891,6 @@ public class DatastoreRenderer implements ObjectRenderer{
 		return path;
 	}
 	
-	static public boolean hasPoint(Geometry g){
-		if(GeometryCollection.class.isInstance(g)){
-			int n = g.getNumGeometries();
-			for(int i =0 ; i < n ;i++){
-				if(hasPoint(g.getGeometryN(i))){
-					return true;
-				}
-			}
-		}
-		if( Point.class.isInstance(g)){
-			return true;
-		}
-		
-		return false;
-	}
-	
 
 	static BufferedImage createBaseImage(int imageWidth, int imageHeight, long renderFlags) {
 		BufferedImage image = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_ARGB);
@@ -1036,12 +1024,20 @@ public class DatastoreRenderer implements ObjectRenderer{
 	 * @return
 	 */
 	private static Rectangle2D expandBoundsForSymbolRendering(DrawableObject obj,Geometry geometry, Rectangle2D geometryBounds){
-		if(geometry==null || hasPoint(geometry)){
-			long width = obj.getPixelWidth()+1; // 1 extra for good luck and rounding!
-			long halfWidth = width/2;
-			return new Rectangle2D.Double(geometryBounds.getMinX() - halfWidth, geometryBounds.getMinY() - halfWidth, geometryBounds.getWidth() + width, geometryBounds.getHeight() + width);			
+		if(geometry==null || JTSUtils.getGeomCount(geometry,AtomicGeomType.POINT)>0){
+			return expandBoundsForSymbolRendering(obj.getPixelWidth(), geometryBounds);
 		}
 		return geometryBounds;
+	}
+
+	private static Rectangle2D expandBoundsForSymbolRendering(long pixelWidth, Rectangle2D geometryBounds){
+		long width =pixelWidth+1; // 1 extra for good luck and rounding!
+		long halfWidth = width/2;
+		return new Rectangle2D.Double(geometryBounds.getMinX() - halfWidth, geometryBounds.getMinY() - halfWidth, geometryBounds.getWidth() + width, geometryBounds.getHeight() + width);			
+	}
+	
+	private static boolean hasPoint(DrawableObject o){
+		return o.getGeometry()==null || ((ODLGeomImpl)o.getGeometry()).getAtomicGeomCount(AtomicGeomType.POINT)>0;
 	}
 	
 	private boolean renderGeometry(Graphics2D g, final LatLongToScreen converter, DrawableObject pnt, boolean isSelected, long renderFlags) {
@@ -1053,13 +1049,9 @@ public class DatastoreRenderer implements ObjectRenderer{
 		}
 	
 		// Check for intersection with viewport. For geometry collections this checks for all at once 
-		Rectangle2D bounds =getWorldBitmapBounds(geom, converter);
-		if(bounds==null){
-			return false;
-		}
-		bounds = expandBoundsForSymbolRendering(pnt,geom.getJTSGeometry(),bounds);
+		Rectangle2D viewableTestBounds = getRenderedWorldBitmapBounds(pnt, converter);
 		Rectangle2D viewport = converter.getViewportWorldBitmapScreenPosition();
-		if (bounds.intersects(viewport) == false) {
+		if (viewableTestBounds==null || viewableTestBounds.intersects(viewport) == false) {
 			return false;
 		}
 
@@ -1067,16 +1059,21 @@ public class DatastoreRenderer implements ObjectRenderer{
 		final Color renderCol = getRenderColour(pnt,isSelected);
 
 		// get geometry in world bitmap projection
-		CachedGeometry transformed = getCachedGeometry(geom, converter, true);
+		OnscreenGeometry transformed = getCachedGeometry(geom, converter, true);
 		if (transformed == null) {
 			return false;
 		}
 		
 		if (transformed.isDrawFilledBounds()) {
+			Rectangle2D objectBounds =geom.getWorldBitmapBounds(converter);
+			if(objectBounds==null){
+				return false;
+			}
+						
 			g.setColor(renderCol);
-			int x = (int) Math.round(bounds.getMinX() - viewport.getMinX());
-			int y = (int) Math.round(bounds.getMinY() - viewport.getMinY());
-			g.fillRect(x, y, (int) Math.round(bounds.getWidth()), (int) Math.round(bounds.getHeight()));
+			int x = (int) Math.round(objectBounds.getMinX() - viewport.getMinX());
+			int y = (int) Math.round(objectBounds.getMinY() - viewport.getMinY());
+			g.fillRect(x, y, (int) Math.round(objectBounds.getWidth()), (int) Math.round(objectBounds.getHeight()));
 		} else {
 			renderOrHitTestJTSGeometry(g, pnt, transformed.getJTSGeometry(), renderCol, getPolygonBorderColour(renderCol), viewport, null,renderFlags);
 		}
@@ -1093,29 +1090,46 @@ public class DatastoreRenderer implements ObjectRenderer{
 		return getDefaultPolygonBorderColour(polyCol);
 	}
 	
-	public static Rectangle2D getWorldBitmapBounds(ODLGeomImpl geom, LatLongToScreen converter){
-		// enable calculating of bounds without getting the cached geometry to speed up querying 
-		return geom.getWorldBitmapBounds(converter);
+	/**
+	 * Get the rendered world bitmap bounds. This includes line width or symbol width
+	 * @param obj
+	 * @param converter
+	 * @return
+	 */
+	public static Rectangle2D getRenderedWorldBitmapBounds(DrawableObject obj, LatLongToScreen converter){
+		Rectangle2D ret= null;
 		
-//		CachedGeometry cachedGeometry = getCachedGeometry(geom, converter, true);
-//		if(cachedGeometry!=null){
-//			return cachedGeometry.getWorldBitmapBounds();
-//		}
-//		return null;
+		ODLGeomImpl g =obj.getGeometry();
+		if(g!=null){
+			// enable calculating of bounds without getting the cached geometry to speed up querying 
+			ret= g.getWorldBitmapBounds(converter);
+			
+			// include point or line width 
+			if(ret!=null && (g.getAtomicGeomCount(AtomicGeomType.POINT)>0 || g.getAtomicGeomCount(AtomicGeomType.LINESTRING)>0)){
+				ret = expandBoundsForSymbolRendering(obj.getPixelWidth(), ret);				
+			}
+		}
+		
+		// assume its a point
+		if(ret==null){
+			ret= createRectangle(converter.getWorldBitmapPixelPosition(new LatLongImpl(obj.getLatitude(),obj.getLongitude())),(int) obj.getPixelWidth());
+		}
+		
+		return ret;
+		
 	}
 	
-	public static CachedGeometry getCachedGeometry(ODLGeomImpl geom, LatLongToScreen converter, boolean createIfNotCached) {
-		if (geom.isValid() == false) {
-			return null;
-		}
-
+	public static OnscreenGeometry getCachedGeometry(ODLGeomImpl geom, LatLongToScreen converter, boolean createIfNotCached) {
+	
 		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.CACHED_PROJECTED_RENDERER_GEOMETRY);
 		CachedGeomKey key = new CachedGeomKey(geom, converter.getZoomHashmapKey());
-		CachedGeometry transformed = (CachedGeometry) cache.get(key);
+		OnscreenGeometry transformed = (OnscreenGeometry) cache.get(key);
 		
 		if (transformed == null && createIfNotCached) {
-			transformed = new CachedGeometry(geom, converter);			
-			cache.put(key, transformed, transformed.getSizeInBytes());
+			transformed =geom.createOnscreenGeometry(converter);
+			if(transformed!=null){
+				cache.put(key, transformed, transformed.getSizeInBytes());				
+			}
 		}
 		return transformed;
 	}
@@ -1191,32 +1205,27 @@ public class DatastoreRenderer implements ObjectRenderer{
 	}
 
 	boolean getPointIntersectsScreen(Graphics2D g, DrawableObject pnt, Point2D screenPos) {
-		Rectangle rectangle = getPointBoundingRectangle(pnt, screenPos);
+		Rectangle rectangle = createRectangle(screenPos, (int) pnt.getPixelWidth());
 		boolean intersects = g.getClipBounds().intersects(rectangle);
 		return intersects;
 	}
 
-	/**
-	 * Gets a bounding rectangle in world bitmap coords for the input point (i.e. using the lat longs)
-	 * 
-	 * @param pnt
-	 * @param converter
-	 * @return
-	 */
-	public static Rectangle getWorldBitmapPointBoundingRectangle(DrawableObject pnt, LatLongToScreen converter) {
-		if (pnt.getGeometry() != null) {
-			throw new IllegalArgumentException();
-		}
-		if (hasValidLatLong(pnt)) {
-			return getPointBoundingRectangle(pnt, converter.getWorldBitmapPixelPosition(pnt));
-		}
-		return null;
-	}
-
-	private static Rectangle getPointBoundingRectangle(DrawableObject pnt, Point2D screenPos) {
-		Rectangle rectangle = createRectangle(screenPos, (int) pnt.getPixelWidth());
-		return rectangle;
-	}
+//	/**
+//	 * Gets a bounding rectangle in world bitmap coords for the input point (i.e. using the lat longs)
+//	 * 
+//	 * @param pnt
+//	 * @param converter
+//	 * @return
+//	 */
+//	public static Rectangle getWorldBitmapPointBoundingRectangle(DrawableObject pnt, LatLongToScreen converter) {
+//		if (pnt.getGeometry() != null) {
+//			throw new IllegalArgumentException();
+//		}
+//		if (hasValidLatLong(pnt)) {
+//			return getPointBoundingRectangle(pnt, converter.getWorldBitmapPixelPosition(pnt));
+//		}
+//		return null;
+//	}
 
 	public static Color getRenderColour(DrawableObject pnt, boolean isSelected) {
 		if(isSelected){

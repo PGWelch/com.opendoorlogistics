@@ -20,6 +20,7 @@ import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
@@ -113,7 +114,7 @@ public class FmGeomBorder extends FunctionImpl {
 		
 		// create return object and cache it
 		Geometry gBorders = new GeometryFactory().createMultiLineString(lineStrings.toArray(new LineString[lineStrings.size()]));
-		ret = new ODLGeomImpl(gBorders);
+		ret = new ODLLoadedGeometry(gBorders);
 		cache.put(cacheKey, ret, ((ODLGeomImpl)ret).getEstimatedSizeInBytes() + 24);
 		
 		return ret;

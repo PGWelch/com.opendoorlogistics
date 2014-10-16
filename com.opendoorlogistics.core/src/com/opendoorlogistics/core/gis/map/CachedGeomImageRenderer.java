@@ -17,6 +17,7 @@ import java.awt.image.ImageProducer;
 import java.awt.image.RGBImageFilter;
 
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.ODLGeomImpl.AtomicGeomType;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.Colours;
@@ -32,10 +33,7 @@ public class CachedGeomImageRenderer implements ObjectRenderer{
 		// test if we have points
 		boolean hasPoint = obj.getGeometry()==null;
 		if(!hasPoint){
-			Geometry geom = ((ODLGeomImpl)obj.getGeometry()).getJTSGeometry();
-			if(geom!=null){
-				hasPoint = DatastoreRenderer.hasPoint(geom);				
-			}
+			hasPoint = obj.getGeometry().getAtomicGeomCount(AtomicGeomType.POINT)>0;
 		}
 		
 		// if we have one or more points than draw as normal datastore renderer instead of caching
@@ -49,14 +47,14 @@ public class CachedGeomImageRenderer implements ObjectRenderer{
 		}else{
 
 			// do intersection check to see if we should draw
-			Rectangle2D geomBounds =DatastoreRenderer.getWorldBitmapBounds(obj.getGeometry(), converter);
+			Rectangle2D geomBounds =obj.getGeometry().getWorldBitmapBounds(converter);
 			Rectangle2D wBBBounds = converter.getViewportWorldBitmapScreenPosition();
 			if(wBBBounds==null || geomBounds.intersects(wBBBounds)==false){
 				return false;
 			}
 
 			// get transformed geometry
-			CachedGeometry cachedGeometry = DatastoreRenderer.getCachedGeometry(obj.getGeometry(), converter,true);
+			OnscreenGeometry cachedGeometry = DatastoreRenderer.getCachedGeometry(obj.getGeometry(), converter,true);
 			if(cachedGeometry==null){
 				return false;
 			}
@@ -201,7 +199,7 @@ public class CachedGeomImageRenderer implements ObjectRenderer{
 	 * @param drawRegion
 	 * @return
 	 */
-	private BufferedImage createBWImage(DrawableObject obj, CachedGeometry cachedGeometry, final Color renderCol, Rectangle2D drawRegion) {
+	private BufferedImage createBWImage(DrawableObject obj, OnscreenGeometry cachedGeometry, final Color renderCol, Rectangle2D drawRegion) {
 		// ensure image size is at least one
 		int imgWidth = (int)Math.max(1, Math.ceil(drawRegion.getWidth()));
 		int imgHeight = (int)Math.max(1, Math.ceil(drawRegion.getHeight()));

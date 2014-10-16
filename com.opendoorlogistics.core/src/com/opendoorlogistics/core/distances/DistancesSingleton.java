@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.distances;
 
+import java.io.Closeable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +42,7 @@ import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 
-public final class DistancesSingleton implements Disposable{
+public final class DistancesSingleton implements Closeable{
 	//private final RecentlyUsedCache recentMatrixCache = new RecentlyUsedCache(128 * 1024 * 1024);
 	//private final RecentlyUsedCache recentGeomCache = new RecentlyUsedCache(64 * 1024 * 1024);
 	private CHMatrixGeneration lastCHGraph;
@@ -552,7 +553,7 @@ public final class DistancesSingleton implements Disposable{
 	}
 
 	@Override
-	public synchronized void dispose() {
+	public synchronized void close() {
 		if(lastCHGraph!=null){
 			lastCHGraph.dispose();
 			lastCHGraph = null;

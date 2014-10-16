@@ -13,6 +13,7 @@ import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 import com.opendoorlogistics.core.geometry.Spatial;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.strings.Strings;
@@ -79,7 +80,7 @@ public final class FmGeom extends FunctionImpl {
 			break;
 		}
 
-		ODLGeomImpl ret = new ODLGeomImpl(geometry);
+		ODLGeomImpl ret = new ODLLoadedGeometry(geometry);
 		return ret;
 	}
 

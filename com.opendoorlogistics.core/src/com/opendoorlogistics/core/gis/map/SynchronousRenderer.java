@@ -205,7 +205,7 @@ final public class SynchronousRenderer {
 			}
 
 			@Override
-			public LatLong getLongLat(int pixelX, int pixelY) {
+			public LatLong getLongLat(double pixelX, double pixelY) {
 				throw new UnsupportedOperationException();
 			}
 

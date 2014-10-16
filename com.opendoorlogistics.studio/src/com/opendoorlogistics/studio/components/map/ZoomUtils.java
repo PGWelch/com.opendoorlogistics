@@ -18,6 +18,7 @@ import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 
 import com.opendoorlogistics.codefromweb.jxmapviewer2.DesktopPaneMapViewer;
 import com.opendoorlogistics.core.gis.map.JXMapUtils;
+import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.utils.SetUtils;
 
 final public class ZoomUtils {
@@ -26,7 +27,7 @@ final public class ZoomUtils {
 	private ZoomUtils() {
 	}
 
-	public static void zoomToBestFit(DesktopPaneMapViewer jxMap, Set<GeoPosition> positions, double maxFraction, boolean resetViewIfEmpty) {
+	public static void zoomToBestFit(DesktopPaneMapViewer jxMap, LatLongBoundingBox positions, double maxFraction, boolean resetViewIfEmpty) {
 		zoomToBestFit(jxMap, positions, maxFraction, resetViewIfEmpty, DEFAULT_EDGE_SIZE_DEGREES);
 	}
 
@@ -40,10 +41,11 @@ final public class ZoomUtils {
 	 * @param positions
 	 * @param maxFraction
 	 */
-	public static void zoomToBestFit(DesktopPaneMapViewer jxMap, Set<GeoPosition> positions, double maxFraction, boolean resetViewIfEmpty, double defaultEdgeSizeDegrees) {
+	public static void zoomToBestFit(DesktopPaneMapViewer jxMap, LatLongBoundingBox llbb, double maxFraction, boolean resetViewIfEmpty, double defaultEdgeSizeDegrees) {
 		TileFactory tileFactory = jxMap.getTileFactory();
 		TileFactoryInfo info = tileFactory.getInfo();
 
+		Set<GeoPosition> positions = llbb.getCornerSet();
 		if (positions.size() > 0) {
 			if(positions.size()==1){
 				GeoPosition pos = SetUtils.getFirst(positions);

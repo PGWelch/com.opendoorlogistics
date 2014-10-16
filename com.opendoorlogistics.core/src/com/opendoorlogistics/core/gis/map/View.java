@@ -10,6 +10,7 @@ import java.util.List;
 
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
+import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
@@ -86,43 +87,40 @@ public class View extends BeanMappedRowImpl{
 	}
 	
 	private static View createView(List<? extends DrawableObject> drawables, double expandFraction, double degreesWhenZeroSeparation){
-		DoubleRange lats = new DoubleRange();
-		DoubleRange lngs = new DoubleRange();
-		for(LatLong pnt :MapUtils.getLatLongs(drawables,null)){
-			lats.add(pnt.getLatitude());
-			lngs.add(pnt.getLongitude());
-		}
-		if(lats.isValid() && lngs.isValid()){
+		LatLongBoundingBox llbox = MapUtils.getLatLongBoundingBox(drawables, null);
+		if(llbox.isValid()){
+			DoubleRange lats = llbox.getLatRange();
+			DoubleRange lngs = llbox.getLngRange();
+
 			lats.multiply(expandFraction);
 			lngs.multiply(expandFraction);
 			View view = new View(lats.getMin(), lats.getMax(), lngs.getMin(), lngs.getMax());
-			
+
 			// check for zero dimension views
-			if(view.getMinLongitude() == view.getMaxLongitude()){
-				double centre = 0.5*(view.getMinLongitude() + view.getMaxLongitude());
-				view.setMinLongitude( Math.max(-180,  centre - degreesWhenZeroSeparation ));
-				view.setMaxLongitude( Math.min(+180,  centre + degreesWhenZeroSeparation ));
+			if (view.getMinLongitude() == view.getMaxLongitude()) {
+				double centre = 0.5 * (view.getMinLongitude() + view.getMaxLongitude());
+				view.setMinLongitude(Math.max(-180, centre - degreesWhenZeroSeparation));
+				view.setMaxLongitude(Math.min(+180, centre + degreesWhenZeroSeparation));
 			}
+
+			if (view.getMinLatitude() == view.getMaxLatitude()) {
+				double centre = 0.5 * (view.getMinLatitude() + view.getMaxLatitude());
+				view.setMinLatitude(Math.max(-90, centre - degreesWhenZeroSeparation));
+				view.setMaxLatitude(Math.min(+90, centre + degreesWhenZeroSeparation));
+			}
+			return view;	
 			
-			if(view.getMinLatitude() == view.getMaxLatitude()){
-				double centre = 0.5*(view.getMinLatitude() + view.getMaxLatitude());
-				view.setMinLatitude( Math.max(-90,  centre - degreesWhenZeroSeparation ));
-				view.setMaxLatitude( Math.min(+90,  centre + degreesWhenZeroSeparation ));
-			}
-			return view;
-		}	
+		}
 		
 		// default view
 		return new View(-1, 1, -1, 1);
 	}
 
 	public static View createViewWithMinSpans(List<? extends DrawableObject> drawables, double minSpanLat, double minSpanLong){
-		DoubleRange lats = new DoubleRange();
-		DoubleRange lngs = new DoubleRange();
-		for(LatLong pnt :MapUtils.getLatLongs(drawables,null)){
-			lats.add(pnt.getLatitude());
-			lngs.add(pnt.getLongitude());
-		}
+		LatLongBoundingBox llBox = MapUtils.getLatLongBoundingBox(drawables, null);
+		DoubleRange lats = llBox.getLatRange();
+		DoubleRange lngs = llBox.getLngRange();
+
 		if(lats.isValid() && lngs.isValid()){
 			lats.multiply(EXPAND_FRACTION);
 			lngs.multiply(EXPAND_FRACTION);

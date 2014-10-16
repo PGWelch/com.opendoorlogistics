@@ -32,6 +32,10 @@ final public class AppConstants {
 	
 	public static final String ODL_EMBEDED_PROPERTIES_FILE = "/resources/odl-defaults.properties";
 	
+	public static final String RENDER_GEOMETRY_FILE_EXT = "odlrg";
+	
+	public static int RENDER_GEOMETRY_FILE_VERSION =1;
+	
 	public static final Version getAppVersion(){
 		return new Version(APP_VERSION_MAJOR,APP_VERSION_MINOR,APP_VERSION_REVISION);
 	}

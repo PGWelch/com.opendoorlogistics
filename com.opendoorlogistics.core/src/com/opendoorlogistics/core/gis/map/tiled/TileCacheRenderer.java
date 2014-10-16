@@ -24,12 +24,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.codefromweb.BlockingLifoQueue;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.CachedGeomImageRenderer;
-import com.opendoorlogistics.core.gis.map.CachedGeometry;
+import com.opendoorlogistics.core.gis.map.OnscreenGeometry;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
 import com.opendoorlogistics.core.gis.map.ObjectRenderer;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
@@ -44,8 +45,8 @@ import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.Polygon;
 
 final public class TileCacheRenderer implements Disposable {
-	private static final int MAX_GEOM_POINTS_FOR_EDT_RENDER = 10000;
-	private static final int MAX_GEOM_POINTS_FILL_FOR_EDT_RENDER = 5000;
+	private static final int MAX_GEOM_POINTS_FOR_EDT_RENDER = 5000;
+	//private static final int MAX_GEOM_POINTS_FILL_FOR_EDT_RENDER = 5000;
 	private final DatastoreRenderer EDTrenderer = new DatastoreRenderer();
 	// private final DatastoreRenderer workerThreadRenderer = new DatastoreRenderer(true, RecentImageCache.ZipType.LZ4);
 	private final ObjectRenderer workerThreadRenderer = new CachedGeomImageRenderer();
@@ -398,26 +399,18 @@ final public class TileCacheRenderer implements Disposable {
 		// Count the number of geometry points. We render on the EDT for a small number
 		// of points as this makes the map more responsive
 		long geomPointsCount = 0;
-		long polyGeomPointsCount = 0;
 		edtRender = false;
 		for (DrawableObject obj : pnts) {
-			ODLGeomImpl geom = obj.getGeometry();
+			ODLGeom geom = obj.getGeometry();
 			if (geom == null) {
 				geomPointsCount++;
 			} else {
-				Geometry jtsGeom = geom.getJTSGeometry();
-				if (jtsGeom != null) {
-					int nbPoints = jtsGeom.getNumPoints();
-					geomPointsCount += nbPoints;
-					if (hasPolygon(jtsGeom)) {
-						polyGeomPointsCount += nbPoints;
-					}
-				}
+				geomPointsCount += geom.getPointsCount();
 			}
 		}
 		
 		// Choose EDT render or not
-		if (geomPointsCount < MAX_GEOM_POINTS_FOR_EDT_RENDER && polyGeomPointsCount < MAX_GEOM_POINTS_FILL_FOR_EDT_RENDER) {
+		if (geomPointsCount < MAX_GEOM_POINTS_FOR_EDT_RENDER ) {
 			edtRender = true;
 		}
 		
@@ -471,25 +464,7 @@ final public class TileCacheRenderer implements Disposable {
 		Rectangle2D changeArea = null;
 		if (!clearAll) {
 			for (DrawableObject obj : changeset) {
-				Rectangle2D bounds = null;
-				if (obj.getGeometry() != null) {
-					
-//					CachedGeometry cachedGeometry = DatastoreRenderer.getCachedGeometry(obj.getGeometry(), currentView, false);
-//					if (cachedGeometry == null) {
-//						// transformed geometry unknown for one or more objects and can't calculate this
-//						// on EDT as too slow .. hence just clear all tiles
-//						clearAll = true;
-//						break;
-//					}
-					
-					bounds = DatastoreRenderer.getWorldBitmapBounds(obj.getGeometry(), currentView);
-					if(bounds==null){
-						clearAll = true;
-						break;	
-					}
-				} else {
-					bounds = DatastoreRenderer.getWorldBitmapPointBoundingRectangle(obj, currentView);
-				}
+				Rectangle2D bounds = DatastoreRenderer.getRenderedWorldBitmapBounds(obj, currentView);
 
 				if (bounds != null) {
 					if (changeArea == null) {

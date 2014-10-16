@@ -9,17 +9,20 @@ package com.opendoorlogistics.core.geometry;
 import java.io.File;
 import java.util.Map;
 
+import org.apache.commons.io.FilenameUtils;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.ReferencingFactoryFinder;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.MathTransform;
 
+import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.AppProperties;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
@@ -27,6 +30,7 @@ import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.SizesInBytesEstimator;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
+import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
@@ -39,7 +43,7 @@ public final class Spatial {
 	private static boolean init=false;
 	private static CoordinateReferenceSystem wgs84crs;
 	private static CRSAuthorityFactory crsFac;
-	private static final SimpleSoftReferenceMap<ShapefileLink,GeomWithCache> shapefileLinkCache = new SimpleSoftReferenceMap<>(100);
+	private static final SimpleSoftReferenceMap<ShapefileLink,ODLGeom> shapefileLinkCache = new SimpleSoftReferenceMap<>(100);
 	private static final double SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE;
 	private static final double SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_LINESTRING;
 	
@@ -95,15 +99,15 @@ public final class Spatial {
 	}
 	
 
-	static synchronized GeomWithCache loadLink(ShapefileLink link){
+	static synchronized ODLGeom loadLink(ShapefileLink link){
 		initSpatial();
-		GeomWithCache ret = shapefileLinkCache.get(link);
+		ODLGeom ret = shapefileLinkCache.get(link);
 		if(ret==null){
 			// parse and cache the entire file as we would normally use many objects in the same file
-			for(Map.Entry<ShapefileLink, Geometry> entry : ImportShapefile.importShapefile(new File(link.getFile()),false, null,true).entrySet()){
+			for(Map.Entry<ShapefileLink, ODLGeom> entry : ImportShapefile.importShapefile(new File(link.getFile()),false, null,true).entrySet()){
 				if(entry.getValue()!=null){
 					ShapefileLink importedLink = entry.getKey();					
-					GeomWithCache gwc =  new GeomWithCache(entry.getValue());
+					ODLGeom gwc =  entry.getValue();
 					if(link.equals(importedLink)){
 						ret = gwc;
 					}
@@ -115,7 +119,7 @@ public final class Spatial {
 		return ret;
 	}
 
-	private synchronized static void cacheLink(ShapefileLink link, GeomWithCache gwc) {
+	private synchronized static void cacheLink(ShapefileLink link, ODLGeom gwc) {
 		if(shapefileLinkCache.get(link)==null){
 			shapefileLinkCache.put(link, gwc);
 		}

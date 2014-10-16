@@ -40,6 +40,7 @@ import com.opendoorlogistics.core.gis.map.JXMapUtils;
 import com.opendoorlogistics.core.gis.map.MapUtils;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
+import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
@@ -111,7 +112,7 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 
 		private boolean zoomIfLoaded(double maxFraction, String legendFilter) {
 			if(isAllGeometryLoaded()){
-				ZoomUtils.zoomToBestFit(ReadOnlyMapControl.this, getGeopositionPointSet(legendFilter), maxFraction,false);
+				ZoomUtils.zoomToBestFit(ReadOnlyMapControl.this, getLatLongBoundingBox(legendFilter), maxFraction,false);
 				return true;
 			}
 			return false;
@@ -155,8 +156,8 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 			}
 
 			@Override
-			public LatLong getLongLat(int pixelX, int pixelY) {
-				GeoPosition pos = getTileFactory().pixelToGeo(new Point2D.Float(pixelX + currentViewport.x, pixelY + currentViewport.y),currentZoom);
+			public LatLong getLongLat(double pixelX, double pixelY) {
+				GeoPosition pos = getTileFactory().pixelToGeo(new Point2D.Double(pixelX + currentViewport.x, pixelY + currentViewport.y),currentZoom);
 				return new LatLongImpl(pos.getLatitude(), pos.getLongitude());
 			}
 
@@ -181,23 +182,27 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		return true;
 	}
 	
-	public Set<GeoPosition> getGeopositionPointSet(String legendKeyFilter){
-		HashSet<GeoPosition> positions = new HashSet<>();
-		for(LatLong pnt: MapUtils.getLatLongs(getDrawables(), legendKeyFilter)){
-			positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));							
-		}
-//		for (DrawableObject pnt : getPoints()) {
-//			if(pnt.getGeometry()==null){
-//				positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));				
-//			}else if(pnt.getGeometry().isValid()){
-//				for(Coordinate coord:pnt.getGeometry().getJTSGeometry().getCoordinates()){
-//					// we use long-lat, not lat-long
-//					positions.add(new GeoPosition(coord.y,coord.x));															
-//				}
-//			}
-//		}		
-		return positions;
+	public LatLongBoundingBox getLatLongBoundingBox(String legendKeyFilter){
+		return MapUtils.getLatLongBoundingBox(getDrawables(), legendKeyFilter);
 	}
+	
+//	public Set<GeoPosition> getGeopositionPointSet(String legendKeyFilter){
+//		HashSet<GeoPosition> positions = new HashSet<>();
+//		for(LatLong pnt: MapUtils.getLatLongs(getDrawables(), legendKeyFilter)){
+//			positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));							
+//		}
+////		for (DrawableObject pnt : getPoints()) {
+////			if(pnt.getGeometry()==null){
+////				positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));				
+////			}else if(pnt.getGeometry().isValid()){
+////				for(Coordinate coord:pnt.getGeometry().getJTSGeometry().getCoordinates()){
+////					// we use long-lat, not lat-long
+////					positions.add(new GeoPosition(coord.y,coord.x));															
+////				}
+////			}
+////		}		
+//		return positions;
+//	}
 	
 	public void setReuseImageOnNextPaint(){
 		reuseImageOnNextPaint = true;
