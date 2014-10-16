@@ -29,9 +29,13 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 	public final static int USE_LAST_LEVEL=-3;
 	
 	private final long id;
-	private final long wgsGeomPos;
-	private final long [] filePositionsByZoom; 
-	private final GeometryLoader loader;
+	private final int wgsBlockNb;
+	private final int wgsGeomNbInBlock;
+	
+	private final int [] blockNbsByZoom; 
+	private final int [] geomNbInBlockByZoom; 
+	
+	private final QuadLoader loader;
 	private final int nbPoints;
 	private final int pointGeomsCount;
 	private final int polysGeomsCount;
@@ -39,7 +43,7 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 	
 	@Override
 	public long getEstimatedSizeInBytes() {
-		long ret=8 + 4 + 8 + 8*filePositionsByZoom.length + 8 + 4;
+		long ret=8 + 4 + 8 + 4*blockNbsByZoom.length + 4 + geomNbInBlockByZoom.length*4 + 4;
 		
 		if(fullGeometry!=null){
 			ret += Spatial.getEstimatedSizeInBytes(fullGeometry);
@@ -47,7 +51,7 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 		return ret;
 	}
 	
-	public ODLRenderOptimisedGeom(DataInputStream dis, GeometryLoader loader) {
+	public ODLRenderOptimisedGeom(DataInputStream dis, QuadLoader loader) {
 		super(null);
 		this.loader=  loader;
 	
@@ -74,13 +78,18 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 			wgsCentroid = new LatLongImpl(lat, lng);
 			
 			// read wgs geometry position
-			wgsGeomPos = dis.readLong();
-			
+			wgsBlockNb = dis.readInt();
+			wgsGeomNbInBlock = dis.readInt();
+
 			// read position array size
 			byte sz = dis.readByte();
-			filePositionsByZoom = new long[sz];
+			blockNbsByZoom = new int[sz];
+			geomNbInBlockByZoom = new int[sz];
 			for(int i =0 ; i<sz ; i++){
-				filePositionsByZoom[i] = dis.readLong();
+				blockNbsByZoom[i] = dis.readInt();
+			}
+			for(int i =0 ; i<sz ; i++){
+				geomNbInBlockByZoom[i] = dis.readInt();
 			}
 			
 		} catch (Exception e) {
@@ -92,8 +101,8 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 	@Override
 	public synchronized Geometry getJTSGeometry() {
 		// full load the geometry (should be avoided wherever possible)
-		if(fullGeometry==null && wgsGeomPos!=-1){
-			fullGeometry = loader.load(id,wgsGeomPos);
+		if(fullGeometry==null && wgsBlockNb!=-1){
+			fullGeometry = loader.load(id,wgsBlockNb,wgsGeomNbInBlock );
 		}
 		return fullGeometry;
 	}
@@ -107,17 +116,17 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 	public OnscreenGeometry createOnscreenGeometry(LatLongToScreen converter) {
 		// lookup optimised for size
 		Long zoom = Numbers.toLong(converter.getZoomHashmapKey());
-		if(zoom!=null && zoom>=0 && zoom<filePositionsByZoom.length){
+		if(zoom!=null && zoom>=0 && zoom<blockNbsByZoom.length){
 			int iZoom = zoom.intValue();
-			long pos = filePositionsByZoom[iZoom];
+			int blockNb = blockNbsByZoom[iZoom];
 			Geometry g=null;
 			boolean drawFilledBounds=false;
-			if(pos == SUBPIXEL){
+			if(blockNb == SUBPIXEL){
 				drawFilledBounds = true;
 			}
-			else if(pos >=0){
+			else if(blockNb >=0){
 				// take the exact geometry
-				g = loader.load(id,pos);
+				g = loader.load(id,blockNb, geomNbInBlockByZoom[iZoom]);
 			}
 			else{
 				// find nearest and transform
@@ -125,14 +134,14 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 				
 				// look bigger first (lower index zoom is bigger within jxmapviewer project)
 				for(int i = iZoom-1 ; i>=0 && nearestZoom==-1 ; i--){
-					if(filePositionsByZoom[i]>=0){
+					if(blockNbsByZoom[i]>=0){
 						nearestZoom = i;
 					}
 				}
 				
 				// then look smaller
-				for(int i = iZoom + 1; i < filePositionsByZoom.length && nearestZoom==-1 ;i++){
-					if(filePositionsByZoom[i]>=0){
+				for(int i = iZoom + 1; i < blockNbsByZoom.length && nearestZoom==-1 ;i++){
+					if(blockNbsByZoom[i]>=0){
 						nearestZoom = i;
 					}
 				}
@@ -141,7 +150,7 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 					// this should probably never happen
 					drawFilledBounds = true;
 				}else{
-					g = loader.loadTransform(id,filePositionsByZoom[nearestZoom], nearestZoom, iZoom);
+					g = loader.loadTransform(id,blockNbsByZoom[nearestZoom],geomNbInBlockByZoom[nearestZoom], nearestZoom, iZoom);
 				}
 			}
 			
@@ -194,14 +203,14 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 		return 0;
 	}
 
-	public long getFilePosition(int zoom){
+	public int[] getFilePosition(int zoom){
 		if(zoom<0){
-			return wgsGeomPos;
+			return new int[]{wgsBlockNb,wgsGeomNbInBlock};
 		}
-		else if (zoom < filePositionsByZoom.length){
-			return filePositionsByZoom[zoom];
+		else if (zoom < blockNbsByZoom.length){
+			return new int[]{blockNbsByZoom[zoom], geomNbInBlockByZoom[zoom]};
 		}
-		return -1;
+		return null;
 	}
 	
 	public long getGeomId(){

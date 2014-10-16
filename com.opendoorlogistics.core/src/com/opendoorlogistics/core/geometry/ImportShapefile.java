@@ -6,9 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.geometry;
 
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -42,8 +40,8 @@ import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.core.AppConstants;
-import com.opendoorlogistics.core.geometry.rog.GeometryLoader;
 import com.opendoorlogistics.core.geometry.rog.ODLRenderOptimisedGeom;
+import com.opendoorlogistics.core.geometry.rog.QuadLoader;
 import com.opendoorlogistics.core.geometry.rog.RogSingleton;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.beans.BeanTypeConversion;
@@ -120,47 +118,7 @@ public final class ImportShapefile {
 		}
 	}
 	
-	/**
-	 * Import a render optimised geometry file
-	 * @param file
-	 * @return
-	 */
-	public static List<ODLRenderOptimisedGeom> importROG(File file, GeometryLoader [] fetchLoader){
-		FileInputStream fis=null;
-		try {
-			fis = new FileInputStream(file);
-			DataInputStream dis = new DataInputStream(fis);
-			
-			int rogversion = dis.readInt();
-			
-			// to do handle version changes?
-			
-			// create geometry loader object
-			GeometryLoader loader = RogSingleton.singleton().createLoader(file);
-			if(fetchLoader!=null && fetchLoader.length>0){
-				fetchLoader[0]=loader;
-			}
-			
-			int nbObjs = dis.readInt();
-			LargeList<ODLRenderOptimisedGeom> ret = new LargeList<>(nbObjs);
-			for(int i =0 ; i<nbObjs ; i++){
-				ret.add(new ODLRenderOptimisedGeom(dis, loader));
-			}
-			return ret;
-			
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}finally{
-			if(fis!=null){
-				try {
-					fis.close();					
-				} catch (Exception e2) {
-				}
-			}
-		}
 
-	}
-	
 	/**
 	 * Import the shapefile. All geometry is transformed into WGS84.
 	 * 
@@ -182,7 +140,8 @@ public final class ImportShapefile {
 		File originalFile = file;
 		List<ODLRenderOptimisedGeom> rogs = null;
 		if(isRog){
-			rogs = importROG(file,null);
+			rogs = new LargeList<>();
+			RogSingleton.singleton().createLoader(file,rogs);			
 			
 			// get the shapefile from the main one
 			String shpFile = FilenameUtils.removeExtension(file.getPath()) + ".shp";

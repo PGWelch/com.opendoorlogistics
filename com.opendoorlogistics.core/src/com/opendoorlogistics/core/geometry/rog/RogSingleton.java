@@ -12,12 +12,12 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 
 public class RogSingleton implements Closeable {
-	public static final boolean USE_QUADTREE = true;
-	
+
 	final private static RogSingleton singleton = new RogSingleton();
-	final private HashMap<File, GeometryLoader> loaders = new HashMap<>();
+	final private HashMap<File, QuadLoader> loaders = new HashMap<>();
 	
 	public static RogSingleton singleton(){
 		return singleton;
@@ -25,7 +25,7 @@ public class RogSingleton implements Closeable {
 
 	@Override
 	public synchronized void close() {
-		for(GeometryLoader loader:loaders.values()){
+		for(QuadLoader loader:loaders.values()){
 			try {
 				loader.close();
 			} catch (IOException e) {
@@ -35,13 +35,24 @@ public class RogSingleton implements Closeable {
 	}
 	
 	
-	public synchronized GeometryLoader createLoader(File file){
-		GeometryLoader ret = loaders.get(file);
+	public synchronized QuadLoader createLoader(File file, List<ODLRenderOptimisedGeom> readObjs){
+		QuadLoader ret = loaders.get(file);
 		if(ret==null){
-			ret = new GeometryLoaderImpl(file);
+			ret = new QuadLoader(file,readObjs);
 			loaders.put(file, ret);
+		}else if(readObjs!=null){
+			readObjs.addAll(ret.readObjects());
 		}
 		return ret;
 	}
+
+//	public synchronized QuadLoader createLoader(File file){
+//		GeometryLoader ret = loaders.get(file);
+//		if(ret==null){
+//			ret = new GeometryLoaderImpl(file);
+//			loaders.put(file, ret);
+//		}
+//		return ret;
+//	}
 	
 }

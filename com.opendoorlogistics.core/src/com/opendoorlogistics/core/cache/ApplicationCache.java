@@ -30,6 +30,7 @@ public class ApplicationCache {
 	public static final String IMPORTED_SHAPEFILE_CACHE = "imported-shapefile-cache";
 	public static final String GEOM_CENTROID_CACHE = "geom-centroid-cache";
 	public static final String CACHED_PROJECTED_RENDERER_GEOMETRY = "cached-projected-renderer-geometry";
+	public static final String CACHED_ROG_QUADTREE_BLOCKS = "cached-rog-quadtree-blocks";
 	
 	public static ApplicationCache singleton(){
 		return singleton;
@@ -45,7 +46,9 @@ public class ApplicationCache {
 		create(A_TO_B_TIME_SECONDS_CACHE, 12*MB);
 		create(IMPORTED_SHAPEFILE_CACHE, 128*MB);
 		create(GEOM_CENTROID_CACHE, 16 * MB);
-		create(CACHED_PROJECTED_RENDERER_GEOMETRY, 512 * MB).setLogToConsole(true);
+		create(CACHED_PROJECTED_RENDERER_GEOMETRY, 256 * MB);
+		create(CACHED_ROG_QUADTREE_BLOCKS, 128 * MB);
+		
 	}
 	
 	public RecentlyUsedCache get(String cacheId){
