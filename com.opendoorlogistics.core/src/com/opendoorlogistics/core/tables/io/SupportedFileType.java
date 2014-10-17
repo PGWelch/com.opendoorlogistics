@@ -9,11 +9,13 @@ package com.opendoorlogistics.core.tables.io;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import com.opendoorlogistics.core.geometry.rog.RogReaderUtils;
+
 public enum SupportedFileType{
 	TABBED(new FileNameExtensionFilter("Tab separated text file (txt)", "txt")),
 	CSV(new FileNameExtensionFilter("Comma separated text file (csv, txt)", "csv", "txt")),
 	EXCEL(new FileNameExtensionFilter("Spreadsheet file (xls, xlsx)", "xls", "xlsx")),
-	SHAPEFILE_LINKED_GEOM(new FileNameExtensionFilter("Shapefile (shp)", "shp")),
+	SHAPEFILE_LINKED_GEOM(new FileNameExtensionFilter("Shapefile (shp, " + RogReaderUtils.RENDER_GEOMETRY_FILE_EXT + ")", "shp" , RogReaderUtils.RENDER_GEOMETRY_FILE_EXT)),
 	SHAPEFILE_COPIED_GEOM(new FileNameExtensionFilter("Shapefile (shp)", "shp"));
 	
 	private final FileNameExtensionFilter filter;

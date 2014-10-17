@@ -41,6 +41,8 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 	private final int polysGeomsCount;
 	private final int linestringsGeomsCount;
 	
+	private final byte[] bjsonBytes;
+	
 	@Override
 	public long getEstimatedSizeInBytes() {
 		long ret=8 + 4 + 8 + 4*blockNbsByZoom.length + 4 + geomNbInBlockByZoom.length*4 + 4;
@@ -92,6 +94,9 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 				geomNbInBlockByZoom[i] = dis.readInt();
 			}
 			
+			// binary json
+			bjsonBytes = RogReaderUtils.readBytesArray(dis);
+			
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -102,7 +107,7 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 	public synchronized Geometry getJTSGeometry() {
 		// full load the geometry (should be avoided wherever possible)
 		if(fullGeometry==null && wgsBlockNb!=-1){
-			fullGeometry = loader.load(id,wgsBlockNb,wgsGeomNbInBlock );
+			fullGeometry = loader.loadGeometry(id,wgsBlockNb,wgsGeomNbInBlock );
 		}
 		return fullGeometry;
 	}
@@ -126,7 +131,7 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 			}
 			else if(blockNb >=0){
 				// take the exact geometry
-				g = loader.load(id,blockNb, geomNbInBlockByZoom[iZoom]);
+				g = loader.loadGeometry(id,blockNb, geomNbInBlockByZoom[iZoom]);
 			}
 			else{
 				// find nearest and transform
@@ -150,7 +155,7 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 					// this should probably never happen
 					drawFilledBounds = true;
 				}else{
-					g = loader.loadTransform(id,blockNbsByZoom[nearestZoom],geomNbInBlockByZoom[nearestZoom], nearestZoom, iZoom);
+					g = loader.loadTransformedGeometry(id,blockNbsByZoom[nearestZoom],geomNbInBlockByZoom[nearestZoom], nearestZoom, iZoom);
 				}
 			}
 			
@@ -215,5 +220,13 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 	
 	public long getGeomId(){
 		return id;
+	}
+	
+	public byte[] getBjsonBytes(){
+		return bjsonBytes;
+	}
+	
+	public RogFileInformation getFileInformation(){
+		return loader;
 	}
 }

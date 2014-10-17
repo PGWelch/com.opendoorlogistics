@@ -19,8 +19,11 @@ import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
+import java.awt.image.ConvolveOp;
 import java.awt.image.FilteredImageSource;
 import java.awt.image.ImageProducer;
+import java.awt.image.Kernel;
 import java.awt.image.RGBImageFilter;
 
 import com.opendoorlogistics.api.geometry.ODLGeom;
@@ -201,12 +204,44 @@ public class NOVLPolyLayerTile {
 			
 			// draw borders
 			img = toImage(borders.get(),  createRGBFilter(colours,true));
+			
+			// soften borders
+	        float[] blurKernel = {
+		            0, 1 / 8f, 0,
+		            1/8f, 1 / 2f, 1/8f,
+		           0, 1 / 8f, 0f
+		        };
+	        
+		    BufferedImageOp blur = new ConvolveOp(new Kernel(3, 3, blurKernel), ConvolveOp.EDGE_NO_OP, null);
+		    BufferedImage blurredBorders = blur.filter(img, new BufferedImage(baseImg.getWidth(),
+		                baseImg.getHeight(), baseImg.getType()));
+		    
+		    // draw blurred borders first
+			gTmp.drawImage(blurredBorders, x, y,null);
+			
+			// then draw sharper ones on-top (like anti-aliasing)
 			gTmp.drawImage(img, x, y,null);
 		} finally {
 			gTmp.dispose();
 		}
 		
 
+//	      databuf = new BufferedImage(mshi.getWidth(null),
+//	                mshi.getHeight(null),
+//	                BufferedImage.TYPE_INT_BGR);
+//
+//	        Graphics g = databuf.getGraphics();
+//	        g.drawImage(mshi, 455, 255, null);
+
+//	        float[] blurKernel = {
+//	            1 / 9f, 1 / 9f, 1 / 9f,
+//	            1 / 9f, 1 / 9f, 1 / 9f,
+//	            1 / 9f, 1 / 9f, 1 / 9f
+//	        };
+
+
+
+	        
 		g2d.drawImage(baseImg, x, y,null);
 		
 		return true;

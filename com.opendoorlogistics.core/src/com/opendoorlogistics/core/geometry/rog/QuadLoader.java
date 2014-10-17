@@ -25,21 +25,27 @@ import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 
-import com.opendoorlogistics.core.AppConstants;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.utils.LargeList;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.WKBReader;
 
-public class QuadLoader implements Closeable{
+import de.undercouch.bson4jackson.BsonFactory;
+
+public class QuadLoader implements Closeable, RogFileInformation{
 	private final LargeList<Long> quadPositions = new LargeList<>();
 	private final RandomAccessFile rf; 	
 	private final File file;
 	private final FileChannel channel;
 	private final TileFactoryInfo info = new OSMTileFactoryInfo();
 	private final Point2D [] mapCentresAtZoom ;
-
+	private boolean isNOLP;
+	
 	public QuadLoader(File file ) {
 		this(file, null);
 	}
@@ -100,12 +106,10 @@ public class QuadLoader implements Closeable{
 	 */
 	private void readObjectsFromFileStart(DataInputStream dis, List<ODLRenderOptimisedGeom> list) {
 		try {
-			// To do .... handle versioning
-			int rogversion = dis.readInt();
-			if(rogversion > AppConstants.RENDER_GEOMETRY_FILE_VERSION){
-				throw new RuntimeException(AppConstants.RENDER_GEOMETRY_FILE_EXT + " cannot be read as it is made for a newer version of ODL Studio.");
-			}
 
+			// Read header
+		    readFileHeader(dis);
+			
 			// read number of objects
 			int nbObjs = dis.readInt();
 			for(int i =0 ; i<nbObjs ; i++){
@@ -118,6 +122,30 @@ public class QuadLoader implements Closeable{
 			throw new RuntimeException(e);
 		}		
 
+	}
+
+	/**
+	 * @param dis
+	 * @throws IOException
+	 * @throws JsonParseException
+	 * @throws JsonMappingException
+	 */
+	private void readFileHeader(DataInputStream dis) throws IOException, JsonParseException, JsonMappingException {
+		BsonFactory factory = new BsonFactory();
+		ObjectMapper mapper = new ObjectMapper(factory);
+		JsonNode rootNode = mapper.readValue(RogReaderUtils.readBytesArray(dis), JsonNode.class);
+		JsonNode version = rootNode.findValue(RogReaderUtils.VERSION_KEY);
+		int rogversion =version.asInt();
+		if(rogversion > RogReaderUtils.RENDER_GEOMETRY_FILE_VERSION){
+			throw new RuntimeException(RogReaderUtils.RENDER_GEOMETRY_FILE_EXT + " cannot be read as it is made for a newer version of ODL Studio.");
+		}
+		
+		JsonNode isNOLP = rootNode.findValue(RogReaderUtils.IS_NOPL_KEY);
+		if(isNOLP!=null){
+			this.isNOLP = isNOLP.asBoolean();
+		}else{
+			this.isNOLP = false;
+		}
 	}
 	
 	private static class CacheKey{
@@ -158,8 +186,10 @@ public class QuadLoader implements Closeable{
 	}
 	
 	private static class CachedQuadBlock{
+		private final byte[] quadBinaryData;
 		private final long [] geomIds;
-		private final byte[][] bytes;
+		private final byte[][] bjsonBytes;
+		private final byte[][] geomBytes;
 		private long sizeBytes=0;
 		
 		public CachedQuadBlock(DataInputStream dis, int blockNb) {
@@ -171,14 +201,21 @@ public class QuadLoader implements Closeable{
 					throw new RuntimeException("Corrupt quadtree file.");
 				}
 
+				// read bjson
+				quadBinaryData = RogReaderUtils.readBytesArray(dis);
+				
 				// read number of leaves
 				int n =dis.readInt();
 				
 				// allocate arrays to hold the data, incrementing the object size
 				geomIds = new long[n];
-				sizeBytes += n*8 + 8;
-				bytes = new byte[n][];
 				sizeBytes += n*8;
+
+				sizeBytes += n*8 + 8;
+				bjsonBytes = new byte[n][];
+
+				sizeBytes += n*8 + 8;
+				geomBytes = new byte[n][];
 						
 				// skip past the position of all leaves relative to block start...
 				for(int i =0 ; i<n ; i++){
@@ -187,14 +224,18 @@ public class QuadLoader implements Closeable{
 				
 				// read the leaves themselves
 				for(int i =0 ; i<n ; i++){
+					
+					// read geom id
 					geomIds[i] = dis.readLong();
-					int nbBytes = dis.readInt();
-					bytes[i] = new byte[nbBytes];
-					sizeBytes += nbBytes;
-					int nbRead = dis.read(bytes[i]);
-					if(nbBytes != nbRead){
-						throw new RuntimeException("Not enough bytes available in file for geometry");
-					}
+	
+					// read bjson array
+					bjsonBytes[i] = RogReaderUtils.readBytesArray(dis);
+					addToSize(bjsonBytes[i]);
+					
+					// read geom array
+					geomBytes[i] = RogReaderUtils.readBytesArray(dis);
+					addToSize(geomBytes[i]);
+	
 				}
 	
 			} catch (Exception e) {
@@ -203,12 +244,18 @@ public class QuadLoader implements Closeable{
 
 		}
 		
+		private void addToSize(byte[]bytes){
+			if(bytes!=null){
+				sizeBytes += bytes.length;
+			}
+		}
+		
 		public long getSizeInBytes(){
 			return sizeBytes;
 		}
 	}
 	
-	public synchronized Geometry load(long geomId, int blockNb, int geomNbInBlock){
+	public synchronized Geometry loadGeometry(long geomId, int blockNb, int geomNbInBlock){
 		// try fetching the block from the cache
 		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.CACHED_ROG_QUADTREE_BLOCKS);
 		CacheKey cacheKey = new CacheKey(file, blockNb);
@@ -232,7 +279,7 @@ public class QuadLoader implements Closeable{
 		
 		try {
 			WKBReader reader = new WKBReader();
-			Geometry g = reader.read(block.bytes[geomNbInBlock]);
+			Geometry g = reader.read(block.geomBytes[geomNbInBlock]);
 			return g;			
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -241,8 +288,8 @@ public class QuadLoader implements Closeable{
 	
 
 
-	public Geometry loadTransform(long geomId,int blockNb, int geomNbInBlock,final int sourceZoom,final int targetZoom) {
-		Geometry g = load(geomId,blockNb, geomNbInBlock);
+	public Geometry loadTransformedGeometry(long geomId,int blockNb, int geomNbInBlock,final int sourceZoom,final int targetZoom) {
+		Geometry g = loadGeometry(geomId,blockNb, geomNbInBlock);
 		if(g==null){
 			return null;
 		}
@@ -283,5 +330,15 @@ public class QuadLoader implements Closeable{
 	@Override
 	public void close() throws IOException {
 		rf.close();
+	}
+	
+	@Override
+	public boolean getIsNOLPL(){
+		return isNOLP;
+	}
+	
+	@Override
+	public File getFile(){
+		return file;
 	}
 }

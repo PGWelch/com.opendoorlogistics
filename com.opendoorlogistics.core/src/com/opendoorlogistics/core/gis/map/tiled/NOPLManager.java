@@ -68,6 +68,7 @@ public class NOPLManager {
 				// The layer is new so add it.
 				addLayer = true;
 			}else{
+				// Check everything geometry object in the new layer exists in the old one
 				for(DrawableObject obj:newLayer){
 					if(obj.getGeometry()!=null){
 						if(cachedLayer.layer.hasGeom(obj.getGeometry())==false){
@@ -76,10 +77,6 @@ public class NOPLManager {
 							// Remove the old cached layer and then add the new one.
 							currentLayers.remove(groupId);
 							addLayer = true;
-							
-							// To do ... if the old layer is a subset of the new layer this still works, we can just add
-							// the new images...
-							
 							break;
 						}
 					}
@@ -91,7 +88,7 @@ public class NOPLManager {
 			}
 		}
 		
-		// remove any layers which are now longer used
+		// remove any layers which are no longer used
 		ArrayList<String> currentIds = new ArrayList<>(this.currentLayers.keySet());
 		for(String id:currentIds){
 			if(newLayerIds.contains(id)==false){
@@ -155,6 +152,52 @@ public class NOPLManager {
 		return ret;
 	}
 	
+	private List<DrawableObjectLayer> splitDrawablesIntoLayersV2(Iterable<? extends DrawableObject> drawables){
+		StandardisedCache standardiser = new StandardisedCache();
+
+		// split by consecutive NOLP group key
+		ArrayList<DrawableObjectLayer> ret = new ArrayList<>();		
+		DrawableObjectLayer currentLayer = null;
+		for(DrawableObject o:drawables){
+			
+			// create new layer if needed
+			boolean novlpl = Strings.isEmpty(o.getNonOverlappingPolygonLayerGroupKey())==false;
+			if(novlpl){
+				String stdGroup = standardiser.std(o.getNonOverlappingPolygonLayerGroupKey());
+				if(currentLayer == null || currentLayer.getType() != DrawableObjectLayer.LayerType.NOVLPL || currentLayer.getNOVLPLGroupId().equals(stdGroup)==false){
+					
+					// scan for matching an existing polygon layer
+					currentLayer = null;
+					for(DrawableObjectLayer layer:ret){
+						if(layer.getType() ==DrawableObjectLayer.LayerType.NOVLPL && layer.getNOVLPLGroupId().equals(novlpl) ){
+							// User has probably screwed up as same id has been used non-consecutively. 
+							// Just render everything in the first layer.
+							currentLayer = layer;
+						}
+					}
+					
+					// no found, create new
+					if(currentLayer==null){
+						currentLayer = new DrawableObjectLayer(stdGroup);
+						ret.add(currentLayer);						
+					}
+				}
+								
+			}else{
+				// normal case
+				if(currentLayer ==null || currentLayer.getType() != DrawableObjectLayer.LayerType.NORMAL){
+					currentLayer = new DrawableObjectLayer();
+					ret.add(currentLayer);
+				}
+			}
+
+			// add object to current layer
+			currentLayer.add(o);
+
+		}
+		
+		return ret;
+	}
 	/**
 	 * Get the tile or create it if it doesn't exist yet
 	 * @param layerId

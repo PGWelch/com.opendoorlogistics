@@ -42,6 +42,7 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.geometry.rog.ODLRenderOptimisedGeom;
 import com.opendoorlogistics.core.geometry.rog.QuadLoader;
+import com.opendoorlogistics.core.geometry.rog.RogReaderUtils;
 import com.opendoorlogistics.core.geometry.rog.RogSingleton;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.beans.BeanTypeConversion;
@@ -136,7 +137,7 @@ public final class ImportShapefile {
 		
 		// check if we're actually opening a render optimised geometry file... do something if we are? 
 		String ext = FilenameUtils.getExtension(file.getAbsolutePath());
-		boolean isRog = Strings.equalsStd(ext, AppConstants.RENDER_GEOMETRY_FILE_EXT);
+		boolean isRog = Strings.equalsStd(ext, RogReaderUtils.RENDER_GEOMETRY_FILE_EXT);
 		File originalFile = file;
 		List<ODLRenderOptimisedGeom> rogs = null;
 		if(isRog){
