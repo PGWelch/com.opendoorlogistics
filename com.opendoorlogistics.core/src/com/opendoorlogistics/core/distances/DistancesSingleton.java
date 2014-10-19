@@ -27,6 +27,7 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.AppConstants;
+import com.opendoorlogistics.core.api.impl.GeometryImpl;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.distances.graphhopper.CHMatrixGeneration;
@@ -430,7 +431,8 @@ public final class DistancesSingleton implements Closeable{
 		
 		// give a straight line if all else fails
 		if(ret==null){
-			ret = processingApi.getApi().geometry().createLineGeometry(from, to);			
+			ret = new GeometryImpl().createLineGeometry(from, to);
+		//	ret = processingApi.getApi().geometry().createLineGeometry(from, to);			
 		}
 		return ret;
 	}

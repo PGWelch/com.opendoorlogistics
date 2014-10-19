@@ -10,9 +10,14 @@ package com.opendoorlogistics.core.geometry.rog;
 
 import java.awt.geom.Point2D;
 import java.io.DataInputStream;
+import java.io.File;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.core.cache.ApplicationCache;
+import com.opendoorlogistics.core.cache.RecentlyUsedCache;
+import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.ODLLoadableGeometry;
+import com.opendoorlogistics.core.geometry.ShapefileLink;
 import com.opendoorlogistics.core.geometry.Spatial;
 import com.opendoorlogistics.core.gis.map.OnscreenGeometry;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
@@ -47,14 +52,13 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 	public long getEstimatedSizeInBytes() {
 		long ret=8 + 4 + 8 + 4*blockNbsByZoom.length + 4 + geomNbInBlockByZoom.length*4 + 4;
 		
-		if(fullGeometry!=null){
-			ret += Spatial.getEstimatedSizeInBytes(fullGeometry);
-		}
+//		if(fullGeometry!=null){
+//			ret += Spatial.getEstimatedSizeInBytes(fullGeometry);
+//		}
 		return ret;
 	}
 	
 	public ODLRenderOptimisedGeom(DataInputStream dis, QuadLoader loader) {
-		super(null);
 		this.loader=  loader;
 	
 		try {
@@ -103,13 +107,64 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 		
 	}
 	
+	private static class ROGGeomKey{
+		final File file;
+		final long id;
+		
+		ROGGeomKey(File file, long id) {
+			this.file = file;
+			this.id = id;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((file == null) ? 0 : file.hashCode());
+			result = prime * result + (int) (id ^ (id >>> 32));
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ROGGeomKey other = (ROGGeomKey) obj;
+			if (file == null) {
+				if (other.file != null)
+					return false;
+			} else if (!file.equals(other.file))
+				return false;
+			if (id != other.id)
+				return false;
+			return true;
+		}
+
+	}
+
 	@Override
 	public synchronized Geometry getJTSGeometry() {
-		// full load the geometry (should be avoided wherever possible)
-		if(fullGeometry==null && wgsBlockNb!=-1){
-			fullGeometry = loader.loadGeometry(id,wgsBlockNb,wgsGeomNbInBlock );
+		// This loads the full geometry and should be avoided wherever possible.
+		// The geometry is cached with a limited cache size.
+
+		// Try getting from the cache first
+		ROGGeomKey key = new ROGGeomKey(getFileInformation().getFile(), id);
+		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.CACHED_ROG_FULL_GEOMETRY);
+		Geometry ret = (Geometry)cache.get(key);
+		
+		// Load if not cached
+		if(ret==null && wgsBlockNb!=-1){
+			ret = loader.loadGeometry(id,wgsBlockNb,wgsGeomNbInBlock );
+			if(ret!=null){
+				cache.put(key, ret, Spatial.getEstimatedSizeInBytes(ret));				
+			}
 		}
-		return fullGeometry;
+		
+		return ret;
 	}
 
 	@Override
@@ -168,8 +223,11 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 			
 			return new OnscreenGeometry(g, drawFilledBounds);
 		}
-		
-		return null;
+		else{
+			// have to use the full geometry (slow)
+			return new OnscreenGeometry(this, converter);
+		}
+		//return null;
 	}
 
 
@@ -229,4 +287,6 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 	public RogFileInformation getFileInformation(){
 		return loader;
 	}
+
+
 }

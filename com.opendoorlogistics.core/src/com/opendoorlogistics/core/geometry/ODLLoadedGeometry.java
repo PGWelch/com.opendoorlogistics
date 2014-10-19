@@ -14,16 +14,23 @@ import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.Polygon;
 
 public class ODLLoadedGeometry extends ODLLoadableGeometry{
+	protected volatile Geometry fullGeometry;
+	
 	public ODLLoadedGeometry(Geometry jtsGeometry) {
-		super(jtsGeometry);
+		this.fullGeometry = jtsGeometry;
 	}
 	
+	
+	@Override
+	public Geometry getJTSGeometry(){
+		return fullGeometry;
+	}
+	
+
 	@Override
 	public int getPointsCount() {
 		if(fullGeometry!=null){

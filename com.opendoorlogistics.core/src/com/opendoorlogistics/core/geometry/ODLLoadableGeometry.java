@@ -25,19 +25,15 @@ public abstract class ODLLoadableGeometry extends ODLGeomImpl{
 	protected volatile HashMap<Object, Point2D> worldBitmapCentroidsByZoomLevel;	
 	protected volatile Envelope wgsBounds;
 	protected volatile LatLong wgsCentroid;
-	protected volatile Geometry fullGeometry;
+
 	
-	public ODLLoadableGeometry(Geometry jtsGeometry) {
-		this.fullGeometry = jtsGeometry;
-	}
-	
-	public synchronized String toText(){	
-		if(fullGeometry!=null){
-			return fullGeometry.toText();			
-		}
-		
-		return "";
-	}
+//	public synchronized String toText(){	
+//		if(fullGeometry!=null){
+//			return fullGeometry.toText();			
+//		}
+//		
+//		return "";
+//	}
 	
 	@Override
 	public synchronized void putInCache(Object cacheKey, Object data){
@@ -48,11 +44,7 @@ public abstract class ODLLoadableGeometry extends ODLGeomImpl{
 	public synchronized Object getFromCache(Object cacheKey){
 		return cache.get(cacheKey);			
 	}
-	
-	@Override
-	public Geometry getJTSGeometry(){
-		return fullGeometry;
-	}
+
 	
 	@Override
 	public boolean isLoaded(){
@@ -128,5 +120,14 @@ public abstract class ODLLoadableGeometry extends ODLGeomImpl{
 		return ret;
 	}
 	
-
+	@Override
+	public synchronized String toText(){
+		Geometry g = getJTSGeometry();
+		if(g!=null){
+			return g.toText();			
+		}
+		
+		return "";
+	}
+	
 }

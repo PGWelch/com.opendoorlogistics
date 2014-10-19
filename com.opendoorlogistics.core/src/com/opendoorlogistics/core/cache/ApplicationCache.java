@@ -31,6 +31,7 @@ public class ApplicationCache {
 	public static final String GEOM_CENTROID_CACHE = "geom-centroid-cache";
 	public static final String CACHED_PROJECTED_RENDERER_GEOMETRY = "cached-projected-renderer-geometry";
 	public static final String CACHED_ROG_QUADTREE_BLOCKS = "cached-rog-quadtree-blocks";
+	public static final String CACHED_ROG_FULL_GEOMETRY = "cached-rog-full-geometry";
 	
 	public static ApplicationCache singleton(){
 		return singleton;
@@ -48,6 +49,7 @@ public class ApplicationCache {
 		create(GEOM_CENTROID_CACHE, 16 * MB);
 		create(CACHED_PROJECTED_RENDERER_GEOMETRY, 256 * MB);
 		create(CACHED_ROG_QUADTREE_BLOCKS, 128 * MB);
+		create(CACHED_ROG_FULL_GEOMETRY, 64 * MB);
 		
 	}
 	
