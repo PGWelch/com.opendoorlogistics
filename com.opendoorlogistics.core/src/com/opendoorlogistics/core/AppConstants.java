@@ -26,7 +26,7 @@ final public class AppConstants {
 
 	public static final String GRAPHHOPPER_DIRECTORY = "data" + File.separator + "graphhopper" + File.separator;
 
-	public static final String MAPSFORGE_DIRECTORY = "data" + File.separator + "mapforge" + File.separator;
+	public static final String MAPSFORGE_DIRECTORY = "data" + File.separator + "mapsforge" + File.separator;
 
 	public static final String OSM_COPYRIGHT = "© OpenStreetMap contributors";
 	
