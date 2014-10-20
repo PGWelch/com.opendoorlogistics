@@ -15,6 +15,8 @@ import java.util.regex.Pattern;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
+import com.opendoorlogistics.core.geometry.ODLShapefileLinkGeom;
 import com.opendoorlogistics.core.geometry.ShapefileLink;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.NullComparer;
@@ -188,9 +190,9 @@ public class ColumnValueProcessor {
 
 		if (convertToMe == ODLColumnType.GEOM) {
 			if (Geometry.class.isInstance(other)) {
-				return new ODLGeomImpl((Geometry) other);
+				return new ODLLoadedGeometry((Geometry) other);
 			} else if (ShapefileLink.class.isInstance(other)) {
-				return new ODLGeomImpl((ShapefileLink) other);
+				return new ODLShapefileLinkGeom((ShapefileLink) other);
 			}
 		}
 
@@ -250,10 +252,10 @@ public class ColumnValueProcessor {
 			try {
 				ShapefileLink link = ShapefileLink.parse(other.toString());
 				if (link != null) {
-					return new ODLGeomImpl(link);
+					return new ODLShapefileLinkGeom(link);
 				}
 				Geometry geometry = wktReader.read(other.toString());
-				return new ODLGeomImpl(geometry);
+				return new ODLLoadedGeometry(geometry);
 			} catch (Throwable e) {
 				return null;
 			}

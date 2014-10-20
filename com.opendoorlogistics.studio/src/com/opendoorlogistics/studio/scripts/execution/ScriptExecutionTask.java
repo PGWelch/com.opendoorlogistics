@@ -121,7 +121,7 @@ class ScriptExecutionTask {
 		// If we're doing an automatic refresh wait longer to show the progress dialog, but still show
 		// it in-case the refresh takes a long time....
 		if (isAllowsUserInteraction(filtered)) {
-			Timer timer = new Timer(isScriptRefresh ? 500 : 200, new ActionListener() {
+			Timer timer = new Timer(isScriptRefresh ? 1000 : 200, new ActionListener() {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {

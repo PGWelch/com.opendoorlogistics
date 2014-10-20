@@ -6,140 +6,72 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.geometry;
 
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+
+import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
+import com.opendoorlogistics.core.gis.map.OnscreenGeometry;
+import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
+import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
- * Immutable geometry class. Geometry may not be modified after
- * its created, only replaced.
+ * Immutable geometry class. An ODLGeom may not be modified after creation.
+ * Internally this class uses the JTS geometry class.
  * @author Phil
  *
  */
-public final class ODLGeomImpl implements ODLGeom{
-	private final ShapefileLink shapefileLink;
-	private GeomWithCache geomWithCache;
-	private volatile boolean attemptedResolve=false;
-	
-	public ODLGeomImpl(Geometry jtsGeometry) {
-		this.geomWithCache = new GeomWithCache(jtsGeometry);
-		this.shapefileLink = null;
-	}
+public abstract class ODLGeomImpl implements ODLGeom{
 
-	public ODLGeomImpl(GeomWithCache gwc) {
-		this.geomWithCache = gwc;
-		this.shapefileLink = null;
-	}
-	
-	
-	public ODLGeomImpl(ShapefileLink shapefileLink){
-		this.geomWithCache = null;
-		this.shapefileLink = shapefileLink;
-	}
-	
-	public synchronized String toText(){	
-		if(shapefileLink!=null){
-			return shapefileLink.toString();
-		}
-		
-		if(geomWithCache!=null && geomWithCache.getJTSGeometry()!=null){
-			return geomWithCache.getJTSGeometry().toText();			
-		}
-		
-		return "";
-	}
+
+	public abstract String toText();
 	
 	@Override
 	public String toString(){
 		return toText();
 	}
 	
-	/**
-	 * Geometries can have data cached with them which is used to speed up rendering.
-	 * @param cacheKey
-	 * @param data
-	 */
-	public synchronized void putInCache(Object cacheKey, Object data){
-		if(resolveLink()){
-			geomWithCache.putInCache(cacheKey, data);			
-		}
-	}
+
+	public abstract  void putInCache(Object cacheKey, Object data);
 	
-	public synchronized Object getFromCache(Object cacheKey){
-		if(resolveLink()){
-			return geomWithCache.getFromCache(cacheKey);			
-		}
-		return null;
-	}
+	public abstract Object getFromCache(Object cacheKey);
 	
-	public synchronized Geometry getJTSGeometry(){
-		if(resolveLink()){
-			return geomWithCache.getJTSGeometry();			
-		}
-		return null;
-	}
-	
-	public synchronized boolean isValid(){
-		return getJTSGeometry()!=null;
-	}
+	public abstract Geometry getJTSGeometry();
 	
 	/**
 	 * For linked geometry, return true if the geometry has been
 	 * loaded OR been attempted to be loaded.
 	 * @return
 	 */
-	public synchronized boolean isLoaded(){
-		if(shapefileLink==null){
-			// not linked so always loaded
-			return true;
-		}
-		
-		return attemptedResolve;
-	}
-	
-	private synchronized boolean resolveLink(){
-		if(shapefileLink==null){
-			// not linked
-			return true;
-		}
-		if(attemptedResolve && geomWithCache!=null){
-			// all ok, link resolved
-			return true;
-		}
-		
-		// attempt resolve
-		if(attemptedResolve==false && shapefileLink!=null){
-			geomWithCache = Spatial.loadLink(shapefileLink);
-			// set attempted resolve last of all; accessed by multiple threads
-			attemptedResolve = true;			
-			return geomWithCache!=null;
-		}
-		
-		// bad link
-		return false;
-	}
+	public abstract boolean isLoaded();
 	
 	static{
 		Spatial.initSpatial();
 	}
 
 	@Override
-	public int getPointsCount() {
-		Geometry jts = getJTSGeometry();
-		return jts.getNumPoints();
+	public abstract int getPointsCount() ;
+	
+	public abstract long getEstimatedSizeInBytes();
+
+	public abstract Point2D getWorldBitmapCentroid(LatLongToScreen latLongToScreen);
+
+	public abstract LatLong getWGSCentroid() ;
+	
+	public abstract Envelope getWGSBounds();
+	
+	public abstract Rectangle2D getWorldBitmapBounds(LatLongToScreen latLongToScreen);
+	
+	public abstract boolean isLineString();
+
+	public abstract OnscreenGeometry createOnscreenGeometry(LatLongToScreen converter) ;
+	
+	public enum AtomicGeomType{
+		POINT,
+		LINESTRING,
+		POLYGON
 	}
 	
-	public int getEstimatedSizeInBytes(){
-		Geometry geom = getJTSGeometry();
-		if(geom==null){
-			return 20;
-		}
-		
-		// estimate size of geometry in bytes
-		int size=0;
-		size += 4*8; // geometries store an envelope object
-		size += geom.getNumPoints() * 3 * 8; // all points (point has 3 doubles - x, y, z)
-		size += 100; // add some extra to account for pointers etc
-		
-		return size;
-	}
+	public abstract int getAtomicGeomCount(AtomicGeomType type);
 }

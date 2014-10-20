@@ -40,7 +40,8 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	private static final int COL_LEGEND_KEY=COL_LEGEND_COLOUR+1;
 	private static final int COL_IMAGE_FORMULA_KEY=COL_LEGEND_COLOUR+1;
 	private static final int COL_LABEL_GROUP_KEY=COL_IMAGE_FORMULA_KEY+1;
-	protected static final int COL_TOOLTIP= COL_LABEL_GROUP_KEY + 1;
+	private static final int COL_NOPL_GROUP_KEY=COL_LABEL_GROUP_KEY+1;
+	protected static final int COL_TOOLTIP= COL_NOPL_GROUP_KEY + 1;
 
 	private static final BeanDatastoreMapping mapping;
 	private static final double DEFAULT_OPAQUE = 1.0;
@@ -66,6 +67,7 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	private double opaque= DEFAULT_OPAQUE;
 	private String symbol = SymbolType.CIRCLE.getKeyword();
 	private String tooltip;
+	private String nonOverlappingPolygonLayerGroupKey;
 	
 	public DrawableObjectImpl(){}
 	
@@ -290,6 +292,17 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	@ODLColumnOrder(COL_TOOLTIP)
 	public void setTooltip(String tooltip) {
 		this.tooltip = tooltip;
+	}
+
+	@Override
+	public String getNonOverlappingPolygonLayerGroupKey() {
+		return nonOverlappingPolygonLayerGroupKey;
+	}
+
+	@ODLNullAllowed 
+	@ODLColumnOrder(COL_NOPL_GROUP_KEY)
+	public void setNonOverlappingPolygonLayerGroupKey(String nonOverlappingPolygonLayerGroupKey) {
+		this.nonOverlappingPolygonLayerGroupKey = nonOverlappingPolygonLayerGroupKey;
 	}
 
 

@@ -12,14 +12,25 @@ import com.opendoorlogistics.core.components.UpdateQueryComponent;
 final public class InitialiseCore {
 	private static  boolean initialised=false;
 	
-	public static void initialise(){
+	public synchronized static void initialise(){
 		if(!initialised){
-			ODLGlobalComponents.register(new UpdateQueryComponent());			
+			try {
+				AppProperties.get();
+				ODLGlobalComponents.register(new UpdateQueryComponent());	
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
 			initialised = true;
 		}
 	}
+
+
+
 	
 	public static void main(String []args){
 		initialise();
 	}
+	
+
 }

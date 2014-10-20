@@ -14,14 +14,12 @@ import gnu.trove.set.hash.TLongHashSet;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.strings.Strings;
-import com.vividsolutions.jts.geom.Point;
 
-public class CalculateChangedObjectsV2 {
+public class ChangedObjectsCalculator {
 	private TLongObjectHashMap<List<DrawableObject>> drawables = new TLongObjectHashMap<>();
 	private TLongHashSet selected = new TLongHashSet();
 

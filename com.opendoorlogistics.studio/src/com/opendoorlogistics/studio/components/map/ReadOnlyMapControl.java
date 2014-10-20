@@ -29,6 +29,7 @@ import javax.swing.event.MouseInputListener;
 import org.jdesktop.swingx.OSMTileFactoryInfo;
 import org.jdesktop.swingx.mapviewer.DefaultTileFactory;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
+import org.jdesktop.swingx.mapviewer.TileFactory;
 import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 import org.jdesktop.swingx.painter.CompoundPainter;
 import org.jdesktop.swingx.painter.Painter;
@@ -40,16 +41,18 @@ import com.opendoorlogistics.core.gis.map.JXMapUtils;
 import com.opendoorlogistics.core.gis.map.MapUtils;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
+import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
+import com.opendoorlogistics.core.gis.mapsforge.MapsforgeTileFactory;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
 
 
 public class ReadOnlyMapControl extends DesktopPaneMapViewer {
-	private final DefaultTileFactory tileFactory;
+	private final TileFactory tileFactory;
 	private static final double DEFAULT_ZOOM_FRACTION = 0.975;
 	
 	//private LegendFrame legendFrame;
@@ -111,20 +114,12 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 
 		private boolean zoomIfLoaded(double maxFraction, String legendFilter) {
 			if(isAllGeometryLoaded()){
-				ZoomUtils.zoomToBestFit(ReadOnlyMapControl.this, getGeopositionPointSet(legendFilter), maxFraction,false);
+				ZoomUtils.zoomToBestFit(ReadOnlyMapControl.this, getLatLongBoundingBox(legendFilter), maxFraction,false);
 				return true;
 			}
 			return false;
 		}
 	}
-	
-//	private LegendCreator legendCreator = new LegendCreator() {
-//		
-//		@Override
-//		public BufferedImage createLegend(Iterable<? extends DrawableObject> pnts) {
-//			return Legend.createLegendImageFromDrawables( pnts) ;
-//		}
-//	};
 	
 	public static interface GetToolTipCB{
 		String getToolTipText(ReadOnlyMapControl control,List<DrawableObject> selectedObjs);
@@ -136,44 +131,10 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		isDisposed = true;
 	}
 	
-//	public static interface LegendCreator{
-//		BufferedImage createLegend(Iterable<? extends DrawableObject> pnts);
-//	}
-	
 	public interface ZoomBestFitManager{
 		void zoomBestFit(ReadOnlyMapControl viewer, double maxFraction);
 	}
 	
-//	public void setLegendCreator(LegendCreator legendCreator) {
-//		this.legendCreator = legendCreator;
-//	}
-
-//	protected final LatLongToScreen converter = new LatLongToScreenImpl() {
-//
-//		@Override
-//		public Rectangle2D getViewportWorldBitmapScreenPosition(){
-//			return viewport;
-//		}
-//
-//		@Override
-//		public Point2D getWorldBitmapPixelPosition(LatLong latLong) {
-//			GeoPosition pos = new GeoPosition(latLong.getLatitude(), latLong.getLongitude());
-//			Point2D point = getTileFactory().geoToPixel(pos, getZoom());
-//			return point;
-//		}
-//
-//		@Override
-//		public GeoPosition getLongLat(int pixelX, int pixelY) {
-//			GeoPosition pos = getTileFactory().pixelToGeo(new Point2D.Float(pixelX + viewport.x, pixelY + viewport.y), getZoom());
-//			return pos;
-//		}
-//
-//		@Override
-//		protected int getZoomLevel() {
-//			return getZoom();
-//		}
-//	};
-
 	/**
 	 * Create a converter object that's immutable - i.e. later changes to the view
 	 * or zoom are not reflected in the object.
@@ -197,8 +158,8 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 			}
 
 			@Override
-			public LatLong getLongLat(int pixelX, int pixelY) {
-				GeoPosition pos = getTileFactory().pixelToGeo(new Point2D.Float(pixelX + currentViewport.x, pixelY + currentViewport.y),currentZoom);
+			public LatLong getLongLat(double pixelX, double pixelY) {
+				GeoPosition pos = getTileFactory().pixelToGeo(new Point2D.Double(pixelX + currentViewport.x, pixelY + currentViewport.y),currentZoom);
 				return new LatLongImpl(pos.getLatitude(), pos.getLongitude());
 			}
 
@@ -223,23 +184,27 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		return true;
 	}
 	
-	public Set<GeoPosition> getGeopositionPointSet(String legendKeyFilter){
-		HashSet<GeoPosition> positions = new HashSet<>();
-		for(LatLong pnt: MapUtils.getLatLongs(getDrawables(), legendKeyFilter)){
-			positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));							
-		}
-//		for (DrawableObject pnt : getPoints()) {
-//			if(pnt.getGeometry()==null){
-//				positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));				
-//			}else if(pnt.getGeometry().isValid()){
-//				for(Coordinate coord:pnt.getGeometry().getJTSGeometry().getCoordinates()){
-//					// we use long-lat, not lat-long
-//					positions.add(new GeoPosition(coord.y,coord.x));															
-//				}
-//			}
-//		}		
-		return positions;
+	public LatLongBoundingBox getLatLongBoundingBox(String legendKeyFilter){
+		return MapUtils.getLatLongBoundingBox(getDrawables(), legendKeyFilter);
 	}
+	
+//	public Set<GeoPosition> getGeopositionPointSet(String legendKeyFilter){
+//		HashSet<GeoPosition> positions = new HashSet<>();
+//		for(LatLong pnt: MapUtils.getLatLongs(getDrawables(), legendKeyFilter)){
+//			positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));							
+//		}
+////		for (DrawableObject pnt : getPoints()) {
+////			if(pnt.getGeometry()==null){
+////				positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));				
+////			}else if(pnt.getGeometry().isValid()){
+////				for(Coordinate coord:pnt.getGeometry().getJTSGeometry().getCoordinates()){
+////					// we use long-lat, not lat-long
+////					positions.add(new GeoPosition(coord.y,coord.x));															
+////				}
+////			}
+////		}		
+//		return positions;
+//	}
 	
 	public void setReuseImageOnNextPaint(){
 		reuseImageOnNextPaint = true;
@@ -296,10 +261,15 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 //			// TODO: handle exception
 //		}
 
-		// Create a TileFactoryInfo for OpenStreetMap
-		TileFactoryInfo info = new OSMTileFactoryInfo();
-		tileFactory = new DefaultTileFactory(info);
-		tileFactory.setThreadPoolSize(4);
+		if(MapsforgeTileFactory.getSingleton()!=null){
+			tileFactory = MapsforgeTileFactory.getSingleton();
+		}else{
+			// Create a TileFactoryInfo for OpenStreetMap
+			TileFactoryInfo info = new OSMTileFactoryInfo();
+			DefaultTileFactory factory= new DefaultTileFactory(info);
+			factory.setThreadPoolSize(2);		
+			tileFactory = factory;
+		}
 
 		// Setup local file cache
 		JXMapUtils.initLocalFileCache();

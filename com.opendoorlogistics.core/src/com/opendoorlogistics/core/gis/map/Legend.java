@@ -133,7 +133,7 @@ final public class Legend {
 
 				Color col = pnt.getLegendColour();
 				if(col==null){
-					col = DatastoreRenderer.getRenderColour(pnt);
+					col = DatastoreRenderer.getRenderColour(pnt,false);
 				}
 				av.add(col);
 			}

@@ -18,6 +18,11 @@ import org.opengis.referencing.operation.TransformException;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 
+/**
+ * A geotools-compatible transform that turns WGS84 into world bitmap coords.
+ * @author Phil
+ *
+ */
 public final class TransformGeomToWorldBitmap implements org.opengis.referencing.operation.MathTransform{
 	private final LatLongToScreen converter;
 	
@@ -74,14 +79,6 @@ public final class TransformGeomToWorldBitmap implements org.opengis.referencing
 			dstPts[destIndex] = pnt2d.getX();
 			dstPts[destIndex+1] = pnt2d.getY();
 		}
-//		if(arg0.length!=arg2.length || arg0.length%2!=0){
-//			throw new RuntimeException();
-//		}
-//		for(int i =0 ; i<arg0.length-1;i+=2){
-//			Point2D pnt2d = converter.getWorldBitmapPixelPosition(new LatLongImpl(arg0[i], arg0[i+1]));
-//			arg0[i] = pnt2d.getX();
-//			arg0[i+1] = pnt2d.getY();
-//		}
 	}
 
 	@Override

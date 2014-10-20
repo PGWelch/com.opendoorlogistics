@@ -40,6 +40,7 @@ import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 import com.opendoorlogistics.core.geometry.Spatial;
 import com.opendoorlogistics.core.utils.UpdateTimer;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -93,7 +94,7 @@ public class CHMatrixGeneration implements Disposable {
 		
 		GeometryFactory factory = new GeometryFactory();
 		Geometry geometry = factory.createLineString(coords);
-		ODLGeomImpl ret = new ODLGeomImpl(geometry);
+		ODLGeomImpl ret = new ODLLoadedGeometry(geometry);
 		return ret;
 	}
 	

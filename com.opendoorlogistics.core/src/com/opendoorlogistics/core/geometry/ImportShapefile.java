@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.io.FilenameUtils;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -34,14 +35,20 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.MathTransform;
 
 import com.opendoorlogistics.api.components.PredefinedTags;
+import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.core.AppConstants;
+import com.opendoorlogistics.core.geometry.rog.ODLRenderOptimisedGeom;
+import com.opendoorlogistics.core.geometry.rog.QuadLoader;
+import com.opendoorlogistics.core.geometry.rog.RogReaderUtils;
+import com.opendoorlogistics.core.geometry.rog.RogSingleton;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.beans.BeanTypeConversion;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
+import com.opendoorlogistics.core.utils.LargeList;
 import com.opendoorlogistics.core.utils.io.RelativeFiles;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Geometry;
@@ -97,7 +104,7 @@ public final class ImportShapefile {
 	
 	public static ODLDatastoreAlterable<ODLTableAlterable> importShapefile(File file, boolean isLinkedGeometry) {
 		ODLDatastoreAlterable<ODLTableAlterable> ds = ODLDatastoreImpl.alterableFactory.create();
-		importShapefile(file,isLinkedGeometry, ds);
+		importShapefile(file,isLinkedGeometry, ds,false);
 		return ds;
 	}
 
@@ -112,6 +119,7 @@ public final class ImportShapefile {
 		}
 	}
 	
+
 	/**
 	 * Import the shapefile. All geometry is transformed into WGS84.
 	 * 
@@ -119,26 +127,45 @@ public final class ImportShapefile {
 	 * @param ds
 	 */
 	@SuppressWarnings("deprecation")
-	public static HashMap<ShapefileLink, Geometry> importShapefile(File file,boolean isLinkedGeometry, ODLDatastoreAlterable<? extends ODLTableAlterable> ds) {
+	public static HashMap<ShapefileLink, ODLGeom> importShapefile(File file,boolean isLinkedGeometry, ODLDatastoreAlterable<? extends ODLTableAlterable> ds, boolean returnGeometry) {
 		Spatial.initSpatial();
-
+		
+		file = RelativeFiles.validateRelativeFiles(file.getPath(), AppConstants.SHAPEFILES_DIRECTORY);
+		if(file==null){
+			return new HashMap<>();
+		}
+		
+		// check if we're actually opening a render optimised geometry file... do something if we are? 
+		String ext = FilenameUtils.getExtension(file.getAbsolutePath());
+		boolean isRog = Strings.equalsStd(ext, RogReaderUtils.RENDER_GEOMETRY_FILE_EXT);
+		File originalFile = file;
+		List<ODLRenderOptimisedGeom> rogs = null;
+		if(isRog){
+			rogs = new LargeList<>();
+			RogSingleton.singleton().createLoader(file,rogs);			
+			
+			// get the shapefile from the main one
+			String shpFile = FilenameUtils.removeExtension(file.getPath()) + ".shp";
+			file = new File(shpFile);
+		}
+		
 		SimpleFeatureIterator it = null;
 		DataStore shapefile = null;
 
-		HashMap<ShapefileLink, Geometry> ret = new HashMap<>();
-
-		file = RelativeFiles.validateRelativeFiles(file.getPath(), AppConstants.SHAPEFILES_DIRECTORY);
-		if(file==null){
-			return ret;
+		// create return object
+		HashMap<ShapefileLink, ODLGeom> ret = null;
+		if(returnGeometry){
+			 ret = new HashMap<>();
 		}
-		
+
 		try {
 			shapefile = openDataStore(file);
 			if(shapefile==null){
 				throw new RuntimeException("Could not open shapefile: " + file);
 			}
 
-			String linkFile = RelativeFiles.getFilenameToSaveInLink(file, AppConstants.SHAPEFILES_DIRECTORY);
+			// get the linkfile using the *original file*, not the potentially redirected file
+			String linkFile = RelativeFiles.getFilenameToSaveInLink(originalFile, AppConstants.SHAPEFILES_DIRECTORY);
 			
 			for (String type : shapefile.getTypeNames()) {
 
@@ -183,6 +210,7 @@ public final class ImportShapefile {
 
 				// parse all features recording all attributes, including geometry
 				it = collection.features();
+				int objectIndex=0;
 				while (it.hasNext()) {
 					SimpleFeature feature = it.next();
 
@@ -203,15 +231,31 @@ public final class ImportShapefile {
 							// process geometry
 							ShapefileLink link =null;
 							if(value!=null && Geometry.class.isInstance(value)){
-								// always transform geometry to wgs84
-								value =  JTS.transform((Geometry)value, toWGS84);
 								
-								// and save to return object
+								if(!isLinkedGeometry || ret!=null){
+									if(rogs!=null){
+										value = rogs.get(objectIndex);
+									}else{
+										// Transform the geometry to wgs84 if we need it 
+										value =  JTS.transform((Geometry)value, toWGS84);	
+										value = new ODLLoadedGeometry((Geometry)value);
+									}
+								}else{
+									// Geometry not needed
+									value = null;
+								}
+
+								// Create geometry link
 								link = new ShapefileLink(linkFile, type, sf.getID());
-								ret.put(link, (Geometry)value);
 								
+								// Save the transformed geometry if flagged
+								if(ret!=null){
+									ret.put(link,(ODLGeom)value);									
+								}
+								
+								// If we're using linked geometry the value for the table is the link
 								if(isLinkedGeometry){
-									value = link;									
+									value = new ODLShapefileLinkGeom(link);									
 								}
 							}
 							
@@ -223,6 +267,8 @@ public final class ImportShapefile {
 								table.setValueAt(value, row, col);
 							}
 						}
+						
+						objectIndex++;
 
 					} else {
 						throw new RuntimeException();

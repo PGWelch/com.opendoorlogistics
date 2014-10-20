@@ -100,7 +100,7 @@ public class InteractiveGeocoderPanel extends JPanel implements Disposable, Geoc
 
 			@Override
 			public void zoomBestFit(ReadOnlyMapControl viewer, double maxFraction) {
-				ZoomUtils.zoomToBestFit(viewer, viewer.getGeopositionPointSet(null), maxFraction, true, 0.001);
+				ZoomUtils.zoomToBestFit(viewer, viewer.getLatLongBoundingBox(null), maxFraction, true, 0.001);
 			}
 		});
 		map = new ReadOnlyMapPanel(interactive, true) {

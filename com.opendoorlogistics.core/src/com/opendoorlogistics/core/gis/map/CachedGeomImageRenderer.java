@@ -17,49 +17,48 @@ import java.awt.image.ImageProducer;
 import java.awt.image.RGBImageFilter;
 
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.ODLGeomImpl.AtomicGeomType;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
 import com.vividsolutions.jts.geom.Geometry;
 
-public class CachedGeomImageRenderer {
+public class CachedGeomImageRenderer implements ObjectRenderer{
 	private final RecentImageCache geomCache = new RecentImageCache(RecentImageCache.ZipType.LZ4, 64*1024*1024);
 	private final DatastoreRenderer renderer = new DatastoreRenderer();
 	
-
-	public boolean renderObject(Graphics2D g, LatLongToScreen converter, DrawableObject obj, boolean isSelected){
+	@Override
+	public boolean renderObject(Graphics2D g, LatLongToScreen converter, DrawableObject obj, boolean isSelected, long renderFlags){
 		// test if we have points
 		boolean hasPoint = obj.getGeometry()==null;
 		if(!hasPoint){
-			Geometry geom = ((ODLGeomImpl)obj.getGeometry()).getJTSGeometry();
-			if(geom!=null){
-				hasPoint = DatastoreRenderer.hasPoint(geom);				
-			}
+			hasPoint = obj.getGeometry().getAtomicGeomCount(AtomicGeomType.POINT)>0;
 		}
 		
 		// if we have one or more points than draw as normal datastore renderer instead of caching
 		if(hasPoint){
 			// draw using normal datastore renderer
 			if(obj.getGeometry()!=null){
-				renderer.renderObject(g, converter, obj, isSelected);
+				renderer.renderObject(g, converter, obj, isSelected,0);
 			}else if (DatastoreRenderer.hasValidLatLong(obj)) {
 				renderer.renderSymbol(g, obj, converter.getOnScreenPixelPosition(obj), isSelected);
 			}
 		}else{
+
+			// do intersection check to see if we should draw
+			Rectangle2D geomBounds =obj.getGeometry().getWorldBitmapBounds(converter);
+			Rectangle2D wBBBounds = converter.getViewportWorldBitmapScreenPosition();
+			if(wBBBounds==null || geomBounds.intersects(wBBBounds)==false){
+				return false;
+			}
+
 			// get transformed geometry
-			CachedGeometry cachedGeometry = DatastoreRenderer.getCachedGeometry(obj.getGeometry(), converter,true);
+			OnscreenGeometry cachedGeometry = DatastoreRenderer.getCachedGeometry(obj.getGeometry(), converter,true);
 			if(cachedGeometry==null){
 				return false;
 			}
 	
-			// do intersection check to see if we should draw
-			Rectangle2D geomBounds = cachedGeometry.getWorldBitmapBounds();
-			Rectangle2D wBBBounds = converter.getViewportWorldBitmapScreenPosition();
-			if(geomBounds.intersects(wBBBounds)==false){
-				return false;
-			}
-			
 			// get the region to be drawn
 			Rectangle2D drawRegion = wBBBounds.createIntersection(geomBounds);
 
@@ -78,9 +77,9 @@ public class CachedGeomImageRenderer {
 	
 				// if no image available, create image it (for the intersection between the object and the tile)
 				// and cache it.
-				final Color renderCol = isSelected ? DatastoreRenderer.SELECTION_COLOUR : DatastoreRenderer.getRenderColour(obj);
+				final Color renderCol = DatastoreRenderer.getRenderColour(obj,isSelected);
 				if(bwImage==null){
-					BufferedImage bufBwImage =  createBWImage(obj, cachedGeometry, renderCol, drawRegion);;
+					BufferedImage bufBwImage =  createBWImage(obj, cachedGeometry, renderCol, drawRegion);
 					bwImage = bufBwImage;	
 					geomCache.put(cacheKey, bufBwImage);
 				}
@@ -192,7 +191,15 @@ public class CachedGeomImageRenderer {
 		return colourImage;
 	}
 
-	private BufferedImage createBWImage(DrawableObject obj, CachedGeometry cachedGeometry, final Color renderCol, Rectangle2D drawRegion) {
+	/**
+	 * Create a black and white image of the geometry to be coloured later-on
+	 * @param obj
+	 * @param cachedGeometry
+	 * @param renderCol
+	 * @param drawRegion
+	 * @return
+	 */
+	private BufferedImage createBWImage(DrawableObject obj, OnscreenGeometry cachedGeometry, final Color renderCol, Rectangle2D drawRegion) {
 		// ensure image size is at least one
 		int imgWidth = (int)Math.max(1, Math.ceil(drawRegion.getWidth()));
 		int imgHeight = (int)Math.max(1, Math.ceil(drawRegion.getHeight()));
@@ -207,7 +214,7 @@ public class CachedGeomImageRenderer {
 				gImage.setColor(bwCol);
 				gImage.fillRect(0, 0, imgWidth, imgHeight);
 			} else {
-				DatastoreRenderer.renderOrHitTestJTSGeometry(gImage, obj, cachedGeometry.getJTSGeometry(), bwCol, DatastoreRenderer.getPolyOutlineCol(bwCol), drawRegion, null);
+				DatastoreRenderer.renderOrHitTestJTSGeometry(gImage, obj, cachedGeometry.getJTSGeometry(), bwCol, DatastoreRenderer.getDefaultPolygonBorderColour(bwCol), drawRegion, null,0);
 			}				
 		} 
 		finally{

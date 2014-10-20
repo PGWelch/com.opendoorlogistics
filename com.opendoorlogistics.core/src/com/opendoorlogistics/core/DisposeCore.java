@@ -7,13 +7,21 @@
 package com.opendoorlogistics.core;
 
 import com.opendoorlogistics.core.distances.DistancesSingleton;
+import com.opendoorlogistics.core.geometry.rog.RogSingleton;
+import com.opendoorlogistics.core.gis.mapsforge.MapsforgeTileFactory;
 
 public class DisposeCore {
 	private static boolean disposed=false;
 
 	public synchronized static void dispose() {
 		if(!disposed){
-			DistancesSingleton.singleton().dispose();
+			DistancesSingleton.singleton().close();
+			RogSingleton.singleton().close();
+			
+			if(MapsforgeTileFactory.getSingleton()!=null){
+				MapsforgeTileFactory.getSingleton().close();
+			}
+			
 			disposed = true;
 		}
 	}

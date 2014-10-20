@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.distances;
 
+import java.io.Closeable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.AppConstants;
+import com.opendoorlogistics.core.api.impl.GeometryImpl;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.distances.graphhopper.CHMatrixGeneration;
@@ -41,7 +43,7 @@ import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 
-public final class DistancesSingleton implements Disposable{
+public final class DistancesSingleton implements Closeable{
 	//private final RecentlyUsedCache recentMatrixCache = new RecentlyUsedCache(128 * 1024 * 1024);
 	//private final RecentlyUsedCache recentGeomCache = new RecentlyUsedCache(64 * 1024 * 1024);
 	private CHMatrixGeneration lastCHGraph;
@@ -429,7 +431,8 @@ public final class DistancesSingleton implements Disposable{
 		
 		// give a straight line if all else fails
 		if(ret==null){
-			ret = processingApi.getApi().geometry().createLineGeometry(from, to);			
+			ret = new GeometryImpl().createLineGeometry(from, to);
+		//	ret = processingApi.getApi().geometry().createLineGeometry(from, to);			
 		}
 		return ret;
 	}
@@ -552,7 +555,7 @@ public final class DistancesSingleton implements Disposable{
 	}
 
 	@Override
-	public synchronized void dispose() {
+	public synchronized void close() {
 		if(lastCHGraph!=null){
 			lastCHGraph.dispose();
 			lastCHGraph = null;

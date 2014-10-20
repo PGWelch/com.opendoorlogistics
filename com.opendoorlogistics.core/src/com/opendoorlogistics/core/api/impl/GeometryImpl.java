@@ -11,6 +11,7 @@ import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.core.geometry.GreateCircle;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 import com.opendoorlogistics.core.geometry.Spatial;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -30,7 +31,7 @@ public class GeometryImpl implements Geometry {
 		for(int i =0 ; i<latLongs.length;i++){
 			coords[i] = new Coordinate(latLongs[i].getLongitude(), latLongs[i].getLatitude());
 		}
-		ODLGeomImpl geom = new ODLGeomImpl(geomfactory.createLineString(coords));
+		ODLGeomImpl geom = new ODLLoadedGeometry(geomfactory.createLineString(coords));
 		return geom;
 	}
 

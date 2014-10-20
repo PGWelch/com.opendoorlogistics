@@ -12,30 +12,31 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.RenderingHints;
-import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.codefromweb.BlockingLifoQueue;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.CachedGeomImageRenderer;
-import com.opendoorlogistics.core.gis.map.CachedGeometry;
+import com.opendoorlogistics.core.gis.map.OnscreenGeometry;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
+import com.opendoorlogistics.core.gis.map.ObjectRenderer;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
+import com.opendoorlogistics.core.gis.map.tiled.DrawableObjectLayer.LayerType;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
 import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
@@ -44,30 +45,30 @@ import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.Polygon;
 
 final public class TileCacheRenderer implements Disposable {
-	private static final int TILE_SIZE = 256;
-	private static final int MAX_GEOM_POINTS_FOR_EDT_RENDER = 10000;
-	private static final int MAX_GEOM_POINTS_FILL_FOR_EDT_RENDER = 5000;
+	private static final int MAX_GEOM_POINTS_FOR_EDT_RENDER = 5000;
+	//private static final int MAX_GEOM_POINTS_FILL_FOR_EDT_RENDER = 5000;
 	private final DatastoreRenderer EDTrenderer = new DatastoreRenderer();
 	// private final DatastoreRenderer workerThreadRenderer = new DatastoreRenderer(true, RecentImageCache.ZipType.LZ4);
-	private final CachedGeomImageRenderer workerThreadRenderer = new CachedGeomImageRenderer();
+	private final ObjectRenderer workerThreadRenderer = new CachedGeomImageRenderer();
 	private final ExecutorService service;
-	private final RecentlyUsedCache updatedCompletedTileMap = new RecentlyUsedCache(64 * 1024 * 1024);
-	private final RecentlyUsedCache outdatedCompleteTileMap = new RecentlyUsedCache(16 * 1024 * 1024);
-	private final ConcurrentHashMap<Object, Tile> processingTileMap = new ConcurrentHashMap<>();
+	private final RecentlyUsedCache updatedCompletedTileMap = new RecentlyUsedCache("updated-completed-tile-map",64 * 1024 * 1024);
+	private final RecentlyUsedCache outdatedCompleteTileMap = new RecentlyUsedCache("outdated-complete-tile-map",16 * 1024 * 1024);
+	private final ConcurrentHashMap<Object, CachedTile> processingTileMap = new ConcurrentHashMap<>();
 	private final HashSet<TileReadyListener> tileReadyListeners = new HashSet<>();
 	private final BufferedImage loadingImage = createLoadingImage();
 	// private TLongHashSet lastSelectedObjectIds = new TLongHashSet();
-	private Iterable<? extends DrawableObject> pnts;
-	private boolean isDisposed = false;
-	private final CalculateChangedObjectsV2 calculateChangedObjects = new CalculateChangedObjectsV2();
+	private List<DrawableObjectLayer> drawableLayers;	
+	private volatile boolean isDisposed = false;
+	private final ChangedObjectsCalculator calculateChangedObjects = new ChangedObjectsCalculator();
 	private LatLongToScreen lastConverter;
 	private boolean edtRender = false;
-
+	private NOPLManager noplmanager = new NOPLManager();
+	
 	@SuppressWarnings("unused")
 	/**
 	 * We store the last required tiles so we have a strong reference to them
 	 */
-	private LinkedList<Tile> lastUsedTiles = new LinkedList<>();
+	private LinkedList<CachedTile> lastUsedTiles = new LinkedList<>();
 
 	public TileCacheRenderer() {
 		// Create with a single rendering thread so we don't have to worry about synchronisation issues
@@ -80,9 +81,9 @@ final public class TileCacheRenderer implements Disposable {
 	}
 
 	private static BufferedImage createLoadingImage() {
-		BufferedImage ret = new BufferedImage(TILE_SIZE, TILE_SIZE, BufferedImage.TYPE_INT_ARGB);
+		BufferedImage ret = new BufferedImage(TilePosition.TILE_SIZE, TilePosition.TILE_SIZE, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = ret.createGraphics();
-		g.setClip(0, 0, TILE_SIZE, TILE_SIZE);
+		g.setClip(0, 0, TilePosition.TILE_SIZE, TilePosition.TILE_SIZE);
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 		DatastoreRenderer.renderFade(g);
@@ -124,48 +125,42 @@ final public class TileCacheRenderer implements Disposable {
 	 * 
 	 */
 	private static class RenderInformation {
-		final Iterable<? extends DrawableObject> pnts;
+		final List<DrawableObjectLayer> layers;
 		final LatLongToScreen originalConverter;
-		final long renderFlags;
+	//	final long renderFlags;
 		final TLongHashSet selectedObjectIds;
 
-		RenderInformation(Iterable<? extends DrawableObject> pnts, LatLongToScreen converter, long renderFlags, TLongHashSet selectedObjectIds) {
-			this.pnts = pnts;
+		RenderInformation(List<DrawableObjectLayer> layers, LatLongToScreen converter,  TLongHashSet selectedObjectIds) {
+			this.layers = layers;
 			this.originalConverter = converter;
-			this.renderFlags = renderFlags;
+		//	this.renderFlags = renderFlags;
 			this.selectedObjectIds = selectedObjectIds;
 		}
 
 	}
-
-	private class Tile implements Runnable {
-		final int ix;
-		final int iy;
-		final Object zoomKey;
+	
+	private class CachedTile implements Runnable {
+		final TilePosition position;
 		final RenderInformation renderInfo;
 		CompressedImage finalImage;
-		boolean invalid = false;
+		volatile boolean invalid = false;
 
 		@Override
 		public String toString() {
-			return "[x=" + ix + ", y=" + iy + ", z=" + zoomKey + "]";
+			return position.toString();
 		}
 
-		public Tile(int x, int y, Object zoomKey, RenderInformation renderInfo) {
-			super();
-			this.ix = x;
-			this.iy = y;
-			this.zoomKey = zoomKey;
+		public CachedTile(int x, int y, Object zoomKey, RenderInformation renderInfo) {
+			this.position = new TilePosition(x, y, zoomKey);
 			this.renderInfo = renderInfo;
 		}
+
 
 		@Override
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + ix;
-			result = prime * result + iy;
-			result = prime * result + ((zoomKey == null) ? 0 : zoomKey.hashCode());
+			result = prime * result + ((position == null) ? 0 : position.hashCode());
 			return result;
 		}
 
@@ -177,102 +172,76 @@ final public class TileCacheRenderer implements Disposable {
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			Tile other = (Tile) obj;
-			if (ix != other.ix)
-				return false;
-			if (iy != other.iy)
-				return false;
-			if (zoomKey == null) {
-				if (other.zoomKey != null)
+			CachedTile other = (CachedTile) obj;
+			if (position == null) {
+				if (other.position != null)
 					return false;
-			} else if (!zoomKey.equals(other.zoomKey))
+			} else if (!position.equals(other.position))
 				return false;
 			return true;
 		}
 
 		@Override
-		public void run() {
-			// while(doRenderStep(this,backgroundRenderer,true));
+		public synchronized void run() {
 
-			// start render state
-			// renderingState = new RenderingState();
-			BufferedImage workImg = new BufferedImage(TILE_SIZE, TILE_SIZE, BufferedImage.TYPE_INT_ARGB);
+			BufferedImage workImg = new BufferedImage(TilePosition.TILE_SIZE, TilePosition.TILE_SIZE, BufferedImage.TYPE_INT_ARGB);
 			Graphics2D g = workImg.createGraphics();
 			try {
 
-				g.setClip(0, 0, TILE_SIZE, TILE_SIZE);
-				Iterator<? extends DrawableObject> it = renderInfo.pnts.iterator();
-				final Rectangle2D viewport = createBounds();
-				LatLongToScreenImpl converter = new LatLongToScreenImpl() {
+				g.setClip(0, 0, TilePosition.TILE_SIZE, TilePosition.TILE_SIZE);
+				
+				// create a lat-long to onscreen converter which gives gives the viewable viewport bounds
+				// as the tile
+				LatLongToScreen converter = position.createConverter(renderInfo.originalConverter);
 
-					@Override
-					public Point2D getWorldBitmapPixelPosition(LatLong latLong) {
-						return renderInfo.originalConverter.getWorldBitmapPixelPosition(latLong);
+				// render objects
+				for(DrawableObjectLayer layer:renderInfo.layers){
+					
+					if(layer.getType() == LayerType.NOVLPL){
+						// draw the layer tile
+						NOVLPolyLayerTile tile = noplmanager.getTile(layer.getNOVLPLGroupId(), position, converter);
+						
+						// check poly layer tile exists, if not then this tile is probably out-of-date 
+						if(tile!=null){
+							tile.draw(layer, g,renderInfo.selectedObjectIds, 0, 0);							
+						}
+					}
+					else{
+						// draw each object one-by-one
+						for(DrawableObject obj:layer){
+
+							// check for quitting (flagged from other thread)
+							if (invalid || isDisposed) {
+								return;
+							}
+							
+							try {
+								workerThreadRenderer.renderObject(g, converter, obj, renderInfo.selectedObjectIds.contains(obj.getGlobalRowId()),0);
+							} catch (Throwable e) {
+							}
+						}						
 					}
 
-					@Override
-					public Rectangle2D getViewportWorldBitmapScreenPosition() {
-						return viewport;
-					}
-
-					@Override
-					public LatLong getLongLat(int pixelX, int pixelY) {
-						throw new UnsupportedOperationException();
-					}
-
-					@Override
-					public Object getZoomHashmapKey() {
-						return renderInfo.originalConverter.getZoomHashmapKey();
-					}
-				};
-
-				// render next object
-				while (it.hasNext()) {
-
-					// check for quitting
-					if (invalid || isDisposed) {
-						return;
-					}
-
-					DrawableObject obj = it.next();
-					try {
-						// System.out.print("Tile " + tile.ix + "," + tile.iy + " : ");
-						workerThreadRenderer.renderObject(g, converter, obj, renderInfo.selectedObjectIds.contains(obj.getGlobalRowId()));
-						// System.out.println();
-					} catch (Throwable e) {
-						// e.printStackTrace();
-						// System.err.println("Failed to render " + obj.getLabel() + " at " + tile.zoomKey);
-					}
 				}
 
 				// we've finished
 				finalImage = new CompressedImage(DatastoreRenderer.postProcessImage(workImg), CompressedType.LZ4);
-				putInCompleteMap();
-				// System.out.println("Saved complete tile: " + this);
+				if (!invalid && !isDisposed) {
+					updatedCompletedTileMap.put(this, this, this.finalImage.getSizeBytes());
+					outdatedCompleteTileMap.put(this, this, this.finalImage.getSizeBytes());
+				}
+				
 				fireTileReadyListeners(this);
 
 			} finally {
 				g.dispose();
 				processingTileMap.remove(this);
-				// System.out.println("Removed tile from processing: " + this);
-
 			}
 
 		}
 
-		synchronized void putInCompleteMap() {
-			if (!invalid && !isDisposed) {
-				updatedCompletedTileMap.put(this, this, this.finalImage.getSizeBytes());
-				outdatedCompleteTileMap.put(this, this, this.finalImage.getSizeBytes());
-			}
-		}
-
-		synchronized void setInvalid() {
+		void setInvalid() {
 			invalid = true;
-		}
-
-		Rectangle2D createBounds() {
-			return new Rectangle2D.Double(ix * TILE_SIZE, iy * TILE_SIZE, TILE_SIZE, TILE_SIZE);
 		}
 
 	}
@@ -304,20 +273,16 @@ final public class TileCacheRenderer implements Disposable {
 			selectedObjectIds = new TLongHashSet();
 		}
 
-		// if (selectedObjectIds.equals(lastSelectedObjectIds) == false) {
-		// clearTiles();
-		// }
-		// lastSelectedObjectIds = new TLongHashSet(selectedObjectIds);
 		clearDirtyTiles(calculateChangedObjects.updateSelected(selectedObjectIds), lastConverter);
 
-		LinkedList<Tile> newLastUsedTiles = new LinkedList<>();
+		LinkedList<CachedTile> newLastUsedTiles = new LinkedList<>();
 		if (edtRender == false) {
 			// get the world bitmap for the current zoom
 			MinMaxTileIndices tileRange = new MinMaxTileIndices(converter);
 			Rectangle2D view = converter.getViewportWorldBitmapScreenPosition();
 
 			// save information required for rendering in an object
-			RenderInformation renderInformation = new RenderInformation(pnts, converter, renderFlags, selectedObjectIds);
+			RenderInformation renderInformation = new RenderInformation(drawableLayers, converter, selectedObjectIds);
 
 			// loop over all visible tile positions
 			Object zoomKey = converter.getZoomHashmapKey();
@@ -325,9 +290,9 @@ final public class TileCacheRenderer implements Disposable {
 				for (int iy = tileRange.minTileIndex.y; iy <= tileRange.maxTileIndex.y; iy++) {
 
 					// create empty tile then use as a key to see if already exists
-					Tile tile = new Tile(ix, iy, zoomKey, renderInformation);
-					Tile working = processingTileMap.get(tile);
-					Tile complete = (Tile) updatedCompletedTileMap.get(tile);
+					CachedTile tile = new CachedTile(ix, iy, zoomKey, renderInformation);
+					CachedTile working = processingTileMap.get(tile);
+					CachedTile complete = (CachedTile) updatedCompletedTileMap.get(tile);
 					Image image = loadingImage;
 					if (complete != null) {
 						image = complete.finalImage.get();
@@ -336,7 +301,7 @@ final public class TileCacheRenderer implements Disposable {
 
 						// use an old tile if we have it; will look better than completely redrawing
 						// the screen on each small change...
-						Tile outdated = (Tile) outdatedCompleteTileMap.get(tile);
+						CachedTile outdated = (CachedTile) outdatedCompleteTileMap.get(tile);
 						if (outdated != null && outdated.finalImage != null) {
 							image = outdated.finalImage.get();
 						}
@@ -366,7 +331,7 @@ final public class TileCacheRenderer implements Disposable {
 						}
 					}
 
-					g.drawImage(image, (int) (tile.ix * TILE_SIZE - view.getX()), (int) (tile.iy * TILE_SIZE - view.getY()), null);
+					g.drawImage(image, (int) (tile.position.ix * TilePosition.TILE_SIZE - view.getX()), (int) (tile.position.iy * TilePosition.TILE_SIZE - view.getY()), null);
 				}
 
 			}
@@ -377,13 +342,13 @@ final public class TileCacheRenderer implements Disposable {
 		lastUsedTiles = newLastUsedTiles;
 
 		if (edtRender) {
-			EDTrenderer.renderAll(g, pnts, converter, renderFlags|RenderProperties.DRAW_OSM_COPYRIGHT, selectedObjectIds);
+			EDTrenderer.renderAll(g, DrawableObjectLayer.layers2SingleList(drawableLayers), converter, renderFlags|RenderProperties.DRAW_OSM_COPYRIGHT, selectedObjectIds);
 		} else {
 			// Render text uncached without tiles at the moment. As texts can stretch over two tiles we need to
 			// compare results across multiple tiles to see what text doesn't overlap what, and hence
 			// what should be visible. As this is problematic we don't render text in the tiles.
 			if ((renderFlags & RenderProperties.SHOW_TEXT) == RenderProperties.SHOW_TEXT) {
-				EDTrenderer.renderTexts(g, pnts, converter, RenderProperties.DRAW_OSM_COPYRIGHT);
+				EDTrenderer.renderTexts(g, DrawableObjectLayer.layers2SingleList(drawableLayers), converter, RenderProperties.DRAW_OSM_COPYRIGHT);
 			}
 		}
 
@@ -391,9 +356,10 @@ final public class TileCacheRenderer implements Disposable {
 		lastConverter = converter;
 
 	}
+	
 
 	private static Point toTileIndexPoint(Point pixelPoint) {
-		return new Point(pixelPoint.x / TILE_SIZE, pixelPoint.y / TILE_SIZE);
+		return new Point(pixelPoint.x / TilePosition.TILE_SIZE, pixelPoint.y / TilePosition.TILE_SIZE);
 	}
 
 	@Override
@@ -426,36 +392,30 @@ final public class TileCacheRenderer implements Disposable {
 	}
 
 	public synchronized void setObjects(Iterable<? extends DrawableObject> pnts) {
-		this.pnts = pnts;
-		// updateTiles(changeset, currentView);
-		// clearTiles();
 
+		// Clear all tiles which are no longer correct
 		clearDirtyTiles(calculateChangedObjects.updateObjects(pnts), lastConverter);
 
 		// Count the number of geometry points. We render on the EDT for a small number
 		// of points as this makes the map more responsive
 		long geomPointsCount = 0;
-		long polyGeomPointsCount = 0;
 		edtRender = false;
 		for (DrawableObject obj : pnts) {
-			ODLGeomImpl geom = obj.getGeometry();
+			ODLGeom geom = obj.getGeometry();
 			if (geom == null) {
 				geomPointsCount++;
 			} else {
-				Geometry jtsGeom = geom.getJTSGeometry();
-				if (jtsGeom != null) {
-					int nbPoints = jtsGeom.getNumPoints();
-					geomPointsCount += nbPoints;
-					if (hasPolygon(jtsGeom)) {
-						polyGeomPointsCount += nbPoints;
-					}
-				}
+				geomPointsCount += geom.getPointsCount();
 			}
 		}
-
-		if (geomPointsCount < MAX_GEOM_POINTS_FOR_EDT_RENDER && polyGeomPointsCount < MAX_GEOM_POINTS_FILL_FOR_EDT_RENDER) {
+		
+		// Choose EDT render or not
+		if (geomPointsCount < MAX_GEOM_POINTS_FOR_EDT_RENDER ) {
 			edtRender = true;
 		}
+		
+		// Update the layer manager
+		drawableLayers = noplmanager.update(pnts);
 	}
 
 	private synchronized void clearTiles() {
@@ -465,7 +425,7 @@ final public class TileCacheRenderer implements Disposable {
 	}
 
 	private void clearProcessingTiles() {
-		for (Tile tile : processingTileMap.values()) {
+		for (CachedTile tile : processingTileMap.values()) {
 			tile.setInvalid();
 		}
 
@@ -480,10 +440,10 @@ final public class TileCacheRenderer implements Disposable {
 		tileReadyListeners.remove(listener);
 	}
 
-	private synchronized void fireTileReadyListeners(Tile tile) {
-		Rectangle2D bounds = tile.createBounds();
+	private synchronized void fireTileReadyListeners(CachedTile tile) {
+		Rectangle2D bounds = tile.position.createBounds();
 		for (TileReadyListener listener : tileReadyListeners) {
-			listener.tileReady(bounds, tile.zoomKey);
+			listener.tileReady(bounds, tile.position.zoomKey);
 		}
 	}
 
@@ -491,10 +451,7 @@ final public class TileCacheRenderer implements Disposable {
 		// ImageUtils.createImageFrame(createLoadingImage()).setVisible(true);
 	}
 
-	private void clearDirtyTiles(List<DrawableObject> changeset, LatLongToScreen currentView) {
-
-		// always get rid of currently processing tiles
-		clearProcessingTiles();
+	private void clearDirtyTiles(List<DrawableObject> changeset, final LatLongToScreen currentView) {
 
 		boolean clearAll = false;
 
@@ -507,19 +464,7 @@ final public class TileCacheRenderer implements Disposable {
 		Rectangle2D changeArea = null;
 		if (!clearAll) {
 			for (DrawableObject obj : changeset) {
-				Rectangle2D bounds = null;
-				if (obj.getGeometry() != null) {
-					CachedGeometry cachedGeometry = DatastoreRenderer.getCachedGeometry(obj.getGeometry(), currentView, false);
-					if (cachedGeometry == null) {
-						// transformed geometry unknown for one or more objects and can't calculate this
-						// on EDT as too slow .. hence just clear all tiles
-						clearAll = true;
-						break;
-					}
-					bounds = cachedGeometry.getWorldBitmapBounds();
-				} else {
-					bounds = DatastoreRenderer.getWorldBitmapPointBoundingRectangle(obj, currentView);
-				}
+				Rectangle2D bounds = DatastoreRenderer.getRenderedWorldBitmapBounds(obj, currentView);
 
 				if (bounds != null) {
 					if (changeArea == null) {
@@ -535,29 +480,53 @@ final public class TileCacheRenderer implements Disposable {
 			clearTiles();
 		} else {
 
-			// keep those in current view outside of change area
+			class TileTester{
+				boolean isInvalid(CachedTile tile, Rectangle2D changeArea){
+					// keep those in current view outside of change area
+
+					boolean clearTile = false;
+					// clear tile if not in current zoom as change area only calculated for this
+					if (tile.position.zoomKey.equals(currentView.getZoomHashmapKey()) == false) {
+						clearTile = true;
+					}
+
+					// clear tile if bounds intersect change area
+					if (!clearTile && changeArea != null && tile.position.createBounds().intersects(changeArea)) {
+						clearTile = true;
+					}
+					return clearTile;
+				}
+			}
+			
+			TileTester tileTester = new TileTester();
+			
+			// parse completed tiles
 			for (Pair<Object, Object> pair : updatedCompletedTileMap.getSnapshot()) {
-				Tile tile = (Tile) pair.getSecond();
+				CachedTile tile = (CachedTile) pair.getSecond();
 
 				// clear tile if not in current zoom as change area only calculated for this
-				boolean clearTile = false;
-				if (tile.zoomKey.equals(currentView.getZoomHashmapKey()) == false) {
-					clearTile = true;
-				}
-
-				// clear tile if bounds intersect change area
-				if (!clearTile && changeArea != null && tile.createBounds().intersects(changeArea)) {
-					clearTile = true;
-				}
+				boolean clearTile = tileTester.isInvalid(tile, changeArea);
 
 				if (clearTile) {
 					updatedCompletedTileMap.remove(tile);
 				}
 			}
+			
+			// parse processing tiles as well
+			Iterator<Map.Entry<Object,CachedTile>> it=processingTileMap.entrySet().iterator();
+			while(it.hasNext()){
+				CachedTile tile = it.next().getValue();
+				if(tileTester.isInvalid(tile, changeArea)){
+					tile.invalid = true;
+					it.remove();
+				}
+			}
+
 		}
 	}
 
 	public boolean isDisposed() {
 		return isDisposed;
 	}
+	
 }

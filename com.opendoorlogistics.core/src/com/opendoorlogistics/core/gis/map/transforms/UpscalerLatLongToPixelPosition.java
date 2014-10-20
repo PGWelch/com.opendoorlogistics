@@ -35,7 +35,7 @@ public final class UpscalerLatLongToPixelPosition implements LatLongToScreen{
 	}
 
 	@Override
-	public LatLong getLongLat(int pixelX, int pixelY) {
+	public LatLong getLongLat(double pixelX, double pixelY) {
 		pixelX  = (int)Math.round(pixelX / scalingFactor);
 		pixelY  = (int)Math.round(pixelY / scalingFactor);
 		return original.getLongLat(pixelX, pixelY);

@@ -10,7 +10,7 @@ package com.opendoorlogistics.core.geometry.functions;
 
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.Functions.Fm1GeometryParam;
-import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 import com.vividsolutions.jts.geom.Geometry;
 
 public final class FmCentroid extends Fm1GeometryParam {
@@ -30,7 +30,7 @@ public final class FmCentroid extends Fm1GeometryParam {
 		
 		// to do.. use a grid projection to calculate
 		
-		return new ODLGeomImpl(pnt);
+		return new ODLLoadedGeometry(pnt);
 	}
 
 }

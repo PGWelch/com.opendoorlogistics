@@ -15,13 +15,13 @@ public interface LatLongToScreen {
 	Point2D getOnScreenPixelPosition(LatLong latLong);
 	Point2D getWorldBitmapPixelPosition(LatLong latLong);
 	Rectangle2D getViewportWorldBitmapScreenPosition();
-	LatLong getLongLat(int pixelX, int pixelY);
+	LatLong getLongLat(double pixelX, double pixelY);
 	
 	/**
 	 * A hash-map compatible key which identifies the zoom level.
-	 * Subsequent valls to the renderer where call 1 has zoomKey1
+	 * Subsequent calls to the renderer where call 1 has zoomKey1
 	 * and call 3 has zoomKey2 will have the same zoom level (per pixel
-	 * resolution etc) is zoomKey1.equals(zoomKey2).
+	 * resolution etc) if zoomKey1.equals(zoomKey2).
 	 * @return
 	 */
 	Object getZoomHashmapKey();

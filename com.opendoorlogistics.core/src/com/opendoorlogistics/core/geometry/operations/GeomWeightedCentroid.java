@@ -17,8 +17,8 @@ import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
-import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.utils.Pair;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -136,7 +136,7 @@ public class GeomWeightedCentroid {
 			if (weightSum > 0) {
 				Point pGrid = new GeometryFactory().createPoint(new Coordinate(xSum / weightSum, ySum / weightSum));
 				Point pTrans = (Point) transforms.gridToWGS84(pGrid);
-				ret = new ODLGeomImpl(pTrans);
+				ret = new ODLLoadedGeometry(pTrans);
 
 				// estimate size as size of keys as these will be the most expensive..
 				long nbBytes = 0;

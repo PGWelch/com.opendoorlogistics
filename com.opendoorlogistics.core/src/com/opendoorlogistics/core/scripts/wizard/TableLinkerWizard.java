@@ -50,7 +50,8 @@ final public class TableLinkerWizard {
 		tc.setFlags(target.getFlags());
 		DatastoreCopier.copyTableDefinition(target, tc);
 
-		// use scores
+		// use scores first
+		boolean matchedGeom=false;
 		for (int col = 0; col < tc.getColumnCount(); col++) {
 			
 			// get top scoring match
@@ -60,7 +61,6 @@ final public class TableLinkerWizard {
 				ms = scores.get(0);
 			}
 
-		//	boolean isRequired = ((target.getColumnFlags(col) & TableFlags.FLAG_IS_OPTIONAL) == 0);
 			AdapterColumnConfig config = tc.getColumn(col);
 
 			// Priority 1 - use the top match if we get a field name (turn off tags as creating problems)
@@ -75,13 +75,28 @@ final public class TableLinkerWizard {
 					for(int srcCol=0; source!=null && srcCol < source.getColumnCount(); srcCol++){
 						if(source.getColumnType(srcCol) == type){
 							config.setFrom(source.getColumnName(srcCol));
+							
+							if(type ==ODLColumnType.GEOM){
+								matchedGeom = true;
+							}
 							break;
 						}
 					}
 				}				
 			}
+		}
+
+		
+		for (int col = 0; col < tc.getColumnCount(); col++) {
+
+			// Skip config if already filled
+			AdapterColumnConfig config = tc.getColumn(col);
+			if(!Strings.isEmpty(config.getFrom()) || !Strings.isEmpty(config.getFormula())){
+				continue;
+			}
 			
-			// Priority 3 - check for case where we have a geometry and we want a lat or long
+			// Priority 3 - check for case where we have a geometry and we want a lat or long, unless we've already matched a geom to another field
+			if(!matchedGeom){
 			boolean targetIsLat = TagUtils.hasTag(PredefinedTags.LATITUDE, target, col);
 			boolean targetIsLng = TagUtils.hasTag(PredefinedTags.LONGITUDE, target, col);
 			if((targetIsLat || targetIsLng) && source!=null){
@@ -104,6 +119,7 @@ final public class TableLinkerWizard {
 				if(isSet){
 					continue;
 				}
+			}
 			}
 			
 			// Priority 4 - if flagged use default formula for location key
