@@ -29,6 +29,7 @@ import javax.swing.event.MouseInputListener;
 import org.jdesktop.swingx.OSMTileFactoryInfo;
 import org.jdesktop.swingx.mapviewer.DefaultTileFactory;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
+import org.jdesktop.swingx.mapviewer.TileFactory;
 import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 import org.jdesktop.swingx.painter.CompoundPainter;
 import org.jdesktop.swingx.painter.Painter;
@@ -45,12 +46,13 @@ import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
+import com.opendoorlogistics.core.gis.mapsforge.MapsforgeTileFactory;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
 
 
 public class ReadOnlyMapControl extends DesktopPaneMapViewer {
-	private final DefaultTileFactory tileFactory;
+	private final TileFactory tileFactory;
 	private static final double DEFAULT_ZOOM_FRACTION = 0.975;
 	
 	//private LegendFrame legendFrame;
@@ -259,10 +261,15 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 //			// TODO: handle exception
 //		}
 
-		// Create a TileFactoryInfo for OpenStreetMap
-		TileFactoryInfo info = new OSMTileFactoryInfo();
-		tileFactory = new DefaultTileFactory(info);
-		tileFactory.setThreadPoolSize(2);
+		if(MapsforgeTileFactory.getSingleton()!=null){
+			tileFactory = MapsforgeTileFactory.getSingleton();
+		}else{
+			// Create a TileFactoryInfo for OpenStreetMap
+			TileFactoryInfo info = new OSMTileFactoryInfo();
+			DefaultTileFactory factory= new DefaultTileFactory(info);
+			factory.setThreadPoolSize(2);		
+			tileFactory = factory;
+		}
 
 		// Setup local file cache
 		JXMapUtils.initLocalFileCache();

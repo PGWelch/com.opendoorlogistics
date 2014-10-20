@@ -32,6 +32,7 @@ public class ApplicationCache {
 	public static final String CACHED_PROJECTED_RENDERER_GEOMETRY = "cached-projected-renderer-geometry";
 	public static final String CACHED_ROG_QUADTREE_BLOCKS = "cached-rog-quadtree-blocks";
 	public static final String CACHED_ROG_FULL_GEOMETRY = "cached-rog-full-geometry";
+	public static final String CACHED_MAPSFORGE_BACKGROUND_TILES = "cached-mapsforge-background-tiles";
 	
 	public static ApplicationCache singleton(){
 		return singleton;
@@ -50,6 +51,7 @@ public class ApplicationCache {
 		create(CACHED_PROJECTED_RENDERER_GEOMETRY, 256 * MB);
 		create(CACHED_ROG_QUADTREE_BLOCKS, 128 * MB);
 		create(CACHED_ROG_FULL_GEOMETRY, 64 * MB);
+		create(CACHED_MAPSFORGE_BACKGROUND_TILES, 64 * MB);
 		
 	}
 	

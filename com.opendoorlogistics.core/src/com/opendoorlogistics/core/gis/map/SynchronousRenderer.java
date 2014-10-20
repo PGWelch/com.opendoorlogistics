@@ -37,6 +37,7 @@ import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
 import com.opendoorlogistics.core.gis.map.transforms.UpscalerLatLongToPixelPosition;
+import com.opendoorlogistics.core.gis.mapsforge.MapsforgeTileFactory;
 import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
@@ -125,7 +126,14 @@ final public class SynchronousRenderer {
 		}
 	}
 
-	private MyTile getTile(int tpx, int tpy, int zoom, TileFactoryInfo info) {
+	private MyTile getTile(int tpx, int tpy, int zoom) {
+		// check if we have a mapsforge singleton...
+		if(MapsforgeTileFactory.getSingleton()!=null){
+			MyTile tile = new MyTile(null);
+			tile.image = MapsforgeTileFactory.getSingleton().renderSynchronously(tpx, tpy, zoom);
+			return tile;
+		}
+		
 		// wrap the tiles horizontally --> mod the X with the max width and use that
 		int tileX = tpx;
 		int numTilesWide = (int) GeoUtil.getMapSize(zoom, info).getWidth();
@@ -281,7 +289,7 @@ final public class SynchronousRenderer {
 				int itpy = y + tpy;
 				Rectangle rect = new Rectangle(itpx * size - viewportBounds.x, itpy * size - viewportBounds.y, size, size);
 				if (g.getClipBounds().intersects(rect)) {
-					MyTile tile = getTile(itpx, itpy, zoom, info);
+					MyTile tile = getTile(itpx, itpy, zoom);
 					if (tile != null) {
 						int ox = ((itpx * info.getTileSize(zoom)) - viewportBounds.x);
 						int oy = ((itpy * info.getTileSize(zoom)) - viewportBounds.y);
