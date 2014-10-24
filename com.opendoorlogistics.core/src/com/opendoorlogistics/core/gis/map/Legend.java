@@ -233,7 +233,7 @@ final public class Legend {
 		// draw all
 		int y = fixedRowHeight;
 		int x = border;
-		Color fontColor = DatastoreRenderer.LABEL_FONT_COLOUR;
+		Color fontColor = LowLevelTextRenderer.LABEL_FONT_COLOUR;
 		for (Item item : items) {
 
 			DatastoreRenderer.drawOutlinedSymbol(g,SymbolType.CIRCLE, new Point2D.Float(gapBeforePoint + x + pointCircumference / 2,

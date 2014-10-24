@@ -19,16 +19,12 @@ import gnu.trove.set.hash.TLongHashSet;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
-import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.Toolkit;
-import java.awt.font.TextLayout;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
@@ -42,15 +38,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.geometry.JTSUtils;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl.AtomicGeomType;
-import com.opendoorlogistics.core.gis.map.OnscreenGeometry.CachedGeomKey;
 import com.opendoorlogistics.core.gis.map.Legend.LegendAlignment;
+import com.opendoorlogistics.core.gis.map.OnscreenGeometry.CachedGeomKey;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
@@ -73,17 +68,6 @@ import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.math.MathUtil;
 
 public class DatastoreRenderer implements ObjectRenderer{
-	// private static final int STANDARD_OUTLINE_INNER_WIDTH = 2;
-	// private static final int STANDARD_OUTLINE_OUTER_WIDTH = 4;
-	// private static final int LARGER_OUTLINE_INNER_WIDTH = 4;
-	// private static final int LARGER_OUTLINE_OUTER_WIDTH = 8;
-	private static final int NO_DRAW_BUFFER_AROUND_TEXT = 5;
-	private static final double STRING_OFFSET_FRACTION = 0.5;
-	private static final BasicStroke SMALL_INNER_TEXT_STROKE = new BasicStroke(4, BasicStroke.CAP_ROUND, BasicStroke.CAP_ROUND, 0, null, 0);
-	private static final BasicStroke MEDIUM_INNER_TEXT_STROKE = new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.CAP_ROUND, 0, null, 0);
-	private static final BasicStroke LARGE_INNER_TEXT_STROKE = new BasicStroke(8, BasicStroke.CAP_ROUND, BasicStroke.CAP_ROUND, 0, null, 0);
-	private static final Font LABEL_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 12);
-	public static final Color LABEL_FONT_COLOUR = new Color(0, 0, 100);
 	public static final int CACHE_MIN_IMAGE_SIZE_LIMIT = 4 * 4;
 	public static final int MAX_IMAGE_SIZE_LIMIT = 3000 * 3000;
 	static final Color SELECTION_COLOUR = new Color(0, 0, 255);
@@ -165,7 +149,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 			correctedImg.setRGB(toSet.x, toSet.y, toSet.rgba);
 		}
 
-		// create the final image with a fade and then everything on top of it
+		// create the argb final image with a fade and then everything on top of it
 		BufferedImage ret = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = null;
 		try {
@@ -327,6 +311,8 @@ public class DatastoreRenderer implements ObjectRenderer{
 		}
 
 		// render groups first, rendering the winning object only
+	//	int speedTest=1000;
+	//	for(int i =0 ; i < speedTest ; i++){
 		for (DrawableObject obj : pnts) {
 			if (!Strings.isEmpty(obj.getLabelGroupKey())) {
 				String std = stdCache.std(obj.getLabelGroupKey());
@@ -342,6 +328,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 				drawer.render(obj);
 			}
 		}
+	//	}
 	}
 
 	/**
@@ -634,165 +621,6 @@ public class DatastoreRenderer implements ObjectRenderer{
 
 	}
 
-	private class LowLevelTextRenderer {
-
-		Point2D getScreenPos(LatLongToScreen converter, DrawableObject pnt, Font font, Point2D.Double size) {
-			Point2D screenPos=null;
-			ODLGeomImpl geom = pnt.getGeometry();
-			if (geom == null) {
-				screenPos = converter.getOnScreenPixelPosition(pnt);
-
-				// get text screen positioning, offsetting by a fraction of the font size and at least the point's pixel half-width
-				int offset = (int) Math.round(STRING_OFFSET_FRACTION * font.getSize());
-				offset = Math.max(offset, (int) Math.ceil(0.5 * pnt.getPixelWidth()) + 1);
-				screenPos = new Point2D.Double(screenPos.getX() + offset, screenPos.getY());
-
-			} else {
-				
-				// get the world bitmap position
-				Point2D wbPos=null;
-				if(geom.isLineString()){
-					// draw text in the centre of the object, adjusting for text size
-					OnscreenGeometry cachedGeometry = getCachedGeometry(pnt.getGeometry(), converter, true);
-					if (cachedGeometry == null) {
-						return null;
-					}
-
-					wbPos = cachedGeometry.getLineStringMidPoint();	
-				}
-				if(wbPos==null){
-					wbPos = geom.getWorldBitmapCentroid(converter);
-				}
-				
-				if(wbPos!=null){
-					Rectangle2D view = converter.getViewportWorldBitmapScreenPosition();
-					screenPos = new Point2D.Double(wbPos.getX() - view.getMinX() - size.getX() / 2, wbPos.getY() - view.getMinY() - size.getY() / 2);					
-				}
-			}
-
-			return screenPos;
-		}
-
-		boolean renderDrawableText(Graphics2D g, LatLongToScreen converter, DrawableObject pnt, Quadtree textQuadtree) {
-			if (Strings.isEmpty(pnt.getLabel())) {
-				return false;
-			}
-
-			Font font = getFont((int)pnt.getFontSize());
-
-			// get initial bounds (not in correct screen position)
-			TextLayout textLayout = new TextLayout(pnt.getLabel(), font, g.getFontRenderContext());
-			Point2D.Double size = getSize(textLayout);
-
-			// get screen position from the point or geometry
-			Point2D screenPos = getScreenPos(converter, pnt, font, size);
-			if (screenPos == null) {
-				return false;
-			}
-
-			return drawTextLayout(font, screenPos, textLayout, size, g, textQuadtree);
-		}
-
-		void renderInBottomRightCorner(String text, int fontSize,Graphics2D g,Quadtree textQuadtree){
-			Font font = getFont(fontSize);
-			TextLayout textLayout = new TextLayout(text, font, g.getFontRenderContext());
-			Point2D.Double size = getSize(textLayout);
-			
-			Rectangle bounds = g.getClipBounds();
-			Point2D screenPos = new Point2D.Double(bounds.getWidth() - size.x - 0, bounds.getHeight() - size.y - 0);
-			drawTextLayout(font, screenPos, textLayout, size, g, textQuadtree);
-		}
-		
-		/**
-		 * @param font
-		 * @param screenPos
-		 * @param textLayout
-		 * @param size
-		 * @param g
-		 * @param textQuadtree
-		 * @return
-		 */
-		protected boolean drawTextLayout(Font font, Point2D screenPos, TextLayout textLayout, Point2D.Double size, Graphics2D g, Quadtree textQuadtree) {
-			// get bounds by getting the shape and translating to screen position
-			AffineTransform affineTransform = new AffineTransform();
-			affineTransform.translate((int) screenPos.getX(), (int) screenPos.getY() + size.getY() / 2);
-			Shape shape = textLayout.getOutline(affineTransform);
-			Rectangle2D onscreenBounds = shape.getBounds2D();
-
-			// save current hints and change to high quality rendering
-			Object oldAAHintVal = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
-			Object oldRHintVal = g.getRenderingHint(RenderingHints.KEY_RENDERING);
-			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-			g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-
-			// test quadtree to see if we can draw here
-			Envelope envelope = new Envelope(onscreenBounds.getMinX(), onscreenBounds.getMaxX(), onscreenBounds.getMinY(), onscreenBounds.getMaxY());
-			envelope.expandBy(NO_DRAW_BUFFER_AROUND_TEXT, NO_DRAW_BUFFER_AROUND_TEXT);
-			@SuppressWarnings("unchecked")
-			List<Envelope> found = textQuadtree.query(envelope);
-			boolean drawText = true;
-			if (found != null) {
-				for (Envelope other : found) {
-					if (other.intersects(envelope)) {
-						drawText = false;
-						break;
-					}
-				}
-			}
-
-			if (drawText) {
-				// draw outline
-				if (font.getSize() < 20) {
-					g.setStroke(SMALL_INNER_TEXT_STROKE);
-				} else if (font.getSize() < 30) {
-					g.setStroke(MEDIUM_INNER_TEXT_STROKE);
-				} else {
-					g.setStroke(LARGE_INNER_TEXT_STROKE);
-				}
-
-				g.setColor(Color.WHITE);
-				g.draw(shape);
-
-				// draw inner
-				g.setColor(LABEL_FONT_COLOUR);
-				textLayout.draw(g, (int) screenPos.getX(), (int) (screenPos.getY() + size.getY() / 2));
-
-				textQuadtree.insert(envelope, envelope);
-			}
-
-			// set back original hints
-			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAAHintVal);
-			g.setRenderingHint(RenderingHints.KEY_RENDERING, oldRHintVal);
-			return drawText;
-		}
-
-		/**
-		 * @param textLayout
-		 * @return
-		 */
-		protected Point2D.Double getSize(TextLayout textLayout) {
-			Rectangle2D initialBounds = textLayout.getBounds();
-			Point2D.Double size = new Point2D.Double(initialBounds.getWidth(), initialBounds.getHeight());
-			return size;
-		}
-
-		/**
-		 * @param pnt
-		 * @return
-		 */
-		protected Font getFont(int fontSize) {
-			// get correct Font
-			Font font = LABEL_FONT;
-			if (fontSize > 0) {
-				// Font is apparently a lightweight object (see http://stackoverflow.com/questions/6102602/java-awt-is-font-a-lightweight-object)
-				// so this should be OK.
-				font = new Font(Font.SANS_SERIF, Font.BOLD,fontSize);
-			}
-			return font;
-		}
-
-	}
-
 	private static class DrawnSymbol {
 		final boolean drawOutline;
 		final Color color;
@@ -990,7 +818,8 @@ public class DatastoreRenderer implements ObjectRenderer{
 
 					// Draw the outline
 					if (obj.getDrawOutline() != 0 && skipBorders==false) {
-						BasicStroke stroke = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
+						float borderWidth = (renderFlags & RenderProperties.THIN_POLYGON_BORDERS)==RenderProperties.THIN_POLYGON_BORDERS? 1 : 2;
+						BasicStroke stroke = new BasicStroke(borderWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
 						g.setStroke(stroke);
 
 						if (outlineCol != null) {
@@ -1121,7 +950,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 	
 	public static OnscreenGeometry getCachedGeometry(ODLGeomImpl geom, LatLongToScreen converter, boolean createIfNotCached) {
 	
-		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.CACHED_PROJECTED_RENDERER_GEOMETRY);
+		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.PROJECTED_RENDERER_GEOMETRY);
 		CachedGeomKey key = new CachedGeomKey(geom, converter.getZoomHashmapKey());
 		OnscreenGeometry transformed = (OnscreenGeometry) cache.get(key);
 		

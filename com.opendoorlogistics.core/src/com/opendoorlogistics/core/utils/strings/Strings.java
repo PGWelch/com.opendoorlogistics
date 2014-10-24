@@ -206,16 +206,42 @@ final public class Strings {
 	 * @return
 	 */
 	public static String std(String s) {
-		if(s==null){
+		if (s == null) {
 			return "";
 		}
-		
+
 		// trim whitespace at start and end and convert to lowercase
 		s = s.trim().toLowerCase();
 
 		// ensure only have single spaces
 		s = s.replaceAll("  ", " ");
 		return s;
+	}
+
+	/**
+	 * See http://stackoverflow.com/questions/5054995/how-to-replace-case-insensitive-literal-substrings-in-java
+	 * 
+	 * @param source
+	 * @param target
+	 * @param replacement
+	 * @return
+	 */
+	public static String caseInsensitiveReplace(String source, String target, String replacement) {
+		StringBuilder sbSource = new StringBuilder(source);
+		StringBuilder sbSourceLower = new StringBuilder(source.toLowerCase());
+		String searchString = target.toLowerCase();
+
+		int idx = 0;
+		while ((idx = sbSourceLower.indexOf(searchString, idx)) != -1) {
+			sbSource.replace(idx, idx + searchString.length(), replacement);
+			sbSourceLower.replace(idx, idx + searchString.length(), replacement);
+			idx += replacement.length();
+		}
+		sbSourceLower.setLength(0);
+		sbSourceLower.trimToSize();
+		sbSourceLower = null;
+
+		return sbSource.toString();
 	}
 
 	/**
@@ -339,18 +365,17 @@ final public class Strings {
 		}
 	}
 
-	public static String[] addToArray(String [] arr, String s){
-		String []ret = new String[arr.length+1];
+	public static String[] addToArray(String[] arr, String s) {
+		String[] ret = new String[arr.length + 1];
 		System.arraycopy(arr, 0, ret, 0, arr.length);
 		ret[arr.length] = s;
 		return ret;
 	}
-	
+
 	/**
-	 * Standardised comparison of two strings. 
-	 * The comparison compares the standardised version of the two strings.
-	 * It also handles the situation where you have a word followed by a number,
-	 * e.g. "vehicle 9", "vehicle 11", and applies numeric sorting to the number part. 
+	 * Standardised comparison of two strings. The comparison compares the standardised version of the two strings. It also handles the situation
+	 * where you have a word followed by a number, e.g. "vehicle 9", "vehicle 11", and applies numeric sorting to the number part.
+	 * 
 	 * @param a
 	 * @param b
 	 * @return

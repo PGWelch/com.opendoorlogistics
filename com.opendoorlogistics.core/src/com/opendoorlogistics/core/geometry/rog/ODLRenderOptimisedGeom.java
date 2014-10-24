@@ -153,7 +153,7 @@ public class ODLRenderOptimisedGeom extends ODLLoadableGeometry {
 
 		// Try getting from the cache first
 		ROGGeomKey key = new ROGGeomKey(getFileInformation().getFile(), id);
-		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.CACHED_ROG_FULL_GEOMETRY);
+		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.ROG_FULL_GEOMETRY);
 		Geometry ret = (Geometry)cache.get(key);
 		
 		// Load if not cached

@@ -17,42 +17,33 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.MouseInputListener;
 
-import org.jdesktop.swingx.OSMTileFactoryInfo;
-import org.jdesktop.swingx.mapviewer.DefaultTileFactory;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
-import org.jdesktop.swingx.mapviewer.TileFactory;
-import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 import org.jdesktop.swingx.painter.CompoundPainter;
 import org.jdesktop.swingx.painter.Painter;
 
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.DesktopPaneMapViewer;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
-import com.opendoorlogistics.core.gis.map.JXMapUtils;
 import com.opendoorlogistics.core.gis.map.MapUtils;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
+import com.opendoorlogistics.core.gis.map.background.BackgroundTileFactorySingleton;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
-import com.opendoorlogistics.core.gis.mapsforge.MapsforgeTileFactory;
-import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
 
 
 public class ReadOnlyMapControl extends DesktopPaneMapViewer {
-	private final TileFactory tileFactory;
 	private static final double DEFAULT_ZOOM_FRACTION = 0.975;
 	
 	//private LegendFrame legendFrame;
@@ -126,7 +117,6 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	}
 	
 	public void dispose(){
-		tileFactory.dispose();
 		drawablesContainer.dispose();
 		isDisposed = true;
 	}
@@ -252,33 +242,12 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 
 	public ReadOnlyMapControl(MapConfig config) {
 		this.config = config;
-//		// Set loading image
-//		try {
-//			URL url = this.getClass().getResource("/resources/icons/image-loading.png");
-//			this.setLoadingImage(ImageIO.read(url));
-//
-//		} catch (Throwable e) {
-//			// TODO: handle exception
-//		}
 
-		if(MapsforgeTileFactory.getSingleton()!=null){
-			tileFactory = MapsforgeTileFactory.getSingleton();
-		}else{
-			// Create a TileFactoryInfo for OpenStreetMap
-			TileFactoryInfo info = new OSMTileFactoryInfo();
-			DefaultTileFactory factory= new DefaultTileFactory(info);
-			factory.setThreadPoolSize(2);		
-			tileFactory = factory;
-		}
-
-		// Setup local file cache
-		JXMapUtils.initLocalFileCache();
-
-		setTileFactory(tileFactory);
+		setTileFactory(BackgroundTileFactorySingleton.getFactory());
 
 		// Set the focus and a sensible default location
-		if (tileFactory.getInfo() != null) {
-			setZoom(tileFactory.getInfo().getMaximumZoomLevel());
+		if (BackgroundTileFactorySingleton.getFactory().getInfo() != null) {
+			setZoom(BackgroundTileFactorySingleton.getFactory().getInfo().getMaximumZoomLevel());
 		}
 
 		// set callback for when our own tiles are loaded

@@ -130,7 +130,7 @@ public class NOVLPolyLayerTile {
 	 * @param ret
 	 * @return
 	 */
-	private CompressedImage createDrawnImage(LatLongToScreen converter, ObjectRenderer renderer,boolean bordersOnly) {
+	private CompressedImage createDrawnImage(LatLongToScreen converter, ObjectRenderer renderer,boolean isBorders) {
 //	private BufferedImage createDrawnImage(LatLongToScreen converter, ObjectRenderer renderer,boolean bordersOnly) {
 		BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = img.createGraphics();
@@ -142,7 +142,8 @@ public class NOVLPolyLayerTile {
 					int id = ids.get(obj.getGeometry());			
 					Color dummyIdColour = createColourId(id);
 					g.setColor(dummyIdColour);			        
-					renderer.renderObject(g, converter, new ColourDecorator(obj, dummyIdColour, bordersOnly?1:0), false,bordersOnly?RenderProperties.RENDER_BORDERS_ONLY:RenderProperties.SKIP_BORDER_RENDERING);
+					renderer.renderObject(g, converter, new ColourDecorator(obj, dummyIdColour, isBorders?1:0), false,
+							isBorders?RenderProperties.RENDER_BORDERS_ONLY | RenderProperties.THIN_POLYGON_BORDERS:RenderProperties.SKIP_BORDER_RENDERING);
 				}
 			}
 		} finally {

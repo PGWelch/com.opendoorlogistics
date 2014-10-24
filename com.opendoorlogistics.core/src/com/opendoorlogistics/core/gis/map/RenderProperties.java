@@ -32,6 +32,8 @@ final public class RenderProperties {
 	public static final long DRAW_OSM_COPYRIGHT = 1<<10;
 	public static final long RENDER_BORDERS_ONLY = 1<<11;
 	public static final long SKIP_BORDER_RENDERING = 1<<12;
+	public static final long THIN_POLYGON_BORDERS= 1<<13;
+	
 	public enum NumericRenderProp{
 		MIN_SPAN_LONGITUDE("minSpanLongitude"),
 		MIN_SPAN_LATITUDE("minSpanLatitude"),

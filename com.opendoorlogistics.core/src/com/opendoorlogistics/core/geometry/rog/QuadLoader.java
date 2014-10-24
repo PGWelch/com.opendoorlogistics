@@ -257,7 +257,7 @@ public class QuadLoader implements Closeable, RogFileInformation{
 	
 	public synchronized Geometry loadGeometry(long geomId, int blockNb, int geomNbInBlock){
 		// try fetching the block from the cache
-		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.CACHED_ROG_QUADTREE_BLOCKS);
+		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.ROG_QUADTREE_BLOCKS);
 		CacheKey cacheKey = new CacheKey(file, blockNb);
 		CachedQuadBlock block = (CachedQuadBlock)cache.get(cacheKey);
 		

@@ -12,6 +12,7 @@ import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.set.hash.TIntHashSet;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,6 +34,8 @@ import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.formulae.UserVariableProvider;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary;
+import com.opendoorlogistics.core.geometry.Spatial;
+import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig.SortField;
@@ -95,6 +98,18 @@ final public class AdapterBuilder {
 			return null;
 		}
 
+		// check for importing a shapefile...
+		if(id!=null){	
+			String shapefilename = Strings.caseInsensitiveReplace(id, ScriptConstants.SHAPEFILE_DS_NAME_PREFIX, "");
+			if(shapefilename.length() < id.length()){
+				shapefilename = shapefilename.trim();
+				env.log("Importing shapefile " + shapefilename);
+				ODLDatastore<? extends ODLTable> ret = Spatial.importAndCacheShapefile(new File(shapefilename));
+				builtAdapters.addAdapter(id, ret);
+				return ret;
+			}
+		}
+		
 		if (id != null) {
 			// check for cycles
 			if (callerAdapters.contains(id)) {

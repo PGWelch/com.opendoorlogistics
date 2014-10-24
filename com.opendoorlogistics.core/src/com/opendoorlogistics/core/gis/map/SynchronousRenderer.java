@@ -14,16 +14,7 @@ import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.HashSet;
-
-import javax.imageio.ImageIO;
 
 import org.jdesktop.swingx.OSMTileFactoryInfo;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
@@ -31,13 +22,12 @@ import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 import org.jdesktop.swingx.mapviewer.util.GeoUtil;
 
 import com.opendoorlogistics.api.geometry.LatLong;
-import com.opendoorlogistics.core.AppConstants;
+import com.opendoorlogistics.core.gis.map.background.BackgroundTileFactorySingleton;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
 import com.opendoorlogistics.core.gis.map.transforms.UpscalerLatLongToPixelPosition;
-import com.opendoorlogistics.core.gis.mapsforge.MapsforgeTileFactory;
 import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
@@ -51,7 +41,6 @@ import com.opendoorlogistics.core.utils.images.ImageUtils;
  */
 final public class SynchronousRenderer {
 	private final TileFactoryInfo info;
-	private final SimpleSoftReferenceMap<String, MyTile> inMemoryCacheMap = new SimpleSoftReferenceMap<>();
 	private final DatastoreRenderer renderer = new DatastoreRenderer();
 	private final RecentImageCache recentImageCache = new RecentImageCache(RecentImageCache.ZipType.PNG);
 
@@ -59,107 +48,9 @@ final public class SynchronousRenderer {
 		this.info = info;
 	}
 
-	private class MyTile {
-		final String url;
-		BufferedImage image;
 
-		MyTile(String url) {
-			super();
-			this.url = url;
-		}
 
-	}
 
-	private class TileLoader implements Runnable {
-
-		public TileLoader(MyTile tile) {
-			super();
-			this.tile = tile;
-		}
-
-		private final MyTile tile;
-
-		/**
-		 * implementation of the Runnable interface.
-		 */
-		@Override
-		public void run() {
-
-			int tries = 3;
-			while (tile.image == null && tries > 0) {
-				try {
-					BufferedImage img = null;
-					URI uri = new URI(tile.url);
-
-					byte[] bimg = download(uri.toURL());
-					if (bimg != null) {
-						img = ImageIO.read(new ByteArrayInputStream(bimg));
-					}
-
-					if (img == null) {
-						tries--;
-					} else {
-						tile.image = img;
-
-					}
-				} catch (Throwable e) {
-					tries--;
-				}
-			}
-		}
-
-		private byte[] download(URL url) throws IOException {
-			URLConnection connection = url.openConnection();
-			connection.setRequestProperty("User-Agent", AppConstants.ORG_NAME + "/" + AppConstants.getAppVersion().toString());
-			InputStream ins = connection.getInputStream();
-
-			ByteArrayOutputStream bout = new ByteArrayOutputStream();
-			byte[] buf = new byte[256];
-			while (true) {
-				int n = ins.read(buf);
-				if (n == -1)
-					break;
-				bout.write(buf, 0, n);
-			}
-
-			return bout.toByteArray();
-		}
-	}
-
-	private MyTile getTile(int tpx, int tpy, int zoom) {
-		// check if we have a mapsforge singleton...
-		if(MapsforgeTileFactory.getSingleton()!=null){
-			MyTile tile = new MyTile(null);
-			tile.image = MapsforgeTileFactory.getSingleton().renderSynchronously(tpx, tpy, zoom);
-			return tile;
-		}
-		
-		// wrap the tiles horizontally --> mod the X with the max width and use that
-		int tileX = tpx;
-		int numTilesWide = (int) GeoUtil.getMapSize(zoom, info).getWidth();
-		if (tileX < 0) {
-			tileX = numTilesWide - (Math.abs(tileX) % numTilesWide);
-		}
-
-		tileX = tileX % numTilesWide;
-		int tileY = tpy;
-
-		String url = info.getTileUrl(tileX, tileY, zoom);
-		MyTile tile = inMemoryCacheMap.get(url);
-		if (tile == null) {
-			tile = new MyTile(url);
-			TileLoader loader = new TileLoader(tile);
-			loader.run();
-			if (tile.image != null) {
-				inMemoryCacheMap.put(url, tile);
-			} else {
-				// failed to get tile
-				tile = null;
-			}
-		}
-
-		return tile;
-	}
 
 	/**
 	 * Draw an image.
@@ -289,32 +180,16 @@ final public class SynchronousRenderer {
 				int itpy = y + tpy;
 				Rectangle rect = new Rectangle(itpx * size - viewportBounds.x, itpy * size - viewportBounds.y, size, size);
 				if (g.getClipBounds().intersects(rect)) {
-					MyTile tile = getTile(itpx, itpy, zoom);
+					BufferedImage tile = BackgroundTileFactorySingleton.getFactory().renderSynchronously(itpx, itpy, zoom);
 					if (tile != null) {
 						int ox = ((itpx * info.getTileSize(zoom)) - viewportBounds.x);
 						int oy = ((itpy * info.getTileSize(zoom)) - viewportBounds.y);
-						g.drawImage(tile.image, ox, oy, null);
+						g.drawImage(tile, ox, oy, null);
 					}
 				}
 			}
 		}
 	}
-
-	// public static void main(String[] strs) {
-	// MapDatastore mds = new MapDatastore();
-	// mds.addLngLatPoint(0,51.4791);
-	// final BufferedImage image = singleton.drawAtLatLongCentre( new LatLongPoint(51.4791, 0), 800, 800, 7,
-	// DatastoreRenderer.getPoints(mds.prepareDBForRendering()));
-	// JPanel panel = new JPanel() {
-	// @Override
-	// protected void paintComponent(Graphics g) {
-	// super.paintComponent(g);
-	// g.drawImage(image, 0, 0, null);
-	// }
-	// };
-	//
-	// ShowPanel.showPanel(panel);
-	// }
 
 	private static final SynchronousRenderer singleton;
 	static {

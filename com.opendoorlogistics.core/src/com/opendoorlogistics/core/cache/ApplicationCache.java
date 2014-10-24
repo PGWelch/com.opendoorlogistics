@@ -29,10 +29,12 @@ public class ApplicationCache {
 	public static final String A_TO_B_TIME_SECONDS_CACHE = "a-to-b-time-seconds-cache";
 	public static final String IMPORTED_SHAPEFILE_CACHE = "imported-shapefile-cache";
 	public static final String GEOM_CENTROID_CACHE = "geom-centroid-cache";
-	public static final String CACHED_PROJECTED_RENDERER_GEOMETRY = "cached-projected-renderer-geometry";
-	public static final String CACHED_ROG_QUADTREE_BLOCKS = "cached-rog-quadtree-blocks";
-	public static final String CACHED_ROG_FULL_GEOMETRY = "cached-rog-full-geometry";
-	public static final String CACHED_MAPSFORGE_BACKGROUND_TILES = "cached-mapsforge-background-tiles";
+	public static final String PROJECTED_RENDERER_GEOMETRY = "projected-renderer-geometry";
+	public static final String ROG_QUADTREE_BLOCKS = "rog-quadtree-blocks";
+	public static final String ROG_FULL_GEOMETRY = "rog-full-geometry";
+	public static final String MAPSFORGE_BACKGROUND_TILES = "mapsforge-background-tiles";
+	public static final String TEXT_LAYOUT_CACHE = "text-layout-cache";
+	public static final String SYNCHRONOUS_RETRIEVED_TILE_CACHE = "synchronous-retrieved-tile-cache";
 	
 	public static ApplicationCache singleton(){
 		return singleton;
@@ -48,11 +50,12 @@ public class ApplicationCache {
 		create(A_TO_B_TIME_SECONDS_CACHE, 12*MB);
 		create(IMPORTED_SHAPEFILE_CACHE, 128*MB);
 		create(GEOM_CENTROID_CACHE, 16 * MB);
-		create(CACHED_PROJECTED_RENDERER_GEOMETRY, 256 * MB);
-		create(CACHED_ROG_QUADTREE_BLOCKS, 128 * MB);
-		create(CACHED_ROG_FULL_GEOMETRY, 64 * MB);
-		create(CACHED_MAPSFORGE_BACKGROUND_TILES, 64 * MB);
-		
+		create(PROJECTED_RENDERER_GEOMETRY, 256 * MB);
+		create(ROG_QUADTREE_BLOCKS, 128 * MB);
+		create(ROG_FULL_GEOMETRY, 64 * MB);
+		create(MAPSFORGE_BACKGROUND_TILES, 64 * MB);
+		create(TEXT_LAYOUT_CACHE, 32 * MB);
+		create(SYNCHRONOUS_RETRIEVED_TILE_CACHE, 32 * MB);
 	}
 	
 	public RecentlyUsedCache get(String cacheId){

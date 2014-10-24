@@ -455,26 +455,26 @@ final public class ScriptUtils {
 		return ret;
 	}
 
-	/**
-	 * Tests if the input adapters directly read from the input table. Note that indirect reads such as can happen in a lookup formula are not
-	 * checked.
-	 * 
-	 * @param adapters
-	 * @param datastore
-	 * @param tableName
-	 * @return
-	 */
-	public static boolean getReadsDirectlyTable(Iterable<AdapterConfig> adapters, String datastore, String tableName) {
-		for (AdapterConfig adapterConfig : adapters) {
-			for (AdaptedTableConfig table : adapterConfig) {
-				if (Strings.equalsStd(datastore, table.getFromDatastore()) && Strings.equalsStd(tableName, table.getFromTable())) {
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
+//	/**
+//	 * Tests if the input adapters directly read from the input table. Note that indirect reads such as can happen in a lookup formula are not
+//	 * checked.
+//	 * 
+//	 * @param adapters
+//	 * @param datastore
+//	 * @param tableName
+//	 * @return
+//	 */
+//	public static boolean getReadsDirectlyTable(Iterable<AdapterConfig> adapters, String datastore, String tableName) {
+//		for (AdapterConfig adapterConfig : adapters) {
+//			for (AdaptedTableConfig table : adapterConfig) {
+//				if (Strings.equalsStd(datastore, table.getFromDatastore()) && Strings.equalsStd(tableName, table.getFromTable())) {
+//					return true;
+//				}
+//			}
+//		}
+//
+//		return false;
+//	}
 
 	public static ComponentConfig getComponentConfig(Option root, final String configId) {
 		return getScriptElement(new FindScriptElement<ComponentConfig>() {
@@ -525,18 +525,18 @@ final public class ScriptUtils {
 		return false;
 	}
 
-	public static boolean hasAdapterReadingTable(Script script, String datastore, String table) {
-		for (AdapterConfig adapterConfig : script.getAdapters()) {
-			for (AdaptedTableConfig tableConfig : adapterConfig.getTables()) {
-				if (Strings.equalsStd(datastore, tableConfig.getFromDatastore())) {
-					if (Strings.equalsStd(table, tableConfig.getFromTable())) {
-						return true;
-					}
-				}
-			}
-		}
-		return false;
-	}
+//	public static boolean hasAdapterReadingTable(Script script, String datastore, String table) {
+//		for (AdapterConfig adapterConfig : script.getAdapters()) {
+//			for (AdaptedTableConfig tableConfig : adapterConfig.getTables()) {
+//				if (Strings.equalsStd(datastore, tableConfig.getFromDatastore())) {
+//					if (Strings.equalsStd(table, tableConfig.getFromTable())) {
+//						return true;
+//					}
+//				}
+//			}
+//		}
+//		return false;
+//	}
 
 	/**
 	 * Find the instruction's configuration. This could be internal (inside the component object) or external - an id referencing a data object

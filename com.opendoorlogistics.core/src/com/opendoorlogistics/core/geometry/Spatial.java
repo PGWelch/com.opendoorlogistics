@@ -143,13 +143,7 @@ public final class Spatial {
 		File file = new File(filename);
 		ds = (ODLDatastore<? extends ODLTableReadOnly>)shapefileCache().get(file);
 		if(ds==null){
-			ODLDatastoreAlterable<ODLTableAlterable> alterableDs =  ODLDatastoreImpl.alterableFactory.create();
-			ImportShapefile.importShapefile(file,false,alterableDs,false);			
-			ds = alterableDs;
-			if(alterableDs.getTableCount()>0){
-				long size = SizesInBytesEstimator.estimateBytes(ds);
-				shapefileCache().put(file, ds,size);
-			}
+			ds = importAndCacheShapefile(file);
 		}
 		
 		// find table
@@ -179,6 +173,20 @@ public final class Spatial {
 		}
 
 		return null;
+	}
+
+	/**
+	 * @param file
+	 * @return
+	 */
+	public static ODLDatastoreAlterable<ODLTableAlterable> importAndCacheShapefile(File file) {
+		ODLDatastoreAlterable<ODLTableAlterable> alterableDs =  ODLDatastoreImpl.alterableFactory.create();
+		ImportShapefile.importShapefile(file,false,alterableDs,false);			
+		if(alterableDs.getTableCount()>0){
+			long size = SizesInBytesEstimator.estimateBytes(alterableDs);
+			shapefileCache().put(file, alterableDs,size);
+		}
+		return alterableDs;
 	}
 	
 	static{

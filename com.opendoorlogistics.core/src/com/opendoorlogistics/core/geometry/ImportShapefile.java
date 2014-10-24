@@ -41,7 +41,6 @@ import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.geometry.rog.ODLRenderOptimisedGeom;
-import com.opendoorlogistics.core.geometry.rog.QuadLoader;
 import com.opendoorlogistics.core.geometry.rog.RogReaderUtils;
 import com.opendoorlogistics.core.geometry.rog.RogSingleton;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;

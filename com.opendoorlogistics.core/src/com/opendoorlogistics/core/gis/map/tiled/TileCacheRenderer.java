@@ -8,6 +8,7 @@ package com.opendoorlogistics.core.gis.map.tiled;
 
 import gnu.trove.set.hash.TLongHashSet;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
@@ -23,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import javax.media.jai.ImageSequence;
 
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.ui.Disposable;
@@ -40,6 +43,7 @@ import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
+import com.opendoorlogistics.core.utils.images.ImageUtils;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.Polygon;
@@ -185,6 +189,7 @@ final public class TileCacheRenderer implements Disposable {
 		public synchronized void run() {
 
 			BufferedImage workImg = new BufferedImage(TilePosition.TILE_SIZE, TilePosition.TILE_SIZE, BufferedImage.TYPE_INT_ARGB);
+		//	ImageUtils.fillImage(workImg, new Color(200, 200, 255));
 			Graphics2D g = workImg.createGraphics();
 			try {
 
