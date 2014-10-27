@@ -72,7 +72,6 @@ final public class FmImage extends FunctionImpl {
 		flags = new RenderProperties(flags);
 		if(mode == Mode.SHOW_SELECTED_NO_BACKGROUND || mode==Mode.SHOW_INVERSE_SELECTED_NO_BACKGROUND){
 			flags.setFlag(RenderProperties.SHOW_BACKGROUND, false);
-			flags.setFlag(RenderProperties.RENDER_FADE, false);
 			flags.setFlag(RenderProperties.SKIP_BACKGROUND_COLOUR_RENDERING, true);
 		}
 		this.properties = flags;

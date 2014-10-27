@@ -20,7 +20,7 @@ final public class AppConstants {
 	
 	public static final int APP_VERSION_MINOR = 1;
 
-	public static final int APP_VERSION_REVISION = 5;
+	public static final int APP_VERSION_REVISION = 6;
 	
 	public static final String SHAPEFILES_DIRECTORY = "data" + File.separator + "shapefiles" + File.separator;
 
@@ -32,8 +32,12 @@ final public class AppConstants {
 	
 	public static final String ODL_EXTERNAL_PROPERTIES_FILE = "odl.properties";
 	
-	public static final String ODL_EMBEDED_PROPERTIES_FILE = "/resources/odl-defaults.properties";
-		
+	public static final String ODL_EMBEDED_PROPERTIES_FILE = File.separator + "resources" + File.separator + "odl-defaults.properties";
+
+	public static final String ODL_CONFIG_DIR = "config" + File.separator;
+
+	public static final String ODL_BACKGROUND_MAP_PROPERTIES_FILE =ODL_CONFIG_DIR + "backgroundmap.properties";
+
 	public static final Version getAppVersion(){
 		return new Version(APP_VERSION_MAJOR,APP_VERSION_MINOR,APP_VERSION_REVISION);
 	}

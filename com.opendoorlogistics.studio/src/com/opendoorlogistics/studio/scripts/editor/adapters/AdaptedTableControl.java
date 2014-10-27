@@ -78,7 +78,7 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 			Component component = getEditor().getEditorComponent();
 			if (JComponent.class.isInstance(component)) {
 				JComponent j = (JComponent) component;
-				if (isUnknown()) {
+				if (isUnknown() && !isImportLink()) {
 					j.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.RED, 1),
 							BorderFactory.createEmptyBorder(0, 4, 0, 0)));
 				} else {
@@ -89,6 +89,8 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 		}
 
 		protected abstract boolean isUnknown();
+		
+		protected abstract boolean isImportLink();
 	}
 
 	private class FromDatastoreCombo extends AutocorrectCombo {
@@ -118,6 +120,14 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 		protected boolean isUnknown() {
 			if (queryAvailableFields != null) {
 				return Strings.containsStandardised(getValue(), Arrays.asList(queryAvailableFields.queryAvailableDatastores())) == false;
+			}
+			return false;
+		}
+		
+		@Override
+		public boolean isImportLink(){
+			if(getValue()!=null){
+				return getValue().contains(ScriptConstants.IMPORT_LINK_POSTFIX);
 			}
 			return false;
 		}
@@ -152,6 +162,11 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 					}
 				}
 			}
+			return false;
+		}
+
+		@Override
+		protected boolean isImportLink() {
 			return false;
 		}
 	}

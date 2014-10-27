@@ -15,13 +15,10 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.util.HashSet;
 
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-import org.jdesktop.swingx.painter.Painter;
-
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.painter.Painter;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
-import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;

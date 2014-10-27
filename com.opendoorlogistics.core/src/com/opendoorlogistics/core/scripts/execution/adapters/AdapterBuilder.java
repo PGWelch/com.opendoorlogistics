@@ -48,6 +48,9 @@ import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator.AdapterMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.RowFilterDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.UnionDecorator;
+import com.opendoorlogistics.core.tables.io.PoiIO;
+import com.opendoorlogistics.core.tables.io.SupportedFileType;
+import com.opendoorlogistics.core.tables.io.TableIOUtils;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -98,15 +101,28 @@ final public class AdapterBuilder {
 			return null;
 		}
 
-		// check for importing a shapefile...
+		// check for importing files
 		if(id!=null){	
+			// check for importing a shapefile...
+			ODLDatastore<? extends ODLTable> importedDs = null;
 			String shapefilename = Strings.caseInsensitiveReplace(id, ScriptConstants.SHAPEFILE_DS_NAME_PREFIX, "");
-			if(shapefilename.length() < id.length()){
+			if(shapefilename.equals(id)==false){
 				shapefilename = shapefilename.trim();
-				env.log("Importing shapefile " + shapefilename);
-				ODLDatastore<? extends ODLTable> ret = Spatial.importAndCacheShapefile(new File(shapefilename));
-				builtAdapters.addAdapter(id, ret);
-				return ret;
+				importedDs = Spatial.importAndCacheShapefile(new File(shapefilename));
+			}
+			
+			for(SupportedFileType ft : new SupportedFileType[]{SupportedFileType.CSV,SupportedFileType.EXCEL, SupportedFileType.TAB}){
+				String prefix = ft.name() + ScriptConstants.IMPORT_LINK_POSTFIX;
+				String filename = Strings.caseInsensitiveReplace(id, prefix, "");
+				if(filename.equals(id)==false){
+					filename = filename.trim();
+					importedDs = TableIOUtils.importFile(new File(filename), ft, env);
+				}
+			}
+			
+			if(importedDs!=null){
+				builtAdapters.addAdapter(id, importedDs);	
+				return importedDs;
 			}
 		}
 		

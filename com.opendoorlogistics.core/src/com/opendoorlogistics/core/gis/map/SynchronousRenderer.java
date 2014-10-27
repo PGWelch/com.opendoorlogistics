@@ -16,12 +16,11 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
 
-import org.jdesktop.swingx.OSMTileFactoryInfo;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
-import org.jdesktop.swingx.mapviewer.util.GeoUtil;
-
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.OSMTileFactoryInfo;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.util.GeoUtil;
 import com.opendoorlogistics.core.gis.map.background.BackgroundTileFactorySingleton;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
@@ -29,7 +28,6 @@ import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
 import com.opendoorlogistics.core.gis.map.transforms.UpscalerLatLongToPixelPosition;
 import com.opendoorlogistics.core.utils.Pair;
-import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
 
 /**
@@ -78,7 +76,7 @@ final public class SynchronousRenderer {
 			}
 
 			if (drawables != null) {
-				renderer.renderAll(g, drawables, converter, renderflags | RenderProperties.RENDER_FADE, null);
+				renderer.renderAll(g, drawables, converter, renderflags , null);
 			}
 
 		} finally {

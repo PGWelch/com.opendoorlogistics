@@ -246,7 +246,7 @@ public abstract class QueryReadOnlyTableComponent implements TableViewer {
 						// add table to adapter
 						String outputName="";
 						ScriptInputTables input = builder.getInputTables();
-						if(input.size()>0){
+						if(input.size()>0 && input.getSourceTable(0)!=null){
 							outputName = "Query " + input.getSourceTable(0).getName();
 							adapter.addSourcedTableToAdapter(input.getSourceDatastoreId(0), input.getSourceTable(0), input.getSourceTable(0));
 						}else{

@@ -11,11 +11,11 @@ package com.opendoorlogistics.core;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
 
 import com.opendoorlogistics.core.utils.Numbers;
+import com.opendoorlogistics.core.utils.PropertiesUtils;
 
 /**
  * Class for the app-wide properties
@@ -28,7 +28,7 @@ public class AppProperties {
 	static{
 		applicationProperties = new Properties();
 		loadEmbedded(applicationProperties);
-		loadExternal(applicationProperties);
+		PropertiesUtils.loadFromFile(new File(AppConstants.ODL_EXTERNAL_PROPERTIES_FILE),applicationProperties);
 		for(Map.Entry<Object,Object> entry:applicationProperties.entrySet()){
 			System.out.println("\t" + entry.getKey() + "=" + entry.getValue());
 		}		
@@ -81,24 +81,5 @@ public class AppProperties {
 		}
 	}
 	
-	private static void loadExternal(Properties addTo){
-		File file = new File(AppConstants.ODL_EXTERNAL_PROPERTIES_FILE);
-		if(file.exists()){
-			FileInputStream in=null;
-			try {
-				in = new FileInputStream(file);
-				addTo.load(in);
-				System.out.println("Loaded properties file: " + file.getAbsolutePath());				
-			} catch (Exception e) {
-			}finally{
-				if(in!=null){
-					try {
-						in.close();						
-					} catch (Exception e2) {
-					}
-				}
-			}
-		}
 
-	}
 }

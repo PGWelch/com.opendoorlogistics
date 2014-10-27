@@ -24,12 +24,11 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.MouseInputListener;
 
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-import org.jdesktop.swingx.painter.CompoundPainter;
-import org.jdesktop.swingx.painter.Painter;
-
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.DesktopPaneMapViewer;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.painter.CompoundPainter;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.painter.Painter;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
 import com.opendoorlogistics.core.gis.map.MapUtils;
 import com.opendoorlogistics.core.gis.map.RenderProperties;

@@ -60,6 +60,7 @@ import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser.SourcedTable;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils.OutputWindowSyncLevel;
 import com.opendoorlogistics.core.scripts.utils.TableId;
+import com.opendoorlogistics.core.tables.io.SupportedFileType;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.PreferencesManager;
@@ -640,10 +641,18 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 			public String[] queryAvailableDatastores() {
 				List<SourcedDatastore> datastores = getDatastores();
 				String [] ret = new String[datastores.size()];
+				ArrayList<String> arrayList = new ArrayList<>();
 				for(int i =0 ; i<ret.length ; i++){
-					ret[i] = datastores.get(i).getDatastoreId();
+					arrayList.add( datastores.get(i).getDatastoreId());
 				}
-				return ret;
+
+				arrayList.add(ScriptConstants.SHAPEFILE_DS_NAME_PREFIX + "filename.shp");
+				arrayList.add(SupportedFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xls");
+				arrayList.add(SupportedFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xlsx");
+				arrayList.add(SupportedFileType.CSV.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.csv");
+				arrayList.add(SupportedFileType.TAB.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.tab");
+				
+				return arrayList.toArray(new String[arrayList.size()]);
 			}
 
 			@Override

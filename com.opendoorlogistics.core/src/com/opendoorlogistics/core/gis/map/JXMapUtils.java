@@ -11,12 +11,11 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.util.Set;
 
-import org.jdesktop.swingx.OSMTileFactoryInfo;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
-import org.jdesktop.swingx.mapviewer.util.GeoUtil;
-
 import com.opendoorlogistics.codefromweb.jxmapviewer2.ExpiringOSMLocalResponseCache;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.OSMTileFactoryInfo;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.util.GeoUtil;
 import com.opendoorlogistics.core.utils.Pair;
 
 final public class JXMapUtils {

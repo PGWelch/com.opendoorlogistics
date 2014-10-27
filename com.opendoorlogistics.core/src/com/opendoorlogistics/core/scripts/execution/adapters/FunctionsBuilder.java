@@ -220,7 +220,6 @@ final public class FunctionsBuilder {
 						}
 						// add default flags
 						properties.addFlags(RenderProperties.SHOW_ALL);
-						properties.addFlags(RenderProperties.RENDER_FADE);
 
 						if (printable) {
 							return FmImage.createFixedPhysicalSize(children[argIndices.lookupVal], pointsTable, groupKeyColumnIndex,mode,

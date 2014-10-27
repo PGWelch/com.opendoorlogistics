@@ -34,7 +34,7 @@ final public class ImageProvider {
 		BufferedImage ret;
 		if (objects.size() > 0) {
 			// draw using a bounding box...
-			ret = SynchronousRenderer.singleton().drawPrintableAtLatLongCentre( View.createView(objects), widthCm, heightCm, dotsPerCm, objects,RenderProperties.SHOW_ALL|RenderProperties.RENDER_FADE).getFirst();
+			ret = SynchronousRenderer.singleton().drawPrintableAtLatLongCentre( View.createView(objects), widthCm, heightCm, dotsPerCm, objects,RenderProperties.SHOW_ALL).getFirst();
 		} else {
 			// return blank image..
 			ret = ImageUtils.createBlankImage(100, 100, Color.WHITE);

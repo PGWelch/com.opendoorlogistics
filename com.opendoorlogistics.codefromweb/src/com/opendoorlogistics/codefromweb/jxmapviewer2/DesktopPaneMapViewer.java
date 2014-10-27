@@ -1,6 +1,14 @@
 package com.opendoorlogistics.codefromweb.jxmapviewer2;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
@@ -18,10 +26,14 @@ import javax.swing.JDesktopPane;
 import javax.swing.SwingUtilities;
 import javax.swing.event.MouseInputAdapter;
 
-import org.jdesktop.swingx.mapviewer.*;
-import org.jdesktop.swingx.mapviewer.empty.EmptyTileFactory;
-import org.jdesktop.swingx.painter.AbstractPainter;
-import org.jdesktop.swingx.painter.Painter;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.Tile;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactory;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileListener;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.empty.EmptyTileFactory;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.painter.AbstractPainter;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.painter.Painter;
 
 /**
  * A fork of the JxMapViewer class from the JxMapViewer2 project which extends

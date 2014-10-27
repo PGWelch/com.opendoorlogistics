@@ -12,7 +12,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import com.opendoorlogistics.core.geometry.rog.RogReaderUtils;
 
 public enum SupportedFileType{
-	TABBED(new FileNameExtensionFilter("Tab separated text file (txt)", "txt")),
+	TAB(new FileNameExtensionFilter("Tab separated text file (txt)", "txt")),
 	CSV(new FileNameExtensionFilter("Comma separated text file (csv, txt)", "csv", "txt")),
 	EXCEL(new FileNameExtensionFilter("Spreadsheet file (xls, xlsx)", "xls", "xlsx")),
 	SHAPEFILE_LINKED_GEOM(new FileNameExtensionFilter("Shapefile (shp, " + RogReaderUtils.RENDER_GEOMETRY_FILE_EXT + ")", "shp" , RogReaderUtils.RENDER_GEOMETRY_FILE_EXT)),

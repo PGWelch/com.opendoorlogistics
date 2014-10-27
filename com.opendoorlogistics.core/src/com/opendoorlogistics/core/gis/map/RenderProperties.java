@@ -27,7 +27,7 @@ final public class RenderProperties {
 	public static final long LEGEND_BOTTOM_RIGHT = 1<<5;
 	public static final long LEGEND_TOP = 1<<6;
 	public static final long LEGEND_BOTTOM = 1<<7;
-	public static final long RENDER_FADE = 1<<8;
+//	public static final long RENDER_FADE = 1<<8;
 	public static final long SKIP_BACKGROUND_COLOUR_RENDERING = 1<<9;
 	public static final long DRAW_OSM_COPYRIGHT = 1<<10;
 	public static final long RENDER_BORDERS_ONLY = 1<<11;

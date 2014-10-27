@@ -6,7 +6,12 @@
  ******************************************************************************/
 package com.opendoorlogistics.studio.components.map;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
@@ -19,8 +24,7 @@ import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
 import javax.swing.event.MouseInputAdapter;
 
-import org.jdesktop.swingx.painter.Painter;
-
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.painter.Painter;
 import com.opendoorlogistics.utils.ui.Icons;
 
 final public class ModalMouseListener extends MouseInputAdapter {

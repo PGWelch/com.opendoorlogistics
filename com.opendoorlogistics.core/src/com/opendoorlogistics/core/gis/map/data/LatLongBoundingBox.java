@@ -11,9 +11,8 @@ package com.opendoorlogistics.core.gis.map.data;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
 import com.opendoorlogistics.core.geometry.Spatial;
 import com.opendoorlogistics.core.utils.DoubleRange;
 import com.vividsolutions.jts.geom.Envelope;

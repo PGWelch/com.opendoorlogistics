@@ -9,8 +9,6 @@ package com.opendoorlogistics.core.gis.map.transforms;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.core.utils.Pair;
 

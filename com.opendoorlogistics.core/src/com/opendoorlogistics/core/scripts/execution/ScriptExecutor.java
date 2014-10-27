@@ -40,6 +40,7 @@ import com.opendoorlogistics.core.components.UpdateQueryComponent;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.TargetIODsInterpreter;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
+import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.elements.ComponentConfig;
 import com.opendoorlogistics.core.scripts.elements.InstructionConfig;
@@ -665,7 +666,7 @@ final public class ScriptExecutor {
 				case REPLACE_CONTENTS_OF_EXISTING_TABLE:
 				case APPEND_TO_EXISTING_TABLE: {
 					// find table
-					ODLTable outTable = TableUtils.findTable(externalDb, destinationTable, true);
+					ODLTableAlterable outTable = TableUtils.findTable(externalDb, destinationTable, true);
 
 					// create if missing
 					if (outTable == null) {
@@ -685,15 +686,15 @@ final public class ScriptExecutor {
 							outTable.deleteRow(0);
 						}
 					}
-
+					
 					// link fields by name
 					AdaptedTableConfig tableAdapterConfig = AdapterConfig.createSameNameMapper(inputTable);
 					AdapterMapping mapping = AdapterMapping.createUnassignedMapping(inputTable);
 					mapping.setTableSourceId(inputTable.getImmutableId(), 0, outTable.getImmutableId());
-					AdapterBuilderUtils.mapFields(outTable, inputTable.getImmutableId(), tableAdapterConfig, mapping, 0, result);
+					AdapterBuilderUtils.mapFields(outTable, inputTable.getImmutableId(), tableAdapterConfig, mapping, 0, result);				
 					if (result.isFailed()) {
-						result.log("Failed to match the push output table to the datastore its writing to.");
-						result.log("Are you writing to a pre-existing table which is missing a field?");
+						result.log("Failed to output to table.");
+						result.log("If you are outputting to a table which already exists, it must already have all your output fields.");
 						return false;
 					}
 
@@ -701,11 +702,11 @@ final public class ScriptExecutor {
 					ArrayList<ODLDatastore<? extends ODLTable>> dsList = new ArrayList<>();
 					dsList.add(externalDb);
 					AdaptedDecorator<ODLTable> adaptedPushToDS = new AdaptedDecorator<ODLTable>(mapping, dsList);
-					outTable = adaptedPushToDS.getTableAt(0);
+					ODLTable adaptedOutTable = adaptedPushToDS.getTableAt(0);
 
 					// finally append the data
 					if (!compileOnly) {
-						DatastoreCopier.copyData(inputTable, outTable);
+						DatastoreCopier.copyData(inputTable, adaptedOutTable);
 					}
 					break;
 				}

@@ -57,7 +57,7 @@ public abstract class FilteredDrawablesContainer implements Disposable {
 	}
 
 	public void renderObjects(Graphics2D g, LatLongToScreen converter, TLongHashSet selectedObjectIds) {
-		renderer.renderObjects(g, converter, renderFlags.getFlags() | RenderProperties.RENDER_FADE, selectedObjectIds);
+		renderer.renderObjects(g, converter, renderFlags.getFlags() , selectedObjectIds);
 	}
 
 	public void setDrawables(Iterable<? extends DrawableObject> pnts) {

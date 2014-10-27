@@ -8,6 +8,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.gis.map.background;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -19,10 +21,9 @@ import java.net.URLConnection;
 
 import javax.imageio.ImageIO;
 
-import org.jdesktop.swingx.mapviewer.AbstractTileFactory;
-import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
-import org.jdesktop.swingx.mapviewer.util.GeoUtil;
-
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.AbstractTileFactory;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.util.GeoUtil;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
@@ -30,10 +31,12 @@ import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
 
 class ODLWebTileFactory extends AbstractTileFactory implements ODLSynchronousTileFactory {
-
-	public ODLWebTileFactory(TileFactoryInfo info) {
+	private final Color fadeColor;
+	
+	public ODLWebTileFactory(TileFactoryInfo info, Color fadeColor) {
 		super(info);
-		setThreadPoolSize(2);			
+		setThreadPoolSize(2);
+		this.fadeColor = fadeColor;
 	}
 
 	@Override
@@ -94,19 +97,57 @@ class ODLWebTileFactory extends AbstractTileFactory implements ODLSynchronousTil
 
 		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.SYNCHRONOUS_RETRIEVED_TILE_CACHE);
 
+		// try getting from cache
 		String url = getInfo().getTileUrl(tileX, tileY, zoom);
 		CompressedImage img = (CompressedImage) cache.get(url);
 		if (img != null) {
 			return img.getBufferedImage();
 		}
 
+		// try downloading
 		BufferedImage bimg = multiAttemptDownload(url);
-		if (bimg != null) {
-			img = new CompressedImage(bimg, CompressedType.PNG);
-			cache.put(url, img, img.getSizeBytes());
+		if(bimg==null){
+			return null;
 		}
+		
+		// turn image into argb so we can fade, then do fade
+		BufferedImage workImg = fadeImage(bimg);
+		
+		// save to cache
+		CompressedImage compressed = new CompressedImage(workImg, CompressedType.PNG);
+		cache.put(url, compressed, compressed.getSizeBytes());
+	
 
-		return bimg;
+		return workImg;
+	}
+
+	/**
+	 * @param bimg
+	 * @return
+	 */
+	public BufferedImage fadeImage(BufferedImage bimg) {
+		BufferedImage workImg = new BufferedImage(bimg.getWidth(), bimg.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g=null;
+		try {
+			g = workImg.createGraphics();
+			g.setClip(0, 0, bimg.getWidth(), bimg.getHeight());
+			g.drawImage(bimg, 0, 0, null);
+			BackgroundMapUtils.renderFade(g, fadeColor);
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+		finally{
+			if(g!=null){
+				g = null;
+			}
+		}
+		return workImg;
+	}
+	
+	
+	@Override
+	protected BufferedImage processLoadedImage(BufferedImage img){
+		return fadeImage(img);
 	}
 
 }

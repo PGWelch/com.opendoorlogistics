@@ -1269,7 +1269,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 				this.type = type;
 			}
 		}
-		for (final ImportPair type : new ImportPair[] { new ImportPair("Comma separated (CSV) text", SupportedFileType.CSV), new ImportPair("Tab separated text", SupportedFileType.TABBED), new ImportPair("Excel", SupportedFileType.EXCEL),
+		for (final ImportPair type : new ImportPair[] { new ImportPair("Comma separated (CSV) text", SupportedFileType.CSV), new ImportPair("Tab separated text", SupportedFileType.TAB), new ImportPair("Excel", SupportedFileType.EXCEL),
 				new ImportPair("Shapefile (link geometry to original file)", SupportedFileType.SHAPEFILE_LINKED_GEOM), new ImportPair("Shapefile (copy geometry into spreadsheet)", SupportedFileType.SHAPEFILE_COPIED_GEOM), }) {
 			mnImport.add(new AbstractAction(type.menuString) {
 

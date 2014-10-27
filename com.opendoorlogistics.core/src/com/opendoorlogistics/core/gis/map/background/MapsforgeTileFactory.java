@@ -9,11 +9,10 @@
 package com.opendoorlogistics.core.gis.map.background;
 
 import java.awt.Color;
-import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.Closeable;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.Callable;
@@ -22,11 +21,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
-import org.apache.commons.io.FilenameUtils;
-import org.jdesktop.swingx.OSMTileFactoryInfo;
-import org.jdesktop.swingx.mapviewer.Tile;
-import org.jdesktop.swingx.mapviewer.TileFactory;
-import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 import org.mapsforge.core.graphics.Canvas;
 import org.mapsforge.core.graphics.TileBitmap;
 import org.mapsforge.map.awt.AwtGraphicFactory;
@@ -37,12 +31,13 @@ import org.mapsforge.map.reader.MapDatabase;
 import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.mapsforge.map.rendertheme.XmlRenderTheme;
 
-import com.opendoorlogistics.core.AppConstants;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.Tile;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactory;
+import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
-import com.opendoorlogistics.core.utils.strings.Strings;
 
 class MapsforgeTileFactory extends TileFactory implements Closeable , ODLSynchronousTileFactory{
 	private static final int TILE_SIZE = 256;
@@ -54,10 +49,12 @@ class MapsforgeTileFactory extends TileFactory implements Closeable , ODLSynchro
 	private final XmlRenderTheme renderTheme;
 	private final DisplayModel model;
 	private final File mapFile;
+	private final Color fadeColour;
 	private ExecutorService service;
 
-	MapsforgeTileFactory(TileFactoryInfo info, File mapFile, MapDatabase mapDatabase) {
+	MapsforgeTileFactory(TileFactoryInfo info, File mapFile, MapDatabase mapDatabase, Color fadeColour) {
 		super(info);
+		this.fadeColour =fadeColour;
 		this.mapDatabase = mapDatabase;
 
 		databaseRenderer = new DatabaseRenderer(mapDatabase, AwtGraphicFactory.INSTANCE);
@@ -165,6 +162,7 @@ class MapsforgeTileFactory extends TileFactory implements Closeable , ODLSynchro
 		// get from cache if exists
 		BufferedImage img = getCachedTileImage(x, y, zoom);
 
+		// create tile (which can have a null image initially)
 		Tile ret = createTileFromImg(x, y, zoom, img);
 
 		if (img == null) {
@@ -283,9 +281,12 @@ class MapsforgeTileFactory extends TileFactory implements Closeable , ODLSynchro
 
 			// copy it over onto an image (CompressedImage needs TYPE_INT_ARGB and anyway we can't access the buffered image internal to the tile)
 			BufferedImage image = new BufferedImage(TILE_SIZE, TILE_SIZE, BufferedImage.TYPE_INT_ARGB);
-			Graphics g = image.getGraphics();
+			Graphics2D g = (Graphics2D)image.getGraphics();
+			g.setClip(0, 0, TILE_SIZE, TILE_SIZE);
 			Canvas canvas = (Canvas) AwtGraphicFactory.createGraphicContext(g);
 			canvas.drawBitmap(bitmap, 0, 0);
+			BackgroundMapUtils.renderFade(g,fadeColour);
+			
 			g.dispose();
 			
 			// add to cache

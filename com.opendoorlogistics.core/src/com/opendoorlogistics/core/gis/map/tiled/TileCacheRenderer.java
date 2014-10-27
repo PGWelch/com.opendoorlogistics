@@ -90,7 +90,6 @@ final public class TileCacheRenderer implements Disposable {
 		g.setClip(0, 0, TilePosition.TILE_SIZE, TilePosition.TILE_SIZE);
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-		DatastoreRenderer.renderFade(g);
 
 		// String message = "drawing...";
 		// Font loadingFont = new Font(Font.SANS_SERIF, Font.BOLD, 14);

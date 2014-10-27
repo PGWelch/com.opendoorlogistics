@@ -22,7 +22,7 @@ final public class TableIOUtils {
 		case CSV:
 			return TextIO.importCSV(file);
 			
-		case TABBED:
+		case TAB:
 			return TextIO.importTabbed(file);
 			
 		case EXCEL:

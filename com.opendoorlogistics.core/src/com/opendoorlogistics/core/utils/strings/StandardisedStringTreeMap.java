@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.utils.strings;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -123,4 +124,15 @@ public class StandardisedStringTreeMap <T> implements Map<String, T> {
 		return map.keySet();
 	}
 	
+	
+	public static StandardisedStringTreeMap<String> fromProperties(Properties p){
+		StandardisedStringTreeMap<String> ret = new StandardisedStringTreeMap<>();
+		for(Map.Entry<Object, Object> entry:p.entrySet()){
+			if(entry.getKey()!=null){
+				String val = entry.getValue()!=null?entry.getValue().toString():null;
+				ret.put(entry.getKey().toString(), val);
+			}
+		}
+		return ret;
+	}
 }

@@ -150,27 +150,27 @@ public class DatastoreRenderer implements ObjectRenderer{
 		}
 
 		// create the argb final image with a fade and then everything on top of it
-		BufferedImage ret = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		Graphics2D g = null;
-		try {
-			g = (Graphics2D) ret.getGraphics();
-			g.setClip(0, 0, width, height);
-			renderFade(g);
-			g.drawImage(correctedImg, 0, 0, null);
-		} finally {
-			if (g != null) {
-				g.dispose();
-			}
-		}
-		return ret;// ImageUtils.createBlankImage(width, height, Color.BLACK);
+//		BufferedImage ret = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+//		Graphics2D g = null;
+//		try {
+//			g = (Graphics2D) ret.getGraphics();
+//			g.setClip(0, 0, width, height);
+//			renderFade(g);
+//			g.drawImage(correctedImg, 0, 0, null);
+//		} finally {
+//			if (g != null) {
+//				g.dispose();
+//			}
+//		}
+		return correctedImg;
 	}
 
-	public static void renderFade(Graphics2D g) {
-		Color fade = new Color(255, 255, 255, 100);
-		Rectangle bounds = g.getClipBounds();
-		g.setColor(fade);
-		g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
-	}
+//	public static void renderFade(Graphics2D g) {
+//		Color fade = new Color(255, 255, 255, 100);
+//		Rectangle bounds = g.getClipBounds();
+//		g.setColor(fade);
+//		g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+//	}
 
 	// public void renderObjects(Graphics2D g, Iterable<? extends DrawableObject> pnts, LatLongToScreen converter, long renderFlags) {
 	// renderObjects(g, pnts, converter, renderFlags, null);
@@ -342,9 +342,6 @@ public class DatastoreRenderer implements ObjectRenderer{
 	 */
 	public synchronized void renderAll(Graphics2D g, Iterable<? extends DrawableObject> pnts, LatLongToScreen converter, long renderFlags, TLongHashSet selectedObjectIds) {
 
-		if ((renderFlags & RenderProperties.RENDER_FADE) == RenderProperties.RENDER_FADE) {
-			renderFade(g);
-		}
 
 		// draw objects
 		for (DrawableObject pnt : pnts) {
