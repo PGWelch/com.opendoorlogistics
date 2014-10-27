@@ -516,6 +516,11 @@ public class ColumnValueProcessor {
 		boolean empty2 = isEmpty(val2);
 		diff = Boolean.compare(empty1, empty2);
 
+		// if both empty then return 0 
+		if(diff==0 && empty1){
+			return 0;
+		}
+		
 		if (diff == 0 && val1 != null) {
 			if (isNumeric) {
 				Double d1 = (Double) ColumnValueProcessor.convertToMe(ODLColumnType.DOUBLE, val1);
