@@ -129,7 +129,7 @@ final public class InteractiveMapControl extends ReadOnlyMapControl implements D
 
 			@Override
 			public void onActionable(MouseMode mode, Rectangle rect, boolean ctrl) {
-				TLongArrayList within = DatastoreRenderer.getWithinRectangle(getDrawables(), createImmutableConverter(), rect);
+				TLongArrayList within = DatastoreRenderer.getWithinRectangle(getDrawables(), createImmutableConverter(), rect,true);
 				LatLongToScreen converter = createImmutableConverter();
 				if (mode == MouseMode.SELECT) {
 					TLongHashSet old = new TLongHashSet(selectedGlobalRowIds);

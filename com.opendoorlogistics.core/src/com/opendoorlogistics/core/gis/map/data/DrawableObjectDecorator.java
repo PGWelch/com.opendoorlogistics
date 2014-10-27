@@ -100,5 +100,10 @@ public class DrawableObjectDecorator implements DrawableObject {
 		return decorated.getNonOverlappingPolygonLayerGroupKey();
 	}
 
+	@Override
+	public long getSelectable() {
+		return decorated.getSelectable();
+	}
+
 	
 }

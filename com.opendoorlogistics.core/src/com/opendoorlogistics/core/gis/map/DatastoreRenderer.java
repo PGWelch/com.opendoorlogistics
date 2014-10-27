@@ -418,8 +418,8 @@ public class DatastoreRenderer implements ObjectRenderer{
 	//
 	// }
 
-	public static TLongArrayList getWithinRectangle(Iterable<? extends DrawableObject> pnts, LatLongToScreen converter, Rectangle selRectOnScreen) {
-		List<DrawableObject> list = getObjectsWithinRectangle(pnts, converter, selRectOnScreen);
+	public static TLongArrayList getWithinRectangle(Iterable<? extends DrawableObject> pnts, LatLongToScreen converter, Rectangle selRectOnScreen, boolean filterUnselectable) {
+		List<DrawableObject> list = getObjectsWithinRectangle(pnts, converter, selRectOnScreen,filterUnselectable);
 		TLongArrayList ret = new TLongArrayList(list.size());
 		for (DrawableObject obj : list) {
 			ret.add(obj.getGlobalRowId());
@@ -427,7 +427,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 		return ret;
 	}
 
-	public static List<DrawableObject> getObjectsWithinRectangle(Iterable<? extends DrawableObject> pnts, LatLongToScreen converter, Rectangle selRectOnScreen) {
+	public static List<DrawableObject> getObjectsWithinRectangle(Iterable<? extends DrawableObject> pnts, LatLongToScreen converter, Rectangle selRectOnScreen, boolean filterUnselectable) {
 
 		List<DrawableObject> ret = new ArrayList<>();
 
@@ -444,7 +444,11 @@ public class DatastoreRenderer implements ObjectRenderer{
 
 		try {
 			for (DrawableObject pnt : pnts) {
-
+				
+				if(filterUnselectable && pnt.getSelectable()==0){
+					continue;
+				}
+				
 				if (pnt.getGeometry() == null) {
 					if (hasValidLatLong(pnt)) {
 						Point2D screenPos = converter.getOnScreenPixelPosition(pnt);
@@ -546,77 +550,77 @@ public class DatastoreRenderer implements ObjectRenderer{
 		return ret;
 	}
 
-	/**
-	 * Fill the polygon, also widening it slightly so adjacent polygons on-screen will not show gaps between them.
-	 * 
-	 * This method should be removed in the future. We currently practically-speaking never render without polygon borders,
-	 * which hide the gaps anyway.
-	 * 
-	 * @param shape
-	 * @param exterior
-	 * @param col
-	 * @param g2d
-	 */
-	@Deprecated
-	private static void fillWidenedPolygon(Shape shape, Path2D exterior, final Color col, Graphics2D g2d, int viewportWidth, int viewportHeight) {
-		Rectangle2D bounds = exterior.getBounds();
-
-		// clip bounds to the viewport, remembering that shape is already relative to viewport
-		Rectangle2D viewport = new Rectangle2D.Double(0, 0, viewportWidth, viewportHeight);
-		bounds = viewport.createIntersection(bounds);
-
-		// ensure image dimensions at least one
-		int width = (int) Math.round(bounds.getWidth());
-		width = Math.max(width, 1);
-		int height = (int) Math.round(bounds.getHeight());
-		height = Math.max(height, 1);
-
-		double size = width * height;
-		if (size < MAX_IMAGE_SIZE_LIMIT) {
-			// draw on temporary image without alpha channel
-			BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-			Graphics2D gImage = img.createGraphics();
-			try {
-				gImage.setClip(0, 0, img.getWidth(), img.getHeight());
-				gImage.translate(-bounds.getX(), -bounds.getY());
-				gImage.setColor(Colours.setAlpha(col, 255));
-				gImage.fill(shape);
-
-				BasicStroke stroke = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-				gImage.setStroke(stroke);
-				gImage.draw(exterior);
-			} finally {
-				gImage.dispose();
-			}
-
-			RGBImageFilter rgbFilter = new RGBImageFilter() {
-
-				@Override
-				public int filterRGB(int x, int y, int rgb) {
-					if (rgb != 0) {
-						return (rgb & 0x00FFFFFF) | (col.getAlpha() << 24);
-					} else {
-						return 0;
-					}
-				}
-			};
-
-			// create image with alpha channel
-			ImageProducer ip = new FilteredImageSource(img.getSource(), rgbFilter);
-			Image alphaImg = Toolkit.getDefaultToolkit().createImage(ip);
-
-			// draw this to the output graphics object
-			g2d.drawImage(alphaImg, (int) bounds.getX(), (int) bounds.getY(), null);
-
-		} else {
-			// don't bother widening, just draw (image too big)
-			g2d.setColor(col);
-			g2d.fill(shape);
-		}
-
-		// g2d.drawImage(ImageUtils.createBlankImage(img.getWidth(), img.getHeight(), Color.GREEN), bounds.x, bounds.y,null);
-
-	}
+//	/**
+//	 * Fill the polygon, also widening it slightly so adjacent polygons on-screen will not show gaps between them.
+//	 * 
+//	 * This method should be removed in the future. We currently practically-speaking never render without polygon borders,
+//	 * which hide the gaps anyway.
+//	 * 
+//	 * @param shape
+//	 * @param exterior
+//	 * @param col
+//	 * @param g2d
+//	 */
+//	@Deprecated
+//	private static void fillWidenedPolygon(Shape shape, Path2D exterior, final Color col, Graphics2D g2d, int viewportWidth, int viewportHeight) {
+//		Rectangle2D bounds = exterior.getBounds();
+//
+//		// clip bounds to the viewport, remembering that shape is already relative to viewport
+//		Rectangle2D viewport = new Rectangle2D.Double(0, 0, viewportWidth, viewportHeight);
+//		bounds = viewport.createIntersection(bounds);
+//
+//		// ensure image dimensions at least one
+//		int width = (int) Math.round(bounds.getWidth());
+//		width = Math.max(width, 1);
+//		int height = (int) Math.round(bounds.getHeight());
+//		height = Math.max(height, 1);
+//
+//		double size = width * height;
+//		if (size < MAX_IMAGE_SIZE_LIMIT) {
+//			// draw on temporary image without alpha channel
+//			BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+//			Graphics2D gImage = img.createGraphics();
+//			try {
+//				gImage.setClip(0, 0, img.getWidth(), img.getHeight());
+//				gImage.translate(-bounds.getX(), -bounds.getY());
+//				gImage.setColor(Colours.setAlpha(col, 255));
+//				gImage.fill(shape);
+//
+//				BasicStroke stroke = new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+//				gImage.setStroke(stroke);
+//				gImage.draw(exterior);
+//			} finally {
+//				gImage.dispose();
+//			}
+//
+//			RGBImageFilter rgbFilter = new RGBImageFilter() {
+//
+//				@Override
+//				public int filterRGB(int x, int y, int rgb) {
+//					if (rgb != 0) {
+//						return (rgb & 0x00FFFFFF) | (col.getAlpha() << 24);
+//					} else {
+//						return 0;
+//					}
+//				}
+//			};
+//
+//			// create image with alpha channel
+//			ImageProducer ip = new FilteredImageSource(img.getSource(), rgbFilter);
+//			Image alphaImg = Toolkit.getDefaultToolkit().createImage(ip);
+//
+//			// draw this to the output graphics object
+//			g2d.drawImage(alphaImg, (int) bounds.getX(), (int) bounds.getY(), null);
+//
+//		} else {
+//			// don't bother widening, just draw (image too big)
+//			g2d.setColor(col);
+//			g2d.fill(shape);
+//		}
+//
+//		// g2d.drawImage(ImageUtils.createBlankImage(img.getWidth(), img.getHeight(), Color.GREEN), bounds.x, bounds.y,null);
+//
+//	}
 
 	private static class DrawnSymbol {
 		final boolean drawOutline;

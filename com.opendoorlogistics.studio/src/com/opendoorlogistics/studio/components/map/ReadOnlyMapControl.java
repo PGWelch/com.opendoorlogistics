@@ -375,7 +375,7 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	@Override
 	public String getToolTipText(MouseEvent event){
 		Rectangle rect = new Rectangle(event.getX()-1, event.getY()-1, 2, 2);
-		List<DrawableObject> within = DatastoreRenderer.getObjectsWithinRectangle(drawablesContainer.getDrawables(), createImmutableConverter(), rect);
+		List<DrawableObject> within = DatastoreRenderer.getObjectsWithinRectangle(drawablesContainer.getDrawables(), createImmutableConverter(), rect,false);
 		if(within.size()>0 && getToolTipCB!=null){
 			return getToolTipCB.getToolTipText(this,within);
 		}

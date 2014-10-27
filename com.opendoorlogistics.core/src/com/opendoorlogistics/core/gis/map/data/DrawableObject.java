@@ -41,6 +41,8 @@ public interface DrawableObject extends LatLong, HasGlobalRowId{
 
 	long getPixelWidth();
 	
+	long getSelectable();
+	
 	double getOpaque();
 	
 	String getNonOverlappingPolygonLayerGroupKey();
