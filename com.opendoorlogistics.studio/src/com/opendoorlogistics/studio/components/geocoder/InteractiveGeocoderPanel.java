@@ -41,6 +41,7 @@ import com.opendoorlogistics.studio.components.geocoder.model.GeocodeModelListen
 import com.opendoorlogistics.studio.components.map.InteractiveMapControl;
 import com.opendoorlogistics.studio.components.map.InteractiveMapControl.OnClickPosition;
 import com.opendoorlogistics.studio.components.map.MapConfig;
+import com.opendoorlogistics.studio.components.map.MapModePermissions;
 import com.opendoorlogistics.studio.components.map.ModalMouseListener.MouseMode;
 import com.opendoorlogistics.studio.components.map.ReadOnlyMapControl;
 import com.opendoorlogistics.studio.components.map.ReadOnlyMapControl.ZoomBestFitManager;
@@ -86,7 +87,7 @@ public class InteractiveGeocoderPanel extends JPanel implements Disposable, Geoc
 		searchSubPanel.table.setPreferredScrollableViewportSize(new Dimension(600, 104));
 
 		// create map
-		interactive = new InteractiveMapControl(new MapConfig(),null,null);
+		interactive = new InteractiveMapControl(new MapConfig(),new MapModePermissions(0xFFFFFFFFFFFFFFFFL),null,null);
 		//interactive.setLegendCreator(GeocoderMapAppearance.createLegendCreator());
 		interactive.addOnMoveObjectListener(new OnClickPosition() {
 

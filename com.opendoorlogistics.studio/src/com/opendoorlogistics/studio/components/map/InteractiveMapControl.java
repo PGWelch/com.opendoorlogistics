@@ -43,8 +43,8 @@ final public class InteractiveMapControl extends ReadOnlyMapControl implements D
 		void onClickPosition(double latitude, double longitude);
 	};
 
-	public InteractiveMapControl(MapConfig config,SelectionPanel selectedRowsViewer, GlobalMapSelectedRowsManager gsm) {
-		super(config);
+	public InteractiveMapControl(MapConfig config,MapModePermissions permissions,SelectionPanel selectedRowsViewer, GlobalMapSelectedRowsManager gsm) {
+		super(config,permissions);
 		this.selectedRowsViewer = selectedRowsViewer;
 		this.gsm = gsm;
 	}

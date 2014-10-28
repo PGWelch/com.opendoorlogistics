@@ -63,6 +63,7 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	private boolean reuseImageOnNextPaint;
 	private GetToolTipCB getToolTipCB;
 	private boolean isDisposed=false;
+	private final MapModePermissions permissions;
 	private Timer timer;
 	private MapConfig config;
 	private ZoomBestFitManager bestFitManager = new ZoomBestFitManager() {
@@ -239,8 +240,9 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	}
 	
 
-	public ReadOnlyMapControl(MapConfig config) {
+	public ReadOnlyMapControl(MapConfig config, MapModePermissions permissions) {
 		this.config = config;
+		this.permissions = permissions;
 
 		setTileFactory(BackgroundTileFactorySingleton.getFactory());
 
@@ -400,5 +402,8 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		this.config = config;
 	}
 	
+	public MapModePermissions getPermissions(){
+		return permissions;
+	}
 	
 }

@@ -238,26 +238,11 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 
 	@Override
 	protected long getFlags(int tableId) {
-		// allow set if on all source tables, don't allow insert, allows delete if on all tables, doesn't allow move
+		// Remove all edit flags as they are ambiguous - particularly as the same physical row (in the external datastore)
+		// can appear multiple times in a union. 
 		long ret= stores.get(0).getTableByImmutableId(tableId).getFlags();
-		ret = TableFlagUtils.removeFlags(ret, TableFlags.UI_INSERT_ALLOWED | TableFlags.UI_MOVE_ALLOWED);
+		ret = TableFlagUtils.removeFlags(ret, TableFlags.UI_INSERT_ALLOWED | TableFlags.UI_MOVE_ALLOWED| TableFlags.UI_DELETE_ALLOWED|TableFlags.UI_SET_ALLOWED);
 
-		for(int i =1 ; i< length ; i++){
-			ODLTableDefinition table = stores.get(i).getTableByImmutableId(tableId);
-			if(table!=null){
-				
-				// remove set if not on all
-				if((table.getFlags() & TableFlags.UI_SET_ALLOWED)!=TableFlags.UI_SET_ALLOWED){
-					ret &= ~TableFlags.UI_SET_ALLOWED;
-				}
-				
-				// remove delete if not on all
-				if((table.getFlags() & TableFlags.UI_DELETE_ALLOWED)!=TableFlags.UI_DELETE_ALLOWED){
-					ret &= ~TableFlags.UI_DELETE_ALLOWED;
-				}
-			}
-		}
-		
 		return ret;
 	}
 

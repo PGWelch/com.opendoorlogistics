@@ -18,6 +18,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.Action;
 import javax.swing.JCheckBox;
@@ -55,8 +56,8 @@ public class ReadOnlyMapPanel extends JPanel implements Disposable {
 		map.zoomBestFit();
 	}
 	
-	public ReadOnlyMapPanel(MapConfig config,List<? extends DrawableObject> pnts) {
-		this.map = new ReadOnlyMapControl(config);
+	public ReadOnlyMapPanel(MapConfig config,MapModePermissions permissions,List<? extends DrawableObject> pnts) {
+		this.map = new ReadOnlyMapControl(config,permissions);
 		map.setDrawables(pnts);
 		actions = createActions();
 		initLayout();
@@ -265,5 +266,9 @@ public class ReadOnlyMapPanel extends JPanel implements Disposable {
 			}
 			map.getActionMap().put(actionName, action);
 		}
+	}
+	
+	public MapModePermissions getPermissions(){
+		return map.getPermissions();
 	}
 }

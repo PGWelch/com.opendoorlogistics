@@ -47,9 +47,12 @@ final public class ModalMouseListener extends MouseInputAdapter {
 	}
 
 	public enum MouseMode {
-		NAVIGATE("arrow-out-32x32.png", 17, 15, "arrow-out-16x16.png", "Drag the map to look around."), SELECT("cursor-crosshair-small.png", 11, 11,
-				"cursor-crosshair-small-16x16.png", "Select objects on the map."), FILL("tool-bucket-fill-32x32.png", 22, 15, "tool-bucket-fill-16x16.png",
-				"Fill the columns of objects on the map."), CREATE("new_item_32x32.png", 17, 16, "new_item_16x16.png",
+		NAVIGATE("arrow-out-32x32.png", 17, 15, "arrow-out-16x16.png", "Drag the map to look around."), 
+		SELECT("cursor-crosshair-small.png", 11, 11,
+				"cursor-crosshair-small-16x16.png", "Select objects on the map."), 
+			FILL("tool-bucket-fill-32x32.png", 22, 15, "tool-bucket-fill-16x16.png",
+				"Fill the columns of objects on the map."), 
+			CREATE("new_item_32x32.png", 17, 16, "new_item_16x16.png",
 				"Create new points by clicking on the map."),
 			MOVE_OBJECT("tool-move.png", 17, 15, "tool-move-16x16.png", "Move the selected object around by clicking on its new position");
 

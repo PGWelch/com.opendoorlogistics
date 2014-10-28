@@ -55,12 +55,12 @@ final public class RegisterMapComponent {
 	static private class WrapperPanel extends JPanel implements Disposable {
 		final ReadOnlyMapPanel mapPanel;
 		final boolean syncMode;
-		final boolean globalConnected;
+		//final boolean globalConnected;
 
-		WrapperPanel(ReadOnlyMapPanel mapPanel, boolean syncMode, boolean globalConnected) {
+		WrapperPanel(ReadOnlyMapPanel mapPanel, boolean syncMode) {
 			this.mapPanel = mapPanel;
 			this.syncMode = syncMode;
-			this.globalConnected = globalConnected;
+	//		this.globalConnected = globalConnected;
 			setLayout(new BorderLayout());
 			add(mapPanel, BorderLayout.CENTER);
 		}
@@ -110,8 +110,8 @@ final public class RegisterMapComponent {
 		private final AppFrame appFrame;
 		private final ODLDatastore<? extends ODLTable> adaptedDsView;
 
-		public GlobalDSConnectedMapPanel(MapConfig config, List<? extends DrawableObject> pnts, ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm, AppFrame appFrame, ODLDatastore<? extends ODLTable> adaptedDsView) {
-			super(config, pnts, globalDs, gsm);
+		public GlobalDSConnectedMapPanel(MapConfig config,MapModePermissions permissions, List<? extends DrawableObject> pnts, ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm, AppFrame appFrame, ODLDatastore<? extends ODLTable> adaptedDsView) {
+			super(config,permissions, pnts, globalDs, gsm);
 			this.appFrame = appFrame;
 			this.adaptedDsView = adaptedDsView;
 
@@ -265,27 +265,29 @@ final public class RegisterMapComponent {
 						// test if the points are linked to the global datastore by id;
 						// launch the interactive version is so
 						long flags = adaptedDsView.getTableAt(0).getFlags();
-						boolean connectedByIdToGlobal = (flags & TableFlags.UI_SET_INSERT_DELETE_PERMISSION_FLAGS) == TableFlags.UI_SET_INSERT_DELETE_PERMISSION_FLAGS;
+					//	boolean connectedByIdToGlobal = (flags & TableFlags.UI_SET_INSERT_DELETE_PERMISSION_FLAGS) == TableFlags.UI_SET_INSERT_DELETE_PERMISSION_FLAGS;
 
+						MapModePermissions permissions = new MapModePermissions(flags);
+						
 						boolean isEDT = true;
 
 						WrapperPanel p = (WrapperPanel) launcherApi.getRegisteredPanel("Map");
-						if (p != null && (p.syncMode != isEDT || p.globalConnected != connectedByIdToGlobal)) {
+						if (p != null && (p.syncMode != isEDT || (p.mapPanel.getPermissions().equals(permissions)==false))) {
 							// doesn't reuse the panel if sync mode is different
 							p = null;
 						}
 
 						if (p == null) {
-							if (connectedByIdToGlobal) {
-								GlobalDSConnectedMapPanel imp = new GlobalDSConnectedMapPanel(((MapConfig) configuration), pnts, appFrame.getLoaded().getDs(), appFrame.getLoaded(), appFrame, adaptedDsView);
+							if (permissions.isSelectObjects()) {
+								GlobalDSConnectedMapPanel imp = new GlobalDSConnectedMapPanel(((MapConfig) configuration), permissions,pnts, appFrame.getLoaded().getDs(), appFrame.getLoaded(), appFrame, adaptedDsView);
 
 								if (appFrame.getLoaded() != null) {
 									appFrame.getLoaded().registerMapSelectionList(imp);
 								}
-								p = new WrapperPanel(imp, isEDT, connectedByIdToGlobal);
+								p = new WrapperPanel(imp, isEDT);
 
 							} else {
-								p = new WrapperPanel(new ReadOnlyMapPanel((MapConfig) configuration, pnts), isEDT, connectedByIdToGlobal);
+								p = new WrapperPanel(new ReadOnlyMapPanel((MapConfig) configuration,permissions, pnts), isEDT);
 								p.mapPanel.getMapControl().setGetToolTipCB(new BasicTooltipCB());
 							}
 
