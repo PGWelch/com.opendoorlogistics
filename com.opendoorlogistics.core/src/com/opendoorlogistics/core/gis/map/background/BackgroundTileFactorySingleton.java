@@ -21,6 +21,7 @@ import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.Tile
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactory;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
 import com.opendoorlogistics.core.AppConstants;
+import com.opendoorlogistics.core.gis.map.JXMapUtils;
 import com.opendoorlogistics.core.gis.map.background.BackgroundMapConfig.BackgroundType;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.Pair;
@@ -41,6 +42,9 @@ public final class BackgroundTileFactorySingleton {
 	}
 
 	static {
+		// always ensure we initialise the local file cache
+		JXMapUtils.initLocalFileCache();
+		
 		Properties p = PropertiesUtils.loadFromFile(new File(AppConstants.ODL_BACKGROUND_MAP_PROPERTIES_FILE));
 		BackgroundMapConfig c = new BackgroundMapConfig(p);
 		singleton = createFactory(c);
