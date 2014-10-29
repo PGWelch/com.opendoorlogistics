@@ -43,10 +43,10 @@ public final class BackgroundTileFactorySingleton {
 
 	static {
 		// always ensure we initialise the local file cache
-		JXMapUtils.initLocalFileCache();
-		
+
 		Properties p = PropertiesUtils.loadFromFile(new File(AppConstants.ODL_BACKGROUND_MAP_PROPERTIES_FILE));
 		BackgroundMapConfig c = new BackgroundMapConfig(p);
+		JXMapUtils.initLocalFileCache(c.getTileserverUrl());
 		singleton = createFactory(c);
 		
 //		// get files in directory

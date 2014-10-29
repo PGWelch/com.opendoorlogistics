@@ -12,7 +12,6 @@ import java.io.File;
 import java.util.Set;
 
 import com.opendoorlogistics.codefromweb.jxmapviewer2.ExpiringOSMLocalResponseCache;
-import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.OSMTileFactoryInfo;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.util.GeoUtil;
@@ -22,12 +21,11 @@ final public class JXMapUtils {
 	private JXMapUtils(){}
 	private static volatile boolean isInitialised=false;
 	
-	public static synchronized void initLocalFileCache( ){
+	public static synchronized void initLocalFileCache(String baseTileServerUrl){
 		if(isInitialised==false){
 			// Setup local file cache
-			TileFactoryInfo info = new OSMTileFactoryInfo()	;	
 			File cacheDir = new File(System.getProperty("user.home") + File.separator + ".jxmapviewer2");
-			ExpiringOSMLocalResponseCache.installResponseCache(info.getBaseURL(), cacheDir, false);
+			ExpiringOSMLocalResponseCache.installResponseCache(baseTileServerUrl, cacheDir, false);
 
 			isInitialised = true;
 		}

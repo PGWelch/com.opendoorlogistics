@@ -38,15 +38,9 @@ import com.opendoorlogistics.core.utils.images.ImageUtils;
  * 
  */
 final public class SynchronousRenderer {
-	private final TileFactoryInfo info;
+	//private final TileFactoryInfo info;
 	private final DatastoreRenderer renderer = new DatastoreRenderer();
 	private final RecentImageCache recentImageCache = new RecentImageCache(RecentImageCache.ZipType.PNG);
-
-	private SynchronousRenderer(TileFactoryInfo info) {
-		this.info = info;
-	}
-
-
 
 
 
@@ -85,6 +79,10 @@ final public class SynchronousRenderer {
 
 		return new Pair<BufferedImage, LatLongToScreen>(image, converter);
 	}
+	
+	private TileFactoryInfo info(){
+		return BackgroundTileFactorySingleton.getFactory().getInfo();
+	}
 
 	private LatLongToScreen createConverter(Point2D centre, int imageWidth, int imageHeight, final int zoomLevel) {
 		final Rectangle viewport = calculateViewportBounds(centre, imageWidth, imageHeight);
@@ -97,7 +95,7 @@ final public class SynchronousRenderer {
 
 			@Override
 			public Point2D getWorldBitmapPixelPosition(LatLong latLong) {
-				Point2D point = GeoUtil.getBitmapCoordinate(new GeoPosition(latLong.getLatitude(), latLong.getLongitude()), zoomLevel, info);
+				Point2D point = GeoUtil.getBitmapCoordinate(new GeoPosition(latLong.getLatitude(), latLong.getLongitude()), zoomLevel, info());
 				return point;
 			}
 
@@ -140,10 +138,10 @@ final public class SynchronousRenderer {
 		bounding.add(new GeoPosition(view.getMinLatitude(), view.getMaxLongitude()));
 		bounding.add(new GeoPosition(view.getMaxLatitude(), view.getMinLongitude()));
 		bounding.add(new GeoPosition(view.getMaxLatitude(), view.getMaxLongitude()));
-		Pair<Integer, Double> zoomFit = JXMapUtils.getBestFitZoom(info, bounding, imageWidth, imageHeight, 0.975);
+		Pair<Integer, Double> zoomFit = JXMapUtils.getBestFitZoom(info(), bounding, imageWidth, imageHeight, 0.975);
 
 		LatLong ll = view.getCentre();
-		Point2D point = GeoUtil.getBitmapCoordinate(new GeoPosition(ll.getLatitude(), ll.getLongitude()), zoomFit.getFirst(), info);
+		Point2D point = GeoUtil.getBitmapCoordinate(new GeoPosition(ll.getLatitude(), ll.getLongitude()), zoomFit.getFirst(), info());
 		// Pair<Point2D, Integer> bitmapView = new Pair<Point2D, Integer>(point, zoom);
 		return new BitmapView(point, zoomFit.getFirst(), zoomFit.getSecond());
 	}
@@ -163,14 +161,14 @@ final public class SynchronousRenderer {
 	}
 
 	protected void drawMapTiles(Graphics g, int zoom, Rectangle viewportBounds) {
-		int size = info.getTileSize(zoom);
+		int size = info().getTileSize(zoom);
 
 		// calculate the "visible" viewport area in tiles
 		int nbWide = viewportBounds.width / size + 2;
 		int nbHigh = viewportBounds.height / size + 2;
 
-		int tpx = (int) Math.floor(viewportBounds.getX() / info.getTileSize(0));
-		int tpy = (int) Math.floor(viewportBounds.getY() / info.getTileSize(0));
+		int tpx = (int) Math.floor(viewportBounds.getX() / info().getTileSize(0));
+		int tpy = (int) Math.floor(viewportBounds.getY() / info().getTileSize(0));
 
 		for (int x = 0; x <= nbWide; x++) {
 			for (int y = 0; y <= nbHigh; y++) {
@@ -180,8 +178,8 @@ final public class SynchronousRenderer {
 				if (g.getClipBounds().intersects(rect)) {
 					BufferedImage tile = BackgroundTileFactorySingleton.getFactory().renderSynchronously(itpx, itpy, zoom);
 					if (tile != null) {
-						int ox = ((itpx * info.getTileSize(zoom)) - viewportBounds.x);
-						int oy = ((itpy * info.getTileSize(zoom)) - viewportBounds.y);
+						int ox = ((itpx * info().getTileSize(zoom)) - viewportBounds.x);
+						int oy = ((itpy * info().getTileSize(zoom)) - viewportBounds.y);
 						g.drawImage(tile, ox, oy, null);
 					}
 				}
@@ -191,8 +189,7 @@ final public class SynchronousRenderer {
 
 	private static final SynchronousRenderer singleton;
 	static {
-		JXMapUtils.initLocalFileCache();
-		singleton = new SynchronousRenderer(new OSMTileFactoryInfo());
+		singleton = new SynchronousRenderer();
 	}
 
 	public static SynchronousRenderer singleton() {
