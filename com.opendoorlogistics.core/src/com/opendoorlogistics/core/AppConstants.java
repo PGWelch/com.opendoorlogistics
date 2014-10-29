@@ -20,7 +20,7 @@ final public class AppConstants {
 	
 	public static final int APP_VERSION_MINOR = 1;
 
-	public static final int APP_VERSION_REVISION = 6;
+	public static final int APP_VERSION_REVISION = 7;
 	
 	public static final String SHAPEFILES_DIRECTORY = "data" + File.separator + "shapefiles" + File.separator;
 
