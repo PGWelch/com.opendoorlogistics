@@ -11,7 +11,6 @@ import gnu.trove.set.hash.TLongHashSet;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,8 +28,8 @@ import com.opendoorlogistics.studio.controls.checkboxtable.CheckBoxItem;
 public abstract class FilteredDrawablesContainer implements Disposable {
 	private final TileCacheRenderer renderer = new TileCacheRenderer();
 	private final RenderProperties renderFlags = new RenderProperties();
-	private Iterable<? extends DrawableObject> unfiltered = new ArrayList<>();
-	private Iterable<? extends DrawableObject> filtered;
+	private LayeredDrawables unfiltered = new LayeredDrawables(null,null,null);
+	private LayeredDrawables filtered;
 	private LegendFrame legendFilter;
 
 	@Override
@@ -41,10 +40,17 @@ public abstract class FilteredDrawablesContainer implements Disposable {
 		}
 	}
 
-	public synchronized Iterable<? extends DrawableObject> getDrawables() {
+	/**
+	 * Get the drawables which are currently visibly according to the legend filter
+	 * @return
+	 */
+	public synchronized Iterable<? extends DrawableObject> getVisibleDrawables(boolean inactiveBackground, boolean active, boolean inactiveForeground) {
 		if (filtered == null) {
 			if (legendFilter != null) {
-				filtered = legendFilter.filterDrawables(unfiltered);
+				filtered = new LayeredDrawables( 
+						inactiveBackground && unfiltered.getInactiveBackground()!=null? legendFilter.filterDrawables(unfiltered.getInactiveBackground()):null,						
+						active && unfiltered.getActive()!=null? legendFilter.filterDrawables(unfiltered.getActive()):null,
+						inactiveForeground && unfiltered.getInactiveForeground()!=null?legendFilter.filterDrawables(unfiltered.getInactiveForeground()):null);
 			} else {
 				filtered = unfiltered;
 			}
@@ -60,7 +66,7 @@ public abstract class FilteredDrawablesContainer implements Disposable {
 		renderer.renderObjects(g, converter, renderFlags.getFlags() , selectedObjectIds);
 	}
 
-	public void setDrawables(Iterable<? extends DrawableObject> pnts) {
+	public void setDrawables(LayeredDrawables pnts) {
 		// update unfiltered
 		this.unfiltered = pnts;
 		
@@ -125,7 +131,7 @@ public abstract class FilteredDrawablesContainer implements Disposable {
 	private synchronized void updateFiltered() {
 		filtered = null;
 		if(!renderer.isDisposed()){
-			renderer.setObjects(getDrawables());
+			renderer.setObjects(getVisibleDrawables(true,true,true));
 			repaint();			
 		}
 	}

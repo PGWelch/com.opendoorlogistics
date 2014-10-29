@@ -26,7 +26,6 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
-import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 
@@ -49,7 +48,6 @@ import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.strings.Strings;
-import com.opendoorlogistics.core.utils.ui.LayoutUtils;
 import com.opendoorlogistics.core.utils.ui.ShowPanel;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
@@ -66,7 +64,7 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 	private final HideableSplitPanel fillSplitPanel;
 	private final FillFieldPanel fieldSelectorPanel;
 	private final ODLDatastore<? extends ODLTable> globalDs;
-	private final TIntHashSet availableTableIds = new TIntHashSet();
+	private final TIntHashSet selectableTableIds = new TIntHashSet();
 	private JCheckBox showSelectionList;
 	private final HideableSplitPanel mapSelListSplitter;
 	private final SuggestedFillValuesManager fillSuggestedValues = new SuggestedFillValuesManager();
@@ -144,8 +142,8 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 		fieldSelectorPanel.setVisible(interactive.getMouseMode() == MouseMode.FILL);
 	}
 
-	public InteractiveMapPanel(MapConfig config, List<? extends DrawableObject> pnts, final ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm) {
-		super(new InteractiveMapControl(config, new SelectionPanel(globalDs), gsm), false);
+	public InteractiveMapPanel(MapConfig config, MapModePermissions permissions, LayeredDrawables pnts, final ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm) {
+		super(new InteractiveMapControl(config,permissions, new SelectionPanel(globalDs), gsm), false);
 
 		this.globalDs = globalDs;
 		interactive = (InteractiveMapControl) map;
@@ -199,7 +197,7 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 			public void onClickPosition(double latitude, double longitude) {
 				// get the selected drawable...
 				ArrayList<DrawableObject> pnts = new ArrayList<>();
-				for (DrawableObject point : map.getDrawables()) {
+				for (DrawableObject point : map.getVisibleDrawables(false,true,false)) {
 					if (interactive.getSelected().contains(point.getGlobalRowId())) {
 						pnts.add(point);
 					}
@@ -265,7 +263,7 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 					if (tableCol == null) {
 						return new ArrayList<>();
 					}
-					return fillSuggestedValues.getSuggestions(tableCol.getFirst(), tableCol.getSecond(), interactive.getDrawables());
+					return fillSuggestedValues.getSuggestions(tableCol.getFirst(), tableCol.getSecond(), interactive.getVisibleDrawables(false,true,false));
 				}
 			};
 			
@@ -291,7 +289,7 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 
 		@Override
 		public void datastoreStructureChanged() {
-			fieldSelector.update(globalDs, availableTableIds);
+			fieldSelector.update(globalDs, selectableTableIds);
 		}
 
 		@Override
@@ -306,60 +304,60 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 		globalDs.removeListener(fieldSelectorPanel);
 	}
 
-	public static void main(String[] args) {
-		SwingUtilities.invokeLater(new Runnable() {
+//	public static void main(String[] args) {
+//		SwingUtilities.invokeLater(new Runnable() {
+//
+//			@Override
+//			public void run() {
+//				InteractiveMapPanel panel = createWithDummyData();
+//				ShowPanel.showPanel(panel);
+//			}
+//
+//		});
+//	}
 
-			@Override
-			public void run() {
-				InteractiveMapPanel panel = createWithDummyData();
-				ShowPanel.showPanel(panel);
-			}
+//	public static InteractiveMapPanel createWithDummyData() {
+//		ODLDatastoreAlterable<ODLTableAlterable> ds = MapUtils.createExampleDatastore(1000);
+//		UndoRedoDecorator<ODLTableAlterable> undoRedo = new UndoRedoDecorator<>(ODLTableAlterable.class, ds);
+//		List<DrawableObjectImpl> points = DrawableObjectImpl.getBeanMapping().getTableMapping(0).readObjectsFromTable(ds.getTableAt(0));
+//		InteractiveMapPanel panel = new InteractiveMapPanel(new MapConfig(), points, undoRedo, null);
+//		return panel;
+//
+//		// // lines test
+//		// // ArrayList<DrawableObject> drawables = new ArrayList<>();
+//		// List<Pair<String, LatLong>> places = ExampleData.getUKPlaces();
+//		// LatLong [] latLongs = new LatLong[places.size()];
+//		// for(int i =0 ; i<latLongs.length ;i++){
+//		// latLongs[i] = places.get(i).getSecond();
+//		// }
+//		// ODLSimpleGeom simpleGeom = new ODLSimpleGeom(SimpleGeomType.POLYGON, latLongs);
+//		// ODLGeom geom = new ODLGeom(new ODLSimpleGeom[]{simpleGeom});
+//		// List<ODLGeom> geoms = new ArrayList<>();
+//		// geoms.add(geom);
+//		// return createShowingGeoms(geoms);
+//	}
 
-		});
-	}
+//	public static InteractiveMapPanel createShowingGeoms(List<ODLGeomImpl> geoms) {
+//		ArrayList<DrawableObjectImpl> list = new ArrayList<>();
+//		for (int i = 0; i < geoms.size(); i++) {
+//			ODLGeomImpl geom2 = geoms.get(i);
+//			DrawableObjectImpl drawable = new DrawableObjectImpl();
+//			drawable.setGeometry(geom2);
+//			drawable.setColour(Colours.getRandomColour(i));
+//			list.add(drawable);
+//		}
+//		return createShowing(list, true);
+//	}
 
-	public static InteractiveMapPanel createWithDummyData() {
-		ODLDatastoreAlterable<ODLTableAlterable> ds = MapUtils.createExampleDatastore(1000);
-		UndoRedoDecorator<ODLTableAlterable> undoRedo = new UndoRedoDecorator<>(ODLTableAlterable.class, ds);
-		List<DrawableObjectImpl> points = DrawableObjectImpl.getBeanMapping().getTableMapping(0).readObjectsFromTable(ds.getTableAt(0));
-		InteractiveMapPanel panel = new InteractiveMapPanel(new MapConfig(), points, undoRedo, null);
-		return panel;
-
-		// // lines test
-		// // ArrayList<DrawableObject> drawables = new ArrayList<>();
-		// List<Pair<String, LatLong>> places = ExampleData.getUKPlaces();
-		// LatLong [] latLongs = new LatLong[places.size()];
-		// for(int i =0 ; i<latLongs.length ;i++){
-		// latLongs[i] = places.get(i).getSecond();
-		// }
-		// ODLSimpleGeom simpleGeom = new ODLSimpleGeom(SimpleGeomType.POLYGON, latLongs);
-		// ODLGeom geom = new ODLGeom(new ODLSimpleGeom[]{simpleGeom});
-		// List<ODLGeom> geoms = new ArrayList<>();
-		// geoms.add(geom);
-		// return createShowingGeoms(geoms);
-	}
-
-	public static InteractiveMapPanel createShowingGeoms(List<ODLGeomImpl> geoms) {
-		ArrayList<DrawableObjectImpl> list = new ArrayList<>();
-		for (int i = 0; i < geoms.size(); i++) {
-			ODLGeomImpl geom2 = geoms.get(i);
-			DrawableObjectImpl drawable = new DrawableObjectImpl();
-			drawable.setGeometry(geom2);
-			drawable.setColour(Colours.getRandomColour(i));
-			list.add(drawable);
-		}
-		return createShowing(list, true);
-	}
-
-	public static InteractiveMapPanel createShowing(List<DrawableObjectImpl> list, boolean setGlobalIdInList) {
-
-		// create a dummy datastore
-		ODLDatastoreAlterable<ODLTableAlterable> ds = MapUtils.createDatastore(list, setGlobalIdInList);
-		UndoRedoDecorator<ODLTableAlterable> undoRedo = new UndoRedoDecorator<>(ODLTableAlterable.class, ds);
-
-		InteractiveMapPanel panel = new InteractiveMapPanel(new MapConfig(), list, undoRedo, null);
-		return panel;
-	}
+//	public static InteractiveMapPanel createShowing(List<DrawableObjectImpl> list, boolean setGlobalIdInList) {
+//
+//		// create a dummy datastore
+//		ODLDatastoreAlterable<ODLTableAlterable> ds = MapUtils.createDatastore(list, setGlobalIdInList);
+//		UndoRedoDecorator<ODLTableAlterable> undoRedo = new UndoRedoDecorator<>(ODLTableAlterable.class, ds);
+//
+//		InteractiveMapPanel panel = new InteractiveMapPanel(new MapConfig(), list, undoRedo, null);
+//		return panel;
+//	}
 
 	@Override
 	protected JToolBar createToolbar() {
@@ -382,7 +380,38 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 		ret.add(null);
 
 		// create action to enter each of the mouse modes
+		MapModePermissions permissions = getPermissions();
 		for (final MouseMode mode : MouseMode.values()) {
+			
+			// check action allowed by permissions
+			switch(mode){
+			case SELECT:
+				if(!permissions.isSelectObjects()){
+					continue;
+				}
+				break;
+				
+			case CREATE:
+				if(!permissions.isAddObjects()){
+					continue;
+				}
+				break;
+
+			case MOVE_OBJECT:
+				if(!permissions.isMoveObjects()){
+					continue;
+				}
+				break;
+				
+			case FILL:
+				if(!permissions.isFillFields()){
+					continue;
+				}
+				break;
+				
+			default:
+				break;
+			};
 			AbstractAction action = new AbstractAction(Strings.convertEnumToDisplayFriendly(mode.toString()), mode.getButtonImageIcon()) {
 
 				@Override
@@ -400,47 +429,35 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 
 		// delete action
 		ret.add(null);
-		ret.add(new SimpleAction("Delete selected objects", "Delete selected objects", "edit-delete-6.png") {
+		if(permissions.isDeleteSelectObjects()){
+			ret.add(new SimpleAction("Delete selected objects", "Delete selected objects", "edit-delete-6.png") {
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				TLongHashSet sel = interactive.getSelected();
-				if (sel.size() == 0) {
-					JOptionPane.showMessageDialog(InteractiveMapPanel.this, "No objects are selected");
-					return;
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					TLongHashSet sel = interactive.getSelected();
+					if (sel.size() == 0) {
+						JOptionPane.showMessageDialog(InteractiveMapPanel.this, "No objects are selected");
+						return;
+					}
+
+					TableUtils.deleteByGlobalId(globalDs, true, sel.toArray());
 				}
-
-				TableUtils.deleteByGlobalId(globalDs, true, sel.toArray());
-				// globalDs.startTransaction();
-				// sel.forEach(new TLongProcedure() {
-				//
-				// @Override
-				// public boolean execute(long value) {
-				// ODLTable table = globalDs.getTableByImmutableId(Utils.getTableId(value));
-				// if (table != null) {
-				// int row = table.getRowIndexByLocalId(Utils.getLocalRowId(value));
-				// if (row != -1) {
-				// table.deleteRow(row);
-				// }
-				// }
-				// return true;
-				// }
-				// });
-				// globalDs.endTransaction();
-			}
-		});
+			});			
+		}
 		return ret;
 	}
 
 	@Override
-	public void setDrawables(Iterable<? extends DrawableObject> pnts) {
+	public void setDrawables(LayeredDrawables pnts) {
 		// parse to get all distinct table ids
-		availableTableIds.clear();
-		for (DrawableObject pnt : pnts) {
-			long id = pnt.getGlobalRowId();
-			if (id != -1) {
-				availableTableIds.add(TableUtils.getTableId(id));
-			}
+		selectableTableIds.clear();
+		if(pnts.getActive()!=null){
+			for (DrawableObject pnt : pnts.getActive()) {
+				long id = pnt.getGlobalRowId();
+				if (id != -1) {
+					selectableTableIds.add(TableUtils.getTableId(id));
+				}
+			}			
 		}
 
 		// call the datastore structure changed event so it re-reads the avaiable tables

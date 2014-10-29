@@ -21,6 +21,7 @@ import javax.swing.JPanel;
 import org.apache.commons.lang3.StringEscapeUtils;
 
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
+import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
@@ -55,12 +56,12 @@ final public class RegisterMapComponent {
 	static private class WrapperPanel extends JPanel implements Disposable {
 		final ReadOnlyMapPanel mapPanel;
 		final boolean syncMode;
-		final boolean globalConnected;
+		//final boolean globalConnected;
 
-		WrapperPanel(ReadOnlyMapPanel mapPanel, boolean syncMode, boolean globalConnected) {
+		WrapperPanel(ReadOnlyMapPanel mapPanel, boolean syncMode) {
 			this.mapPanel = mapPanel;
 			this.syncMode = syncMode;
-			this.globalConnected = globalConnected;
+	//		this.globalConnected = globalConnected;
 			setLayout(new BorderLayout());
 			add(mapPanel, BorderLayout.CENTER);
 		}
@@ -110,8 +111,8 @@ final public class RegisterMapComponent {
 		private final AppFrame appFrame;
 		private final ODLDatastore<? extends ODLTable> adaptedDsView;
 
-		public GlobalDSConnectedMapPanel(MapConfig config, List<? extends DrawableObject> pnts, ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm, AppFrame appFrame, ODLDatastore<? extends ODLTable> adaptedDsView) {
-			super(config, pnts, globalDs, gsm);
+		public GlobalDSConnectedMapPanel(MapConfig config,MapModePermissions permissions, LayeredDrawables pnts, ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm, AppFrame appFrame, ODLDatastore<? extends ODLTable> adaptedDsView) {
+			super(config,permissions, pnts, globalDs, gsm);
 			this.appFrame = appFrame;
 			this.adaptedDsView = adaptedDsView;
 
@@ -256,7 +257,12 @@ final public class RegisterMapComponent {
 			public void execute(final ComponentExecutionApi reporter, int mode, final Object configuration, final ODLDatastore<? extends ODLTable> adaptedDsView, ODLDatastoreAlterable<? extends ODLTableAlterable> outputDb) {
 
 				// get drawable objects from input tables
-				final List<DrawableObjectImpl> pnts = MapUtils.getDrawables(adaptedDsView);
+				final ODLTable background =TableUtils.findTable(adaptedDsView,MapViewerComponent.INACTIVE_BACKGROUND);
+				final ODLTable activeTable =TableUtils.findTable(adaptedDsView, PredefinedTags.DRAWABLES);
+				final ODLTable foreground =TableUtils.findTable(adaptedDsView,MapViewerComponent.INACTIVE_FOREGROUND);
+				final LayeredDrawables pnts = new LayeredDrawables(background!=null?MapUtils.getDrawables(background):null,
+						MapUtils.getDrawables(activeTable),
+						foreground!=null?MapUtils.getDrawables(foreground):null);
 
 				reporter.submitControlLauncher(new ControlLauncherCallback() {
 
@@ -264,28 +270,30 @@ final public class RegisterMapComponent {
 					public void launchControls(ComponentControlLauncherApi launcherApi) {
 						// test if the points are linked to the global datastore by id;
 						// launch the interactive version is so
-						long flags = adaptedDsView.getTableAt(0).getFlags();
-						boolean connectedByIdToGlobal = (flags & TableFlags.UI_SET_INSERT_DELETE_PERMISSION_FLAGS) == TableFlags.UI_SET_INSERT_DELETE_PERMISSION_FLAGS;
+						long flags = activeTable.getFlags();
+					//	boolean connectedByIdToGlobal = (flags & TableFlags.UI_SET_INSERT_DELETE_PERMISSION_FLAGS) == TableFlags.UI_SET_INSERT_DELETE_PERMISSION_FLAGS;
 
+						MapModePermissions permissions = new MapModePermissions(flags);
+						
 						boolean isEDT = true;
 
 						WrapperPanel p = (WrapperPanel) launcherApi.getRegisteredPanel("Map");
-						if (p != null && (p.syncMode != isEDT || p.globalConnected != connectedByIdToGlobal)) {
+						if (p != null && (p.syncMode != isEDT || (p.mapPanel.getPermissions().equals(permissions)==false))) {
 							// doesn't reuse the panel if sync mode is different
 							p = null;
 						}
 
 						if (p == null) {
-							if (connectedByIdToGlobal) {
-								GlobalDSConnectedMapPanel imp = new GlobalDSConnectedMapPanel(((MapConfig) configuration), pnts, appFrame.getLoaded().getDs(), appFrame.getLoaded(), appFrame, adaptedDsView);
+							if (permissions.isSelectObjects()) {
+								GlobalDSConnectedMapPanel imp = new GlobalDSConnectedMapPanel(((MapConfig) configuration), permissions,pnts, appFrame.getLoaded().getDs(), appFrame.getLoaded(), appFrame, adaptedDsView);
 
 								if (appFrame.getLoaded() != null) {
 									appFrame.getLoaded().registerMapSelectionList(imp);
 								}
-								p = new WrapperPanel(imp, isEDT, connectedByIdToGlobal);
+								p = new WrapperPanel(imp, isEDT);
 
 							} else {
-								p = new WrapperPanel(new ReadOnlyMapPanel((MapConfig) configuration, pnts), isEDT, connectedByIdToGlobal);
+								p = new WrapperPanel(new ReadOnlyMapPanel((MapConfig) configuration,permissions, pnts), isEDT);
 								p.mapPanel.getMapControl().setGetToolTipCB(new BasicTooltipCB());
 							}
 

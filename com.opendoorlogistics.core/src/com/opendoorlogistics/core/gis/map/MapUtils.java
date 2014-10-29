@@ -21,7 +21,6 @@ import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
-import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
@@ -30,7 +29,6 @@ import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.strings.Strings;
-import com.vividsolutions.jts.geom.Coordinate;
 
 final public class MapUtils {
 

@@ -47,7 +47,7 @@ public class ReadOnlyMapPanel extends JPanel implements Disposable {
 	protected final ReadOnlyMapControl map;
 	protected final List<Action> actions;
 	
-	public void setDrawables(Iterable<? extends DrawableObject> pnts){
+	public void setDrawables(LayeredDrawables pnts){
 		map.setDrawables(pnts);
 	}
 	
@@ -55,8 +55,8 @@ public class ReadOnlyMapPanel extends JPanel implements Disposable {
 		map.zoomBestFit();
 	}
 	
-	public ReadOnlyMapPanel(MapConfig config,List<? extends DrawableObject> pnts) {
-		this.map = new ReadOnlyMapControl(config);
+	public ReadOnlyMapPanel(MapConfig config,MapModePermissions permissions,LayeredDrawables pnts) {
+		this.map = new ReadOnlyMapControl(config,permissions);
 		map.setDrawables(pnts);
 		actions = createActions();
 		initLayout();
@@ -177,7 +177,7 @@ public class ReadOnlyMapPanel extends JPanel implements Disposable {
 					try {
 						lastCreateImageConfig = config.deepCopy();
 						BufferedImage image = SynchronousRenderer.singleton().drawAtBitmapCoordCentre(map.getCenter(), config.getWidth(), config.getHeight(),
-								map.getZoom(),map.getRenderFlags().getFlags(), map.getDrawables()).getFirst();
+								map.getZoom(),map.getRenderFlags().getFlags(), map.getVisibleDrawables(true,true,true)).getFirst();
 						ProcessCreateImage.process(image, config);
 
 					} catch (Throwable e2) {
@@ -265,5 +265,9 @@ public class ReadOnlyMapPanel extends JPanel implements Disposable {
 			}
 			map.getActionMap().put(actionName, action);
 		}
+	}
+	
+	public MapModePermissions getPermissions(){
+		return map.getPermissions();
 	}
 }

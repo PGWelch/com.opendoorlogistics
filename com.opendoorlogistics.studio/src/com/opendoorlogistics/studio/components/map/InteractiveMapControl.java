@@ -43,8 +43,8 @@ final public class InteractiveMapControl extends ReadOnlyMapControl implements D
 		void onClickPosition(double latitude, double longitude);
 	};
 
-	public InteractiveMapControl(MapConfig config,SelectionPanel selectedRowsViewer, GlobalMapSelectedRowsManager gsm) {
-		super(config);
+	public InteractiveMapControl(MapConfig config,MapModePermissions permissions,SelectionPanel selectedRowsViewer, GlobalMapSelectedRowsManager gsm) {
+		super(config,permissions);
 		this.selectedRowsViewer = selectedRowsViewer;
 		this.gsm = gsm;
 	}
@@ -70,7 +70,7 @@ final public class InteractiveMapControl extends ReadOnlyMapControl implements D
 	}
 
 	@Override
-	public void setDrawables(Iterable<? extends DrawableObject> pnts) {
+	public void setDrawables(LayeredDrawables pnts) {
 		super.setDrawables(pnts);
 		updateSelectedObjects();
 	}
@@ -78,7 +78,7 @@ final public class InteractiveMapControl extends ReadOnlyMapControl implements D
 	private void updateSelectedObjects() {
 		// remove any selected which are no longer present
 		TLongHashSet allPntIds = new TLongHashSet();
-		for (DrawableObject pnt : getDrawables()) {
+		for (DrawableObject pnt : getVisibleDrawables(false,true,false)) {
 			if (pnt.getGlobalRowId() != -1) {
 				allPntIds.add(pnt.getGlobalRowId());
 			}
@@ -129,7 +129,7 @@ final public class InteractiveMapControl extends ReadOnlyMapControl implements D
 
 			@Override
 			public void onActionable(MouseMode mode, Rectangle rect, boolean ctrl) {
-				TLongArrayList within = DatastoreRenderer.getWithinRectangle(getDrawables(), createImmutableConverter(), rect,true);
+				TLongArrayList within = DatastoreRenderer.getWithinRectangle(getVisibleDrawables(false,true,false), createImmutableConverter(), rect,true);
 				LatLongToScreen converter = createImmutableConverter();
 				if (mode == MouseMode.SELECT) {
 					TLongHashSet old = new TLongHashSet(selectedGlobalRowIds);

@@ -1004,7 +1004,7 @@ final public class ScriptUtils {
 				// Check if the adapter is drawable
 				AdapterConfig adapterConfig = getAdapterById(optionContainingAdapter, adapterId, false);
 				if ((adapterConfig.getFlags() & TableFlags.FLAG_IS_DRAWABLES) == TableFlags.FLAG_IS_DRAWABLES) {
-					ODLDatastore<? extends ODLTableDefinition> drawables = api.standardComponents().map().getIODsDefinition();
+					ODLDatastore<? extends ODLTableDefinition> drawables = api.standardComponents().map().getLayeredDrawablesDefinition();
 					for (int i = 0; i < drawables.getTableCount(); i++) {
 						api.tables().copyTableDefinition(drawables.getTableAt(i), ret);
 					}

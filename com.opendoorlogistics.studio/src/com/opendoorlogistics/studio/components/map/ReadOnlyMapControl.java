@@ -63,6 +63,7 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	private boolean reuseImageOnNextPaint;
 	private GetToolTipCB getToolTipCB;
 	private boolean isDisposed=false;
+	private final MapModePermissions permissions;
 	private Timer timer;
 	private MapConfig config;
 	private ZoomBestFitManager bestFitManager = new ZoomBestFitManager() {
@@ -160,12 +161,12 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		};
 	}
 	
-	public Iterable<? extends DrawableObject> getDrawables(){
-		return drawablesContainer.getDrawables();
+	public Iterable<? extends DrawableObject> getVisibleDrawables(boolean inactiveBackground, boolean active, boolean inactiveForeground){
+		return drawablesContainer.getVisibleDrawables(inactiveBackground,active,inactiveForeground);
 	}
 	
 	private boolean isAllGeometryLoaded(){
-		for (DrawableObject pnt : getDrawables()) {
+		for (DrawableObject pnt : getVisibleDrawables(true,true,true)) {
 			if(pnt.getGeometry()!=null && pnt.getGeometry().isLoaded()==false){
 				return false;
 			}
@@ -174,7 +175,7 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	}
 	
 	public LatLongBoundingBox getLatLongBoundingBox(String legendKeyFilter){
-		return MapUtils.getLatLongBoundingBox(getDrawables(), legendKeyFilter);
+		return MapUtils.getLatLongBoundingBox(getVisibleDrawables(true,true,true), legendKeyFilter);
 	}
 	
 //	public Set<GeoPosition> getGeopositionPointSet(String legendKeyFilter){
@@ -210,7 +211,7 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	 * (i.e. do not change once set).
 	 * @param pnts
 	 */
-	public void setDrawables( Iterable<? extends DrawableObject> pnts){
+	public void setDrawables( LayeredDrawables pnts){
 		drawablesContainer.setDrawables(pnts);
 		
 		//updateLegend();
@@ -239,8 +240,9 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	}
 	
 
-	public ReadOnlyMapControl(MapConfig config) {
+	public ReadOnlyMapControl(MapConfig config, MapModePermissions permissions) {
 		this.config = config;
+		this.permissions = permissions;
 
 		setTileFactory(BackgroundTileFactorySingleton.getFactory());
 
@@ -375,7 +377,7 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	@Override
 	public String getToolTipText(MouseEvent event){
 		Rectangle rect = new Rectangle(event.getX()-1, event.getY()-1, 2, 2);
-		List<DrawableObject> within = DatastoreRenderer.getObjectsWithinRectangle(drawablesContainer.getDrawables(), createImmutableConverter(), rect,false);
+		List<DrawableObject> within = DatastoreRenderer.getObjectsWithinRectangle(drawablesContainer.getVisibleDrawables(true,true,true), createImmutableConverter(), rect,false);
 		if(within.size()>0 && getToolTipCB!=null){
 			return getToolTipCB.getToolTipText(this,within);
 		}
@@ -400,5 +402,8 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		this.config = config;
 	}
 	
+	public MapModePermissions getPermissions(){
+		return permissions;
+	}
 	
 }

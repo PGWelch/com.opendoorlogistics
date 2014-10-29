@@ -18,8 +18,10 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
  *
  */
 public interface Maps extends ODLComponent {
-	ODLDatastore<? extends ODLTableDefinition> getIODsDefinition();
-	
+	ODLDatastore<? extends ODLTableDefinition> getLayeredDrawablesDefinition();
+
+	ODLTableDefinition getDrawableTableDefinition();
+
 	void setCustomTooltips(boolean customTooltip, Serializable config);
 	//ODLDatastore<? extends ODLTable> createDs();
 	

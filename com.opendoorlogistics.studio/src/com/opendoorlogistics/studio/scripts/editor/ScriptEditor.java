@@ -542,7 +542,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 				}
 				if(isMap){
 					// set table to have "drawables" name
-					dummyTable.setTableName(api.standardComponents().map().getIODsDefinition().getTableAt(0).getName());
+					dummyTable.setTableName(api.standardComponents().map().getDrawableTableDefinition().getName());
 				}
 				
 				// add instruction to the end of the script
