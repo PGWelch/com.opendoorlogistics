@@ -7,7 +7,7 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/com.opendoorlogistics.codefromweb"/>
 	<classpathentry exported="true" kind="lib" path="libs/commons-beanutils-1.8.0.jar"/>
 	<classpathentry kind="lib" path="libs/commons-codec-1.5.jar"/>
-	<classpathentry kind="lib" path="libs/commons-collections-2.1.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/commons-collections-2.1.1.jar"/>
 	<classpathentry kind="lib" path="libs/commons-digester-2.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/commons-io-2.4.jar"/>
 	<classpathentry kind="lib" path="libs/commons-logging-1.1.1.jar"/>

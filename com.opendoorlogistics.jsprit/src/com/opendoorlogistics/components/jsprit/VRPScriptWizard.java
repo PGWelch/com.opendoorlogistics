@@ -93,10 +93,10 @@ class VRPScriptWizard {
 	 * @param adapter
 	 */
 	private void addMapTables(ODLApi api, String inputDataAdapterId, String detailsDsId, String outputTableName, ScriptAdapter adapter, boolean isReport) {
-		ODLDatastore<? extends ODLTableDefinition> ds = api.standardComponents().map().getIODsDefinition();
+		ODLTableDefinition drawable = api.standardComponents().map().getDrawableTableDefinition();
 
 		// init lines adapter table
-		ScriptAdapterTable lines = adapter.addSourcelessTable(ds.getTableAt(0));
+		ScriptAdapterTable lines = adapter.addSourcelessTable(drawable);
 		lines.setSourceTable(detailsDsId, STOP_DETAILS_TABLE);
 
 		lines.setSourceColumns(
@@ -121,7 +121,7 @@ class VRPScriptWizard {
 		lines.setFlags(lines.getFlags() | TableFlags.FLAG_IS_DRAWABLES);
 
 		// init points adapter table
-		ScriptAdapterTable points = adapter.addSourcelessTable(ds.getTableAt(0));
+		ScriptAdapterTable points = adapter.addSourcelessTable(drawable);
 		points.setSourceTable(detailsDsId, STOP_DETAILS_TABLE);
 		points.setSourceColumns(new String[][] { new String[] { PredefinedTags.LATITUDE, PredefinedTags.STOP_LATITUDE }, new String[] { PredefinedTags.LONGITUDE, PredefinedTags.STOP_LONGITUDE }, new String[] { "colourKey", null },
 				new String[] { "legendKey", PredefinedTags.VEHICLE_ID }, new String[] { "imageFormulaKey", PredefinedTags.VEHICLE_ID }, });
@@ -154,7 +154,7 @@ class VRPScriptWizard {
 		points.setFlags(points.getFlags() | TableFlags.FLAG_IS_DRAWABLES);
 
 		// init unassigned stops adapter
-		ScriptAdapterTable unassigned = adapter.addSourcelessTable(ds.getTableAt(0));
+		ScriptAdapterTable unassigned = adapter.addSourcelessTable(drawable);
 		unassigned.setTableFilterFormula("lookupcount(id,\"" + inputDataAdapterId + ", stop-order\",\"stop-id\")=0");
 		unassigned.setSourceTable(inputDataAdapterId, "Stops");
 		unassigned.setSourceColumns(new String[][] { new String[] { PredefinedTags.LATITUDE, PredefinedTags.LATITUDE }, new String[] { PredefinedTags.LONGITUDE, PredefinedTags.LONGITUDE } });
@@ -264,7 +264,7 @@ class VRPScriptWizard {
 
 		// add header map, using separate adapter so we can reference it from formulae
 		ScriptAdapter mapAdapter = builder.addDataAdapter("Reporter map view");
-		String mapTableName = api.standardComponents().map().getIODsDefinition().getTableAt(0).getName();
+		String mapTableName = api.standardComponents().map().getDrawableTableDefinition().getName();
 		addMapTables(api, inputDataAdapterId, detailsDsId, mapTableName, mapAdapter, true);
 		ODLTableDefinition mapDfn = mapAdapter.getTable(0).getTableDefinition();
 		adapter.addSourcedTableToAdapter(mapAdapter.getAdapterId(), mapDfn, mapDfn).setTableName(api.standardComponents().reporter().getHeaderMapTableName());

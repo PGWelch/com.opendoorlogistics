@@ -80,7 +80,7 @@ final public class ReporterComponent implements Reporter {
 		reportDetails.setFlags(reportDetails.getFlags() | TableFlags.FLAG_COLUMN_WILDCARD | TableFlags.FLAG_IS_OPTIONAL);
 		
 		// add optional header
-		ODLTableDefinitionAlterable headerMap = api.tables().copyTableDefinition(api.standardComponents().map().getIODsDefinition().getTableAt(0), ret);
+		ODLTableDefinitionAlterable headerMap = api.tables().copyTableDefinition(api.standardComponents().map().getDrawableTableDefinition(), ret);
 		ret.setTableName(headerMap.getImmutableId(), api.standardComponents().reporter().getHeaderMapTableName());
 		headerMap.setFlags(headerMap.getFlags() | TableFlags.FLAG_IS_OPTIONAL);
 		

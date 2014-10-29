@@ -20,6 +20,7 @@ import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.components.geocoder.model.GeocodeModel;
 import com.opendoorlogistics.studio.components.geocoder.model.SearchResultPoint;
+import com.opendoorlogistics.studio.components.map.LayeredDrawables;
 
 final public class GeocoderMapAppearance {
 	private final static int RESULT_WIDTH=15;
@@ -35,8 +36,8 @@ final public class GeocoderMapAppearance {
 //		};
 //	}
 	
-	public static Iterable<? extends DrawableObject> createDrawable(final GeocodeModel model) {
-		return new Iterable<DrawableObject>() {
+	public static LayeredDrawables createDrawable(final GeocodeModel model) {
+		return new LayeredDrawables(null, new Iterable<DrawableObject>() {
 
 			@Override
 			public Iterator<DrawableObject> iterator() {
@@ -77,7 +78,7 @@ final public class GeocoderMapAppearance {
 	
 				return ret.iterator();
 			}
-		};
+		},null);
 	}
 
 	private static DrawableObjectImpl createResultDrawable(double lat, double lng, boolean isSelected) {

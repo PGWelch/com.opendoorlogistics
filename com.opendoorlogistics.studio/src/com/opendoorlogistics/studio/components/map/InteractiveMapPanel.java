@@ -64,7 +64,7 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 	private final HideableSplitPanel fillSplitPanel;
 	private final FillFieldPanel fieldSelectorPanel;
 	private final ODLDatastore<? extends ODLTable> globalDs;
-	private final TIntHashSet availableTableIds = new TIntHashSet();
+	private final TIntHashSet selectableTableIds = new TIntHashSet();
 	private JCheckBox showSelectionList;
 	private final HideableSplitPanel mapSelListSplitter;
 	private final SuggestedFillValuesManager fillSuggestedValues = new SuggestedFillValuesManager();
@@ -142,7 +142,7 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 		fieldSelectorPanel.setVisible(interactive.getMouseMode() == MouseMode.FILL);
 	}
 
-	public InteractiveMapPanel(MapConfig config, MapModePermissions permissions, List<? extends DrawableObject> pnts, final ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm) {
+	public InteractiveMapPanel(MapConfig config, MapModePermissions permissions, LayeredDrawables pnts, final ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm) {
 		super(new InteractiveMapControl(config,permissions, new SelectionPanel(globalDs), gsm), false);
 
 		this.globalDs = globalDs;
@@ -197,7 +197,7 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 			public void onClickPosition(double latitude, double longitude) {
 				// get the selected drawable...
 				ArrayList<DrawableObject> pnts = new ArrayList<>();
-				for (DrawableObject point : map.getDrawables()) {
+				for (DrawableObject point : map.getVisibleDrawables(false,true,false)) {
 					if (interactive.getSelected().contains(point.getGlobalRowId())) {
 						pnts.add(point);
 					}
@@ -263,7 +263,7 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 					if (tableCol == null) {
 						return new ArrayList<>();
 					}
-					return fillSuggestedValues.getSuggestions(tableCol.getFirst(), tableCol.getSecond(), interactive.getDrawables());
+					return fillSuggestedValues.getSuggestions(tableCol.getFirst(), tableCol.getSecond(), interactive.getVisibleDrawables(false,true,false));
 				}
 			};
 			
@@ -289,7 +289,7 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 
 		@Override
 		public void datastoreStructureChanged() {
-			fieldSelector.update(globalDs, availableTableIds);
+			fieldSelector.update(globalDs, selectableTableIds);
 		}
 
 		@Override
@@ -448,14 +448,16 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 	}
 
 	@Override
-	public void setDrawables(Iterable<? extends DrawableObject> pnts) {
+	public void setDrawables(LayeredDrawables pnts) {
 		// parse to get all distinct table ids
-		availableTableIds.clear();
-		for (DrawableObject pnt : pnts) {
-			long id = pnt.getGlobalRowId();
-			if (id != -1) {
-				availableTableIds.add(TableUtils.getTableId(id));
-			}
+		selectableTableIds.clear();
+		if(pnts.getActive()!=null){
+			for (DrawableObject pnt : pnts.getActive()) {
+				long id = pnt.getGlobalRowId();
+				if (id != -1) {
+					selectableTableIds.add(TableUtils.getTableId(id));
+				}
+			}			
 		}
 
 		// call the datastore structure changed event so it re-reads the avaiable tables
