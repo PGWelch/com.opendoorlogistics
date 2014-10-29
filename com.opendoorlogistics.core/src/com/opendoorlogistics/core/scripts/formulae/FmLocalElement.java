@@ -55,4 +55,8 @@ public class FmLocalElement extends FunctionImpl{
 	public String getName(){
 		return name;
 	}
+	
+	public int getColumnIndex(){
+		return columnIndex;
+	}
 }

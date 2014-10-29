@@ -32,6 +32,8 @@ import com.opendoorlogistics.core.formulae.FormulaParser;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.Functions;
+import com.opendoorlogistics.core.formulae.Functions.FmConst;
+import com.opendoorlogistics.core.formulae.Functions.FmEquals;
 import com.opendoorlogistics.core.formulae.UserVariableProvider;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary;
 import com.opendoorlogistics.core.geometry.Spatial;
@@ -520,27 +522,60 @@ final public class AdapterBuilder {
 			}
 
 			if (!env.isCompileOnly()) {
-				// get all the row ids in the table which pass the filter
+				// allocate an array with capacity to store all rows if needed
 				int nbRows = srcTable.getRowCount();
 				TLongArrayList rowIds = new TLongArrayList(nbRows);
-				for (int row = 0; row < nbRows; row++) {
-					FunctionParameters parameters = new TableParameters(datasources, tableRef.dsIndex, srcTable.getImmutableId(), srcTable.getRowId(row),row);
-					Object exec = formula.execute(parameters);
-					if (exec == Functions.EXECUTION_ERROR) {
-						env.setFailed("Failed to execute filter formula: " + filterFormula);
-						return;
-					}
-
-					if (exec != null) {
-						Long val = Numbers.toLong(exec);
-						if(val!=null && val.intValue()==1){
-							rowIds.add(srcTable.getRowId(row));							
+				
+				// check for simple field = value case where we can use the index (if exists)
+				boolean didIndexedSearch=false;
+				if(FmEquals.class.isInstance(formula) && formula.nbChildren()==2){
+					FmConst constFnc=null;
+					FmLocalElement localVar=null;
+					for(int i =0 ; i < 2 ; i++){
+						Function child = formula.child(i);
+						if(FmConst.class.isInstance(child)){
+							constFnc = (FmConst)child;
 						}
-//						if (Number.class.isInstance(exec) && ((Number) exec).intValue() == 1) {
-//						}
+						else if(FmLocalElement.class.isInstance(child)){
+							localVar = (FmLocalElement)child;
+						}
+					}
+					
+					if(constFnc!=null && localVar!=null){
+						long [] vals = srcTable.find(localVar.getColumnIndex(), constFnc.value());
+						if(vals!=null){
+							rowIds.addAll(vals);							
+						}
+						didIndexedSearch = true;
 					}
 				}
-
+				else if(FmLocalElement.class.isInstance(formula)){
+					long [] vals = srcTable.find(((FmLocalElement)formula).getColumnIndex(), 1);
+					if(vals!=null){
+						rowIds.addAll(vals);							
+					}
+					didIndexedSearch = true;	
+				}
+				
+				// get all the row ids in the table which pass the filter
+				if(!didIndexedSearch){
+					for (int row = 0; row < nbRows; row++) {
+						FunctionParameters parameters = new TableParameters(datasources, tableRef.dsIndex, srcTable.getImmutableId(), srcTable.getRowId(row),row);
+						Object exec = formula.execute(parameters);
+						if (exec == Functions.EXECUTION_ERROR) {
+							env.setFailed("Failed to execute filter formula: " + filterFormula);
+							return;
+						}
+	
+						if (exec != null) {
+							Long val = Numbers.toLong(exec);
+							if(val!=null && val.intValue()==1){
+								rowIds.add(srcTable.getRowId(row));							
+							}
+						}
+					}
+				}
+				
 				// sort these row ids if sort columns are set
 				if (processSortNow && sortCols.length > 0) {
 					rowIds = new TableSorter(tableRef, rowIds, tableConfig, sortCols).sort();
