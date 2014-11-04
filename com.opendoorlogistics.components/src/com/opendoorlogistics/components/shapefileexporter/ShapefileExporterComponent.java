@@ -88,9 +88,14 @@ public class ShapefileExporterComponent implements ODLComponent {
 
 	@Override
 	public ODLDatastore<? extends ODLTableDefinition> getIODsDefinition(ODLApi api, Serializable configuration) {
+		ExportConfig c = (ExportConfig)configuration;
+		if(c.isConvertShpToROGMode()){
+			return null;
+		}
+		
 		ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds = api.tables().createAlterableDs();
 		ODLTableDefinitionAlterable table = ds.createTable("Shapefile", -1);
-		table.setFlags(table.getFlags() | TableFlags.FLAG_COLUMN_WILDCARD );
+		table.setFlags(table.getFlags() | TableFlags.FLAG_COLUMN_WILDCARD);
 		table.addColumn(-1, "the_geom", ODLColumnType.GEOM, 0);
 		return ds;
 	}
@@ -114,6 +119,13 @@ public class ShapefileExporterComponent implements ODLComponent {
 	@Override
 	public void execute(ComponentExecutionApi api, int mode, Object configuration, ODLDatastore<? extends ODLTable> ioDs, ODLDatastoreAlterable<? extends ODLTableAlterable> outputDs) {
 		ExportConfig c = (ExportConfig) configuration;
+		File file = new File(c.getFilename());
+
+		if (c.isConvertShpToROGMode()) {
+			buildODLGRFile(api, c, file);
+			return;
+		}
+
 		api.postStatusMessage("Exporting shapefile " + c.getFilename());
 
 		// get the geometry type
@@ -131,7 +143,7 @@ public class ShapefileExporterComponent implements ODLComponent {
 			int geomCol = geomColumn(table);
 
 			// build list of features
-			String [] fieldnames = getNonGeomFieldNames(table);
+			String[] fieldnames = getNonGeomFieldNames(table);
 			List<SimpleFeature> features = new ArrayList<SimpleFeature>();
 			for (int i = 0; i < table.getRowCount(); i++) {
 
@@ -150,7 +162,7 @@ public class ShapefileExporterComponent implements ODLComponent {
 				featureBuilder.add(assignToType(g, geomtype));
 
 				for (int j = 0; j < table.getColumnCount(); j++) {
-					if (j != geomCol && fieldnames[j]!=null) {
+					if (j != geomCol && fieldnames[j] != null) {
 						Object value = table.getValueAt(i, j);
 						switch (table.getColumnType(j)) {
 						case LONG:
@@ -193,8 +205,7 @@ public class ShapefileExporterComponent implements ODLComponent {
 			// create shapefile
 			ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
 			Map<String, Serializable> params = new HashMap<String, Serializable>();
-			File file = new File(c.getFilename());
-			params.put("url",file.toURI().toURL());
+			params.put("url", file.toURI().toURL());
 			params.put("create spatial index", Boolean.FALSE);
 			ShapefileDataStore newDataStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
 
@@ -203,7 +214,7 @@ public class ShapefileExporterComponent implements ODLComponent {
 
 			Transaction transaction = new DefaultTransaction("create");
 			// String typeName = newDataStore.getTypeNames()[0];
-			String typeName = newDataStore.getTypeNames()[0];			
+			String typeName = newDataStore.getTypeNames()[0];
 			SimpleFeatureSource featureSource = newDataStore.getFeatureSource(typeName);
 			if (featureSource instanceof SimpleFeatureStore) {
 				SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
@@ -219,15 +230,9 @@ public class ShapefileExporterComponent implements ODLComponent {
 				} finally {
 					transaction.close();
 				}
-	
-				if(c.isBuildROGFile()){
-					int nbThreads = c.getNbROGBuilderThreads();
-					if(nbThreads < 1 || nbThreads > 10){
-						api.postStatusMessage("Starting build of .odlrg file...");
-						throw new RuntimeException("Number of .odlrg builder threads must be between 1 and 10");
-					}
-					
-					new ROGBuilder(file, false, 1,nbThreads , api).build();
+
+				if (c.isBuildROGFile()) {
+					buildODLGRFile(api, c, file);
 				}
 			} else {
 				throw new RuntimeException(type.getTypeName() + " does not support read/write access");
@@ -238,12 +243,29 @@ public class ShapefileExporterComponent implements ODLComponent {
 		}
 	}
 
+	/**
+	 * @param api
+	 * @param c
+	 * @param file
+	 */
+	private void buildODLGRFile(ComponentExecutionApi api, ExportConfig c, File file) {
+		api.postStatusMessage("Starting build of .odlrg file...");
+		int nbThreads = c.getNbROGBuilderThreads();
+		if (nbThreads < 1 || nbThreads > 10) {
+			throw new RuntimeException("Number of .odlrg builder threads must be between 1 and 10");
+		}
+
+		new ROGBuilder(file, false, 1, nbThreads, api).build();
+	}
+
 	@XmlRootElement
 	private static class ExportConfig implements Serializable {
 		private String filename = "";
 		private boolean buildROGFile;
-		private int nbROGBuilderThreads=1;
-		
+		private boolean convertShpToROGMode;
+
+		private int nbROGBuilderThreads = 1;
+
 		public String getFilename() {
 			return filename;
 		}
@@ -268,8 +290,15 @@ public class ShapefileExporterComponent implements ODLComponent {
 		public void setNbROGBuilderThreads(int nbROGBuilderThreads) {
 			this.nbROGBuilderThreads = nbROGBuilderThreads;
 		}
-		
-		
+
+		public boolean isConvertShpToROGMode() {
+			return convertShpToROGMode;
+		}
+
+		public void setConvertShpToROGMode(boolean convertShpToROGMode) {
+			this.convertShpToROGMode = convertShpToROGMode;
+		}
+
 	}
 
 	@Override
@@ -279,27 +308,27 @@ public class ShapefileExporterComponent implements ODLComponent {
 
 	@Override
 	public JPanel createConfigEditorPanel(ComponentConfigurationEditorAPI api, int mode, Serializable config, boolean isFixedIO) {
-		final ExportConfig c = (ExportConfig)config;
+		final ExportConfig c = (ExportConfig) config;
 		final JTextField field = new JTextField();
 		field.setText(c.getFilename());
 		field.getDocument().addDocumentListener(new DocumentListener() {
-			
+
 			@Override
 			public void removeUpdate(DocumentEvent e) {
 				save();
 			}
-			
+
 			@Override
 			public void insertUpdate(DocumentEvent e) {
 				save();
 			}
-			
+
 			@Override
 			public void changedUpdate(DocumentEvent e) {
 				save();
 			}
-			
-			private void save(){
+
+			private void save() {
 				c.setFilename(field.getText());
 			}
 		});
@@ -307,39 +336,42 @@ public class ShapefileExporterComponent implements ODLComponent {
 		final VerticalLayoutPanel ret = new VerticalLayoutPanel();
 
 		FileBrowserPanel filePanel = new FileBrowserPanel(c.getFilename(), new FilenameChangeListener() {
-			
+
 			@Override
 			public void filenameChanged(String newFilename) {
 				c.setFilename(newFilename);
 			}
-		}, false, "OK", new FileNameExtensionFilter("Shapefile (.shp)"  , "shp"));
+		}, false, "OK", new FileNameExtensionFilter("Shapefile (.shp)", "shp"));
 
-		
-		ret.addLine(new JLabel("Output shapefile:"));		
+		ret.addLine(new JLabel(c.isConvertShpToROGMode() ? "Input shapefile:" : "Output shapefile:"));
 		ret.addLine(filePanel);
 		ret.addWhitespace();
-		
+
 		final IntegerEntryPanel nbRogThreads = new IntegerEntryPanel("Number .odlrg builder threads", c.getNbROGBuilderThreads(), null, new IntChangedListener() {
-			
+
 			@Override
 			public void intChange(int newInt) {
 				c.setNbROGBuilderThreads(newInt);
 			}
 		});
-		nbRogThreads.setEnabled(c.isBuildROGFile());
-		
-		ret.addCheckBox("Build .odlrg file", c.isBuildROGFile(), new CheckChangedListener() {
-			
-			@Override
-			public void checkChanged(boolean isChecked) {
-				c.setBuildROGFile(isChecked);
-				nbRogThreads.setEnabled(isChecked);
-			}
-		});
+		nbRogThreads.setEnabled(c.isBuildROGFile() || c.isConvertShpToROGMode());
 
+		if (!c.isConvertShpToROGMode()) {
+			ret.addCheckBox("Build .odlrg file (needs at least 6 GB memory - use java Xmx flag)", c.isBuildROGFile(), new CheckChangedListener() {
+
+				@Override
+				public void checkChanged(boolean isChecked) {
+					c.setBuildROGFile(isChecked);
+					nbRogThreads.setEnabled(isChecked);
+				}
+			});
+		}
+		else{
+			ret.addLine(new JLabel("Warning - building an .odlrg file requires lots of memory. Run ODL Studio with minimum 6 GB using java Xmx flag."));
+		}
 		ret.addHalfWhitespace();
 		ret.addLine(nbRogThreads);
-		
+
 		return ret;
 	}
 
@@ -361,8 +393,12 @@ public class ShapefileExporterComponent implements ODLComponent {
 	@Override
 	public void registerScriptTemplates(ScriptTemplatesBuilder templatesApi) {
 		ExportConfig c = new ExportConfig();
-		templatesApi.registerTemplate(getName(),getName(),getName(),getIODsDefinition(templatesApi.getApi(),c), c);
+		templatesApi.registerTemplate(getName(), getName(), getName(), getIODsDefinition(templatesApi.getApi(), c), c);
 
+		c = new ExportConfig();
+		c.setConvertShpToROGMode(true);
+		String s = "Create .odlrg file from pre-existing .shp";
+		templatesApi.registerTemplate(s, s,s, getIODsDefinition(templatesApi.getApi(), c), c);		
 	}
 
 	private void getAtomicGeometries(Geometry g, List<Geometry> outList) {
@@ -455,10 +491,10 @@ public class ShapefileExporterComponent implements ODLComponent {
 	 */
 	private Geometries identifyType(ODLTableReadOnly table) {
 		int n = table.getRowCount();
-		int geomCol = geomColumn(table);		
+		int geomCol = geomColumn(table);
 		for (Geometries type : Geometries.values()) {
-			
-			int count = 0;		
+
+			int count = 0;
 			for (int i = 0; i < n; i++) {
 				ODLGeom geom = (ODLGeom) table.getValueAt(i, geomCol);
 				if (geom != null) {
@@ -470,7 +506,7 @@ public class ShapefileExporterComponent implements ODLComponent {
 					count++;
 				}
 			}
-			
+
 			if (count > 0) {
 				return type;
 			}
@@ -479,38 +515,38 @@ public class ShapefileExporterComponent implements ODLComponent {
 	}
 
 	/**
-	 * Get the non-geom field names or null if field not allowed to be exported
-	 * (repeat field name when truncated)
+	 * Get the non-geom field names or null if field not allowed to be exported (repeat field name when truncated)
+	 * 
 	 * @param table
 	 * @return
 	 */
-	private String [] getNonGeomFieldNames(ODLTableDefinition table){
+	private String[] getNonGeomFieldNames(ODLTableDefinition table) {
 		int n = table.getColumnCount();
-		String [] ret = new String[n];
+		String[] ret = new String[n];
 		int gc = geomColumn(table);
-		for(int i =0 ; i< n ;i++){
-			if(i!=gc){
+		for (int i = 0; i < n; i++) {
+			if (i != gc) {
 				String s = table.getColumnName(i);
-				if(s.length()>=10){
+				if (s.length() >= 10) {
 					s = s.substring(0, 10);
 				}
-				
+
 				// check unique...
-				boolean unique=true;
-				for(int j =0 ; j < i ; j++){
-					if(Strings.equals(ret[j], s)){
+				boolean unique = true;
+				for (int j = 0; j < i; j++) {
+					if (Strings.equals(ret[j], s)) {
 						unique = false;
 					}
 				}
-				
-				if(unique){
+
+				if (unique) {
 					ret[i] = s;
 				}
 			}
 		}
 		return ret;
 	}
-	
+
 	private SimpleFeatureType createFeatureType(ODLTableReadOnly table, Geometries geomtype) {
 
 		SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
@@ -523,10 +559,10 @@ public class ShapefileExporterComponent implements ODLComponent {
 		// add other types
 		int geomCol = geomColumn(table);
 		int nc = table.getColumnCount();
-		String [] fieldnames = getNonGeomFieldNames(table);
+		String[] fieldnames = getNonGeomFieldNames(table);
 		for (int i = 0; i < nc; i++) {
-			if (i != geomCol && fieldnames[i]!=null) {
-				
+			if (i != geomCol && fieldnames[i] != null) {
+
 				Class<?> cls;
 				switch (table.getColumnType(i)) {
 				case LONG:

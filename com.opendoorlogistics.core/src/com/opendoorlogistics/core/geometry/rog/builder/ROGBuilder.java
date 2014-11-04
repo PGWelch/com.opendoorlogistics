@@ -137,6 +137,10 @@ public class ROGBuilder {
 		}
 	}
 
+	private synchronized void postStatusMessage(String s){
+		processingApi.postStatusMessage(s);	
+	}
+	
 	private class RowProcessor implements Callable<Void> {
 		final ODLTableReadOnly table;
 		final int geomCol;
@@ -171,7 +175,7 @@ public class ROGBuilder {
 				resultsList.set(row, pending);
 
 				if (row % 1000 == 0 && row>0) {
-					System.out.println(baseMessage  + " - processed " + row + " geometries");
+					postStatusMessage(baseMessage  + " - processed " + row + " geometries");
 				}
 			}
 		}
@@ -282,7 +286,7 @@ public class ROGBuilder {
 
 			// Loop over zoom levels
 			for (int zoom = tileFactoryInfo.getMinimumZoomLevel(); zoom <= tileFactoryInfo.getMaximumZoomLevel(); zoom++) {
-				processingApi.postStatusMessage("ODLRG builder - processing zoom level " + zoom + " with " + ((long)tileFactoryInfo.getLongitudeDegreeWidthInPixels(zoom)) + " pixels/degree");
+				postStatusMessage("ODLRG builder - processing zoom level " + zoom + " with " + ((long)tileFactoryInfo.getLongitudeDegreeWidthInPixels(zoom)) + " pixels/degree");
 
 				// Create converter for this zoom level
 				TransformGeomToWorldBitmap mathTransform = createTransform(zoom);
@@ -450,7 +454,7 @@ public class ROGBuilder {
 				}
 				
 				if(i%100==0){
-					processingApi.postStatusMessage("ODLRG builder - validated " + (i+1) + " object(s) across all zoom levels");
+					postStatusMessage("ODLRG builder - validated " + (i+1) + " object(s) across all zoom levels");
 				}
 				
 				
