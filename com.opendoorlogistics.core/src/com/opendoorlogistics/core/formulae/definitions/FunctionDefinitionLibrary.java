@@ -37,6 +37,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmDecimalFormat;
 import com.opendoorlogistics.core.formulae.Functions.FmDivide;
 import com.opendoorlogistics.core.formulae.Functions.FmEquals;
 import com.opendoorlogistics.core.formulae.Functions.FmFadeImage;
+import com.opendoorlogistics.core.formulae.Functions.FmFirstNonNull;
 import com.opendoorlogistics.core.formulae.Functions.FmFloor;
 import com.opendoorlogistics.core.formulae.Functions.FmGreaterThan;
 import com.opendoorlogistics.core.formulae.Functions.FmGreaterThanEqualTo;
@@ -271,6 +272,19 @@ public final class FunctionDefinitionLibrary {
 		minMaxHelper.build(FmMax.class, "max", "Return the maximum of the input arguments.");
 		minMaxHelper.build(FmMin.class, "min", "Return the minimum of the input arguments.");
 
+		// first non null
+		FunctionDefinition firstNonNull = new FunctionDefinition("firstNonNull");
+		firstNonNull.addVarArgs("values", ArgumentType.GENERAL, "");
+		firstNonNull.setFactory(new FunctionFactory() {
+
+			@Override
+			public Function createFunction(Function... args) {
+				return new FmFirstNonNull(args);
+			}
+		});
+		firstNonNull.setDescription("Return the first non-null value");
+		add(firstNonNull);
+		
 		// switch function
 		FunctionDefinition switchDfn = new FunctionDefinition("switch");
 		switchDfn.addVarArgs("expression, value1, result1, value2, result2, .... valueN, resultN, ... else", ArgumentType.GENERAL, "");

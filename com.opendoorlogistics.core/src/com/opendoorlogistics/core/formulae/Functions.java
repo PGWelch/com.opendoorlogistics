@@ -1502,6 +1502,45 @@ public class Functions {
 
 	}
 
+	
+	public static final class FmFirstNonNull extends FunctionImpl {
+
+		public FmFirstNonNull(Function... formula) {
+			super(formula);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmFirstNonNull(deepCopy(children));
+		}
+
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object [] children = executeChildFormulae(parameters, false);
+			if(children==null){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			for(Object child:children){
+				if(child!=null){
+					return child;
+				}
+			}
+			return null;
+		}
+
+
+		@Override
+		public boolean hasBrackets() {
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			return toString("firstNonNull");
+		}
+	}
+	
 	public static final class FmMax extends FunctionImpl {
 
 		public FmMax(Function... formula) {

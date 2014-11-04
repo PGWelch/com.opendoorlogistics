@@ -30,6 +30,7 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
+import com.opendoorlogistics.core.utils.UpdateTimer;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 
 /**
@@ -91,6 +92,7 @@ public final class UpdateQueryComponent implements ODLComponent {
 			TableUtils.removeAllRows(table);
 		} else {
 	
+			UpdateTimer timer = new UpdateTimer(250);
 			// The engine will have specially processed the input table so all the component needs to do is
 			// read from field i and copy this value to field i+1, for i=0, 2, 4, etc.
 			int rows = table.getRowCount();
@@ -99,6 +101,14 @@ public final class UpdateQueryComponent implements ODLComponent {
 				for (int col = 0; col < cols - 1; col += 2) {
 					Object val = table.getValueAt(row, col);
 					table.setValueAt(val, row, col + 1);
+				}
+				
+				if(reporter.isCancelled()){
+					return;
+				}
+				
+				if(timer.isUpdate()){
+					reporter.postStatusMessage("Now updating row " + (row+1) + " / " + rows);
 				}
 			}
 		}

@@ -16,8 +16,11 @@ import org.opengis.referencing.operation.MathTransform;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.core.cache.ApplicationCache;
+import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionFactory;
 import com.opendoorlogistics.core.formulae.FunctionImpl;
@@ -54,7 +57,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 final public class FmLookupNearest extends FunctionImpl {
 	private final MathTransform transform;
 	private final String espg_srid;
-	private final Pair<Class<?>, String> cacheKey;
+	//private final Pair<Class<?>, String> cacheKey;
 	private final LCType type;
 	private ProcessedLookupReferences refs;
 
@@ -63,7 +66,7 @@ final public class FmLookupNearest extends FunctionImpl {
 		this.type = type;
 		this.espg_srid = espg_srid;
 		this.transform = transform;
-		this.cacheKey = new Pair<Class<?>, String>(FmLookupNearest.class, this.espg_srid);
+	//	this.cacheKey = new Pair<Class<?>, String>(FmLookupNearest.class, this.espg_srid);
 	}
 
 	// public FmLookupClosest(Function foreignKeyValue, int datastoreIndex, int otherTableId, int geometryColumn, int otherTableReturnKeyColummn,
@@ -139,6 +142,17 @@ final public class FmLookupNearest extends FunctionImpl {
 		final Geometry geometry;
 		final BoundingCircle boundingCircle;
 
+		public long getSizeInBytes(){
+			long bytes =8;
+			if(geometry!=null){
+				bytes += Spatial.getEstimatedSizeInBytes(geometry);
+			}
+			
+			// bounding circle
+			bytes += 40;
+			
+			return bytes;
+		}
 	}
 
 	/**
@@ -148,7 +162,51 @@ final public class FmLookupNearest extends FunctionImpl {
 	 * @return
 	 */
 	private CachedProcessedGeom toCoordSystem(ODLGeomImpl geom) {
-		CachedProcessedGeom cached = (CachedProcessedGeom) geom.getFromCache(cacheKey);
+		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.LOOKUP_NEAREST_TRANSFORMED_GEOMS);
+		
+		class CacheKey{
+			final String espg;
+			final ODLGeom geom;
+			private CacheKey(String espg, ODLGeom geom) {
+				super();
+				this.espg = espg;
+				this.geom = geom;
+			}
+			@Override
+			public int hashCode() {
+				final int prime = 31;
+				int result = 1;
+				result = prime * result + ((espg == null) ? 0 : espg.hashCode());
+				result = prime * result + ((geom == null) ? 0 : geom.hashCode());
+				return result;
+			}
+			@Override
+			public boolean equals(Object obj) {
+				if (this == obj)
+					return true;
+				if (obj == null)
+					return false;
+				if (getClass() != obj.getClass())
+					return false;
+				CacheKey other = (CacheKey) obj;
+				if (espg == null) {
+					if (other.espg != null)
+						return false;
+				} else if (!espg.equals(other.espg))
+					return false;
+				if (geom == null) {
+					if (other.geom != null)
+						return false;
+				} else if (!geom.equals(other.geom))
+					return false;
+				return true;
+			}
+			
+		}
+		
+		CacheKey key = new CacheKey(espg_srid, geom);
+		
+		CachedProcessedGeom cached = (CachedProcessedGeom)cache.get(key);
 		if (cached != null) {
 			return cached;
 		}
@@ -160,7 +218,8 @@ final public class FmLookupNearest extends FunctionImpl {
 			}
 
 			cached = new CachedProcessedGeom(JTS.transform(wgs84, transform));
-			geom.putInCache(cacheKey, cached);
+			cache.put(key, cached, cached.getSizeInBytes());
+			
 			return cached;
 		} catch (Throwable e) {
 			// return value will be null, so error reported later

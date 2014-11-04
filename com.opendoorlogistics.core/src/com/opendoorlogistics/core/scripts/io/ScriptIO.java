@@ -138,13 +138,14 @@ final public class ScriptIO {
 			ScriptUtils.visitOptions(script, new OptionVisitor() {
 				
 				@Override
-				public void visitOption(Option parent, Option option) {
+				public boolean visitOption(Option parent, Option option, int depth) {
 					for (ComponentConfig conf : option.getComponentConfigs()) {
 						unmarshalComponentConfig(conf);
 					}					
 					for (ComponentConfig instruction : option.getInstructions()) {
 						unmarshalComponentConfig(instruction);
 					}
+					return true;
 				}
 
 	
@@ -234,7 +235,7 @@ final public class ScriptIO {
 			ScriptUtils.visitOptions(script, new OptionVisitor() {
 
 				@Override
-				public void visitOption(Option parent, Option option) {
+				public boolean visitOption(Option parent, Option option, int depth) {
 					try {
 						for (ComponentConfig config : option.getComponentConfigs()) {
 							marshallComponentConfig(doc, config);
@@ -252,7 +253,7 @@ final public class ScriptIO {
 							throw new RuntimeException(e);
 						}
 					}
-				
+					return true;
 				}
 			});
 

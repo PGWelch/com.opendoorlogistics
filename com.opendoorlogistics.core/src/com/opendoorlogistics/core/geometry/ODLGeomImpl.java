@@ -33,9 +33,9 @@ public abstract class ODLGeomImpl implements ODLGeom{
 	}
 	
 
-	public abstract  void putInCache(Object cacheKey, Object data);
+	//public abstract  void putInCache(Object cacheKey, Object data);
 	
-	public abstract Object getFromCache(Object cacheKey);
+	//public abstract Object getFromCache(Object cacheKey);
 	
 	public abstract Geometry getJTSGeometry();
 	

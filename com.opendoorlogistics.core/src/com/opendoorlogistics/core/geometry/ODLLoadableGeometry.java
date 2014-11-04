@@ -20,7 +20,7 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 
 public abstract class ODLLoadableGeometry extends ODLGeomImpl{
-	private final SimpleSoftReferenceMap<Object,Object> cache = new SimpleSoftReferenceMap<>(10);
+//	private final SimpleSoftReferenceMap<Object,Object> cache = new SimpleSoftReferenceMap<>(10);
 	protected volatile HashMap<Object, Rectangle2D> worldBitmapBoundsByZoomLevel;
 	protected volatile HashMap<Object, Point2D> worldBitmapCentroidsByZoomLevel;	
 	protected volatile Envelope wgsBounds;
@@ -35,15 +35,15 @@ public abstract class ODLLoadableGeometry extends ODLGeomImpl{
 //		return "";
 //	}
 	
-	@Override
-	public synchronized void putInCache(Object cacheKey, Object data){
-		cache.put(cacheKey, data);			
-	}
-	
-	@Override
-	public synchronized Object getFromCache(Object cacheKey){
-		return cache.get(cacheKey);			
-	}
+//	@Override
+//	public synchronized void putInCache(Object cacheKey, Object data){
+//		cache.put(cacheKey, data);			
+//	}
+//	
+//	@Override
+//	public synchronized Object getFromCache(Object cacheKey){
+//		return cache.get(cacheKey);			
+//	}
 
 	
 	@Override

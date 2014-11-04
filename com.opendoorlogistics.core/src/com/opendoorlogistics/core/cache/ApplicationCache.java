@@ -35,6 +35,7 @@ public class ApplicationCache {
 	public static final String MAPSFORGE_BACKGROUND_TILES = "mapsforge-background-tiles";
 	public static final String TEXT_LAYOUT_CACHE = "text-layout-cache";
 	public static final String SYNCHRONOUS_RETRIEVED_TILE_CACHE = "synchronous-retrieved-tile-cache";
+	public static final String LOOKUP_NEAREST_TRANSFORMED_GEOMS = "lookup-nearest-transformed-geoms";
 	
 	public static ApplicationCache singleton(){
 		return singleton;
@@ -56,6 +57,8 @@ public class ApplicationCache {
 		create(MAPSFORGE_BACKGROUND_TILES, 64 * MB);
 		create(TEXT_LAYOUT_CACHE, 32 * MB);
 		create(SYNCHRONOUS_RETRIEVED_TILE_CACHE, 32 * MB);
+		create(LOOKUP_NEAREST_TRANSFORMED_GEOMS, 256 * MB);
+				
 	}
 	
 	public RecentlyUsedCache get(String cacheId){

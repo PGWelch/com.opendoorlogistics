@@ -73,20 +73,20 @@ public class ODLShapefileLinkGeom extends ODLGeomImpl {
 	
 
 
-	@Override
-	public void putInCache(Object cacheKey, Object data) {
-		if(resolveLink()){
-			loadedLink.putInCache(cacheKey, data);;
-		}
-	}
-
-	@Override
-	public Object getFromCache(Object cacheKey) {
-		if(resolveLink()){
-			return loadedLink.getFromCache(cacheKey);
-		}
-		return null;
-	}
+//	@Override
+//	public void putInCache(Object cacheKey, Object data) {
+//		if(resolveLink()){
+//			loadedLink.putInCache(cacheKey, data);;
+//		}
+//	}
+//
+//	@Override
+//	public Object getFromCache(Object cacheKey) {
+//		if(resolveLink()){
+//			return loadedLink.getFromCache(cacheKey);
+//		}
+//		return null;
+//	}
 
 
 

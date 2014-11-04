@@ -15,6 +15,7 @@ import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,12 +26,10 @@ import java.util.Map;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.Icon;
-import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -53,11 +52,14 @@ import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.scripts.ScriptOption;
 import com.opendoorlogistics.api.scripts.ScriptOption.OutputType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.core.api.impl.scripts.ScriptOptionImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
@@ -71,10 +73,14 @@ import com.opendoorlogistics.core.scripts.utils.AdapterDestinationProvider;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser.SourcedDatastore;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
+import com.opendoorlogistics.core.scripts.utils.ScriptUtils.OptionVisitor;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils.OutputWindowSyncLevel;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.LayoutUtils;
+import com.opendoorlogistics.core.utils.ui.ModalDialog;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
+import com.opendoorlogistics.core.utils.ui.TextEntryPanel;
+import com.opendoorlogistics.core.utils.ui.TextEntryPanel.TextChangedListener;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.studio.scripts.componentwizard.SetupComponentWizard;
 import com.opendoorlogistics.studio.scripts.editor.OutputPanel;
@@ -219,7 +225,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			switch (type) {
 			case INSTRUCTION: {
 				String componentName = ScriptUtils.getComponentName(instruction);
-				htmlBuilder.append(vspace + "<Strong>Input datastore</Strong> : " + instruction.getDatastore());
+			//	htmlBuilder.append(vspace + "<Strong>Input datastore</Strong> : " + instruction.getDatastore());
 				htmlBuilder.append(vspace + "<Strong>Calls component</Strong> : " + (componentName != null ? componentName : ""));
 			}
 				break;
@@ -258,7 +264,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 			
 			
-			final String defaultText = "<html><i>...You can add your own notes here, just right click to edit them...</i></h3>";
+			final String defaultText = "<html><i>...You can add your own notes here, just right click to edit them...</i></html>";
 			final String text;
 			if(Strings.isEmpty(scriptElement.getEditorLabel())){
 				text = defaultText;
@@ -332,7 +338,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 								OkCancelDialog dlg = new OkCancelDialog(SwingUtilities.getWindowAncestor(ScriptEditorWizardGenerated.this)){
 									@Override
 									protected Component createMainComponent(boolean inWindowsBuilder) {
-										return textArea;
+										return new JScrollPane(textArea);
 									}						
 								};
 								dlg.setTitle("Enter note text");
@@ -465,6 +471,20 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 				boolean hasInstructionLabel = addLabelWithEditor(instruction, ret.panel, isMultiPane);
 
 				if (instruction.isUserCanEdit()) {
+					
+					// add text entry box for the component
+					if (isMultiPane) {
+						TextEntryPanel dsid = new TextEntryPanel("Input datastore id: ", instruction.getDatastore(), new TextChangedListener() {
+							
+							@Override
+							public void textChange(String newText) {
+								instruction.setDatastore(newText);
+							}
+						});
+						ret.panel.add(dsid);
+						ret.panel.addHalfWhitespace();
+					}
+					
 					ODLComponent component = ODLGlobalComponents.getProvider().getComponent(instruction.getComponent());
 					if (component == null) {
 						throw new RuntimeException("Unknown component: " + instruction.getComponent());
@@ -900,7 +920,9 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			node.option = option;
 			node.type = DisplayNodeType.DATA_ADAPTER;
 			node.adapter = adapter;
-			node.displayName = Strings.isEmpty(adapter.getName()) ? adapter.getId() : adapter.getName();
+			
+			// just use the adapter id as we use this in formulae and allow the user to change it in the IU
+			node.displayName =adapter.getId();
 			return node;
 		}
 
@@ -1367,7 +1389,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 		}
 	
-		treeActions.add(new EditOption("Add option", "Add a new option to the script below the currently selected option.", "add-script-option.png") {
+		treeActions.add(new EditOption("Add option using component", "Add a new option using a component to the script below the currently selected option.", "add-script-option.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -1377,24 +1399,75 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 					reinitTree(newOption.getOptionId());	
 				}
 			}
-
-
 		});
 
-		treeActions.add(new EditOption("Rename option", "Rename the selected option.", "script-rename.png") {
+		
+		treeActions.add(new EditOption("Add empty option", "Add an empty option", "add-empty-script-option.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Option option = option();
-				if(option!=null){
-					String newValue = JOptionPane.showInputDialog(ScriptEditorWizardGenerated.this, "Enter script option name", option.getName());
-					if(newValue!=null){
-						option.setName(newValue);
-						reinitTree(option.getOptionId());
-					}				
+				if(hasOption()){
+					Option parent = option();
+					ScriptOption parentBuilder = ScriptOptionImpl.createWrapperHierarchy(api, script, parent.getOptionId(),null);
+					ScriptOption newOption = parentBuilder.addOption("New option", "New option");
+					reinitTree(newOption.getOptionId());					
 				}
 			}
 
+		});
+
+		treeActions.add(new EditOption("Rename", "Rename the selected item.", "script-rename.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Option option = currentPane!=null && currentPane.displayNode!=null? currentPane.displayNode.option:null;
+				if(option!=null){
+					boolean modified=false;
+					
+					DisplayNode node = currentPane.displayNode;
+					String current=null;
+					if(node.type == DisplayNodeType.OPTION){
+						current = node.option.getName();
+					}
+					else{
+						current = node.adapter.getId();
+					}
+					
+					String newValue = JOptionPane.showInputDialog(ScriptEditorWizardGenerated.this, "Enter new name name", current);
+					if(newValue!=null){
+						if(node.type == DisplayNodeType.OPTION){
+							option.setName(newValue);
+							modified = true;
+						}
+						else{
+							// if the standardised version of the value is changing, ensure its unique
+							if(Strings.equals(current, newValue)){
+								newValue = ScriptUtils.createUniqueDatastoreId(script, newValue);								
+							}
+							node.adapter.setId(newValue);
+							modified = true;
+						}	
+					}	
+					
+					if(modified){
+						reinitTree(option.getOptionId());	
+					}
+					
+//					String newValue = JOptionPane.showInputDialog(ScriptEditorWizardGenerated.this, "Enter new name name", option.getName());
+//					if(newValue!=null){
+//						option.setName(newValue);
+//						reinitTree(option.getOptionId());
+//					}				
+				}
+			}
+
+			@Override
+			public void updateEnabled() {
+				boolean enabled =  currentPane != null && currentPane.displayNode!=null && 
+						(currentPane.displayNode.type == DisplayNodeType.OPTION || currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER);
+				setEnabled(enabled);
+			}
+			
 		});
 		
 
@@ -1456,19 +1529,153 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 			
 		});
-		treeActions.add(new EditOption("Delete option", "Delete the selected option.", "delete-script-option.png") {
+		
+		treeActions.add(new EditOption("Move option to different parent", "Move option to different parent option.", "change-script-option-parent.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if (JOptionPane.showConfirmDialog(ScriptEditorWizardGenerated.this, "Are you sure you want to delete this option?", "Confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-					ScriptUtils.deleteOption(script, currentPane.displayNode.option);
+				final Option movingOption = option();
+				if(movingOption==null){
+					return;
+				}
+				
+				class OptionContainer{
+					Option option;
+					int depth;
+					
+					@Override
+					public String toString(){
+						StringBuilder builder = new StringBuilder();
+						for(int i =0 ; i < depth ; i++){
+							builder.append("   ");
+						}
+						if(depth>0){
+							builder.append("- ");							
+						}
+						builder.append(option.getName());
+						return builder.toString();
+					}
+				}
+				
+				
+				final ArrayList<OptionContainer> containers = new ArrayList<>();
+				
+				class MyVisitor implements OptionVisitor{
+					Option movingOptionParent;
+					
+					@Override
+					public boolean visitOption(Option parent, Option currentOption, int depth) {
+						if(currentOption == movingOption){
+							movingOptionParent =parent;
+							// do not add moving option or children of the moving option
+							return false;
+						}
+						OptionContainer container = new OptionContainer();
+						container.option = currentOption;
+						container.depth = depth;
+						containers.add(container);
+						return true;	
+					}
+				}
+				
+				MyVisitor visitor = new MyVisitor();
+				ScriptUtils.visitOptions(script, visitor);
+				
+				// ensure we have a parent for the option
+				if(visitor.movingOptionParent==null){
+					return;
+				}
+				
+				// create a list of all valid options and select the current parent
+				JList<OptionContainer> list = new JList<>(containers.toArray(new OptionContainer[containers.size()]));
+				for(int i = 0 ; i < list.getModel().getSize() ; i++){
+					if(list.getModel().getElementAt(i).option == visitor.movingOptionParent){
+						list.setSelectedIndex(i);
+					}
+				}
+				
+				// show the dialog for selecting the new parent
+				JPanel panel = new JPanel();
+				panel.setLayout(new BorderLayout());
+				panel.add(new JScrollPane(list));
+				ModalDialog dlg = new ModalDialog(SwingUtilities.getWindowAncestor(ScriptEditorWizardGenerated.this), panel, "Select new parent option", ModalDialogResult.OK,ModalDialogResult.CANCEL);
+				dlg.setMinimumSize(new Dimension(300, 200));
+				if(dlg.showModal() == ModalDialogResult.OK && list.getSelectedValue()!=null){
+					
+					// move it!
+					OptionContainer newParent = list.getSelectedValue();
+					visitor.movingOptionParent.getOptions().remove(movingOption);
+					newParent.option.getOptions().add(movingOption);
+					reinitTree(movingOption.getOptionId());	
+				}
+			}
+
+			@Override
+			public void updateEnabled() {
+				setEnabled(hasOption() && option()!=script);
+			}
+			
+		});
+		treeActions.add(new EditOption("Delete item", "Delete the selected item.", "delete-script-option.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (JOptionPane.showConfirmDialog(ScriptEditorWizardGenerated.this, "Are you sure you want to delete this item? (This cannot be undone)", "Confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+					ScriptUtils.visitOptions(script, new OptionVisitor() {
+						
+						@Override
+						public boolean visitOption(Option parent, Option option, int depth) {
+							DisplayNode node = currentPane.displayNode;
+							List<? extends Object> toDelete = null;
+							List<? extends Object> deleteFrom = null;
+							
+							switch(node.type){
+							case OPTION:
+								toDelete = Arrays.asList(node.option);
+								deleteFrom = option.getOptions();
+								break;
+								
+							case INSTRUCTION:
+								toDelete = Arrays.asList(node.instruction);
+								deleteFrom = option.getInstructions();
+								break;
+								
+							case COPY_TABLES:
+								toDelete = node.outputs;
+								deleteFrom = option.getOutputs();
+								break;
+								
+							case DATA_ADAPTER:
+								toDelete = Arrays.asList(node.adapter);
+								deleteFrom = option.getAdapters();
+								break;
+								
+							case COMPONENT_CONFIGURATION:
+								toDelete = Arrays.asList(node.componentConfig);
+								deleteFrom = option.getComponentConfigs();
+								break;
+								
+							default:
+								break;
+							}
+							
+							if(deleteFrom!=null && toDelete!=null){
+								for(Object o : toDelete){
+									deleteFrom.remove(o);
+								}
+							}
+							return true;
+						}
+					});
+
 					reinitTree(null);
 				}
 			}
 
 			@Override
 			public void updateEnabled() {
-				setEnabled(hasOption() && currentPane.displayNode.isRoot == false );
+				boolean enabled =  currentPane != null && currentPane.displayNode!=null && currentPane.displayNode.type != DisplayNodeType.AVAILABLE_TABLES && !currentPane.displayNode.isRoot;
+				setEnabled(enabled);
 			}
 
 		});

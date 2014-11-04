@@ -30,6 +30,7 @@ import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.elements.ComponentConfig;
 import com.opendoorlogistics.core.scripts.elements.InstructionConfig;
 import com.opendoorlogistics.core.scripts.elements.Option;
+import com.opendoorlogistics.core.scripts.elements.OutputConfig;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.elements.ScriptEditorType;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
@@ -56,13 +57,14 @@ final public class ScriptUtils {
 		visitOptions(root, new OptionVisitor() {
 
 			@Override
-			public void visitOption(Option parent, Option option) {
+			public boolean visitOption(Option parent, Option option, int depth) {
 				for (Option child : option.getOptions()) {
 					if (child == optionToDelete) {
 						option.getOptions().remove(optionToDelete);
 						break;
 					}
 				}
+				return true;
 			}
 		});
 	}
@@ -225,17 +227,24 @@ final public class ScriptUtils {
 		visitOptions(script, new OptionVisitor() {
 
 			@Override
-			public void visitOption(Option parent, Option option) {
+			public boolean visitOption(Option parent, Option option, int depth) {
 				if (isRunnableOption(option)) {
 					ret.add(option);
 				}
+				return true;
 			}
 		});
 		return ret;
 	}
 
 	public static interface OptionVisitor {
-		void visitOption(Option parent, Option option);
+		/**
+		 * @param parent
+		 * @param option
+		 * @param depth
+		 * @return True if child options should be visited
+		 */
+		boolean visitOption(Option parent, Option option, int depth);
 	}
 
 	/**
@@ -281,12 +290,13 @@ final public class ScriptUtils {
 		visitOptions(root, new OptionVisitor() {
 
 			@Override
-			public void visitOption(Option parent, Option option) {
+			public boolean visitOption(Option parent, Option option, int depth) {
 				for (InstructionConfig instruct : option.getInstructions()) {
 					if (searchFor.contains(instruct.getUuid())) {
 						set.add(option.getOptionId());
 					}
 				}
+				return true;
 			}
 		});
 		return set.toArray();
@@ -300,32 +310,70 @@ final public class ScriptUtils {
 		visitOptions(option, new OptionVisitor() {
 
 			@Override
-			public void visitOption(Option parent, Option option) {
+			public boolean visitOption(Option parent, Option option, int depth) {
 				for (InstructionConfig instruction : option.getInstructions()) {
 					visitor.visitInstruction(parent, option, instruction);
 				}
+				return true;
 			}
 		});
 	}
 
+	public static interface CopyTablesVisitor {
+		void visitCopyTables(Option parentOption, Option option, OutputConfig copy);
+	}
+
+	public static void visitCopyTables(Option option, final CopyTablesVisitor visitor) {
+		visitOptions(option, new OptionVisitor() {
+
+			@Override
+			public boolean visitOption(Option parent, Option option, int depth) {
+				for (OutputConfig copy : option.getOutputs()) {
+					visitor.visitCopyTables(parent, option, copy);
+				}
+				return true;
+			}
+		});
+	}
+	
+	public static interface AdaptersVisitor {
+		void visitAdapter(Option parentOption, Option option, AdapterConfig copy);
+	}
+
+	public static void visitAdapters(Option option, final AdaptersVisitor visitor) {
+		visitOptions(option, new OptionVisitor() {
+
+			@Override
+			public boolean visitOption(Option parent, Option option, int depth) {
+				for (AdapterConfig adapter : option.getAdapters()) {
+					visitor.visitAdapter(parent, option, adapter);
+				}
+				return true;
+			}
+		});
+	}
+
+
 	public static void visitOptions(Option option, final OptionVisitor visitor) {
 		class Parser {
-			void parse(Option parent, Option option) {
-				visitor.visitOption(parent, option);
-				for (Option child : option.getOptions()) {
-					parse(option, child);
+			void parse(Option parent, Option option, int depth) {
+				if(visitor.visitOption(parent, option, depth)){
+					for (Option child : option.getOptions()) {
+						parse(option, child,depth+1);
+					}					
 				}
 			}
 		}
-		new Parser().parse(null, option);
+		new Parser().parse(null, option,0);
 	}
 
 	public static void setAllUnsynced(Option root) {
 		ScriptUtils.visitOptions(root, new OptionVisitor() {
 
 			@Override
-			public void visitOption(Option parent, Option option) {
+			public boolean visitOption(Option parent, Option option, int depth) {
 				option.setSynchronised(false);
+				return true;
 			}
 		});
 	}
@@ -438,7 +486,7 @@ final public class ScriptUtils {
 		visitOptions(script, new OptionVisitor() {
 
 			@Override
-			public void visitOption(Option parent, Option option) {
+			public boolean visitOption(Option parent, Option option, int depth) {
 				boolean found = false;
 				for (InstructionConfig instruction : option.getInstructions()) {
 					if (instruction.getExecutionMode() == mode) {
@@ -450,6 +498,7 @@ final public class ScriptUtils {
 				if (found) {
 					ret.add(option.getOptionId());
 				}
+				return true;
 			}
 		});
 		return ret;
@@ -723,7 +772,7 @@ final public class ScriptUtils {
 		visitOptions(script, new OptionVisitor() {
 
 			@Override
-			public void visitOption(Option parent, Option option) {
+			public boolean visitOption(Option parent, Option option, int depth) {
 				OutputWindowSyncLevel syncLevel = getOutputWindowSyncLevel(api, script, option.getOptionId());
 
 				switch (syncLevel) {
@@ -742,6 +791,7 @@ final public class ScriptUtils {
 					retValue.ret = false;
 					break;
 				}
+				return true;
 			}
 		});
 		return retValue.ret;
@@ -764,7 +814,7 @@ final public class ScriptUtils {
 		visitOptions(script, new OptionVisitor() {
 
 			@Override
-			public void visitOption(Option parent, Option option) {
+			public boolean visitOption(Option parent, Option option, int depth) {
 				validate(option.getOptionId(), IdType.OPTION);
 
 				for (AdapterConfig adapterConfig : option.getAdapters()) {
@@ -778,6 +828,7 @@ final public class ScriptUtils {
 				for (ComponentConfig componentConfig : option.getComponentConfigs()) {
 					validate(componentConfig.getConfigId(), IdType.INSTRUCTION_CONFIGURATION);
 				}
+				return true;
 			}
 
 			void validate(String id, IdType type) {
