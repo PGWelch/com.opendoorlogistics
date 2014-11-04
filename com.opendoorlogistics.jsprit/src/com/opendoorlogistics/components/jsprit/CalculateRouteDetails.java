@@ -39,18 +39,18 @@ public class CalculateRouteDetails {
 	private final ODLApi api;
 	private final InputTablesDfn dfn;
 	private final VRPConfig conf;
-	private final TravelCostAccessor travelCosts;
+	private final BuiltVRP builtVRP;
 	private final ODLTableReadOnly jobs;
 	private final ODLTableReadOnly vehicles;
 	private final Map<String, Integer> stopIdMap;
 	private final VehicleIds vehicleIds;
 
-	public CalculateRouteDetails(ComponentExecutionApi api, VRPConfig config, ODLDatastore<? extends ODLTable> ioDb, TravelCostAccessor travelCosts) {
+	public CalculateRouteDetails(ComponentExecutionApi api, VRPConfig config, ODLDatastore<? extends ODLTable> ioDb, BuiltVRP travelCosts) {
 		dfn = new InputTablesDfn(api.getApi(), config);
 		this.cApi = api;
 		this.api = api.getApi();
 		this.conf = config;
-		this.travelCosts = travelCosts;
+		this.builtVRP = travelCosts;
 		jobs = ioDb.getTableByImmutableId(dfn.stops.tableId);
 		vehicles = ioDb.getTableByImmutableId(dfn.vehicles.tableId);
 
@@ -265,13 +265,13 @@ public class CalculateRouteDetails {
 			// get vehicle row and fill in vehicle details
 			RouteDetail route = idRoute.getValue();
 			ret.add(route);
-			processRoute(travelCosts, vehicles, route);
+			processRoute(vehicles, route);
 		}
 
 		return ret;
 	}
 
-	private void processRoute(TravelCostAccessor travelCosts, ODLTableReadOnly vehicles, RouteDetail route) {
+	private void processRoute( ODLTableReadOnly vehicles, RouteDetail route) {
 		List<StopDetail> stops = route.stops;
 
 		// get vehicle time window
@@ -352,15 +352,15 @@ public class CalculateRouteDetails {
 				int indx = costType.ordinal();
 				switch (costType) {
 				case COST:
-					current.travelCost[indx] = travelCosts.getTravelCost(previous.stopLatLong, current.stopLatLong, route.costPerHour / (60 * 60 * 1000), route.costPerKm / 1000);
+					current.travelCost[indx] = builtVRP.getTravelCost(previous.stopLatLong, current.stopLatLong, route.costPerHour / (60 * 60 * 1000), route.costPerKm / 1000);
 					break;
 
 				case TIME:
-					current.travelCost[indx] = travelCosts.getTravelTime(previous.stopLatLong, current.stopLatLong);
+					current.travelCost[indx] = builtVRP.getTravelTime(previous.stopLatLong, current.stopLatLong);
 					break;
 
 				case DISTANCE_KM:
-					current.travelCost[indx] = travelCosts.getTravelDistance(previous.stopLatLong, current.stopLatLong);
+					current.travelCost[indx] = builtVRP.getTravelDistance(previous.stopLatLong, current.stopLatLong);
 					break;
 				}
 				current.totalTravelCost[indx] = previous.totalTravelCost[indx] + current.travelCost[indx];

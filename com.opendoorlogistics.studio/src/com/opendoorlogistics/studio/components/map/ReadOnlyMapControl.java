@@ -13,6 +13,7 @@ import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -41,12 +42,11 @@ import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
 
-
 public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	private static final double DEFAULT_ZOOM_FRACTION = 0.975;
-	
-	//private LegendFrame legendFrame;
-	protected final FilteredDrawablesContainer drawablesContainer = new FilteredDrawablesContainer(){
+
+	// private LegendFrame legendFrame;
+	protected final FilteredDrawablesContainer drawablesContainer = new FilteredDrawablesContainer() {
 
 		@Override
 		public void repaint() {
@@ -62,41 +62,42 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	private BufferedImage mapImage;
 	private boolean reuseImageOnNextPaint;
 	private GetToolTipCB getToolTipCB;
-	private boolean isDisposed=false;
+	private boolean isDisposed = false;
 	private final MapModePermissions permissions;
 	private Timer timer;
 	private MapConfig config;
 	private ZoomBestFitManager bestFitManager = new ZoomBestFitManager() {
-		
+
 		@Override
-		public void zoomBestFit(ReadOnlyMapControl viewer,final double maxFraction) {
-			zoomer.postZoomRequest(maxFraction,null);
+		public void zoomBestFit(ReadOnlyMapControl viewer, final double maxFraction) {
+			zoomer.postZoomRequest(maxFraction, null);
 		}
 
 	};
 	private final Zoomer zoomer = new Zoomer();
-	
-	private class Zoomer{
+
+	private class Zoomer {
 
 		/**
 		 * @param maxFraction
 		 */
 		private void postZoomRequest(final double maxFraction, final String legendFilter) {
-			if(!SwingUtilities.isEventDispatchThread()){
+			if (!SwingUtilities.isEventDispatchThread()) {
 				throw new RuntimeException();
 			}
-			
+
 			// zoom if all geometry loaded, otherwise set timer to zoom if not already set
-			if(!zoomIfLoaded(maxFraction,legendFilter) && timer==null){
+			if (!zoomIfLoaded(maxFraction, legendFilter) && timer == null) {
 				timer = new Timer(100, new ActionListener() {
-					
+
 					@Override
 					public void actionPerformed(ActionEvent e) {
-					//	System.out.println(new Date());
-						if(isDisposed || zoomIfLoaded(maxFraction,legendFilter)){
+						// System.out.println(new Date());
+						if (isDisposed || zoomIfLoaded(maxFraction, legendFilter)) {
 							timer.stop();
 							timer = null;
-						};
+						}
+						;
 					}
 				});
 				timer.start();
@@ -104,39 +105,39 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		}
 
 		private boolean zoomIfLoaded(double maxFraction, String legendFilter) {
-			if(isAllGeometryLoaded()){
-				ZoomUtils.zoomToBestFit(ReadOnlyMapControl.this, getLatLongBoundingBox(legendFilter), maxFraction,false);
+			if (isAllGeometryLoaded()) {
+				ZoomUtils.zoomToBestFit(ReadOnlyMapControl.this, getLatLongBoundingBox(legendFilter), maxFraction, false);
 				return true;
 			}
 			return false;
 		}
 	}
-	
-	public static interface GetToolTipCB{
-		String getToolTipText(ReadOnlyMapControl control,List<DrawableObject> selectedObjs);
+
+	public static interface GetToolTipCB {
+		String getToolTipText(ReadOnlyMapControl control, List<DrawableObject> selectedObjs);
 	}
-	
-	public void dispose(){
+
+	public void dispose() {
 		drawablesContainer.dispose();
 		isDisposed = true;
 	}
-	
-	public interface ZoomBestFitManager{
+
+	public interface ZoomBestFitManager {
 		void zoomBestFit(ReadOnlyMapControl viewer, double maxFraction);
 	}
-	
+
 	/**
-	 * Create a converter object that's immutable - i.e. later changes to the view
-	 * or zoom are not reflected in the object.
+	 * Create a converter object that's immutable - i.e. later changes to the view or zoom are not reflected in the object.
+	 * 
 	 * @return
 	 */
-	public LatLongToScreen createImmutableConverter(){
+	public LatLongToScreen createImmutableConverter() {
 		final int currentZoom = getZoom();
 		final Rectangle currentViewport = new Rectangle(viewport);
 		return new LatLongToScreenImpl() {
 
 			@Override
-			public Rectangle2D getViewportWorldBitmapScreenPosition(){
+			public Rectangle2D getViewportWorldBitmapScreenPosition() {
 				return currentViewport;
 			}
 
@@ -149,7 +150,7 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 
 			@Override
 			public LatLong getLongLat(double pixelX, double pixelY) {
-				GeoPosition pos = getTileFactory().pixelToGeo(new Point2D.Double(pixelX + currentViewport.x, pixelY + currentViewport.y),currentZoom);
+				GeoPosition pos = getTileFactory().pixelToGeo(new Point2D.Double(pixelX + currentViewport.x, pixelY + currentViewport.y), currentZoom);
 				return new LatLongImpl(pos.getLatitude(), pos.getLongitude());
 			}
 
@@ -160,73 +161,71 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 
 		};
 	}
-	
-	public Iterable<? extends DrawableObject> getVisibleDrawables(boolean inactiveBackground, boolean active, boolean inactiveForeground){
-		return drawablesContainer.getVisibleDrawables(inactiveBackground,active,inactiveForeground);
+
+	public Iterable<? extends DrawableObject> getVisibleDrawables(boolean inactiveBackground, boolean active, boolean inactiveForeground) {
+		return drawablesContainer.getVisibleDrawables(inactiveBackground, active, inactiveForeground);
 	}
-	
-	private boolean isAllGeometryLoaded(){
-		for (DrawableObject pnt : getVisibleDrawables(true,true,true)) {
-			if(pnt.getGeometry()!=null && pnt.getGeometry().isLoaded()==false){
+
+	private boolean isAllGeometryLoaded() {
+		for (DrawableObject pnt : getVisibleDrawables(true, true, true)) {
+			if (pnt.getGeometry() != null && pnt.getGeometry().isLoaded() == false) {
 				return false;
 			}
 		}
 		return true;
 	}
-	
-	public LatLongBoundingBox getLatLongBoundingBox(String legendKeyFilter){
-		return MapUtils.getLatLongBoundingBox(getVisibleDrawables(true,true,true), legendKeyFilter);
+
+	public LatLongBoundingBox getLatLongBoundingBox(String legendKeyFilter) {
+		return MapUtils.getLatLongBoundingBox(getVisibleDrawables(true, true, true), legendKeyFilter);
 	}
-	
-//	public Set<GeoPosition> getGeopositionPointSet(String legendKeyFilter){
-//		HashSet<GeoPosition> positions = new HashSet<>();
-//		for(LatLong pnt: MapUtils.getLatLongs(getDrawables(), legendKeyFilter)){
-//			positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));							
-//		}
-////		for (DrawableObject pnt : getPoints()) {
-////			if(pnt.getGeometry()==null){
-////				positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));				
-////			}else if(pnt.getGeometry().isValid()){
-////				for(Coordinate coord:pnt.getGeometry().getJTSGeometry().getCoordinates()){
-////					// we use long-lat, not lat-long
-////					positions.add(new GeoPosition(coord.y,coord.x));															
-////				}
-////			}
-////		}		
-//		return positions;
-//	}
-	
-	public void setReuseImageOnNextPaint(){
+
+	// public Set<GeoPosition> getGeopositionPointSet(String legendKeyFilter){
+	// HashSet<GeoPosition> positions = new HashSet<>();
+	// for(LatLong pnt: MapUtils.getLatLongs(getDrawables(), legendKeyFilter)){
+	// positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));
+	// }
+	// // for (DrawableObject pnt : getPoints()) {
+	// // if(pnt.getGeometry()==null){
+	// // positions.add(new GeoPosition(pnt.getLatitude(), pnt.getLongitude()));
+	// // }else if(pnt.getGeometry().isValid()){
+	// // for(Coordinate coord:pnt.getGeometry().getJTSGeometry().getCoordinates()){
+	// // // we use long-lat, not lat-long
+	// // positions.add(new GeoPosition(coord.y,coord.x));
+	// // }
+	// // }
+	// // }
+	// return positions;
+	// }
+
+	public void setReuseImageOnNextPaint() {
 		reuseImageOnNextPaint = true;
 	}
-	
-	
-	public RenderProperties getRenderFlags(){
+
+	public RenderProperties getRenderFlags() {
 		return drawablesContainer.getRenderFlags();
 	}
 
-
 	/**
-	 * Set the objects to render. They are assumed to be immutable
-	 * (i.e. do not change once set).
+	 * Set the objects to render. They are assumed to be immutable (i.e. do not change once set).
+	 * 
 	 * @param pnts
 	 */
-	public void setDrawables( LayeredDrawables pnts){
+	public void setDrawables(LayeredDrawables pnts) {
 		drawablesContainer.setDrawables(pnts);
-		
-		//updateLegend();
-		//showLegend();
 
-//		desktopPane.add(frame);
-//		frame.pack();
-//		frame.setVisible(true);
-//		LayoutUtils.placeInternalFrame(desktopPane, frame);
-//		frame.toFront();
+		// updateLegend();
+		// showLegend();
+
+		// desktopPane.add(frame);
+		// frame.pack();
+		// frame.setVisible(true);
+		// LayoutUtils.placeInternalFrame(desktopPane, frame);
+		// frame.toFront();
 	}
 
 	void showLegend() {
 		SwingUtils.invokeLaterOnEDT(new Runnable() {
-			
+
 			@Override
 			public void run() {
 				LegendFrame frame = drawablesContainer.openLegend();
@@ -238,7 +237,6 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		});
 
 	}
-	
 
 	public ReadOnlyMapControl(MapConfig config, MapModePermissions permissions) {
 		this.config = config;
@@ -253,43 +251,73 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 
 		// set callback for when our own tiles are loaded
 		drawablesContainer.addTileReadyListener(new TileReadyListener() {
-			
+
 			@Override
 			public void tileReady(final Rectangle2D worldBitmapBounds, final Object zoom) {
 				SwingUtils.invokeLaterOnEDT(new Runnable() {
-					
+
 					@Override
 					public void run() {
 						// repaint if an on-screen tile has been updated
-						if(zoom.equals(getZoom())){
+						if (zoom.equals(getZoom())) {
 							Rectangle2D current = createImmutableConverter().getViewportWorldBitmapScreenPosition();
-							if(current.intersects(worldBitmapBounds)){
+							if (current.intersects(worldBitmapBounds)) {
 								repaint();
-							}					
+							}
 						}
 					}
 				});
-				
+
 			}
 		});
 		// Add interactions
 		initMouseListeners();
-	//	addMouseListener(new CenterMapListener(this));
+		// addMouseListener(new CenterMapListener(this));
 		addMouseWheelListener(new DesktopPaneZoomMouseWheelListenerCursor());
-	//	addKeyListener(new PanKeyListener(this));
+		// addKeyListener(new PanKeyListener(this));
+		addKeyListener(new KeyListener() {
+
+			@Override
+			public void keyTyped(KeyEvent e) {
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if((e.getModifiers() & KeyEvent.CTRL_MASK) != 0){
+					int code = e.getKeyCode();
+					
+					// remember that equals shares the key with +  
+					if (code == KeyEvent.VK_PLUS || code == KeyEvent.VK_ADD || code == KeyEvent.VK_EQUALS) {
+						setZoom(getZoom() - 1);					
+					}
+					if (code == KeyEvent.VK_MINUS || code == KeyEvent.VK_SUBTRACT) {
+						setZoom(getZoom() + 1);					
+					}			
+				}
+
+			}
+		});
 		addPainters();
 
 		// register an empty tooltip so we get the getToolTipText callback
 		setToolTipText("");
 	}
-	
-	protected void initMouseListeners(){
+
+	protected void initMouseListeners() {
 		MouseInputListener mia = new DesktopPanePanMouseInputListener();
 		addMouseListener(mia);
-		addMouseMotionListener(mia);	
+		addMouseMotionListener(mia);
 	}
-	
-	protected void addPainters(){
+
+	protected void addPainters() {
 		CompoundPainter<Object> compoundPainter = new CompoundPainter<>();
 		setOverlayPainter(compoundPainter);
 
@@ -299,92 +327,88 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 			public void paint(Graphics2D g, Object object, int width, int height) {
 				drawablesContainer.renderObjects(g, createImmutableConverter(), null);
 			}
-		});	
+		});
 	}
 
 	@Override
 	protected void paintComponent(Graphics g) {
-		// hack... taken from jcomponent as don't want to call jxmapviewer's paintComponent method  
-        if (ui != null) {
-            Graphics scratchGraphics = (g == null) ? null : g.create();
-            try {
-                ui.update(scratchGraphics, this);
-            }
-            finally {
-                scratchGraphics.dispose();
-            }
-        }
-        
+		// hack... taken from jcomponent as don't want to call jxmapviewer's paintComponent method
+		if (ui != null) {
+			Graphics scratchGraphics = (g == null) ? null : g.create();
+			try {
+				ui.update(scratchGraphics, this);
+			} finally {
+				scratchGraphics.dispose();
+			}
+		}
+
 		// update viewport before rendering
 		viewport = getViewportBounds();
 
 		// draw to an image first. The image can be reused to allow the selection box to redrawn but not anything else
-		if(mapImage == null || mapImage.getWidth() != getWidth() || mapImage.getHeight()!=getHeight() || reuseImageOnNextPaint==false){
+		if (mapImage == null || mapImage.getWidth() != getWidth() || mapImage.getHeight() != getHeight() || reuseImageOnNextPaint == false) {
 			mapImage = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
 			Graphics2D g2 = mapImage.createGraphics();
 			try {
 				g2.setClip(0, 0, getWidth(), getHeight());
-				
+
 				int z = getZoom();
 				Rectangle viewportBounds = getViewportBounds();
 				drawMapTiles(g2, z, viewportBounds);
-				if (getOverlayPainter() != null){
+				if (getOverlayPainter() != null) {
 					getOverlayPainter().paint((Graphics2D) g2, this, getWidth(), getHeight());
-				}	
+				}
 			} finally {
-				g2.dispose();	
+				g2.dispose();
 			}
-	
+
 		}
 		reuseImageOnNextPaint = false;
-		
+
 		g.drawImage(mapImage, 0, 0, getWidth(), getHeight(), null, null);
-		
+
 	}
 
 	public void zoomBestFit() {
 		zoomBestFit(DEFAULT_ZOOM_FRACTION);
 	}
-	
+
 	public void zoomBestFit(double maxFraction) {
-		if(bestFitManager!=null){
+		if (bestFitManager != null) {
 			bestFitManager.zoomBestFit(this, maxFraction);
 		}
 	}
 
 	@Override
-	protected void drawMapTiles(final Graphics g, final int zoom, Rectangle viewportBounds){
-		if(drawablesContainer.getRenderFlags().hasFlag(RenderProperties.SHOW_BACKGROUND)){
+	protected void drawMapTiles(final Graphics g, final int zoom, Rectangle viewportBounds) {
+		if (drawablesContainer.getRenderFlags().hasFlag(RenderProperties.SHOW_BACKGROUND)) {
 			super.drawMapTiles(g, zoom, viewportBounds);
-		}else{
+		} else {
 			// fill white
 			g.setColor(Color.WHITE);
 			g.fillRect(0, 0, g.getClipBounds().width, g.getClipBounds().height);
 		}
 	}
-	
+
 	public void setZoomBestFitManager(ZoomBestFitManager bestFitManager) {
 		this.bestFitManager = bestFitManager;
 	}
 
+	@Override
+	protected boolean processKeyBinding(KeyStroke ks, KeyEvent e, int condition, boolean pressed) {
+		return super.processKeyBinding(ks, e, condition, pressed);
+	}
 
 	@Override
-    protected boolean processKeyBinding(KeyStroke ks, KeyEvent e,
-            int condition, boolean pressed) {
-		return super.processKeyBinding(ks, e, condition, pressed);
-    }
-    
-	@Override
-	public String getToolTipText(MouseEvent event){
-		Rectangle rect = new Rectangle(event.getX()-1, event.getY()-1, 2, 2);
-		List<DrawableObject> within = DatastoreRenderer.getObjectsWithinRectangle(drawablesContainer.getVisibleDrawables(true,true,true), createImmutableConverter(), rect,false);
-		if(within.size()>0 && getToolTipCB!=null){
-			return getToolTipCB.getToolTipText(this,within);
+	public String getToolTipText(MouseEvent event) {
+		Rectangle rect = new Rectangle(event.getX() - 1, event.getY() - 1, 2, 2);
+		List<DrawableObject> within = DatastoreRenderer.getObjectsWithinRectangle(drawablesContainer.getVisibleDrawables(true, true, true), createImmutableConverter(), rect, false);
+		if (within.size() > 0 && getToolTipCB != null) {
+			return getToolTipCB.getToolTipText(this, within);
 		}
 
 		return null;
 	}
-	
 
 	public GetToolTipCB getGetToolTipCB() {
 		return getToolTipCB;
@@ -401,9 +425,9 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 	public void setConfig(MapConfig config) {
 		this.config = config;
 	}
-	
-	public MapModePermissions getPermissions(){
+
+	public MapModePermissions getPermissions() {
 		return permissions;
 	}
-	
+
 }

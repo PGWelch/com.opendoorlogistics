@@ -97,6 +97,8 @@ final public class ScriptExecutor {
 	public ExecutionReport execute(Script script, ODLDatastoreAlterable<ODLTableAlterable> externalDS) {
 		ScriptExecutionBlackboard bb = new ScriptExecutionBlackboard(compileOnly);
 
+		internalExecutionApi.postStatusMessage("Starting script execution...");
+		
 		try {
 			// execute main option
 			buildDatastores(externalDS, script, bb);
@@ -420,6 +422,7 @@ final public class ScriptExecutor {
 		// get the input/output datastore or adapter (can be null)
 		ODLDatastore<? extends ODLTable> availableIODS = null;
 		if (Strings.isEmpty(instruction.getDatastore()) == false) {
+			internalExecutionApi.postStatusMessage("Fetching datastore " + instruction.getDatastore());
 			availableIODS = findDatastoreOrAdapter(instruction.getDatastore(), result);
 			if (availableIODS == null) {
 				return;

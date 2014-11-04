@@ -268,66 +268,89 @@ public class BuiltVRP implements TravelCostAccessor {
 
 	private List<Vehicle> buildVehicles() {
 		List<Vehicle> vehicles = new ArrayList<>();
-		VehiclesTableDfn vDfn = dfn.vehicles;
+		final VehiclesTableDfn vDfn = dfn.vehicles;
 		ODLTableReadOnly table = ioDb.getTableByImmutableId(vDfn.tableId);
 		int nr = table.getRowCount();
 
 		for (int row = 0; row < nr; row++) {
 
-			// build type first
-			VehicleTypeImpl.Builder vehicleTypeBuilder = VehicleTypeImpl.Builder.newInstance(vDfn.getId(table, row, 0));
-
-			// add capacity
-			for (int j = 0; j < config.getNbQuantities(); j++) {
-				vehicleTypeBuilder.addCapacityDimension(j, vDfn.getCapacity(table, row, j));
-			}
-
-			// set costs - remembering we use metres and milliseconds internally
-			vehicleTypeBuilder.setCostPerDistance(vDfn.getCost(table, row, CostType.COST_PER_KM) / 1000);
-			vehicleTypeBuilder.setCostPerTime(vDfn.getCost(table, row, CostType.COST_PER_HOUR) /(60*60*1000) );
-			double fixedCost = vDfn.getCost(table, row, CostType.FIXED_COST);
-			vehicleTypeBuilder.setFixedCost(fixedCost);
-			maxFixedVehicleCost = Math.max(maxFixedVehicleCost, fixedCost);
-
-			// read start and locations (can be null.. indicating zero distance)
-			LatLong[] ends = vDfn.getStartAndEnd(table, row);
-
-			// Loop over all to create. Only create one if we have infinite fleet size as JSPRIT itself will duplicate them.
-			VehicleType vehicleType = vehicleTypeBuilder.build();
 			int number = vDfn.getNumber(table, row);
 			if(config.isInfiniteFleetSize()){
 				number = 1;
 			}
-			for (int i = 0; i < number; i++) {
-
-				// get id
-				String id = vDfn.getId(table, row, i);
-
-				// build the vehicle
-				VehicleImpl.Builder vehicleBuilder = VehicleImpl.Builder.newInstance(id);
-				vehicleBuilder.setType(vehicleType);
-
-				// set start and end (hopefully not used internal to jsprit)
-				// vehicleBuilder.setStartLocationCoordinate(Coordinate.newInstance(start.getLongitude(), start.getLatitude()));
-				vehicleBuilder.setStartLocationId(ends[0]!=null? locs.addLatLong(ends[0]): VRPConstants.NOWHERE);
-				vehicleBuilder.setEndLocationId(ends[1] !=null?locs.addLatLong(ends[1]): VRPConstants.NOWHERE);
+			
+			buildVehiclesForType(vDfn, table, row, number,new VehicleIdProvider() {
 				
-				// always set this as we always have depot stops - they just might be dummy
-				vehicleBuilder.setReturnToDepot(true);
-
-				// set time window
-				ODLTime[] tw = vDfn.getTimeWindow(table, row);
-				if (tw != null) {
-					vehicleBuilder.setEarliestStart(tw[0].getTotalMilliseconds());
-					vehicleBuilder.setLatestArrival(tw[1].getTotalMilliseconds());
+				@Override
+				public String getId(ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int vehicleNb) {
+					return vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, vehicleNb);
 				}
-
-				vehicles.add(vehicleBuilder.build());
-
-			}
+			}, vehicles);
 		}
 
 		return vehicles;
+	}
+
+	public interface VehicleIdProvider{
+		String getId(ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int vehicleNb);
+	}
+	
+	/**
+	 * @param vDfn
+	 * @param vehicleTypesTable
+	 * @param rowInVehicleTypesTable
+	 * @param numberToBuild
+	 * @param vehicles
+	 */
+	public void buildVehiclesForType(VehiclesTableDfn vDfn, ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int numberToBuild, VehicleIdProvider idProvider, List<Vehicle> vehicles) {
+		// build type first
+		VehicleTypeImpl.Builder vehicleTypeBuilder = VehicleTypeImpl.Builder.newInstance(vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, 0));
+
+		// add capacity
+		for (int j = 0; j < config.getNbQuantities(); j++) {
+			vehicleTypeBuilder.addCapacityDimension(j, vDfn.getCapacity(vehicleTypesTable, rowInVehicleTypesTable, j));
+		}
+
+		// set costs - remembering we use metres and milliseconds internally
+		vehicleTypeBuilder.setCostPerDistance(vDfn.getCost(vehicleTypesTable, rowInVehicleTypesTable, CostType.COST_PER_KM) / 1000);
+		vehicleTypeBuilder.setCostPerTime(vDfn.getCost(vehicleTypesTable, rowInVehicleTypesTable, CostType.COST_PER_HOUR) /(60*60*1000) );
+		double fixedCost = vDfn.getCost(vehicleTypesTable, rowInVehicleTypesTable, CostType.FIXED_COST);
+		vehicleTypeBuilder.setFixedCost(fixedCost);
+		maxFixedVehicleCost = Math.max(maxFixedVehicleCost, fixedCost);
+
+		// read start and locations (can be null.. indicating zero distance)
+		LatLong[] ends = vDfn.getStartAndEnd(vehicleTypesTable, rowInVehicleTypesTable);
+
+		// Loop over all to create. Only create one if we have infinite fleet size as JSPRIT itself will duplicate them.
+		VehicleType vehicleType = vehicleTypeBuilder.build();
+
+		for (int i = 0; i < numberToBuild; i++) {
+
+			// get id
+			String id = idProvider.getId(vehicleTypesTable, rowInVehicleTypesTable, i); //vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, i);
+
+			// build the vehicle
+			VehicleImpl.Builder vehicleBuilder = VehicleImpl.Builder.newInstance(id);
+			vehicleBuilder.setType(vehicleType);
+
+			// set start and end (hopefully not used internal to jsprit)
+			// vehicleBuilder.setStartLocationCoordinate(Coordinate.newInstance(start.getLongitude(), start.getLatitude()));
+			vehicleBuilder.setStartLocationId(ends[0]!=null? locs.addLatLong(ends[0]): VRPConstants.NOWHERE);
+			vehicleBuilder.setEndLocationId(ends[1] !=null?locs.addLatLong(ends[1]): VRPConstants.NOWHERE);
+			
+			// always set this as we always have depot stops - they just might be dummy
+			vehicleBuilder.setReturnToDepot(true);
+
+			// set time window
+			ODLTime[] tw = vDfn.getTimeWindow(vehicleTypesTable, rowInVehicleTypesTable);
+			if (tw != null) {
+				vehicleBuilder.setEarliestStart(tw[0].getTotalMilliseconds());
+				vehicleBuilder.setLatestArrival(tw[1].getTotalMilliseconds());
+			}
+
+			vehicles.add(vehicleBuilder.build());
+
+		}
 	}
 
 //	int getStopRowById(String id) {

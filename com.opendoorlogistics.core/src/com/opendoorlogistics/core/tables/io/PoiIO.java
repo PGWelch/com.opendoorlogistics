@@ -164,6 +164,7 @@ final public class PoiIO {
 					}else{
 						cell.setCellValue((String)null);
 					}
+					cell.setCellType(Cell.CELL_TYPE_NUMERIC);
 					break;
 				default:
 					String sval = TableUtils.getValueAsString(table, srcRow, col);
@@ -175,6 +176,7 @@ final public class PoiIO {
 					} else {
 						cell.setCellValue((String) null);
 					}
+					cell.setCellType(Cell.CELL_TYPE_STRING);
 					break;
 				}
 

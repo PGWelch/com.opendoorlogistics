@@ -15,6 +15,7 @@ import com.opendoorlogistics.components.geocode.postcodes.PCImporterComponent;
 import com.opendoorlogistics.components.reports.ReporterComponent;
 import com.opendoorlogistics.components.reports.builder.ReportsReflectionValidation;
 import com.opendoorlogistics.components.scheduleeditor.ScheduleEditorComponent;
+import com.opendoorlogistics.components.shapefileexporter.ShapefileExporterComponent;
 import com.opendoorlogistics.components.tables.creator.CreateTablesComponent;
 import com.opendoorlogistics.core.InitialiseCore;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
@@ -41,6 +42,7 @@ final public class InitialiseComponents {
 		ODLGlobalComponents.register(new CreateTablesComponent());
 		ODLGlobalComponents.register(new ScheduleEditorComponent());
 		ODLGlobalComponents.register(new GanttChartComponent());
+		ODLGlobalComponents.register(new ShapefileExporterComponent());
 		registered = true;
 	}
 }
