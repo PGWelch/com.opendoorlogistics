@@ -155,29 +155,8 @@ final public class PoiIO {
 			Row row = sheet.createRow(firstOutputRow + 1 + srcRow);
 			for (int col = 0; col < nc; col++) {
 				Cell cell = row.createCell(col);
-				switch(table.getColumnType(col)){
-				case LONG:
-				case DOUBLE:
-					Number dVal = (Number)table.getValueAt(srcRow, col);
-					if(dVal!=null){
-						cell.setCellValue(dVal.doubleValue());
-					}else{
-						cell.setCellValue((String)null);
-					}
-					cell.setCellType(Cell.CELL_TYPE_NUMERIC);
-					break;
-				default:
-					String sval = TableUtils.getValueAsString(table, srcRow, col);
-					if (sval != null) {
-						if (sval.length() >= MAX_CHAR_COUNT_IN_EXCEL_CELL) {
-							nbOversized++;
-						}
-						cell.setCellValue(sval.toString());
-					} else {
-						cell.setCellValue((String) null);
-					}
-					cell.setCellType(Cell.CELL_TYPE_STRING);
-					break;
+				if(saveElementToCell(table, srcRow, col, cell)==SaveElementResult.OVERSIZED){
+					nbOversized++;
 				}
 
 			}
@@ -186,6 +165,48 @@ final public class PoiIO {
 		if (nbOversized > 0 && report != null) {
 			report.log(getOversizedWarningMessage(nbOversized, table.getName()));
 		}
+	}
+	
+	public enum SaveElementResult{
+		OK,
+		OVERSIZED
+	}
+
+	/**
+	 * @param table
+	 * @param row
+	 * @param col
+	 * @param cell
+	 * @param nbOversized
+	 * @return
+	 */
+	public static SaveElementResult saveElementToCell(ODLTableReadOnly table, int row, int col, Cell cell) {
+		boolean oversized=false;
+		switch(table.getColumnType(col)){
+		case LONG:
+		case DOUBLE:
+			Number dVal = (Number)table.getValueAt(row, col);
+			if(dVal!=null){
+				cell.setCellValue(dVal.doubleValue());
+			}else{
+				cell.setCellValue((String)null);
+			}
+			cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+			break;
+		default:
+			String sval = TableUtils.getValueAsString(table, row, col);
+			if (sval != null) {
+				if (sval.length() >= MAX_CHAR_COUNT_IN_EXCEL_CELL) {
+					oversized=true;
+				}
+				cell.setCellValue(sval.toString());
+			} else {
+				cell.setCellValue((String) null);
+			}
+			cell.setCellType(Cell.CELL_TYPE_STRING);
+			break;
+		}
+		return oversized? SaveElementResult.OVERSIZED : SaveElementResult.OK;
 	}
 
 	public static String getOversizedWarningMessage(int nbOversized, String tableName) {

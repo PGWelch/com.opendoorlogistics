@@ -194,4 +194,19 @@ public class ScriptNode implements MutableTreeNode{
 		}
 		return ret;
 	}
+	
+	public String getTooltip(boolean isRunnable){
+		if(option!=null && option.getEditorLabel()!=null && option.getEditorLabel().length()>0){
+			return option.getEditorLabel();
+		}
+
+		String name = getDisplayName();
+		if (isAvailable() == false) {
+			return "The format of this script is incorrect and it cannot be loaded.";
+		} else if (isRunnable) {
+			return "Press the icon to run " + name + " or double click on its name to edit the option.";
+		} else {
+			return "Double click on the option's name to edit it.";
+		}
+			}
 }

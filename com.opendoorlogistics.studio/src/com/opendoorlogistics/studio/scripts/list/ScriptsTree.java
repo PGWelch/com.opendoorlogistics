@@ -110,13 +110,14 @@ class ScriptsTree implements HasScriptsProvider{
 				TreePath path = tree.getPathForLocation(e.getX(), e.getY());
 				if (path != null && path.getLastPathComponent() != null) {
 					ScriptNode node = (ScriptNode) path.getLastPathComponent();
-					if (node.isAvailable() == false) {
-						return "The format of this script is incorrect and it cannot be loaded.";
-					} else if (ScriptNode.isRunnable(node,scriptUIManager)) {
-						return "Press the button to run " + node.getFile().getName() + " or double click on its name to edit the script.";
-					} else {
-						return "Double click on the script's name to edit it.";
-					}
+					return node.getTooltip(ScriptNode.isRunnable(node,scriptUIManager));
+//					if (node.isAvailable() == false) {
+//						return "The format of this script is incorrect and it cannot be loaded.";
+//					} else if (ScriptNode.isRunnable(node,scriptUIManager)) {
+//						return "Press the button to run " + node.getFile().getName() + " or double click on its name to edit the script.";
+//					} else {
+//						return "Double click on the script's name to edit it.";
+//					}
 				}
 
 				return null;

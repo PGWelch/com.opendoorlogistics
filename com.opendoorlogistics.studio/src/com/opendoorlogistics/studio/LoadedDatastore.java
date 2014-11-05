@@ -29,6 +29,7 @@ import com.opendoorlogistics.core.tables.decorators.datastores.DataUpdaterDecora
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.io.PoiIO;
+import com.opendoorlogistics.core.tables.io.PoiIO.SaveElementResult;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreComparer;
 import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
@@ -166,11 +167,14 @@ public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Dis
 								cell = row.createCell(col);
 							}
 						
-							String sval =TableUtils.getValueAsString(newTable, iRow, col);		
-							if(sval!=null && sval.length()>PoiIO.MAX_CHAR_COUNT_IN_EXCEL_CELL){
+							if(PoiIO.saveElementToCell(newTable, iRow, col, cell) == SaveElementResult.OVERSIZED){
 								nbOversized++;
 							}
-							cell.setCellValue(sval);
+//							String sval =TableUtils.getValueAsString(newTable, iRow, col);		
+//							if(sval!=null && sval.length()>PoiIO.MAX_CHAR_COUNT_IN_EXCEL_CELL){
+//								nbOversized++;
+//							}
+//							cell.setCellValue(sval);
 						}
 					}
 					
