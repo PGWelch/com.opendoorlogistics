@@ -1008,7 +1008,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 
 			JPanel treePanel = new JPanel();
 			treePanel.setLayout(new BorderLayout());
-			treePanel.add(tree, BorderLayout.CENTER);
+			treePanel.add(new JScrollPane(tree), BorderLayout.CENTER);
 			treePanel.add(createTreeToolBar(), BorderLayout.SOUTH);
 
 			splitPane.setLeftComponent(treePanel);
