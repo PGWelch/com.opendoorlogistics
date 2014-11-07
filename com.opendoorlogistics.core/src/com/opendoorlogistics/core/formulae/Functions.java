@@ -702,7 +702,8 @@ public class Functions {
 				}
 				Double d = Numbers.toDouble(val);
 				if (d == null) {
-					return EXECUTION_ERROR;
+					// treat null as false
+					d= 0.0;
 				}
 
 				if (d != 1) {
@@ -1807,7 +1808,8 @@ public class Functions {
 				}
 				Double d = Numbers.toDouble(o);
 				if (d == null) {
-					return EXECUTION_ERROR;
+					// treat null as false 
+					d=0.0;
 				}
 
 				if (d == 1) {
