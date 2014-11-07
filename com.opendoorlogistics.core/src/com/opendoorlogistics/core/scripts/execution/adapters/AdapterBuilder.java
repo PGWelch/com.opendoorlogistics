@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import com.opendoorlogistics.api.components.ContinueProcessingCB;
+import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -50,7 +50,6 @@ import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator.AdapterMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.RowFilterDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.UnionDecorator;
-import com.opendoorlogistics.core.tables.io.PoiIO;
 import com.opendoorlogistics.core.tables.io.SupportedFileType;
 import com.opendoorlogistics.core.tables.io.TableIOUtils;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
@@ -58,6 +57,7 @@ import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.IntUtils;
 import com.opendoorlogistics.core.utils.Numbers;
+import com.opendoorlogistics.core.utils.UpdateTimer;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
@@ -70,12 +70,12 @@ final public class AdapterBuilder {
 	private final StandardisedStringTreeMap<Integer> datasourceMap = new StandardisedStringTreeMap<>();
 	private final ArrayList<ODLDatastore<? extends ODLTable>> datasources = new ArrayList<>();
 	private final AdapterConfig inputConfig;
-	private final ContinueProcessingCB continueCb;
+	private final ProcessingApi continueCb;
 	private ODLDatastore<? extends ODLTableDefinition> destination;
 	private AdapterMapping mapping;
 	private AdapterConfig processedConfig;
 
-	private AdapterBuilder(AdapterConfig adapterConfig, String id, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env,ContinueProcessingCB continueCb, BuiltAdapters result) {
+	private AdapterBuilder(AdapterConfig adapterConfig, String id, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env,ProcessingApi continueCb, BuiltAdapters result) {
 		this.inputConfig = adapterConfig;
 		this.id = id;
 		this.env = env;
@@ -84,11 +84,11 @@ final public class AdapterBuilder {
 		this.continueCb = continueCb;
 	}
 
-	public AdapterBuilder(String id, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env, ContinueProcessingCB continueCb,BuiltAdapters result) {
+	public AdapterBuilder(String id, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env, ProcessingApi continueCb,BuiltAdapters result) {
 		this(env.getAdapterConfig(id), id, callerAdapters, env, continueCb,result);
 	}
 
-	public AdapterBuilder(AdapterConfig adapterConfig, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env, ContinueProcessingCB continueCb,BuiltAdapters result) {
+	public AdapterBuilder(AdapterConfig adapterConfig, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env, ProcessingApi continueCb,BuiltAdapters result) {
 		this(adapterConfig, adapterConfig.getId(), callerAdapters, env,continueCb, result);
 	}
 
@@ -847,7 +847,13 @@ final public class AdapterBuilder {
 
 		// Fill in non-group column values
 		int nbGroups = groupedTable.getRowCount();
+		UpdateTimer timer = new UpdateTimer(100);
 		for (int groupRow = 0; groupRow < nbGroups; groupRow++) {
+			
+			if(continueCb!=null && timer.isUpdate()){
+				continueCb.postStatusMessage("Building row " +(groupRow+1) + "/" + nbGroups+ " of group-by query table " + groupedTable.getName());
+			}
+			
 			for (int col : nonGroupByFields) {
 
 				// execute formula against the grouped table; aggregate formulae redirect to source table
@@ -861,6 +867,7 @@ final public class AdapterBuilder {
 				// save the value to the grouped table
 				groupedTable.setValueAt(val, groupRow, col);
 
+				// To do .. update message here..
 			}
 			
 			if(continueCb!=null && continueCb.isCancelled()){
