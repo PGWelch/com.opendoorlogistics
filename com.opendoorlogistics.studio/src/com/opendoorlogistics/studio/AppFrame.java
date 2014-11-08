@@ -673,12 +673,20 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	}
 
 	private void openFile(final File file) {
-		class WorkbookDatastore extends AbstractMap.SimpleEntry<Workbook, ODLDatastoreAlterable<ODLTableAlterable>> {
-
-			public WorkbookDatastore(Workbook key, ODLDatastoreAlterable<ODLTableAlterable> value) {
-				super(key, value);
+		
+		class WorkbookDatastore{
+			ODLDatastoreAlterable<ODLTableAlterable> ds;
+			Workbook wb;
+			byte [] asBytes;
+			
+			private WorkbookDatastore(ODLDatastoreAlterable<ODLTableAlterable> ds, Workbook key, byte[] asBytes) {
+				this.ds = ds;
+				this.wb = key;
+				this.asBytes = asBytes;
 			}
+			
 		}
+		
 
 		String message = "Loading " + file;
 		ProgressDialog<WorkbookDatastore> pd = new ProgressDialog<>(AppFrame.this, message, false);
@@ -692,7 +700,13 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 				try {
 					ODLDatastoreAlterable<ODLTableAlterable> ret = ODLDatastoreImpl.alterableFactory.create();
 					Workbook wb = PoiIO.importExcel(file, ret, report);
-					return new WorkbookDatastore(wb, ret);
+					
+					byte [] asBytes=null;
+					if(file.length() < LoadedDatastore.UPDATE_ORIGINAL_WORKBOOK_BYTES_SIZE_LIMIT && wb!=null){
+						asBytes = PoiIO.toBytes(wb);
+					}
+					
+					return new WorkbookDatastore(ret, wb, asBytes);
 				} catch (Throwable e) {
 					report.setFailed(e);
 					return null;
@@ -704,7 +718,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 			public void onFinished(WorkbookDatastore result, boolean userCancelled, boolean userFinishedNow) {
 
 				if (result != null) {
-					onOpenedDatastore(result.getValue(), result.getKey(), file);
+					onOpenedDatastore(result.ds, result.wb, result.asBytes,file);
 					PreferencesManager.getSingleton().addRecentFile(file);
 					PreferencesManager.getSingleton().setDirectory(PrefKey.LAST_IO_DIR, file);
 				} else {
@@ -791,7 +805,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					onOpenedDatastore(TableIOUtils.importExampleDatastore(exampleDs + ".xlsx", null), null, null);
+					onOpenedDatastore(TableIOUtils.importExampleDatastore(exampleDs + ".xlsx", null), null,null, null);
 				}
 			}));
 		}
@@ -893,12 +907,12 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 	}
 
-	private void onOpenedDatastore(ODLDatastoreAlterable<ODLTableAlterable> newDs, Workbook workbook, File file) {
+	private void onOpenedDatastore(ODLDatastoreAlterable<ODLTableAlterable> newDs, Workbook workbook,byte[]workBookInBytes, File file) {
 		if (loaded != null) {
 			closeDatastore();
 		}
 
-		loaded = new LoadedDatastore(newDs, workbook, file, this);
+		loaded = new LoadedDatastore(newDs, workbook, workBookInBytes,file, this);
 
 		tables.setDatastore(loaded.getDs());
 
@@ -1232,7 +1246,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	}
 
 	public void openEmptyDatastore() {
-		onOpenedDatastore(ODLDatastoreImpl.alterableFactory.create(), null, null);
+		onOpenedDatastore(ODLDatastoreImpl.alterableFactory.create(), null,null, null);
 	}
 
 	public ScriptUIManager getScriptUIManager() {

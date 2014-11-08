@@ -709,71 +709,52 @@ final public class PoiIO {
 		// Object val = ODLColumnType.DOUBLE.convertToMe("2.3", ODLColumnType.STRING);
 		// System.out.println(val);
 		
-		ODLDatastore<ODLTableAlterable> ds =importExcel(new File("C:\\Users\\Phil\\Dropbox\\Business\\ODL\\Tutorials\\Files v2\\Tutorial 1 - viewing customers in a map\\Tutorial 1.xlsx"), null); 
-		System.out.println(ds);
-		File testFile = new File( "c:\\temp\\testexport.xlsx");
-		exportDatastore(ds,testFile, true, new ExecutionReportImpl());
+		String s = "C:\\testfile.xls";
 		
-		ds =importExcel(testFile, null);
-		System.out.println();
-		System.out.println(ds);
-		// File file = new File("c:\\Users\\Phil\\Documents\\FranceGeocodeTest.xlsx");
-		// FileInputStream fis = new FileInputStream(file);
-		// Workbook wb = WorkbookFactory.create(fis);
-		//
-		// Workbook wb2 = deepCopyWorkbook(wb);
-		//
-		// ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		// ObjectOutputStream oos = new ObjectOutputStream(baos);
-		// oos.writeObject(wb);
-		// byte [] bytes = baos.toByteArray();
+		System.out.println("Loading...");
+		
+		ODLDatastoreAlterable<ODLTableAlterable> ret = ODLDatastoreImpl.alterableFactory.create();
+		ExecutionReport report = new ExecutionReportImpl();		
+		Workbook wb = PoiIO.importExcel(new File(s), ret, report);
+		
+		
+		System.out.println("Getting as bytes...");
+		byte [] bytes= PoiIO.toBytes(wb);
+		
+		ArrayList<Workbook> books = new ArrayList<>();
+		for(int i =0 ; i < 100 ; i++){
+			
+			System.out.println("Recreating workbook...");			
+			Workbook tempWorkbook = PoiIO.fromBytes(bytes);
+			books.add(tempWorkbook);
+			
+			System.out.println("Garbage collecting...");			
+			System.gc();
+			//Getting the runtime reference from system
+	        Runtime runtime = Runtime.getRuntime();
 
-		// for(boolean isXLSX : new boolean[]{true,false}){
-		// ODLDatastoreAlterable<ODLTableAlterable> ds = ODLDatastoreImpl.alterableFactory.create();
-		// ODLTableAlterable table = ds.createTable("Table1", -1);
-		// for(ODLColumnType type : ODLColumnType.values()){
-		// table.addColumn(type.name(), type, 0);
-		// }
-		//
-		// Random rand = new Random(123);
-		// for(int row = 0 ; row < 5 ; row++){
-		// table.createEmptyRow(-1);
-		// for(int col =0; col < table.getColumnCount() ; col++){
-		// Object val=null;
-		// switch(table.getColumnType(col)){
-		// case IMAGE:
-		// val = ImageUtils.createBlankImage(2, 2,Color.RED);
-		// break;
-		//
-		// case COLOUR:
-		// val = Colours.getRandomColour(rand.nextLong());
-		// break;
-		//
-		// case STRING:
-		// val = ExampleData.getExampleNouns()[rand.nextInt(ExampleData.getExampleNouns().length)];
-		// break;
-		//
-		// case DOUBLE:
-		// val= rand.nextDouble();
-		// break;
-		//
-		// case LONG:
-		// val = rand.nextInt(10);
-		// break;
-		// }
-		// table.setValueAt(val, row, col);
-		// }
-		// }
-		// System.out.println(ds);
-		//
-		// // export
-		// File file= new File("c:\\temp\\exporttext." + (isXLSX? "xlsx":"xls"));
-		// export(ds,file, isXLSX);
-		//
-		// // load back in
-		// ODLDatastoreAlterable<ODLTableAlterable> reloaded = importExcel(file);
-		// System.out.println(reloaded);
-		// }
+	        System.out.print("NbWbs:" + books.size());
+	         
+	        //Print used memory
+	        int mb = 1024*1024;	        
+	        System.out.print(", Used Memory:"
+	            + (runtime.totalMemory() - runtime.freeMemory()) / mb);
+	 
+	        //Print free memory
+	        System.out.print(", Free Memory:"
+	            + runtime.freeMemory() / mb);
+	         
+	        //Print total available memory
+	        System.out.print(", Total Memory:" + runtime.totalMemory() / mb);
+	 
+	        //Print Maximum available memory
+	        System.out.print(", Max Memory:" + runtime.maxMemory() / mb);
+	        
+	        System.out.println();
+		}
+		
+	//	Workbook tempWorkbook = PoiIO.fromBytes(originalWorkbook);
+	
 
 	}
 }

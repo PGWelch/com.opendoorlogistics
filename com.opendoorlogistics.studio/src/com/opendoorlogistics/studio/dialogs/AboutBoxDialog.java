@@ -64,7 +64,7 @@ final public class AboutBoxDialog extends TextInformationDialog {
 		String s = writer.toString();
 		
 		s = s.replace("VERSION_NUMBER", AppConstants.getAppVersion().toString());
-		
+		s = s.replace("JAVA_VERSION", System.getProperty("java.version"));
 		return s;
 	}
 

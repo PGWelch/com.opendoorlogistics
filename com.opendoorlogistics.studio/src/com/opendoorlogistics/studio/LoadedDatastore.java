@@ -37,22 +37,26 @@ import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.studio.scripts.execution.ScriptsRunner;
 
 public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Disposable {
+	public static long UPDATE_ORIGINAL_WORKBOOK_BYTES_SIZE_LIMIT = 1024 * 1024;
 	private final ODLDatastoreUndoable<ODLTableAlterable> ds;
-	private final byte[] originalWorkbook;
+	private final byte[] originalWorkbookInBytes;
 	private final ODLDatastore<ODLTableAlterable> originalLoadedDs;
 	private final AppFrame appFrame;
 	private ODLDatastore<ODLTableAlterable> lastSavedCopy;
 	private File lastFile;
 	private final ScriptsRunner runner;
 
-	protected LoadedDatastore(ODLDatastoreAlterable<ODLTableAlterable> newDs, Workbook workbook, File file, AppFrame appFrame) {
+	protected LoadedDatastore(ODLDatastoreAlterable<ODLTableAlterable> newDs, Workbook workbook,byte[]workBookInBytes, File file, AppFrame appFrame) {
 		this.appFrame = appFrame;
-		if (workbook != null) {
-			originalWorkbook = PoiIO.toBytes(workbook);
-		} else {
-			originalWorkbook = null;
+		
+		// only save and attempt to update the original workbook if its not too big as apache POI is very memory hungry
+		if(workBookInBytes!=null && workBookInBytes.length < UPDATE_ORIGINAL_WORKBOOK_BYTES_SIZE_LIMIT){
+			originalWorkbookInBytes = workBookInBytes;
 		}
-
+		else{
+			originalWorkbookInBytes = null;
+		}
+		
 		if (ODLDatastoreImpl.class.isInstance(newDs) == false) {
 			throw new RuntimeException();
 		}
@@ -103,9 +107,9 @@ public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Dis
 
 	public boolean save(File file, boolean xlsx, ExecutionReport report) {
 		try{
-			if (originalWorkbook != null) {
+			if (originalWorkbookInBytes != null) {
 				// clone entire workbook .. does this from bytes as saving a workbook makes it invalid (Apache POI bug)
-				Workbook tempWorkbook = PoiIO.fromBytes(originalWorkbook);
+				Workbook tempWorkbook = PoiIO.fromBytes(originalWorkbookInBytes);
 				if (PoiIO.isXLSX(tempWorkbook) == xlsx) {
 					
 					// update the existing workbook to help keep formatting etc
