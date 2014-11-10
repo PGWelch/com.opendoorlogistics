@@ -21,6 +21,7 @@ import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
+import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.tables.decorators.listeners.ListenerRedirector;
@@ -491,7 +492,7 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 
 
 	@Override
-	public ODLDatastore<T> deepCopyDataOnly() {
+	public ODLDatastore<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -597,6 +598,17 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	public boolean isRollbackSupported() {
 		// cannot rollback a row filter as filtered row records held in this class will not be rolled back
 		return false;
+	}
+
+	@Override
+	protected boolean getTableExists(int tableId) {
+		return src.getTableByImmutableId(tableId)!=null;
+	}
+
+	@Override
+	protected ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
+		throw new UnsupportedOperationException();
+
 	}
 
 }

@@ -17,6 +17,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
 import com.opendoorlogistics.api.tables.ODLColumnType;
+import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig.SortField;
 import com.opendoorlogistics.core.tables.memory.ODLAbstractTableDefinition;
@@ -245,6 +246,11 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	@XmlAttribute(name ="MaxNumberRows")
 	public void setMaxNumberRows(int resultsLimit) {
 		this.maxNbRows = resultsLimit;
+	}
+
+	@Override
+	public ODLTableDefinition deepCopyWithShallowValueCopy() {
+		throw new UnsupportedOperationException();
 	}
 	
 	

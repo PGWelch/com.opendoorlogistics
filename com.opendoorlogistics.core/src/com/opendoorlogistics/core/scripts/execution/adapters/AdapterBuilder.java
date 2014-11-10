@@ -118,7 +118,7 @@ final public class AdapterBuilder {
 				String filename = Strings.caseInsensitiveReplace(id, prefix, "");
 				if(filename.equals(id)==false){
 					filename = filename.trim();
-					importedDs = TableIOUtils.importFile(new File(filename), ft, env);
+					importedDs = TableIOUtils.importFile(new File(filename), ft,continueCb, env);
 				}
 			}
 			

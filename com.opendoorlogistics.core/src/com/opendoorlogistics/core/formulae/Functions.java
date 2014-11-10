@@ -512,8 +512,13 @@ public class Functions {
 			}
 
 			// check for colour
-			if (Color.class.isInstance(children[0]) && Color.class.isInstance(children[1])) {
-				return Colours.lerp((Color) children[0], (Color) children[1], fraction);
+			if (Color.class.isInstance(children[0]) || Color.class.isInstance(children[1])) {
+				Color c1 =(Color) ColumnValueProcessor.convertToMe(ODLColumnType.COLOUR, children[0]);
+				Color c2 =(Color) ColumnValueProcessor.convertToMe(ODLColumnType.COLOUR, children[1]);
+				if(c1 == null || c2 == null){
+					return null;
+				}
+				return Colours.lerp(c1, c2, fraction);
 			}
 
 			Double low = Numbers.toDouble(children[0]);

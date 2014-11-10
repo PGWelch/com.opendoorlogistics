@@ -116,7 +116,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	public ODLDatastore<T> deepCopyDataOnly() {
+	public ODLDatastore<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
 		throw new UnsupportedInUnion();
 	}
 
@@ -417,6 +417,16 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	@Override
 	public boolean isRollbackSupported() {
 		return false;
+	}
+
+	@Override
+	protected boolean getTableExists(int tableId) {
+		return true;
+	}
+
+	@Override
+	protected ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
+		throw new UnsupportedOperationException();
 	}
 
 

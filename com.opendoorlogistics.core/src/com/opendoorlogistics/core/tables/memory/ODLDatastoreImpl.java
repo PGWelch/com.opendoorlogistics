@@ -53,7 +53,7 @@ final public class ODLDatastoreImpl <T extends ODLTableDefinition> implements OD
 			if(ODLTableImpl.class.isInstance(table)==false){
 				throw new UnsupportedOperationException();
 			}
-			addTable((T)((ODLTableImpl)table).deepCopy());
+			addTable((T)table.deepCopyWithShallowValueCopy());
 		}
 		this.tableIdGenerator.setNextId(copyThis.tableIdGenerator.getNextId());
 	}
@@ -93,7 +93,7 @@ final public class ODLDatastoreImpl <T extends ODLTableDefinition> implements OD
 			throw new RuntimeException("Invalid id");
 		}
 		
-		// we through an exception if the id is already used because this will 
+		// we throw an exception if the id is already used because this will 
 		// be caused by a code error rather than a user error
 		if(tablesById.get(table.getImmutableId())!=null){
 			throw new RuntimeException("Duplicate table id");
@@ -124,6 +124,16 @@ final public class ODLDatastoreImpl <T extends ODLTableDefinition> implements OD
 		T table = factory.create(this,tablename, id);
 		
 		// give table default permissions
+		grantDefaultTablePermissions(this,table);
+		
+		if( addTable(table)!=-1){
+			return table;
+		}
+		return null;
+	}
+
+
+	public static void grantDefaultTablePermissions(ODLDatastore<? extends ODLTableDefinition> ds,ODLTableDefinition table) {
 		if(ODLTableDefinitionAlterable.class.isInstance(table)){
 			ODLTableDefinitionAlterable dfn= (ODLTableDefinitionAlterable)table;
 			
@@ -131,14 +141,9 @@ final public class ODLDatastoreImpl <T extends ODLTableDefinition> implements OD
 			long flags = dfn.getFlags() & (~TableFlags.UI_EDIT_PERMISSION_FLAGS);
 			
 			// re-add the datastore ones
-			flags |= (TableFlags.UI_EDIT_PERMISSION_FLAGS & getFlags());
+			flags |= (TableFlags.UI_EDIT_PERMISSION_FLAGS & ds.getFlags());
 			dfn.setFlags(flags);
 		}
-		
-		if( addTable(table)!=-1){
-			return table;
-		}
-		return null;
 	}
 	
 	@Override
@@ -226,7 +231,7 @@ final public class ODLDatastoreImpl <T extends ODLTableDefinition> implements OD
 	}
 
 	@Override
-	public ODLDatastore<T> deepCopyDataOnly() {
+	public ODLDatastore<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
 		return deepCopy();
 	}
 

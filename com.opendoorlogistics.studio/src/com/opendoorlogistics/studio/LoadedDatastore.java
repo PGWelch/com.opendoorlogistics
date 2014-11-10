@@ -7,29 +7,23 @@
 package com.opendoorlogistics.studio;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
-import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.core.tables.decorators.datastores.DataUpdaterDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.UndoRedoDecorator;
+import com.opendoorlogistics.core.tables.decorators.datastores.deepcopying.OptimisedDeepCopierDecorator;
 import com.opendoorlogistics.core.tables.io.PoiIO;
-import com.opendoorlogistics.core.tables.io.PoiIO.SaveElementResult;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreComparer;
 import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
@@ -37,37 +31,30 @@ import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.studio.scripts.execution.ScriptsRunner;
 
 public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Disposable {
-	public static long UPDATE_ORIGINAL_WORKBOOK_BYTES_SIZE_LIMIT = 1024 * 1024;
 	private final ODLDatastoreUndoable<ODLTableAlterable> ds;
-	private final byte[] originalWorkbookInBytes;
-	private final ODLDatastore<ODLTableAlterable> originalLoadedDs;
 	private final AppFrame appFrame;
-	private ODLDatastore<ODLTableAlterable> lastSavedCopy;
+	private ODLDatastore<? extends ODLTableAlterable> lastSavedCopy;
 	private File lastFile;
 	private final ScriptsRunner runner;
 
-	protected LoadedDatastore(ODLDatastoreAlterable<ODLTableAlterable> newDs, Workbook workbook,byte[]workBookInBytes, File file, AppFrame appFrame) {
+	protected LoadedDatastore(ODLDatastoreAlterable<ODLTableAlterable> newDs, File file, AppFrame appFrame) {
 		this.appFrame = appFrame;
 		
-		// only save and attempt to update the original workbook if its not too big as apache POI is very memory hungry
-		if(workBookInBytes!=null && workBookInBytes.length < UPDATE_ORIGINAL_WORKBOOK_BYTES_SIZE_LIMIT){
-			originalWorkbookInBytes = workBookInBytes;
-		}
-		else{
-			originalWorkbookInBytes = null;
-		}
 		
 		if (ODLDatastoreImpl.class.isInstance(newDs) == false) {
 			throw new RuntimeException();
 		}
+		
+		// wrap in the decorator that allows lazy deep copying first of all
+		//OptimisedDeepCopierDecorator<ODLTableAlterable> odcd = new OptimisedDeepCopierDecorator<>(newDs);
 		
 		// wrap in listener decorator, then undo/redo decorator, then data updater
 		ListenerDecorator<ODLTableAlterable> listeners = new ListenerDecorator<ODLTableAlterable>(ODLTableAlterable.class, newDs);
 		ODLDatastoreUndoable<ODLTableAlterable> undoable = new UndoRedoDecorator<ODLTableAlterable>(ODLTableAlterable.class, listeners);
 		ds = new DataUpdaterDecorator(appFrame.getApi(), undoable, appFrame);
 
-		lastSavedCopy = newDs.deepCopyDataOnly();
-		originalLoadedDs = newDs.deepCopyDataOnly();
+		lastSavedCopy = newDs.deepCopyWithShallowValueCopy(true);
+	//	originalLoadedDs = newDs.deepCopyDataOnly();
 		lastFile = file;
 		
 		runner = new ScriptsRunner(appFrame,ds);
@@ -76,13 +63,13 @@ public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Dis
 
 	}
 
-	ODLDatastore<ODLTableAlterable> getLastSavedCopy() {
-		return lastSavedCopy;
-	}
-
-	void setLastSavedCopy(ODLDatastore<ODLTableAlterable> lastSavedCopy) {
-		this.lastSavedCopy = lastSavedCopy;
-	}
+//	ODLDatastore<ODLTableAlterable> getLastSavedCopy() {
+//		return lastSavedCopy;
+//	}
+//
+//	void setLastSavedCopy(ODLDatastore<ODLTableAlterable> lastSavedCopy) {
+//		this.lastSavedCopy = lastSavedCopy;
+//	}
 
 	File getLastFile() {
 		return lastFile;
@@ -102,127 +89,122 @@ public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Dis
 
 	void onSaved(File file) {
 		lastFile = file;
-		lastSavedCopy = ds.deepCopyDataOnly();
+		lastSavedCopy = ds.deepCopyWithShallowValueCopy(true);
 	}
 
-	public boolean save(File file, boolean xlsx, ExecutionReport report) {
-		try{
-			if (originalWorkbookInBytes != null) {
-				// clone entire workbook .. does this from bytes as saving a workbook makes it invalid (Apache POI bug)
-				Workbook tempWorkbook = PoiIO.fromBytes(originalWorkbookInBytes);
-				if (PoiIO.isXLSX(tempWorkbook) == xlsx) {
-					
-					// update the existing workbook to help keep formatting etc
-					updateWorkbookWithModifications(tempWorkbook, report);
+	public boolean save(File file, boolean xlsx,ProcessingApi processing, ExecutionReport report) {
+//		try{
+//			if (originalWorkbookInBytes != null) {
+//				// clone entire workbook .. does this from bytes as saving a workbook makes it invalid (Apache POI bug)
+//				Workbook tempWorkbook = PoiIO.fromBytes(originalWorkbookInBytes);
+//				if (PoiIO.isXLSX(tempWorkbook) == xlsx) {
+//					
+//					// update the existing workbook to help keep formatting etc
+//					updateWorkbookWithModifications(tempWorkbook, report);
+//
+//					// re-add the schema
+//					PoiIO.addSchema(ds, tempWorkbook);
+//					
+//					// save the updated workbook to file
+//					PoiIO.saveWorkbook(file, tempWorkbook);
+//					return true;
+//				}
+//			}			
+//		}catch(Exception e){
+//			// Catch exception and try exporting without updating original workbook.
+//			// This will kill any formatting etc but is better than not being able to save!
+//		}
 
-					// re-add the schema
-					PoiIO.addSchema(ds, tempWorkbook);
-					
-					// save the updated workbook to file
-					PoiIO.saveWorkbook(file, tempWorkbook);
-					return true;
-				}
-			}			
-		}catch(Exception e){
-			// Catch exception and try exporting without updating original workbook.
-			// This will kill any formatting etc but is better than not being able to save!
-		}
-
-		return PoiIO.exportDatastore(ds, file, xlsx, report);
+		return PoiIO.exportDatastore(ds, file, xlsx, processing,report);
 	}
 
-	private void updateWorkbookWithModifications(Workbook wb,ExecutionReport report) {
-		// parse the original tables; these will be held in the datastore with the same index as the sheet
-		int nbOriginal = originalLoadedDs.getTableCount();
-		if (nbOriginal != wb.getNumberOfSheets()) {
-			throw new RuntimeException();
-		}
-		
-		ArrayList<ODLTableReadOnly> oldOnesToReadd = new ArrayList<>();
-		for (int i = nbOriginal - 1; i >= 0; i--) {
-			ODLTableReadOnly originalTable = originalLoadedDs.getTableAt(i);
-			ODLTableReadOnly newTable = ds.getTableByImmutableId(originalTable.getImmutableId());
-
-			if (newTable == null) {
-				// table was deleted
-				wb.removeSheetAt(i);
-			} else if (DatastoreComparer.isSame(originalTable, newTable, DatastoreComparer.CHECK_ALL) == false) {
-				Sheet sheet = wb.getSheetAt(i);
-				
-				boolean sameStructure = DatastoreComparer.isSameStructure(originalTable, newTable, DatastoreComparer.CHECK_ALL);
-				if(sameStructure){
-					// re-write all values but skip the header row
-					int nbOversized=0;
-					for(int iRow =0 ; iRow < newTable.getRowCount() ; iRow++){
-						int iTargetRow = iRow+1;
-						Row row = sheet.getRow(iTargetRow);
-						if(row==null){
-							row = sheet.createRow(iTargetRow);
-						}
-						
-						int nc = newTable.getColumnCount();
-						for(int col=0;col<nc;col++){
-							Cell cell = row.getCell(col);
-							if(cell!=null && cell.getCellType() == Cell.CELL_TYPE_FORMULA){
-								// don't set the value of formula cells...
-								continue;
-							}
-							if(cell==null){
-								cell = row.createCell(col);
-							}
-						
-							if(PoiIO.saveElementToCell(newTable, iRow, col, cell) == SaveElementResult.OVERSIZED){
-								nbOversized++;
-							}
-//							String sval =TableUtils.getValueAsString(newTable, iRow, col);		
-//							if(sval!=null && sval.length()>PoiIO.MAX_CHAR_COUNT_IN_EXCEL_CELL){
+//	private void updateWorkbookWithModifications(Workbook wb,ExecutionReport report) {
+//		// parse the original tables; these will be held in the datastore with the same index as the sheet
+//		int nbOriginal = originalLoadedDs.getTableCount();
+//		if (nbOriginal != wb.getNumberOfSheets()) {
+//			throw new RuntimeException();
+//		}
+//		
+//		ArrayList<ODLTableReadOnly> oldOnesToReadd = new ArrayList<>();
+//		for (int i = nbOriginal - 1; i >= 0; i--) {
+//			ODLTableReadOnly originalTable = originalLoadedDs.getTableAt(i);
+//			ODLTableReadOnly newTable = ds.getTableByImmutableId(originalTable.getImmutableId());
+//
+//			if (newTable == null) {
+//				// table was deleted
+//				wb.removeSheetAt(i);
+//			} else if (DatastoreComparer.isSame(originalTable, newTable, DatastoreComparer.CHECK_ALL) == false) {
+//				Sheet sheet = wb.getSheetAt(i);
+//				
+//				boolean sameStructure = DatastoreComparer.isSameStructure(originalTable, newTable, DatastoreComparer.CHECK_ALL);
+//				if(sameStructure){
+//					// re-write all values but skip the header row
+//					int nbOversized=0;
+//					for(int iRow =0 ; iRow < newTable.getRowCount() ; iRow++){
+//						int iTargetRow = iRow+1;
+//						Row row = sheet.getRow(iTargetRow);
+//						if(row==null){
+//							row = sheet.createRow(iTargetRow);
+//						}
+//						
+//						int nc = newTable.getColumnCount();
+//						for(int col=0;col<nc;col++){
+//							Cell cell = row.getCell(col);
+//							if(cell!=null && cell.getCellType() == Cell.CELL_TYPE_FORMULA){
+//								// don't set the value of formula cells...
+//								continue;
+//							}
+//							if(cell==null){
+//								cell = row.createCell(col);
+//							}
+//						
+//							if(PoiIO.saveElementToCell(newTable, iRow, col, cell) == SaveElementResult.OVERSIZED){
 //								nbOversized++;
 //							}
-//							cell.setCellValue(sval);
-						}
-					}
-					
-					// delete any rows after the last row (including 1 for the header)
-					int lastOKRow = newTable.getRowCount();
-					while(sheet.getLastRowNum() > lastOKRow){
-						sheet.removeRow(sheet.getRow(sheet.getLastRowNum()));
-					}
-					
-					if(nbOversized>0 && report!=null){
-						report.log(PoiIO.getOversizedWarningMessage(nbOversized, newTable.getName()));;
-					}
-										
-				}else{
-					// delete and replace. replace after parsing all original tables as we can get table name conflicts
-					wb.removeSheetAt(i);
-					oldOnesToReadd.add(newTable);
-				}
-
-			}
-
-		}
-
-		// re-add any totally replaced tables
-		for(ODLTableReadOnly table: oldOnesToReadd){
-			Sheet sheet = wb.createSheet(table.getName());
-			if (sheet != null) {
-				PoiIO.exportTable( sheet, table, report);
-			}		
-		}
-		
-		// add new tables at the end
-		for (int i = 0; i < ds.getTableCount(); i++) {
-			ODLTableReadOnly newTable = ds.getTableAt(i);
-			if (originalLoadedDs.getTableByImmutableId(newTable.getImmutableId()) == null) {
-				// new table...
-				Sheet sheet = wb.createSheet(newTable.getName());
-				if (sheet != null) {
-					PoiIO.exportTable( sheet, newTable, report);
-				}
-			}
-
-		}
-	}
+//						}
+//					}
+//					
+//					// delete any rows after the last row (including 1 for the header)
+//					int lastOKRow = newTable.getRowCount();
+//					while(sheet.getLastRowNum() > lastOKRow){
+//						sheet.removeRow(sheet.getRow(sheet.getLastRowNum()));
+//					}
+//					
+//					if(nbOversized>0 && report!=null){
+//						report.log(PoiIO.getOversizedWarningMessage(nbOversized, newTable.getName()));;
+//					}
+//										
+//				}else{
+//					// delete and replace. replace after parsing all original tables as we can get table name conflicts
+//					wb.removeSheetAt(i);
+//					oldOnesToReadd.add(newTable);
+//				}
+//
+//			}
+//
+//		}
+//
+//		// re-add any totally replaced tables
+//		for(ODLTableReadOnly table: oldOnesToReadd){
+//			Sheet sheet = wb.createSheet(table.getName());
+//			if (sheet != null) {
+//				PoiIO.exportTable( sheet, table, report);
+//			}		
+//		}
+//		
+//		// add new tables at the end
+//		for (int i = 0; i < ds.getTableCount(); i++) {
+//			ODLTableReadOnly newTable = ds.getTableAt(i);
+//			if (originalLoadedDs.getTableByImmutableId(newTable.getImmutableId()) == null) {
+//				// new table...
+//				Sheet sheet = wb.createSheet(newTable.getName());
+//				if (sheet != null) {
+//					PoiIO.exportTable( sheet, newTable, report);
+//				}
+//			}
+//
+//		}
+//	}
 
 	public boolean runTransaction(Callable<Boolean> callable) {
 		return TableUtils.runTransaction(ds, callable);

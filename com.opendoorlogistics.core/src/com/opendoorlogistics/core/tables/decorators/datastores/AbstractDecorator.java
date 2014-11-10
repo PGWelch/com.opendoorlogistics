@@ -6,7 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.tables.decorators.datastores;
 
-import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
 
 import com.opendoorlogistics.api.tables.ODLColumnType;
@@ -220,6 +219,11 @@ public abstract class AbstractDecorator<T extends ODLTableDefinition> implements
 			AbstractDecorator.this.setRowFlags(tableId, flags, rowId);
 		}
 
+		@Override
+		public ODLTableDefinition deepCopyWithShallowValueCopy() {
+			return AbstractDecorator.this.deepCopyWithShallowValueCopy(tableId);
+		}
+
 
 
 	}
@@ -227,21 +231,24 @@ public abstract class AbstractDecorator<T extends ODLTableDefinition> implements
 	@SuppressWarnings("unchecked")
 	@Override
 	public T getTableByImmutableId(int tableId) {
-	//	return (T)new TableDecorator(tableId);
-		
-		// get table decorator from cache
-		T ret = (T)tableDecorators.get(tableId);
-		
-		// create one if needed
-		if(ret == null){
-			TableDecorator td = new TableDecorator(tableId);
-			tableDecorators.put(tableId, td);
-			ret = (T)td;
+		if(getTableExists(tableId)){
+			// get table decorator from cache
+			T ret = (T)tableDecorators.get(tableId);
+			
+			// create one if needed
+			if(ret == null){
+				TableDecorator td = new TableDecorator(tableId);
+				tableDecorators.put(tableId, td);
+				ret = (T)td;
+			}
+			
+			return ret;				
 		}
-		
-		return ret;	
+		return null;
 	}
 
+	
+	protected abstract boolean getTableExists(int tableId);
 
 	protected abstract int getRowCount(int tableId) ;
 
@@ -286,7 +293,9 @@ public abstract class AbstractDecorator<T extends ODLTableDefinition> implements
 	protected abstract void insertEmptyRow(int tableId,int insertAtRowNb, long rowId);
 	
 	protected abstract void deleteRow(int tableId,int rowNumber);
-	
+
+	protected abstract ODLTableDefinition deepCopyWithShallowValueCopy(int tableId);
+
 	protected abstract void deleteCol(int tableId,int col);
 	
 	protected abstract boolean insertCol(int tableId,int id, int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames);

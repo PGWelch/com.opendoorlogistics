@@ -169,6 +169,7 @@ public class ColumnValueProcessor {
 	}
 
 	public static Object convertToMe(ODLColumnType convertToMe, Object other) {
+		
 		if (other == null) {
 			// null always converts to null
 			return null;
@@ -209,6 +210,10 @@ public class ColumnValueProcessor {
 
 		if (Numbers.isInteger(otherCls)) {
 			return convertToMe(convertToMe, ((Number) other).longValue(), ODLColumnType.LONG);
+		}
+		
+		if(Color.class.isAssignableFrom(otherCls)){
+			return convertToMe(convertToMe, other, ODLColumnType.COLOUR);			
 		}
 
 		// just try parsing, will throw exception if fails

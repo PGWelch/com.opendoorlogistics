@@ -58,7 +58,7 @@ class ScriptExecutionTask {
 	private volatile SimpleDecorator<ODLTableAlterable> simple;
 	private volatile WriteRecorderDecorator<ODLTableAlterable> writeRecorder;
 	private volatile Set<ReporterFrameIdentifier> reporterFrameIds;
-	private volatile ODLDatastore<ODLTableAlterable> workingDatastoreCopy;
+	private volatile ODLDatastore<? extends ODLTableAlterable> workingDatastoreCopy;
 	private volatile DataDependencies wholeScriptDependencies;
 	private volatile boolean showingModalPanel = false;
 
@@ -104,7 +104,7 @@ class ScriptExecutionTask {
 				@Override
 				public void run() {
 					// Copy the datastore in EDT so we never get a half-written copy
-					workingDatastoreCopy = runner.getDs().deepCopyDataOnly();
+					workingDatastoreCopy = runner.getDs().deepCopyWithShallowValueCopy(true);
 				}
 			});
 		} catch (Exception e) {
@@ -466,13 +466,13 @@ class ScriptExecutionTask {
 			String title = Strings.isEmpty(scriptName) == false ? "Running " + scriptName : "Running script";
 			if (isAllowsUserInteraction(filtered)) {
 				// modeless
-				ProgressFrame progressFrame = new ProgressFrame(title, true);
+				ProgressFrame progressFrame = new ProgressFrame(title, true,true);
 				runner.getAppFrame().addInternalFrame(progressFrame, FramePlacement.CENTRAL_RANDOMISED);
 				progressFrame.getProgressPanel().start();
 				progressReporter = progressFrame;
 			} else {
 				// modal
-				ProgressDialog<Void> dlg = new ProgressDialog<>(runner.getAppFrame(), title, true);
+				ProgressDialog<Void> dlg = new ProgressDialog<>(runner.getAppFrame(), title, true,true);
 				dlg.setLocationRelativeTo(runner.getAppFrame());
 				progressReporter = dlg;
 				dlg.start();

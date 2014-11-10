@@ -17,9 +17,9 @@ public class ProgressFrame extends JInternalFrame implements ProgressReporter {
 	private final ProgressPanel panel;
 	private boolean isDisposed = false;
 
-	public ProgressFrame(String title, boolean showButtons) {
+	public ProgressFrame(String title, boolean showFinishNow, boolean showCancel) {
 		super(title);
-		panel = new ProgressPanel(showButtons);
+		panel = new ProgressPanel(showFinishNow,showCancel);
 		setContentPane(panel);
 		setClosable(false);
 		setMaximizable(false);

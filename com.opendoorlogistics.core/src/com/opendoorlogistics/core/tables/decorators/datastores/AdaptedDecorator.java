@@ -567,7 +567,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	public ODLDatastore<T> deepCopyDataOnly() {
+	public ODLDatastore<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -634,6 +634,16 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	@Override
 	public boolean isRollbackSupported() {
 		return new MultiDsTransactions<T>().isRollbackSupported(sources);
+	}
+
+	@Override
+	protected boolean getTableExists(int tableId) {
+		return true;
+	}
+
+	@Override
+	protected ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
+		throw new UnsupportedOperationException();
 	}
 
 }

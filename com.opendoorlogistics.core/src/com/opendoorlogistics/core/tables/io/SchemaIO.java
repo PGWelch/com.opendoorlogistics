@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.tables.io;
 import java.util.List;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
@@ -168,5 +169,15 @@ final public class SchemaIO {
 			}
 			return null;
 		}
+	}
+	
+	static ODLColumnType getOdlColumnType(SchemaColumnDefinition dfn){
+		ODLColumnType type = ODLColumnType.STRING;
+		for (ODLColumnType test : ODLColumnType.values()) {
+			if (Strings.equalsStd(test.name(), dfn.getType())) {
+				type = test;
+			}
+		}		
+		return type;
 	}
 }

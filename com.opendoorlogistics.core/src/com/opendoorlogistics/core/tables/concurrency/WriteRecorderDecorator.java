@@ -35,7 +35,7 @@ final public class WriteRecorderDecorator<T extends ODLTableDefinition> extends 
 	private final TLongObjectHashMap<BitSet> setCols = new TLongObjectHashMap<>();
 	private final TIntHashSet createdTableIds = new TIntHashSet();
 	
-	public WriteRecorderDecorator(Class<T> tableClass, ODLDatastore<T> decorated) {
+	public WriteRecorderDecorator(Class<T> tableClass, ODLDatastore<? extends T> decorated) {
 		super(tableClass, decorated);
 	}
 

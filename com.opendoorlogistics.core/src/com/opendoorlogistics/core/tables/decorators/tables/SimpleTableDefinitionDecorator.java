@@ -86,4 +86,9 @@ public class SimpleTableDefinitionDecorator implements ODLTableDefinition{
 	public int getColumnImmutableId(int col) {
 		return dfn.getColumnImmutableId(col);
 	}
+
+	@Override
+	public ODLTableDefinition deepCopyWithShallowValueCopy() {
+		return dfn.deepCopyWithShallowValueCopy();
+	}
 }

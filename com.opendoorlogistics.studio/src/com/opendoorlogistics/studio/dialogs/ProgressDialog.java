@@ -77,14 +77,14 @@ final public class ProgressDialog<TResult> extends JDialog implements PropertyCh
 		panel.setText(text);
 	}
 
-	public ProgressDialog(JFrame frame, String title, boolean showButtons) {
+	public ProgressDialog(JFrame frame, String title, boolean showFinishNow, boolean showCancel) {
 		super(frame, true);
 
 		setTitle(title);
 
 		// JPanel mainPanel = new JPanel();
 		// mainPanel.setLayout(new BorderLayout());
-		panel = new ProgressPanel(showButtons);
+		panel = new ProgressPanel(showFinishNow,showCancel);
 		setContentPane(panel);
 
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);

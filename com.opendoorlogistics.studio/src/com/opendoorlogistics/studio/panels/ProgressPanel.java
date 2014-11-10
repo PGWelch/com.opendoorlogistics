@@ -19,7 +19,10 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JTextArea;
 
+import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.utils.ui.SwingUtils;
 
 public class ProgressPanel extends JPanel  {
 	private JProgressBar progressBar;
@@ -29,7 +32,7 @@ public class ProgressPanel extends JPanel  {
 	private volatile boolean cancelled;
 	private volatile boolean finishNow;
 	
-	public ProgressPanel(boolean showButtons){
+	public ProgressPanel(boolean showFinishNow, boolean showCancel){
 		setLayout(new BorderLayout());	
 		
 
@@ -69,11 +72,18 @@ public class ProgressPanel extends JPanel  {
 		add(taskOutput, BorderLayout.CENTER);
 		setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-		if(showButtons){
+		if(showFinishNow || showCancel){
 			JPanel buttonsPanel = new JPanel();
 			buttonsPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-			buttonsPanel.add(finishNowButton);
-			buttonsPanel.add(cancelButton);
+			
+			if(showFinishNow){
+				buttonsPanel.add(finishNowButton);				
+			}
+			
+			if(showCancel){
+				buttonsPanel.add(cancelButton);				
+			}
+			
 			add(buttonsPanel, BorderLayout.SOUTH);			
 		}
 
@@ -118,8 +128,50 @@ public class ProgressPanel extends JPanel  {
 		ProgressPanel getProgressPanel();
 		boolean isDisposed();
 		void setVisible(boolean visible);
+		
+		
+	}
+	
+	public static ProcessingApi createProcessingApi(final ODLApi api,final ProgressReporter rep){
+		return new ProcessingApi() {
+			
+			@Override
+			public ODLApi getApi() {
+				return api;
+			}
+			
+			@Override
+			public boolean isFinishNow() {
+				return rep.getProgressPanel().isFinishedNow();
+			}
+			
+			@Override
+			public boolean isCancelled() {
+				return rep.getProgressPanel().isCancelled();
+			}
+			
+			@Override
+			public void postStatusMessage(final String s) {
+				SwingUtils.invokeLaterOnEDT(new Runnable() {
+					
+					@Override
+					public void run() {
+						rep.getProgressPanel().setText(s);
+					}
+				});
+			}
+			
+			@Override
+			public void logWarning(String warning) {
+				// TODO Auto-generated method stub
+				
+			}
+		};
 	}
 	
 	public static final int STANDARD_DIALOG_WIDTH = 500;
 	public static final int STANDARD_DIALOG_HEIGHT = 200;
+	
+	
+
 }

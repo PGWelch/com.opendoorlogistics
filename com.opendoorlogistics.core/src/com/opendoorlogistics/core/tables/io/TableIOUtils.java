@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.InputStream;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.core.geometry.ImportShapefile;
@@ -17,7 +18,7 @@ import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.utils.io.TextIO;
 
 final public class TableIOUtils {
-	public static ODLDatastoreAlterable<ODLTableAlterable> importFile(File file, SupportedFileType type, ExecutionReport report){
+	public static ODLDatastoreAlterable<ODLTableAlterable> importFile(File file, SupportedFileType type,ProcessingApi processingApi, ExecutionReport report){
 		switch(type){
 		case CSV:
 			return TextIO.importCSV(file);
@@ -26,7 +27,7 @@ final public class TableIOUtils {
 			return TextIO.importTabbed(file);
 			
 		case EXCEL:
-			return PoiIO.importExcel(file, report);
+			return PoiIO.importExcel(file, processingApi,report);
 			
 		case SHAPEFILE_LINKED_GEOM:
 			return ImportShapefile.importShapefile(file,true);
@@ -41,8 +42,7 @@ final public class TableIOUtils {
 		ODLDatastoreAlterable<ODLTableAlterable> ret =null;
 		InputStream is = Object.class.getResourceAsStream( "/resources/datastores/"+ name);	
 		try {
-			ret = ODLFactory.createAlterable();
-			PoiIO.importExcel(is, ret, report);
+			ret = PoiIO.importExcel(is, report);
 		} catch (Exception e) {
 			ret = null;
 			report.setFailed(e);

@@ -26,14 +26,13 @@ final public class Numbers {
 	}
 
 	public static boolean isInteger(Class<?> cls) {
-		return cls == Long.class || cls == Integer.class || cls == Short.class || cls == Byte.class || cls == Long.TYPE || cls == Integer.TYPE
-				|| cls == Short.TYPE || cls == Byte.TYPE;
+		return cls == Long.class || cls == Integer.class || cls == Short.class || cls == Byte.class || cls == Long.TYPE || cls == Integer.TYPE || cls == Short.TYPE || cls == Byte.TYPE;
 	}
 
 	public static Long toLong(Object o) {
 		return toLong(o, false);
 	}
-	
+
 	public static Long toLong(Object o, boolean rejectIfFloatingPoint) {
 		if (o == null) {
 			return null;
@@ -43,12 +42,12 @@ final public class Numbers {
 			return null;
 		}
 
-		if (Numbers.isInteger(cls) || (rejectIfFloatingPoint==false && Number.class.isInstance(o))) {
+		if (Numbers.isInteger(cls) || (rejectIfFloatingPoint == false && Number.class.isInstance(o))) {
 			return ((Number) o).longValue();
 		}
-		
-		if(ODLTime.class.isInstance(o)){
-			return ((ODLTime)o).longValue();
+
+		if (ODLTime.class.isInstance(o)) {
+			return ((ODLTime) o).longValue();
 		}
 
 		if (Color.class.isInstance(o)) {
@@ -72,9 +71,9 @@ final public class Numbers {
 			return toLong(s, rejectIfFloatingPoint);
 		} catch (Throwable e) {
 		}
-		return null;		
+		return null;
 	}
-	
+
 	/**
 	 * Converts to a long is the input object can be transformed into one and isn't a floating point number.
 	 * 
@@ -102,9 +101,9 @@ final public class Numbers {
 		if (Boolean.class.isInstance(o)) {
 			return ((Boolean) o) ? 1.0 : 0.0;
 		}
-		
-		if(Number.class.isInstance(o)){
-			return ((Number)o).doubleValue();
+
+		if (Number.class.isInstance(o)) {
+			return ((Number) o).doubleValue();
 		}
 
 		String s = o.toString().toLowerCase().trim();
@@ -123,50 +122,51 @@ final public class Numbers {
 		}
 		return null;
 	}
-	
-	public static Long toLong(String s){
+
+	public static Long toLong(String s) {
 		return toLong(s, false);
 	}
-	
+
 	/**
-	 * Parse double or return null if non-parsable.
-	 * Catches exception and tries to avoid throwing them (as they make debugging hard).
-	 * If a number contains a decimal point it is parsed as a double then rounded to the nearest
-	 * integer number.
+	 * Parse double or return null if non-parsable. Catches exception and tries to avoid throwing them (as they make debugging hard). If a number
+	 * contains a decimal point it is parsed as a double then rounded to the nearest integer number.
+	 * 
 	 * @param s
 	 * @return
 	 */
-	public static Long toLong(String s, boolean rejectIfFloatingPoint){
-		if(s==null){
+	public static Long toLong(String s, boolean rejectIfFloatingPoint) {
+		if (s == null) {
 			return null;
 		}
-		
+
 		// remove all leading / trailing whitespaces
 		s = s.trim();
-		
-		if(s.contains(".")){
-			if(rejectIfFloatingPoint){
-				return null;
-			}
-			try {
-				Double val = Numbers.toDouble(s);
-				if(val!=null){
-					return (Long) Math.round(val);
+
+		if (Strings.isNumber(s)) {
+			if (s.contains(".")) {
+				if (rejectIfFloatingPoint) {
+					return null;
 				}
-			} catch (Exception e) {
-			}			
-		}else{
-			try {
-				return Long.parseLong(s);
-			}catch(Exception e){
-				
+				try {
+					Double val = Numbers.toDouble(s);
+					if (val != null) {
+						return (Long) Math.round(val);
+					}
+				} catch (Exception e) {
+				}
+			} else {
+				try {
+					return Long.parseLong(s);
+				} catch (Exception e) {
+
+				}
 			}
 		}
-		
+
 		return null;
 	}
-	
-	public static void main(String[]args){
+
+	public static void main(String[] args) {
 		System.out.println(toLong(" 3   "));
 	}
 }

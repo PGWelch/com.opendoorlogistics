@@ -25,7 +25,6 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyVetoException;
 import java.io.File;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -54,7 +53,6 @@ import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.poi.ss.usermodel.Workbook;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
@@ -100,6 +98,7 @@ import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
 import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
 import com.opendoorlogistics.studio.internalframes.ProgressFrame;
 import com.opendoorlogistics.studio.panels.FunctionsListPanel;
+import com.opendoorlogistics.studio.panels.ProgressPanel;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.editor.ScriptWizardActions;
 import com.opendoorlogistics.studio.scripts.editor.ScriptWizardActions.WizardActionsCallback;
@@ -117,9 +116,9 @@ import com.opendoorlogistics.utils.ui.SimpleAction;
 public final class AppFrame extends JFrame implements HasInternalFrames, HasScriptsProvider {
 	private BufferedImage background;
 	private final DesktopScrollPane desktopScrollPane;
-	private final JSplitPane splitterTablesScripts ;
-	private final JSplitPane splitterLeftPanelMain ;
-	
+	private final JSplitPane splitterTablesScripts;
+	private final JSplitPane splitterLeftPanelMain;
+
 	private final JDesktopPane desktopPane = new JDesktopPane() {
 
 		@Override
@@ -171,23 +170,24 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 	/**
 	 * Start the appframe up and add the input components
+	 * 
 	 * @param components
 	 */
-	public static void startWithComponents(ODLComponent ...components){
+	public static void startWithComponents(ODLComponent... components) {
 		InitialiseStudio.initialise();
-		for(ODLComponent c:components){
+		for (ODLComponent c : components) {
 			ODLGlobalComponents.register(c);
 		}
 		new AppFrame();
 	}
-	
+
 	public static void main(String[] args) {
 		InitialiseStudio.initialise();
 		new AppFrame();
 	}
 
 	public AppFrame() {
-		
+
 		// create frame with desktop pane
 		Container con = getContentPane();
 		con.setLayout(new BorderLayout());
@@ -240,7 +240,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 		// create scripts panel after registering components
 		scriptManager = new ScriptUIManagerImpl(this);
-		scriptsPanel = new ScriptsPanel(getApi(),PreferencesManager.getSingleton().getScriptsDirectory(), scriptManager);
+		scriptsPanel = new ScriptsPanel(getApi(), PreferencesManager.getSingleton().getScriptsDirectory(), scriptManager);
 
 		// set my icon
 		setIconImage(Icons.loadFromStandardPath("App logo.png").getImage());
@@ -479,7 +479,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	private JMenu initCreateScriptsMenu() {
 		JMenu mnCreateScript = new JMenu("Create script");
 		mnCreateScript.setMnemonic('C');
-		for (ODLAction action : new ScriptWizardActions(getApi(), this, scriptManager.getAvailableFieldsQuery()).createComponentActions( new WizardActionsCallback() {
+		for (ODLAction action : new ScriptWizardActions(getApi(), this, scriptManager.getAvailableFieldsQuery()).createComponentActions(new WizardActionsCallback() {
 
 			@Override
 			public void onNewScript(Script script) {
@@ -567,11 +567,11 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 				tileTables();
 			}
 		});
-		
+
 		JMenu mnResizeTo = new JMenu("Resize application to...");
-		for(final int[] size : new int[][]{new int[]{1280,720}, new int[]{1920,1080}}){
+		for (final int[] size : new int[][] { new int[] { 1280, 720 }, new int[] { 1920, 1080 } }) {
 			mnResizeTo.add(new AbstractAction("" + size[0] + " x " + size[1]) {
-				
+
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					// set standard layout
@@ -584,48 +584,71 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 		mnWindow.add(mnResizeTo);
 	}
 
-	private void importFile(SupportedFileType option) {
+	private void importFile(final SupportedFileType option) {
 		// to do.. excel import needs to show progress dialog (as its slow)
 
 		final JFileChooser chooser = option.createFileChooser();
 		IOUtils.setFile(PreferencesManager.getSingleton().getLastImportFile(option), chooser);
 		final ExecutionReport report = new ExecutionReportImpl();
-		if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-			try {
-				PreferencesManager.getSingleton().setLastImportFile(chooser.getSelectedFile(), option);
+		if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+			return;
+		}
 
-				ODLDatastoreAlterable<ODLTableAlterable> imported = TableIOUtils.importFile(chooser.getSelectedFile(), option, report);
-				if (imported == null) {
-					throw new RuntimeException();
-				}
+		final File file = chooser.getSelectedFile();
+		PreferencesManager.getSingleton().setLastImportFile(file, option);
 
-				if (loaded == null) {
-					openEmptyDatastore();
-				}
+		// open the datastore if we don't have it open
+		if (loaded == null) {
+			openEmptyDatastore();
+		}
 
-				if (!TableUtils.addDatastores(loaded.getDs(), imported, true)) {
-					throw new RuntimeException();
-				}
+		String message = "Importing " + file;
+		final ProgressDialog<ODLDatastoreAlterable<ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, message, false,true);
+		pd.setLocationRelativeTo(this);
+		pd.setText("Importing file, please wait.");
+		pd.start(new Callable<ODLDatastoreAlterable<ODLTableAlterable>>() {
 
-				for (int i = 0; i < imported.getTableCount(); i++) {
-					ODLTableReadOnly table = imported.getTableAt(i);
-					report.log("Imported table \"" + table.getName() + "\" with " + table.getRowCount() + " rows and " + table.getColumnCount() + " columns.");
-				}
-				report.log("Imported " + imported.getTableCount() + " tables.");
-
-			} catch (Throwable e) {
-				report.setFailed(e);
-				report.log("Error importing " + Strings.convertEnumToDisplayFriendly(option));
-				report.log("Could not import file: " + chooser.getSelectedFile().getAbsolutePath());
-				String message = report.getReportString(true, false);
-				if (message.length() > 0) {
-					message += System.lineSeparator();
+			@Override
+			public ODLDatastoreAlterable<ODLTableAlterable> call() throws Exception {
+				try {
+					ODLDatastoreAlterable<ODLTableAlterable> imported = TableIOUtils.importFile(file, option, ProgressPanel.createProcessingApi(getApi(), pd), report);
+					return imported;
+				} catch (Throwable e) {
+					report.setFailed(e);
+					return null;
 				}
 			}
+		}, new OnFinishedSwingThreadCB<ODLDatastoreAlterable<ODLTableAlterable>>() {
 
-			ExecutionReportDialog.show(this, "Import result", report);
+			@Override
+			public void onFinished(ODLDatastoreAlterable<ODLTableAlterable> result, boolean userCancelled, boolean userFinishedNow) {
+				// try to add to main datastore
+				if (result != null) {
+					if (!TableUtils.addDatastores(loaded.getDs(), result, true)) {
+						result = null;
+					}
+				}
 
-		}
+				// report what happened
+				if (result != null) {
+					for (int i = 0; i < result.getTableCount(); i++) {
+						ODLTableReadOnly table = result.getTableAt(i);
+						report.log("Imported table \"" + table.getName() + "\" with " + table.getRowCount() + " rows and " + table.getColumnCount() + " columns.");
+					}
+					report.log("Imported " + result.getTableCount() + " tables.");
+
+				} else {
+					report.log("Error importing " + Strings.convertEnumToDisplayFriendly(option));
+					report.log("Could not import file: " + chooser.getSelectedFile().getAbsolutePath());
+					String message = report.getReportString(true, false);
+					if (message.length() > 0) {
+						message += System.lineSeparator();
+					}
+				}
+				ExecutionReportDialog.show(AppFrame.this, "Import result", report);
+			}
+		});
+
 	}
 
 	void updateAppearance() {
@@ -673,52 +696,31 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	}
 
 	private void openFile(final File file) {
-		
-		class WorkbookDatastore{
-			ODLDatastoreAlterable<ODLTableAlterable> ds;
-			Workbook wb;
-			byte [] asBytes;
-			
-			private WorkbookDatastore(ODLDatastoreAlterable<ODLTableAlterable> ds, Workbook key, byte[] asBytes) {
-				this.ds = ds;
-				this.wb = key;
-				this.asBytes = asBytes;
-			}
-			
-		}
-		
 
 		String message = "Loading " + file;
-		ProgressDialog<WorkbookDatastore> pd = new ProgressDialog<>(AppFrame.this, message, false);
+		final ProgressDialog<ODLDatastoreAlterable<ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, message, false,true);
 		pd.setLocationRelativeTo(this);
 		pd.setText("Loading file, please wait.");
 		final ExecutionReport report = new ExecutionReportImpl();
-		pd.start(new Callable<WorkbookDatastore>() {
+		pd.start(new Callable<ODLDatastoreAlterable<ODLTableAlterable>>() {
 
 			@Override
-			public WorkbookDatastore call() throws Exception {
+			public ODLDatastoreAlterable<ODLTableAlterable> call() throws Exception {
 				try {
-					ODLDatastoreAlterable<ODLTableAlterable> ret = ODLDatastoreImpl.alterableFactory.create();
-					Workbook wb = PoiIO.importExcel(file, ret, report);
-					
-					byte [] asBytes=null;
-					if(file.length() < LoadedDatastore.UPDATE_ORIGINAL_WORKBOOK_BYTES_SIZE_LIMIT && wb!=null){
-						asBytes = PoiIO.toBytes(wb);
-					}
-					
-					return new WorkbookDatastore(ret, wb, asBytes);
+					ODLDatastoreAlterable<ODLTableAlterable> ret = PoiIO.importExcel(file, ProgressPanel.createProcessingApi(getApi(), pd), report);
+					return ret;
 				} catch (Throwable e) {
 					report.setFailed(e);
 					return null;
 				}
 			}
-		}, new OnFinishedSwingThreadCB<WorkbookDatastore>() {
+		}, new OnFinishedSwingThreadCB<ODLDatastoreAlterable<ODLTableAlterable>>() {
 
 			@Override
-			public void onFinished(WorkbookDatastore result, boolean userCancelled, boolean userFinishedNow) {
+			public void onFinished(ODLDatastoreAlterable<ODLTableAlterable> result, boolean userCancelled, boolean userFinishedNow) {
 
 				if (result != null) {
-					onOpenedDatastore(result.ds, result.wb, result.asBytes,file);
+					onOpenedDatastore(result, file);
 					PreferencesManager.getSingleton().addRecentFile(file);
 					PreferencesManager.getSingleton().setDirectory(PrefKey.LAST_IO_DIR, file);
 				} else {
@@ -752,12 +754,11 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 			loaded = null;
 		}
 		for (JInternalFrame frame : desktopPane.getAllFrames()) {
-			
-			if(ProgressFrame.class.isInstance(frame)){
+
+			if (ProgressFrame.class.isInstance(frame)) {
 				// cancel running operations...
-				((ProgressFrame)frame).getProgressPanel().cancel();
-			}
-			else if (ScriptEditor.class.isInstance(frame) == false) {
+				((ProgressFrame) frame).getProgressPanel().cancel();
+			} else if (ScriptEditor.class.isInstance(frame) == false) {
 				frame.dispose();
 			}
 		}
@@ -805,7 +806,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					onOpenedDatastore(TableIOUtils.importExampleDatastore(exampleDs + ".xlsx", null), null,null, null);
+					onOpenedDatastore(TableIOUtils.importExampleDatastore(exampleDs + ".xlsx", null), null);
 				}
 			}));
 		}
@@ -865,7 +866,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 		final String finalExt = ext;
 
 		String message = "Saving " + file;
-		ProgressDialog<Boolean> pd = new ProgressDialog<>(AppFrame.this, message, false);
+		final ProgressDialog<Boolean> pd = new ProgressDialog<>(AppFrame.this, message, false,true);
 		pd.setLocationRelativeTo(this);
 		pd.setText("Saving file, please wait.");
 		final ExecutionReport report = new ExecutionReportImpl();
@@ -876,7 +877,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 				// return PoiIO.export(loaded.getDs(), finalFile,
 				// finalExt.equals("xlsx"));
 				try {
-					return loaded.save(finalFile, finalExt.equals("xlsx"), report);
+					return loaded.save(finalFile, finalExt.equals("xlsx"),ProgressPanel.createProcessingApi(getApi(), pd), report);
 				} catch (Throwable e) {
 					report.setFailed(e);
 					return false;
@@ -907,12 +908,12 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 	}
 
-	private void onOpenedDatastore(ODLDatastoreAlterable<ODLTableAlterable> newDs, Workbook workbook,byte[]workBookInBytes, File file) {
+	private void onOpenedDatastore(ODLDatastoreAlterable<ODLTableAlterable> newDs, File file) {
 		if (loaded != null) {
 			closeDatastore();
 		}
 
-		loaded = new LoadedDatastore(newDs, workbook, workBookInBytes,file, this);
+		loaded = new LoadedDatastore(newDs, file, this);
 
 		tables.setDatastore(loaded.getDs());
 
@@ -976,7 +977,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 		}
 
 		DisposeCore.dispose();
-		
+
 		super.dispose();
 	}
 
@@ -1149,18 +1150,17 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 			Dimension desktopSize = desktopPane.getSize();
 			Dimension frameSize = frame.getSize();
 			int x = (desktopSize.width - frameSize.width) / 2;
-			int y =  (desktopSize.height - frameSize.height) / 2;
-			frame.setLocation(x,y);
-		}
-		else if (placement == FramePlacement.CENTRAL_RANDOMISED){
+			int y = (desktopSize.height - frameSize.height) / 2;
+			frame.setLocation(x, y);
+		} else if (placement == FramePlacement.CENTRAL_RANDOMISED) {
 			Dimension desktopSize = desktopPane.getSize();
 			Dimension frameSize = frame.getSize();
 			Dimension remaining = new Dimension(Math.max(0, desktopSize.width - frameSize.width), Math.max(0, desktopSize.height - frameSize.height));
-			Dimension halfRemaining = new Dimension(remaining.width/2 , remaining.height / 2);
+			Dimension halfRemaining = new Dimension(remaining.width / 2, remaining.height / 2);
 			Random random = new Random();
 			int x = remaining.width / 4 + random.nextInt(halfRemaining.width);
 			int y = remaining.height / 4 + random.nextInt(halfRemaining.height);
-			frame.setLocation(x,y);			
+			frame.setLocation(x, y);
 		}
 		frame.toFront();
 	}
@@ -1203,7 +1203,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 			ODLTableDefinition table = loaded.getDs().getTableByImmutableId(tableId);
 			if (table != null) {
-				ODLGridFrame gf = new ODLGridFrame(loaded.getDs(), table.getImmutableId(), true,null, loaded.getDs(), this);
+				ODLGridFrame gf = new ODLGridFrame(loaded.getDs(), table.getImmutableId(), true, null, loaded.getDs(), this);
 				addInternalFrame(gf, FramePlacement.AUTOMATIC);
 				return gf;
 			}
@@ -1212,16 +1212,16 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	}
 
 	void launchScriptWizard(final int tableIds[], final ODLComponent component) {
-	//	final ODLTableDefinition dfn = (tableId != -1 && loaded != null) ? loaded.getDs().getTableByImmutableId(tableId) : null;
+		// final ODLTableDefinition dfn = (tableId != -1 && loaded != null) ? loaded.getDs().getTableByImmutableId(tableId) : null;
 
 		// create button to launch the wizard
 		ArrayList<JButton> buttons = new ArrayList<>();
-		for (final ODLWizardTemplateConfig config : ScriptTemplatesImpl.getTemplates(getApi(),component)) {
+		for (final ODLWizardTemplateConfig config : ScriptTemplatesImpl.getTemplates(getApi(), component)) {
 			Action action = new AbstractAction("Launch wizard \"" + config.getName() + "\" to configure new script") {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					Script script = ScriptWizardActions.createScriptFromMasterComponent(getApi(),AppFrame.this, component, config, loaded != null ? loaded.getDs() : null, tableIds);
+					Script script = ScriptWizardActions.createScriptFromMasterComponent(getApi(), AppFrame.this, component, config, loaded != null ? loaded.getDs() : null, tableIds);
 					if (script != null) {
 						// ScriptEditor dlg = new ScriptEditorWizardGenerated(script, null, getScriptUIManager());
 						// AppFrame.this.addInternalFrame(dlg);
@@ -1234,7 +1234,6 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 			buttons.add(button);
 		}
 
-
 		// launch dialog to select the option
 		if (buttons.size() > 1) {
 			launchButtonsListDialog(component.getName(), "Choose \"" + component.getName() + "\" option:", component.getIcon(getApi(), ODLComponent.MODE_DEFAULT), buttons);
@@ -1246,7 +1245,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	}
 
 	public void openEmptyDatastore() {
-		onOpenedDatastore(ODLDatastoreImpl.alterableFactory.create(), null,null, null);
+		onOpenedDatastore(ODLDatastoreImpl.alterableFactory.create(), null);
 	}
 
 	public ScriptUIManager getScriptUIManager() {
@@ -1342,8 +1341,8 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 		item.setAccelerator(((MyAction) item.getAction()).accelerator);
 		mnFile.validate();
 	}
-	
-	public ODLApi getApi(){
+
+	public ODLApi getApi() {
 		return api;
 	}
 

@@ -6,6 +6,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.tables.memory;
 
+import java.awt.Color;
+
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
@@ -19,7 +21,7 @@ import com.opendoorlogistics.core.utils.IntIDGenerator;
 import com.opendoorlogistics.core.utils.IntIDGenerator.IsExistingId;
 import com.opendoorlogistics.core.utils.MapList;
 
-final public class ODLTableImpl extends ODLTableDefinitionImpl implements ODLTableAlterable, DeepCopyable<ODLTableImpl> {
+final public class ODLTableImpl extends ODLTableDefinitionImpl implements ODLTableAlterable{
 	/**
 	 * 
 	 */
@@ -59,7 +61,7 @@ final public class ODLTableImpl extends ODLTableDefinitionImpl implements ODLTab
 	}
 
 	@Override
-	public synchronized ODLTableImpl deepCopy() {
+	public synchronized ODLTableDefinition deepCopyWithShallowValueCopy() {
 		return new ODLTableImpl(this);
 	}
 

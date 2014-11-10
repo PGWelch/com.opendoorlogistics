@@ -22,6 +22,8 @@ public interface ODLTableDefinition extends Serializable,HasTags, HasFlags{
 	Object getColumnDefaultValue(int col);
 	
 	String getColumnName(int col);
+	
+//	ODLTableDefinition deepCopyDataOnly();
 
 	/**
 	 * Returns a read only version of the column's tags that will throw an exception if any modification is attempted.
@@ -45,4 +47,5 @@ public interface ODLTableDefinition extends Serializable,HasTags, HasFlags{
 
 	void setColumnDescription(int col, String description);
 	
+	ODLTableDefinition deepCopyWithShallowValueCopy();
 }

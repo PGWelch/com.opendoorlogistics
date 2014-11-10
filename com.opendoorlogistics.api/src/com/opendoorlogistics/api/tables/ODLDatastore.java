@@ -22,5 +22,11 @@ public interface ODLDatastore <T extends ODLTableDefinition> extends ODLHasTable
 		ODLDatastore<T> create();
 	}
 
-	ODLDatastore<T> deepCopyDataOnly();
+	/**
+	 * Deep copy the datastore. 
+	 * @param createLazyCopy
+	 * @return Do a lazy copy which avoids deep copying the tables until needed.
+	 * Laxy copies have restrictions - e.g. tables cannot be renamed, cannot be deep copied themselves
+	 */
+	ODLDatastore<? extends T> deepCopyWithShallowValueCopy(boolean createLazyCopy);
 }

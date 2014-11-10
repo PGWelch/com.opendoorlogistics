@@ -15,10 +15,11 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.poi.POIXMLProperties;
 import org.apache.poi.hpsf.SummaryInformation;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -28,17 +29,20 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
@@ -47,6 +51,7 @@ import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.io.SchemaIO.SchemaColumnDefinition;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
+import com.opendoorlogistics.core.utils.UpdateTimer;
 import com.opendoorlogistics.core.utils.Version;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
@@ -54,27 +59,72 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 final public class PoiIO {
 	// http://office.microsoft.com/en-us/excel-help/excel-specifications-and-limits-HP010073849.aspx
 	public static int MAX_CHAR_COUNT_IN_EXCEL_CELL = 32767;
-	private static String SCHEMA_SHEET_NAME = "#ODLSchema - DO NOT EDIT";
-	private static final SimpleDateFormat ODL_TIME_FORMATTER = new SimpleDateFormat("HH:mm:ss.SSS");						
+	static String SCHEMA_SHEET_NAME = "#ODLSchema - DO NOT EDIT";
+	static final SimpleDateFormat ODL_TIME_FORMATTER = new SimpleDateFormat("HH:mm:ss.SSS");						
 
 
-	public static boolean exportDatastore(ODLDatastore<? extends ODLTableReadOnly> ds, File file, boolean xlsx, ExecutionReport report) {
-		Workbook wb = createEmptyWorkbook(xlsx);
-
-		// save schema
-		addSchema(ds, wb);
-
-		for (ODLTableDefinition table : TableUtils.getAlphabeticallySortedTables(ds)) {
-			ODLTableReadOnly tro = (ODLTableReadOnly) table;
-			Sheet sheet = wb.createSheet(tro.getName());
-			if (sheet == null) {
-				return false;
-			}
-
-			exportTable( sheet, tro, report);
+	public static boolean exportDatastore(ODLDatastore<? extends ODLTableReadOnly> ds, File file, boolean xlsx,ProcessingApi processing, ExecutionReport report) {
+		Workbook wb = null;
+		SXSSFWorkbook sxssfwb = null;
+		HSSFWorkbook hssfwb=null;
+		if (xlsx == false) {
+			hssfwb = new HSSFWorkbook();
+			hssfwb.createInformationProperties();
+			hssfwb.getSummaryInformation().setAuthor(AppConstants.ORG_NAME);
+			wb = hssfwb;
+		} else {
+		//	sxssfwb = new SXSSFWorkbook(100); // keep 100 rows in memory, exceeding rows will be flushed to disk
+			sxssfwb = new SXSSFWorkbook(null, 100, false,true);
+			wb = sxssfwb;
+			
+		//	XSSFWorkbook xssfWorkbook = new XSSFWorkbook();
+		///	POIXMLProperties xmlProps = sxssfwb.
+			//POIXMLProperties.CoreProperties coreProps = xmlProps.getCoreProperties();
+		//	coreProps.setCreator(AppConstants.ORG_NAME);
+		//	wb = xssfWorkbook;
 		}
 
-		saveWorkbook(file, wb);
+		
+		try {
+			// save schema
+			addSchema(ds, wb);
+
+			for (ODLTableDefinition table : TableUtils.getAlphabeticallySortedTables(ds)) {
+				ODLTableReadOnly tro = (ODLTableReadOnly) table;
+				Sheet sheet = wb.createSheet(tro.getName());
+				if (sheet == null) {
+					return false;
+				}
+
+				exportTable( sheet, tro,0,processing, report);
+				
+				if(processing!=null && processing.isCancelled()){
+					return false;
+				}
+			}	
+
+			if(processing!=null){
+				processing.postStatusMessage("Saving whole workbook to disk.");
+			}
+				
+			saveWorkbook(file, wb);				
+		
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		finally{
+			if(sxssfwb!=null){
+				sxssfwb.dispose();
+			}
+			
+			if(hssfwb!=null){
+				try {
+					hssfwb.close();					
+				} catch (Exception e2) {
+					// TODO: handle exception
+				}
+			}
+		}
 
 		return true;
 	}
@@ -112,7 +162,7 @@ final public class PoiIO {
 		}
 	}
 
-	public static void addSchema(ODLDatastore<? extends ODLTableDefinition> ds, Workbook wb) {
+	private static void addSchema(ODLDatastore<? extends ODLTableDefinition> ds, Workbook wb) {
 		ODLTableReadOnly table = SchemaIO.createSchemaTable(ds);
 		Sheet sheet = wb.createSheet(SCHEMA_SHEET_NAME);
 		
@@ -125,18 +175,19 @@ final public class PoiIO {
 		row.createCell(1).setCellValue(AppConstants.getAppVersion().toString());
 
 		// write schema table
-		exportTable( sheet, table,sheet.getLastRowNum() + 2,  null);
+		exportTable( sheet, table,sheet.getLastRowNum() + 2, null, null);
 
 		// hide the sheet from users
 		wb.setSheetHidden(wb.getNumberOfSheets() - 1, Workbook.SHEET_STATE_VERY_HIDDEN);
 	}
 
-	public static void exportTable(Sheet sheet, ODLTableReadOnly table, ExecutionReport report) {
-		exportTable(sheet, table, 0, report);
-	}
+//	private static void exportTable(Sheet sheet, ODLTableReadOnly table, ExecutionReport report) {
+//		exportTable(sheet, table, 0, report);
+//	}
 	
-	private static void exportTable(Sheet sheet, ODLTableReadOnly table,int firstOutputRow, ExecutionReport report) {
-
+	private static void exportTable(Sheet sheet, ODLTableReadOnly table,int firstOutputRow,ProcessingApi processingApi, ExecutionReport report) {
+		UpdateTimer timer = new UpdateTimer(250);
+		
 		int nbOversized = 0;
 
 		// create header row
@@ -159,6 +210,14 @@ final public class PoiIO {
 					nbOversized++;
 				}
 
+			}
+			
+			if(processingApi!=null && processingApi.isCancelled()){
+				return;
+			}
+			
+			if(processingApi!=null && timer.isUpdate()){
+				processingApi.postStatusMessage("Saving - processed row " + (srcRow+1) + " of sheet " + table.getName());
 			}
 		}
 
@@ -251,32 +310,10 @@ final public class PoiIO {
 		}
 	}
 
-	private static Workbook createEmptyWorkbook(boolean xlsx) {
-		Workbook wb = null;
-		if (xlsx == false) {
-			HSSFWorkbook hssfwb = new HSSFWorkbook();
-			hssfwb.createInformationProperties();
-			hssfwb.getSummaryInformation().setAuthor(AppConstants.ORG_NAME);
-			wb = hssfwb;
-		} else {
-			XSSFWorkbook xssfWorkbook = new XSSFWorkbook();
-			POIXMLProperties xmlProps = xssfWorkbook.getProperties();
-			POIXMLProperties.CoreProperties coreProps = xmlProps.getCoreProperties();
-			coreProps.setCreator(AppConstants.ORG_NAME);
-			wb = xssfWorkbook;
-		}
-		return wb;
-	}
-
 	public static boolean isXLSX(Workbook wb) {
 		return XSSFWorkbook.class.isInstance(wb);
 	}
 
-	public static ODLDatastoreAlterable<ODLTableAlterable> importExcel(File file, ExecutionReport report) {
-		ODLDatastoreAlterable<ODLTableAlterable> ret = ODLFactory.createAlterable();
-		importExcel(file, ret, report);
-		return ret;
-	}
 
 	private static Dimension getBoundingBox(Sheet sheet) {
 		Dimension ret = new Dimension(0, sheet.getLastRowNum() + 1);
@@ -289,33 +326,52 @@ final public class PoiIO {
 		return ret;
 	}
 
-	public static Workbook importExcel(File file, ODLDatastoreAlterable<ODLTableAlterable> ds, ExecutionReport report) {
-		FileInputStream fis=null;
-		try {
-			 fis = new FileInputStream(file);	
-			 return importExcel(fis, ds, report);
-		} catch (Exception e) {
+	public static ODLDatastoreAlterable<ODLTableAlterable> importExcel(File file,ProcessingApi processingApi, ExecutionReport report) {
+		ODLDatastoreAlterable<ODLTableAlterable> ds = ODLFactory.createAlterable();
+		
+//		FileInputStream fis=null;
+//		try {
+//			 fis = new FileInputStream(file);	
+//			 importExcel(fis, ds, report);
+//		} catch (Exception e) {
+//			if(report!=null){
+//				report.setFailed(e);
+//			}		
+//		}
+//		finally{
+//			if(fis!=null){
+//				try {
+//					fis.close();					
+//				} catch (Exception e2) {
+//					if(report!=null){
+//						report.setFailed(e2);
+//					}
+//				}
+//			}
+//		}
+	
+		// load xlsx using our xml parser which can handle much larger files
+		String ext = FilenameUtils.getExtension(file.getAbsolutePath());
+		if(Strings.equalsStd(ext, "xlsx")){
+			return XmlParserLoader.importExcel(file, processingApi, report);
+		}
+		
+		try(FileInputStream fis = new FileInputStream(file)){
+			return importExcel(fis, report);
+		}
+		catch (Exception e) {
 			if(report!=null){
 				report.setFailed(e);
-			}		
-		}
-		finally{
-			if(fis!=null){
-				try {
-					fis.close();					
-				} catch (Exception e2) {
-					if(report!=null){
-						report.setFailed(e2);
-					}
-				}
 			}
 		}
-	
-		return null;
+		
+		return ds;
 	}
 	
 	
-	public static Workbook importExcel(InputStream stream, ODLDatastoreAlterable<ODLTableAlterable> ds, ExecutionReport report) {
+	public static ODLDatastoreAlterable<ODLTableAlterable> importExcel(InputStream stream, ExecutionReport report) {
+		ODLDatastoreAlterable<ODLTableAlterable> ds = ODLFactory.createAlterable();
+		
 		Workbook wb = null;
 		try {
 			wb = WorkbookFactory.create(stream);
@@ -348,7 +404,7 @@ final public class PoiIO {
 			importSheet(table, sheet,info!=null? info.schema: null, false);
 		}
 
-		return wb;
+		return ds;
 	}
 
 
@@ -358,7 +414,7 @@ final public class PoiIO {
 		importSheetSubset(table, sheet, schema, isSchema, 0 , size.height-1, size.width);
 	}
 	
-	private static class SchemaSheetInformation{
+	static class SchemaSheetInformation{
 		SchemaIO schema;
 		StandardisedStringTreeMap<String> keyValues;
 		Version appVersion;
@@ -369,9 +425,9 @@ final public class PoiIO {
 	 * @param sheet
 	 */
 	private static SchemaSheetInformation importSchemaTables(Sheet sheet, ExecutionReport report){
-		ArrayList<ODLTableReadOnly> tables = new ArrayList<>();
+		List<ODLTableReadOnly> tables = new ArrayList<>();
 		
-		// tables are separated by empty rows
+		// schema tables are separated by empty rows
 		int lastRow = sheet.getLastRowNum();
 		int firstRow = sheet.getFirstRowNum();
 		
@@ -413,13 +469,22 @@ final public class PoiIO {
 			}
 		}
 		
+		return readSchemaFromODLTables(tables, report);
+	}
+
+	/**
+	 * @param tables
+	 * @param report
+	 * @return
+	 */
+	static SchemaSheetInformation readSchemaFromODLTables(List<ODLTableReadOnly> tables, ExecutionReport report) {
 		SchemaSheetInformation ret = new SchemaSheetInformation();
 		if(tables.size()==1){
 			// schema table
 			ret.schema = SchemaIO.load(tables.get(0), report);
 		}
 		else if(tables.size()>1){
-			// key value map
+			// first table is key value map
 			ret.keyValues = new StandardisedStringTreeMap<>();
 			ODLTableReadOnly kvTable = tables.get(0);
 			for(int i = 0 ; i < kvTable.getRowCount();i++){
@@ -482,86 +547,26 @@ final public class PoiIO {
 					dfn = schema.findDefinition(sheet.getSheetName(), name);
 				}
 			}
-			if (name == null) {
-				name = "Auto-name";
-			}
-
-			if (TableUtils.findColumnIndx(table, name, true) != -1) {
-				name = TableUtils.getUniqueNumberedColumnName(name, table);
-			}
+			name = getValidNewColumnName(name, table);
 
 			// use the schema column definition if we have one
 			if (dfn != null) {
-				
-				// get flags
-				long flags = 0;
-				try {
-					flags = Long.parseLong(dfn.getFlags());
-				} catch (Throwable e) {
-				}
-
-				// get type
-				ODLColumnType type = ODLColumnType.STRING;
-				for (ODLColumnType test : ODLColumnType.values()) {
-					if (Strings.equalsStd(test.name(), dfn.getType())) {
-						type = test;
-					}
-				}
-
-				// create column
-				table.addColumn(col, name, type, flags);
-				int colIndex = table.getColumnCount() - 1;
-
-				// set default value
-				if (Strings.isEmpty(dfn.getDefaultValue()) == false) {
-					Object val = ColumnValueProcessor.convertToMe(type,dfn.getDefaultValue());
-					if (val != null) {
-						table.setColumnDefaultValue(colIndex, val);
-					}
-				}
-
-				// set description
-				table.setColumnDescription(colIndex, dfn.getDescription());
-
-				// set tags
-				if (dfn.getTags() != null) {
-					String[] split = dfn.getTags().split(",");
-					table.setColumnTags(colIndex, Strings.toTreeSet(split));
-				}
+				addColumnFromDfn(dfn, name, col, table);
 			} else {
 
 				// analyse the other rows for a 'best guess' type
-				ODLColumnType selectedType = ODLColumnType.STRING;
+				ODLColumnType chosenType = ODLColumnType.STRING;
 				if (isSchemaSheet==false) {
-
-					int nbNonEmptyVals = 0;
-					boolean[] okByType = new boolean[ODLColumnType.values().length];
-					Arrays.fill(okByType, true);
-					okByType[ODLColumnType.STRING.ordinal()] = false; // disable string as we select it by default
+					ColumnTypeEstimator typeEstimator = new ColumnTypeEstimator();
 					for (int rowIndx = firstRow+1; rowIndx <=lastRow; rowIndx++) {
 						Row row = sheet.getRow(rowIndx);
 						String value = getFormulaSafeTextValue(row.getCell(col));
-						if (Strings.isEmpty(value) == false) {
-							nbNonEmptyVals++;
-							for (ODLColumnType otherType : ODLColumnType.values()) {
-								if (okByType[otherType.ordinal()]) {
-									okByType[otherType.ordinal()] = ColumnValueProcessor.convertToMe(otherType,value, ODLColumnType.STRING, true) != null;
-								}
-							}
-						}
+						typeEstimator.processValue(value);
 					}
-
-					if (nbNonEmptyVals > 0) {
-						// if we had non empty values pick the first non-string type that converted for all
-						for (ODLColumnType otherType : ODLColumnType.values()) {
-							if (otherType != ODLColumnType.STRING && okByType[otherType.ordinal()]) {
-								selectedType = otherType;
-								break;
-							}
-						}
-					}
+					
+					chosenType= typeEstimator.getEstimatedType();					
 				}
-				table.addColumn(col, name, selectedType, 0);
+				table.addColumn(col, name, chosenType, 0);
 			}
 		}
 
@@ -577,6 +582,57 @@ final public class PoiIO {
 		}
 
 	}
+
+	/**
+	 * @param dfn
+	 * @param name
+	 * @param colId
+	 * @param table
+	 */
+	static void addColumnFromDfn(SchemaColumnDefinition dfn, String name, int colId, ODLTableDefinitionAlterable table) {
+		// get flags
+		long flags = 0;
+		try {
+			flags = Long.parseLong(dfn.getFlags());
+		} catch (Throwable e) {
+		}
+
+		// get type
+		ODLColumnType type = SchemaIO.getOdlColumnType(dfn);
+
+		// create column
+		table.addColumn(colId, name, type, flags);
+		int colIndex = table.getColumnCount() - 1;
+
+		// set default value
+		if (Strings.isEmpty(dfn.getDefaultValue()) == false) {
+			Object val = ColumnValueProcessor.convertToMe(type,dfn.getDefaultValue());
+			if (val != null) {
+				table.setColumnDefaultValue(colIndex, val);
+			}
+		}
+
+		// set description
+		table.setColumnDescription(colIndex, dfn.getDescription());
+
+		// set tags
+		if (dfn.getTags() != null) {
+			String[] split = dfn.getTags().split(",");
+			table.setColumnTags(colIndex, Strings.toTreeSet(split));
+		}
+	}
+
+	static String getValidNewColumnName(String name, ODLTableDefinition table) {
+		if (Strings.isEmpty(name)) {
+			name = "Auto-name";
+		}
+
+		if (TableUtils.findColumnIndx(table, name, true) != -1) {
+			name = TableUtils.getUniqueNumberedColumnName(name, table);
+		}
+		return name;
+	}
+
 
 	private static String getAuthor(Workbook wb) {
 		if (HSSFWorkbook.class.isInstance(wb)) {
@@ -624,6 +680,7 @@ final public class PoiIO {
 				if(date!=null){
 					Calendar cal =Calendar.getInstance();
 					cal.setTime(date);
+					@SuppressWarnings("deprecation")
 					int year = date.getYear();
 					if(year==-1){
 						// equivalent to 1899 which is the first data .. assume its a time
@@ -705,56 +762,5 @@ final public class PoiIO {
 	// return ODLColumnType.STRING;
 	// }
 
-	public static void main(String[] args) throws Exception {
-		// Object val = ODLColumnType.DOUBLE.convertToMe("2.3", ODLColumnType.STRING);
-		// System.out.println(val);
-		
-		String s = "C:\\testfile.xls";
-		
-		System.out.println("Loading...");
-		
-		ODLDatastoreAlterable<ODLTableAlterable> ret = ODLDatastoreImpl.alterableFactory.create();
-		ExecutionReport report = new ExecutionReportImpl();		
-		Workbook wb = PoiIO.importExcel(new File(s), ret, report);
-		
-		
-		System.out.println("Getting as bytes...");
-		byte [] bytes= PoiIO.toBytes(wb);
-		
-		ArrayList<Workbook> books = new ArrayList<>();
-		for(int i =0 ; i < 100 ; i++){
-			
-			System.out.println("Recreating workbook...");			
-			Workbook tempWorkbook = PoiIO.fromBytes(bytes);
-			books.add(tempWorkbook);
-			
-			System.out.println("Garbage collecting...");			
-			System.gc();
-			//Getting the runtime reference from system
-	        Runtime runtime = Runtime.getRuntime();
 
-	        System.out.print("NbWbs:" + books.size());
-	         
-	        //Print used memory
-	        int mb = 1024*1024;	        
-	        System.out.print(", Used Memory:"
-	            + (runtime.totalMemory() - runtime.freeMemory()) / mb);
-	 
-	        //Print free memory
-	        System.out.print(", Free Memory:"
-	            + runtime.freeMemory() / mb);
-	         
-	        //Print total available memory
-	        System.out.print(", Total Memory:" + runtime.totalMemory() / mb);
-	 
-	        //Print Maximum available memory
-	        System.out.print(", Max Memory:" + runtime.maxMemory() / mb);
-	        
-	        System.out.println();
-		}
-		
-	//	Workbook tempWorkbook = PoiIO.fromBytes(originalWorkbook);
-	
-
-	}
 }

@@ -15,6 +15,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.opendoorlogistics.api.tables.ODLColumnType;
+import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.tables.utils.HasShortDescription;
@@ -84,6 +85,11 @@ public class ODLTableDefinitionImpl extends ODLAbstractTableDefinition<ODLColumn
 			return;
 		}
 		columns.get(col).setDefaultValue(value);
+	}
+
+	@Override
+	public ODLTableDefinition deepCopyWithShallowValueCopy() {
+		throw new UnsupportedOperationException();
 	}
 
 }
