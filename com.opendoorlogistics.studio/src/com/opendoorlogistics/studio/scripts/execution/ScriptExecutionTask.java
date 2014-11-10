@@ -32,7 +32,7 @@ import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.tables.concurrency.MergeBranchedDatastore;
 import com.opendoorlogistics.core.tables.concurrency.WriteRecorderDecorator;
-import com.opendoorlogistics.core.tables.decorators.datastores.DataDependenciesRecorder.DataDependencies;
+import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 import com.opendoorlogistics.core.tables.decorators.datastores.SimpleDecorator;
 import com.opendoorlogistics.core.tables.utils.DatastoreComparer;
 import com.opendoorlogistics.core.utils.strings.Strings;

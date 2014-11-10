@@ -449,6 +449,10 @@ public class ColumnValueProcessor {
 	}
 
 	public static boolean isEqualSameType(ODLColumnType type, Object val1, Object val2) {
+		if(val1 == val2){
+			return true;
+		}
+		
 		if (NullComparer.compare(val1, val2) != 0) {
 			return false;
 		}

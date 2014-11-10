@@ -16,7 +16,7 @@ import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStateLis
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStatusObservable;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.AbstractDependencyInjector;
-import com.opendoorlogistics.core.tables.decorators.datastores.DataDependenciesRecorder.DataDependencies;
+import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.ui.ModalDialog;
 import com.opendoorlogistics.studio.AppFrame;

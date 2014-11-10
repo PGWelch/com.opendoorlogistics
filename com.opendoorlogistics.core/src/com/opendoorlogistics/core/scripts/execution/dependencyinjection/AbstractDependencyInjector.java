@@ -18,7 +18,7 @@ import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.distances.DistancesSingleton;
-import com.opendoorlogistics.core.tables.decorators.datastores.DataDependenciesRecorder.DataDependencies;
+import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 
 public class AbstractDependencyInjector implements DependencyInjector{
 	protected final ODLApi api;

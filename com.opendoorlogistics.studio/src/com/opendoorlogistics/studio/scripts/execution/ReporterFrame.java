@@ -25,7 +25,7 @@ import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.scripts.elements.Script;
-import com.opendoorlogistics.core.tables.decorators.datastores.DataDependenciesRecorder.DataDependencies;
+import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager.GlobalSelectionChangedCB;
 import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;

@@ -17,7 +17,7 @@ import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.elements.ComponentConfig;
 import com.opendoorlogistics.core.scripts.elements.InstructionConfig;
-import com.opendoorlogistics.core.tables.decorators.datastores.DataDependenciesRecorder.DataDependencies;
+import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
