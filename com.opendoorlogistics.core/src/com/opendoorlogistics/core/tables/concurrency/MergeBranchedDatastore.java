@@ -37,13 +37,7 @@ final public class MergeBranchedDatastore {
 					ok = destination != null && DatastoreComparer.isSameStructure(source, destination, 0);
 
 					if (ok) {
-						MergeTableResult result = mergeTables(mergeFrom, source, destination);
-						
-						// If we did writes than check the table we were copying from and the final table are the same. 
-						// If not, throw an error.
-						if(ok && result==MergeTableResult.WRITES_DONE &&  !DatastoreComparer.isSame(source, destination, DatastoreComparer.CHECK_ALL)){
-							ok = false;
-						}	
+						mergeTables(mergeFrom, source, destination);
 					}
 
 				}

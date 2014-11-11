@@ -34,6 +34,10 @@ class OptimisedDeepCopy<T extends ODLTableDefinition> extends SimpleAbstractDeco
 		
 	private final ArrayList<TableHolder> tables = new ArrayList<>();
 	private long flags;
+
+	OptimisedDeepCopy(long flags) {
+		this.flags = flags;
+	}
 	
 	void addImmutableTable(T table){
 		TableHolder h = new TableHolder();
@@ -41,6 +45,7 @@ class OptimisedDeepCopy<T extends ODLTableDefinition> extends SimpleAbstractDeco
 		h.table = table;
 		tables.add(h);
 	}
+
 	
 	protected final IntIDGenerator tableIdGenerator = new IntIDGenerator(new IsExistingId() {
 		

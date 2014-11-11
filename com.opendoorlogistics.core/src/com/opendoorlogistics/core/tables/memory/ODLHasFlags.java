@@ -10,7 +10,6 @@ import java.io.Serializable;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlTransient;
 
 import com.opendoorlogistics.api.tables.HasFlags;
 import com.opendoorlogistics.api.tables.TableFlags;
@@ -35,6 +34,7 @@ public class ODLHasFlags implements Serializable , HasFlags{
 		}else{
 			flags &= ~flag;
 		}
+
 	}
 	
 	protected boolean getFlag(long flag){
@@ -47,6 +47,7 @@ public class ODLHasFlags implements Serializable , HasFlags{
 
 	public void setFlags(long flags) {
 		this.flags = flags;
+
 	}
 	
 	public boolean getIsOptional(){
@@ -84,6 +85,6 @@ public class ODLHasFlags implements Serializable , HasFlags{
 	public void setIsGroupBy(boolean groupBy){
 		setFlag(groupBy, TableFlags.FLAG_IS_GROUP_BY_FIELD);
 	}
- 
+
 	
 }

@@ -7,6 +7,7 @@
 package com.opendoorlogistics.core.tables.memory;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -25,6 +26,7 @@ import com.opendoorlogistics.core.tables.utils.TableUtils;
 @XmlRootElement(name = "TableDefinition")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ODLTableDefinitionImpl extends ODLAbstractTableDefinition<ODLColumnDefinition> implements ODLTableDefinitionAlterable, Serializable, HasShortDescription{
+	
 	public ODLTableDefinitionImpl(int id, String name){
 		super(id, name);
 		initFlags();

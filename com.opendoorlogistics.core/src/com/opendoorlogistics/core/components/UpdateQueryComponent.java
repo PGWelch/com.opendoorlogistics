@@ -112,6 +112,8 @@ public final class UpdateQueryComponent implements ODLComponent {
 				}
 			}
 		}
+		
+		reporter.postStatusMessage("Finished updating rows");
 	}
 
 	@Override

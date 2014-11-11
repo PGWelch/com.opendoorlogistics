@@ -49,7 +49,7 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 	@Override
 	public void addListener(ODLListener tml, int... tableIds) {
 		for(int tableId : tableIds){
-			getDependencies().addReadTableId(tableId);
+			getDependencies().addReadTableId(tableId,false);
 		}
 		super.addListener(tml, tableIds);
 	}
@@ -102,31 +102,31 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 	
 	@Override
 	protected int getColumnCount(int tableId) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,false);
 		return super.getColumnCount(tableId);
 	}
 
 	@Override
 	protected ODLColumnType getColumnFieldType(int tableId, int colIndex) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,false);
 		return super.getColumnFieldType(tableId, colIndex);
 	}
 
 	@Override
 	protected long getColumnFlags(int tableId, int colIndx) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,false);
 		return super.getColumnFlags(tableId, colIndx);
 	}
 	
 	@Override
 	protected int getColumnImmutableId(int tableId, int col) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,false);
 		return super.getColumnImmutableId(tableId, col);
 	}
 
 	@Override
 	protected String getColumnName(int tableId, int colIndex) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,false);
 		return super.getColumnName(tableId, colIndex);
 	}
 
@@ -138,7 +138,7 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 
 	@Override
 	protected long getFlags(int tableId) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,false);
 		return super.getFlags(tableId);
 	}
 
@@ -152,19 +152,19 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 
 	@Override
 	protected int getRowCount(int tableId) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,true);
 		return super.getRowCount(tableId);
 	}
 
 	@Override
 	protected long getRowGlobalId(int tableId, int rowIndex) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,true);
 		return super.getRowGlobalId(tableId, rowIndex);
 	}
 
 	@Override
 	protected long getRowFlags(int tableId, long rowId) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,true);
 		getDependencies().setReadRowFlags(true);
 		return super.getRowFlags(tableId, rowId);
 	}
@@ -201,25 +201,25 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 
 	@Override
 	protected Object getValueAt(int tableId, int rowIndex, int columnIndex) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,true);
 		return super.getValueAt(tableId, rowIndex, columnIndex);
 	}
 
 	@Override
 	protected long[] find(int tableId, int col, Object value) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,true);
 		return super.find(tableId, col, value);
 	}
 
 	@Override
 	protected boolean containsRowId(int tableId, long rowId) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,true);
 		return super.containsRowId(tableId, rowId);
 	}
 	
 	@Override
 	protected Object getValueById(int tableId, long rowId, int columnIndex) {
-		getDependencies().addReadTableId(tableId);
+		getDependencies().addReadTableId(tableId,true);
 		return super.getValueById(tableId, rowId, columnIndex);
 	}
 	

@@ -25,7 +25,6 @@ import com.opendoorlogistics.core.tables.decorators.datastores.UndoRedoDecorator
 import com.opendoorlogistics.core.tables.decorators.datastores.deepcopying.OptimisedDeepCopierDecorator;
 import com.opendoorlogistics.core.tables.io.PoiIO;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
-import com.opendoorlogistics.core.tables.utils.DatastoreComparer;
 import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.studio.scripts.execution.ScriptsRunner;
@@ -33,7 +32,7 @@ import com.opendoorlogistics.studio.scripts.execution.ScriptsRunner;
 public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Disposable {
 	private final ODLDatastoreUndoable<ODLTableAlterable> ds;
 	private final AppFrame appFrame;
-	private ODLDatastore<? extends ODLTableAlterable> lastSavedCopy;
+//	private ODLDatastore<? extends ODLTableAlterable> lastSavedCopy;
 	private File lastFile;
 	private final ScriptsRunner runner;
 
@@ -46,14 +45,14 @@ public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Dis
 		}
 		
 		// wrap in the decorator that allows lazy deep copying first of all
-		//OptimisedDeepCopierDecorator<ODLTableAlterable> odcd = new OptimisedDeepCopierDecorator<>(newDs);
+		OptimisedDeepCopierDecorator<ODLTableAlterable> odcd = new OptimisedDeepCopierDecorator<>(newDs);
 		
 		// wrap in listener decorator, then undo/redo decorator, then data updater
-		ListenerDecorator<ODLTableAlterable> listeners = new ListenerDecorator<ODLTableAlterable>(ODLTableAlterable.class, newDs);
+		ListenerDecorator<ODLTableAlterable> listeners = new ListenerDecorator<ODLTableAlterable>(ODLTableAlterable.class, odcd);
 		ODLDatastoreUndoable<ODLTableAlterable> undoable = new UndoRedoDecorator<ODLTableAlterable>(ODLTableAlterable.class, listeners);
 		ds = new DataUpdaterDecorator(appFrame.getApi(), undoable, appFrame);
 
-		lastSavedCopy = newDs.deepCopyWithShallowValueCopy(true);
+	//	lastSavedCopy = newDs.deepCopyWithShallowValueCopy(true);
 	//	originalLoadedDs = newDs.deepCopyDataOnly();
 		lastFile = file;
 		
@@ -83,13 +82,13 @@ public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Dis
 		return ds;
 	}
 
-	boolean isModified() {
-		return DatastoreComparer.isSame(ds, lastSavedCopy, DatastoreComparer.CHECK_ALL) == false;
-	}
+//	boolean isModified() {
+//		return DatastoreComparer.isSame(ds, lastSavedCopy, DatastoreComparer.CHECK_ALL) == false;
+//	}
 
 	void onSaved(File file) {
 		lastFile = file;
-		lastSavedCopy = ds.deepCopyWithShallowValueCopy(true);
+	//	lastSavedCopy = ds.deepCopyWithShallowValueCopy(true);
 	}
 
 	public boolean save(File file, boolean xlsx,ProcessingApi processing, ExecutionReport report) {

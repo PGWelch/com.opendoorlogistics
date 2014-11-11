@@ -307,15 +307,25 @@ class ScriptExecutionTask {
 		}
 
 		// Set open controls to be dirty if the datastore changed during the script's execution
-		if (!result.isFailed()) {
+		if (!result.isFailed() && allProcessedFrames.size()>0) {
 
 			// Check read tables in the main datastore against the working copy to determine if anything changed
 			boolean dataChanged = false;
 			for (int tableId : wholeScriptDependencies.getReadTableIds()) {
-				if (!DatastoreComparer.isSame(runner.getDs().getTableByImmutableId(tableId), workingDatastoreCopy.getTableByImmutableId(tableId), DatastoreComparer.CHECK_ALL)) {
-					dataChanged = true;
-					break;
+				if(wholeScriptDependencies.hasTableValueRead(tableId)){
+					// structure and data
+					if (!DatastoreComparer.isSame(runner.getDs().getTableByImmutableId(tableId), workingDatastoreCopy.getTableByImmutableId(tableId), DatastoreComparer.CHECK_ALL)) {
+						dataChanged = true;
+						break;
+					}	
+				}else{
+					// structure only
+					if (!DatastoreComparer.isSameStructure(runner.getDs().getTableByImmutableId(tableId), workingDatastoreCopy.getTableByImmutableId(tableId), DatastoreComparer.CHECK_ALL)) {
+						dataChanged = true;
+						break;
+					}	
 				}
+	
 			}
 
 			if (dataChanged) {

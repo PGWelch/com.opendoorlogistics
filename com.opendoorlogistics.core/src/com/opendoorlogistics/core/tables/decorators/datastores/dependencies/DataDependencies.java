@@ -12,6 +12,7 @@ import gnu.trove.set.hash.TIntHashSet;
 
 public class DataDependencies {
 	private final TIntHashSet readTableIds = new TIntHashSet();
+	private final TIntHashSet readTableValuesIds = new TIntHashSet();
 	private boolean readTableSet;
 	private final TIntHashSet writtenTableIds = new TIntHashSet();
 	private boolean writtenTableSet;
@@ -26,6 +27,8 @@ public class DataDependencies {
 
 	public void add(DataDependencies addThis) {
 		readTableIds.addAll(addThis.readTableIds);
+		readTableValuesIds.addAll(addThis.readTableValuesIds);
+		
 		if (addThis.readTableSet) {
 			readTableSet = true;
 		}
@@ -75,11 +78,22 @@ public class DataDependencies {
 		return readTableIds.toArray();
 	}
 
-	public void addReadTableId(int tableId) {
-		if (!readTableIds.contains(tableId)) {
-			System.out.println("breakpoint here!!!!");
-		}
+	public boolean hasTableValueRead(int tableId) {
+		return readTableValuesIds.contains(tableId);
+	}
+	
+	public void addReadTableId(int tableId, boolean readTableValues) {
+//		if (!readTableIds.contains(tableId)) {
+//	//		System.out.println("breakpoint here!!!!");
+//		}
+		
 		this.readTableIds.add(tableId);
+	
+		if(readTableValues){
+			if(!readTableValuesIds.contains(tableId)){
+				readTableValuesIds.add(tableId);
+			}
+		}
 	}
 
 	public boolean isReadTableSet() {

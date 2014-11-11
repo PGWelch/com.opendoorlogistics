@@ -736,11 +736,11 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 			return true;
 		}
 
-		if (loaded.isModified()) {
-			if (JOptionPane.showConfirmDialog(this, "Spreadsheet has been modified but not saved. Continue without saving?", "Changes will be lost!", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) {
+	//	if (loaded.isModified()) {
+			if (JOptionPane.showConfirmDialog(this, "Any unsaved work will be lost. Do you want to exit?", "Confirm exit", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) {
 				return false;
 			}
-		}
+	//	}
 
 		return true;
 	}

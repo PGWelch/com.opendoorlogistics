@@ -120,6 +120,8 @@ final public class ScriptExecutor {
 			bb.setFailed(e);
 		}
 
+		internalExecutionApi.postStatusMessage("Finished script execution...");
+		
 		return bb;
 	}
 

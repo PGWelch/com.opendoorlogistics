@@ -61,7 +61,7 @@ public class OptimisedDeepCopierDecorator<T extends ODLTableDefinition> extends 
 			return decorated.deepCopyWithShallowValueCopy(lazyCopy);
 		}
 		
-		OptimisedDeepCopy<T> ret = new OptimisedDeepCopy<>();
+		OptimisedDeepCopy<T> ret = new OptimisedDeepCopy<>(getFlags());
 		for(int i =0 ; i< decorated.getTableCount(); i++){
 			T table = decorated.getTableAt(i);
 			int id = table.getImmutableId();
