@@ -56,21 +56,21 @@ import com.vividsolutions.jts.geom.Polygon;
 
 public final class ImportShapefile {
 	
-	static SimpleFeatureCollection selectFeaturesById(SimpleFeatureSource source, Set<String> ids) {
-		FilterFactory2 factory = CommonFactoryFinder.getFilterFactory2(null);
-
-		HashSet<FeatureId> set = new HashSet<FeatureId>();
-		for (String id : ids) {
-			FeatureId fid = factory.featureId(id);
-			set.add(fid);
-		}
-		Id filter = factory.id(set);
-		try {
-			return source.getFeatures(filter);
-		} catch (Throwable e) {
-			throw new RuntimeException(e);
-		}
-	}
+//	static SimpleFeatureCollection selectFeaturesById(SimpleFeatureSource source, Set<String> ids) {
+//		FilterFactory2 factory = CommonFactoryFinder.getFilterFactory2(null);
+//
+//		HashSet<FeatureId> set = new HashSet<FeatureId>();
+//		for (String id : ids) {
+//			FeatureId fid = factory.featureId(id);
+//			set.add(fid);
+//		}
+//		Id filter = factory.id(set);
+//		try {
+//			return source.getFeatures(filter);
+//		} catch (Throwable e) {
+//			throw new RuntimeException(e);
+//		}
+//	}
 
 	/**
 	 * Find and return all polygon objects within the geometry.

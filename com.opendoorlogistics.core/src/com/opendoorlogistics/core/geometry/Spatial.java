@@ -9,7 +9,6 @@ package com.opendoorlogistics.core.geometry;
 import java.io.File;
 import java.util.Map;
 
-import org.apache.commons.io.FilenameUtils;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.ReferencingFactoryFinder;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
@@ -22,7 +21,6 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
-import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.AppProperties;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
@@ -30,7 +28,6 @@ import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.SizesInBytesEstimator;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
-import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
@@ -146,8 +143,8 @@ public final class Spatial {
 			ds = importAndCacheShapefile(file);
 		}
 		
-		// find table
-		ODLTableReadOnly table= TableUtils.findTable(ds, type);
+		// find table - only need to use type if we have more than one table which should probably never happen...
+		ODLTableReadOnly table=ds.getTableCount()==1 ? ds.getTableAt(0): TableUtils.findTable(ds, type);
 		ok = table!=null;
 
 		// get geometry field

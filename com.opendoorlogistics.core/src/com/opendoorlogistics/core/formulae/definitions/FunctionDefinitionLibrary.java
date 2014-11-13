@@ -59,6 +59,8 @@ import com.opendoorlogistics.core.formulae.Functions.FmOr;
 import com.opendoorlogistics.core.formulae.Functions.FmPostcodeUk;
 import com.opendoorlogistics.core.formulae.Functions.FmRand;
 import com.opendoorlogistics.core.formulae.Functions.FmRandColour;
+import com.opendoorlogistics.core.formulae.Functions.FmRandData.RandDataType;
+import com.opendoorlogistics.core.formulae.Functions.FmRandData;
 import com.opendoorlogistics.core.formulae.Functions.FmRandomSymbol;
 import com.opendoorlogistics.core.formulae.Functions.FmReplace;
 import com.opendoorlogistics.core.formulae.Functions.FmRound;
@@ -176,6 +178,7 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmLerp.class, "lerp", "Linearly interpolate between value a and value b based on value c (which is in the range 0 to 1).", "a","b","c");
 		addStandardFunction(FmTemperatureColours.class, "cold2hot", "Return a colour from cold (blue) to hot (red) based on the input number, which should be in the range 0 to 1.", "fraction");
 		
+	
 		// add distance functions
 		addStandardFunction(FmDrivingRouteGeomFromLine.class, "routegeom", "Given an input line geometry, calculate the road network route between the start and end." , "line_geometry" , "road_network_graph_directory");
 		for(String [] params : new String[][]{
@@ -233,6 +236,7 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmLatitude.class, "latitude", "Return the latitude of a geometry. If the geometry is not a point this returns its centroid's latitude.","geometry");
 		addStandardFunction(FmCentroid.class, "centroid", "Return the centroid of the geometry, as a point geometry.","geometry");
 		addStandardFunction(FmShapefileLookup.class, "shapefilelookup", "Lookup a geometry in a shapefile on disk. For the input filename and type_name in the file, the search_value is searched for in the search_field and the geometry of the first matching record is returned.", "filename","search_value", "type_name", "search_field");
+		addStandardFunction(FmShapefileLookup.class, "shapefilelookup", "Lookup a geometry in a shapefile on disk. For the input filename and type_name in the file, the search_value is searched for in the search_field and the geometry of the first matching record is returned.", "filename","search_value", "search_field");
 		addStandardFunction(FmGeomBorder.class, "geomborder", "Return the borders of the geometry as lines.", "geometry", "include_holes");
 		
 		// uk postcodes
@@ -272,6 +276,30 @@ public final class FunctionDefinitionLibrary {
 		minMaxHelper.build(FmMax.class, "max", "Return the maximum of the input arguments.");
 		minMaxHelper.build(FmMin.class, "min", "Return the minimum of the input arguments.");
 
+		// random data
+		class RandDataHelper{
+			void build( final String name, String description,final RandDataType type) {
+				FunctionDefinition dfn = new FunctionDefinition(name);
+				dfn.setFactory(new FunctionFactory() {
+
+					@Override
+					public Function createFunction(Function... args) {
+						try {
+							return new FmRandData(type);
+						} catch (Throwable e) {
+							throw new RuntimeException(e);
+						}
+					}
+				});
+				dfn.setDescription(description);
+				add(dfn);
+			}	
+		}
+		RandDataHelper rDataHelper = new RandDataHelper();
+		rDataHelper.build("randPersonName", "Randomly generate a person's name", RandDataType.PERSON_NAME);
+		rDataHelper.build("randCompanyName", "Randomly generate a company's name", RandDataType.COMPANY_NAME);
+		rDataHelper.build("randStreetName", "Randomly generate a street name", RandDataType.STREET_NAME);
+		
 		// first non null
 		FunctionDefinition firstNonNull = new FunctionDefinition("firstNonNull");
 		firstNonNull.addVarArgs("values", ArgumentType.GENERAL, "");

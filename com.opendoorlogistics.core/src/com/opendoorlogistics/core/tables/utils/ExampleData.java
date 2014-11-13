@@ -83,7 +83,7 @@ final public class ExampleData {
 	}
 
 	//private static String[] getRandomStr
-	private static String getRandomStreet(Random random){
+	public static String getRandomStreet(Random random){
 		return getRandomString(getExampleNouns(), random) + " " + getRandomString(getExampleStreetTypes(), random);
 	}
 	

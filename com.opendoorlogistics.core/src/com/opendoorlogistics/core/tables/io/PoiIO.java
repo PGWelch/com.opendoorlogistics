@@ -7,17 +7,17 @@
 package com.opendoorlogistics.core.tables.io;
 
 import java.awt.Dimension;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.poi.POIXMLProperties;
@@ -29,6 +29,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.util.TempFile;
+import org.apache.poi.util.TempFileCreationStrategy;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFFont;
@@ -45,7 +47,6 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.AppConstants;
-import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.io.SchemaIO.SchemaColumnDefinition;
@@ -57,13 +58,48 @@ import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 final public class PoiIO {
+	private static boolean initialised=false;
+	private static File poiTempFileDirectory;
+	
 	// http://office.microsoft.com/en-us/excel-help/excel-specifications-and-limits-HP010073849.aspx
 	public static int MAX_CHAR_COUNT_IN_EXCEL_CELL = 32767;
 	static String SCHEMA_SHEET_NAME = "#ODLSchema - DO NOT EDIT";
 	static final SimpleDateFormat ODL_TIME_FORMATTER = new SimpleDateFormat("HH:mm:ss.SSS");						
 
+	static{
+		initPOI();
+	}
+	
+	public static void initPOI(){
+		if(!initialised){
+			// create a directory based on a random number so different instances of the application
+			// should use different tmp directories (unless they're started at exactly the same nanosecond).
+			Random random = new Random();	
+			int val = random.nextInt();
+			poiTempFileDirectory = new File(System.getProperty("java.io.tmpdir"), "odlpoi" + val);
+			
+			TempFile.setTempFileCreationStrategy(new TempFileCreationStrategy() {
+	
+				@Override
+				public File createTempFile(String prefix, String suffix) throws IOException {
+					// check dir exists, make if doesn't
+					if(!poiTempFileDirectory.exists()){
+						poiTempFileDirectory.mkdir();
+						poiTempFileDirectory.deleteOnExit();
+					}
+					
+		            File newFile = File.createTempFile(prefix, suffix, poiTempFileDirectory);
+					return newFile;
+				}
+			});
+			initialised = true;
+		}
+	}
+	
 
 	public static boolean exportDatastore(ODLDatastore<? extends ODLTableReadOnly> ds, File file, boolean xlsx,ProcessingApi processing, ExecutionReport report) {
+		//tmpFileBugFix();
+		
 		Workbook wb = null;
 		SXSSFWorkbook sxssfwb = null;
 		HSSFWorkbook hssfwb=null;
@@ -155,12 +191,12 @@ final public class PoiIO {
 		}        
 	}
 	
-	public static void clearSheet(Sheet sheet) {
-		while (sheet.getPhysicalNumberOfRows() > 0) {
-			Row row = sheet.getRow(sheet.getLastRowNum());
-			sheet.removeRow(row);
-		}
-	}
+//	public static void clearSheet(Sheet sheet) {
+//		while (sheet.getPhysicalNumberOfRows() > 0) {
+//			Row row = sheet.getRow(sheet.getLastRowNum());
+//			sheet.removeRow(row);
+//		}
+//	}
 
 	private static void addSchema(ODLDatastore<? extends ODLTableDefinition> ds, Workbook wb) {
 		ODLTableReadOnly table = SchemaIO.createSchemaTable(ds);
@@ -231,15 +267,7 @@ final public class PoiIO {
 		OVERSIZED
 	}
 
-	/**
-	 * @param table
-	 * @param row
-	 * @param col
-	 * @param cell
-	 * @param nbOversized
-	 * @return
-	 */
-	public static SaveElementResult saveElementToCell(ODLTableReadOnly table, int row, int col, Cell cell) {
+	private static SaveElementResult saveElementToCell(ODLTableReadOnly table, int row, int col, Cell cell) {
 		boolean oversized=false;
 		switch(table.getColumnType(col)){
 		case LONG:
@@ -268,14 +296,14 @@ final public class PoiIO {
 		return oversized? SaveElementResult.OVERSIZED : SaveElementResult.OK;
 	}
 
-	public static String getOversizedWarningMessage(int nbOversized, String tableName) {
+	private static String getOversizedWarningMessage(int nbOversized, String tableName) {
 		String s = "Found " + nbOversized + " cell(s) in table \"" + tableName + "\" longer than maximum Excel cell length ("
 				+ MAX_CHAR_COUNT_IN_EXCEL_CELL + ")." + System.lineSeparator()
 				+ "This spreadsheet may not open correctly in Excel; Libreoffice or OpenOffice should be OK.";
 		return s;
 	}
 
-	public static void saveWorkbook(File file, Workbook wb) {
+	private static void saveWorkbook(File file, Workbook wb) {
 		try {
 			FileOutputStream fos = new FileOutputStream(file, false);
 			wb.write(fos);
@@ -286,33 +314,33 @@ final public class PoiIO {
 		}
 	}
 
-	public static Workbook deepCopyWorkbook(Workbook wb) {
-		return fromBytes(toBytes(wb));
-	}
+//	public static Workbook deepCopyWorkbook(Workbook wb) {
+//		return fromBytes(toBytes(wb));
+//	}
 
-	public static byte[] toBytes(Workbook wb) {
-		try {
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			wb.write(bos);
-			byte[] bytes = bos.toByteArray();
-			return bytes;
-		} catch (Throwable e) {
-			throw new RuntimeException(e);
-		}
-	}
+//	public static byte[] toBytes(Workbook wb) {
+//		try {
+//			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//			wb.write(bos);
+//			byte[] bytes = bos.toByteArray();
+//			return bytes;
+//		} catch (Throwable e) {
+//			throw new RuntimeException(e);
+//		}
+//	}
 
-	public static Workbook fromBytes(byte[] bytes) {
-		try {
-			ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-			return WorkbookFactory.create(bis);
-		} catch (Throwable e) {
-			throw new RuntimeException(e);
-		}
-	}
+//	public static Workbook fromBytes(byte[] bytes) {
+//		try {
+//			ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+//			return WorkbookFactory.create(bis);
+//		} catch (Throwable e) {
+//			throw new RuntimeException(e);
+//		}
+//	}
 
-	public static boolean isXLSX(Workbook wb) {
-		return XSSFWorkbook.class.isInstance(wb);
-	}
+//	public static boolean isXLSX(Workbook wb) {
+//		return XSSFWorkbook.class.isInstance(wb);
+//	}
 
 
 	private static Dimension getBoundingBox(Sheet sheet) {
@@ -325,6 +353,7 @@ final public class PoiIO {
 		}
 		return ret;
 	}
+	
 
 	public static ODLDatastoreAlterable<ODLTableAlterable> importExcel(File file,ProcessingApi processingApi, ExecutionReport report) {
 		ODLDatastoreAlterable<ODLTableAlterable> ds = ODLFactory.createAlterable();
@@ -370,6 +399,8 @@ final public class PoiIO {
 	
 	
 	public static ODLDatastoreAlterable<ODLTableAlterable> importExcel(InputStream stream, ExecutionReport report) {
+		//tmpFileBugFix();
+		
 		ODLDatastoreAlterable<ODLTableAlterable> ds = ODLFactory.createAlterable();
 		
 		Workbook wb = null;

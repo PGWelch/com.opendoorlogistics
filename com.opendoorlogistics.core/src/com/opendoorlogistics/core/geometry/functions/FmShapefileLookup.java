@@ -21,6 +21,10 @@ public final class FmShapefileLookup extends FunctionImpl {
 		super(filename, searchvalue, type, searchfield);
 	}
 
+	public FmShapefileLookup(Function filename, Function searchvalue, Function searchfield) {
+		super(filename, searchvalue, searchfield);
+	}
+	
 	@Override
 	public Object execute(FunctionParameters parameters) {
 		Object[] children = executeChildFormulae(parameters, true);
@@ -29,8 +33,17 @@ public final class FmShapefileLookup extends FunctionImpl {
 		}
 
 		// ensure we use canonical string conversion
-		return Spatial.lookupshapefile((String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, children[0].toString()), (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, children[1].toString()),
-				(String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, children[2].toString()), (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, children[3].toString()));
+		String [] strs = new String[children.length];
+		for(int i =0 ; i < strs.length ; i++){
+			strs[i] = (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, children[i]);
+		}
+		
+		if(children.length==4){
+			return Spatial.lookupshapefile(strs[0],strs[1],strs[2],strs[3]);	
+		}
+		else{
+			return Spatial.lookupshapefile(strs[0],strs[1],null,strs[2]);			
+		}
 	}
 
 	@Override

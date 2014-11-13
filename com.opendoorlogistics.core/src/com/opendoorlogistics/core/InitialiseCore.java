@@ -8,6 +8,7 @@ package com.opendoorlogistics.core;
 
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.components.UpdateQueryComponent;
+import com.opendoorlogistics.core.tables.io.PoiIO;
 
 final public class InitialiseCore {
 	private static  boolean initialised=false;
@@ -17,6 +18,7 @@ final public class InitialiseCore {
 			try {
 				AppProperties.get();
 				ODLGlobalComponents.register(new UpdateQueryComponent());	
+				PoiIO.initPOI();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

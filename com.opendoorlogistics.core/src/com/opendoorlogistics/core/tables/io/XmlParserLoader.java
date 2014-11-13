@@ -318,11 +318,13 @@ public class XmlParserLoader {
 				
 				info.name = formattedValue;
 			}else if (headerState==1){
-				if(col < colInfos.size()){
-					ColInfo info = colInfos.get(col);
-					if(info.estimator!=null){
-						info.estimator.processValue(formattedValue);
-					}
+				if(!Strings.isEmpty(formattedValue)){
+					if(col < colInfos.size()){
+						ColInfo info = colInfos.get(col);
+						if(info.estimator!=null){
+							info.estimator.processValue(formattedValue);
+						}
+					}					
 				}
 			}
 		}
@@ -480,7 +482,7 @@ public class XmlParserLoader {
 	 * @throws InvalidFormatException
 	 * @throws SAXException
 	 */
-	void importOPCPackage(OPCPackage pkg) throws IOException, OpenXML4JException, InvalidFormatException, SAXException {
+	private void importOPCPackage(OPCPackage pkg) throws IOException, OpenXML4JException, InvalidFormatException, SAXException {
 		XSSFReader r = new XSSFReader( pkg );
 		StylesTable styles = r.getStylesTable();
 		ReadOnlySharedStringsTable sst =new ReadOnlySharedStringsTable(pkg);	
@@ -549,8 +551,9 @@ public class XmlParserLoader {
 	public static void main(String[] args) throws Exception {
 		ODLDatastoreAlterable<ODLTableAlterable> ret = ODLFactory.createAlterable();
 		ExecutionReport report = new ExecutionReportImpl();
-		File file = new File("C:\\Users\\Phil\\Dropbox\\Business\\ODL\\Testing\\VRP\\demoVRP.xlsx");
+		//File file = new File("C:\\Users\\Phil\\Dropbox\\Business\\ODL\\Testing\\VRP\\demoVRP.xlsx");
 //		File file = new File("C:\\temp\\TestFromLibreOffice.xlsx");
+		File file = new File("C:\\temp\\testloading.xlsx");
 		System.out.println("Started loading");
 		importExcel(file, ret,new ProcessingApi() {
 			
@@ -585,7 +588,7 @@ public class XmlParserLoader {
 		}, report);
 
 		System.out.println("Finished loading");
-		//System.out.println(ret);
+		System.out.println(ret);
 	//	XmlParserLoader example = new XmlParserLoader();
 		// example.processOneSheet(args[0]);
 	//	example.processAllSheets("C:\\Users\\Phil\\Dropbox\\Business\\ODL\\Testing\\VRP\\demoVRP.xlsx");

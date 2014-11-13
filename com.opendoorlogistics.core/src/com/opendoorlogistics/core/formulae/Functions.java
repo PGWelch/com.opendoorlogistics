@@ -26,6 +26,7 @@ import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.postcodes.UKPostcodes;
 import com.opendoorlogistics.core.gis.postcodes.UKPostcodes.UKPostcodeLevel;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
+import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
@@ -1084,8 +1085,8 @@ public class Functions {
 
 	}
 
-	public static final class FmRand extends FunctionImpl {
-		private final Random random = new Random();
+	public static class FmRand extends FunctionImpl {
+		protected final Random random = new Random();
 
 		public FmRand() {
 			super();
@@ -1104,6 +1105,42 @@ public class Functions {
 		@Override
 		public String toString() {
 			return "rand()";
+		}
+	}
+	
+	public static final class FmRandData extends FmRand{
+		private final RandDataType rdt;
+		
+		public enum RandDataType{
+			PERSON_NAME,
+			COMPANY_NAME,
+			STREET_NAME
+		}
+		
+		public FmRandData(RandDataType rdt){
+			this.rdt = rdt;
+		}
+		
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			switch(rdt){
+			case PERSON_NAME:
+				return ExampleData.getRandomPersonName(random);
+				
+			case COMPANY_NAME:
+				return ExampleData.getRandomBusinessName(random);
+				
+			case STREET_NAME:
+				return ExampleData.getRandomStreet(random);
+				
+			default:
+				return null;
+			}
+		}
+		
+		@Override
+		public Function deepCopy() {
+			return new FmRandData(rdt);
 		}
 	}
 
