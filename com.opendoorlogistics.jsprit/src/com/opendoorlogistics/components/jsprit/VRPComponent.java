@@ -10,9 +10,11 @@ import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -22,18 +24,13 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import jsprit.core.algorithm.SearchStrategy.DiscoveredSolution;
-import jsprit.core.algorithm.VariablePlusFixedSolutionCostCalculatorFactory;
 import jsprit.core.algorithm.VehicleRoutingAlgorithm;
 import jsprit.core.algorithm.box.SchrimpfFactory;
 import jsprit.core.algorithm.listener.IterationEndsListener;
-import jsprit.core.algorithm.state.StateManager;
-import jsprit.core.algorithm.state.UpdateActivityTimes;
-import jsprit.core.algorithm.state.UpdateEndLocationIfRouteIsOpen;
-import jsprit.core.algorithm.state.UpdateVariableCosts;
 import jsprit.core.algorithm.termination.PrematureAlgorithmTermination;
+import jsprit.core.analysis.SolutionAnalyser;
 import jsprit.core.problem.VehicleRoutingProblem;
-import jsprit.core.problem.constraint.ConstraintManager;
-import jsprit.core.problem.misc.JobInsertionContext;
+import jsprit.core.problem.job.Job;
 import jsprit.core.problem.solution.VehicleRoutingProblemSolution;
 import jsprit.core.problem.solution.route.VehicleRoute;
 import jsprit.core.problem.solution.route.activity.TourActivity;
@@ -58,6 +55,7 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.UIFactory.IntChangedListener;
+import com.opendoorlogistics.components.jsprit.BuiltVRP.BuiltStopRec;
 import com.opendoorlogistics.components.jsprit.demo.DemoBuilder;
 import com.opendoorlogistics.components.jsprit.solution.RouteDetail;
 import com.opendoorlogistics.components.jsprit.solution.SolutionDetail;
@@ -204,12 +202,51 @@ public class VRPComponent implements ODLComponent {
 			
 		}else if (mode == VRPConstants.SOLUTION_DETAILS_MODE) {
 
-			// always build the VRP as this calls the matrix generation (which is always needed)
-			BuiltVRP built = BuiltVRP.build(ioDb, conf, api);
+			// Create the object which identifies vehicle ids
+			VehicleIds vehicleIds = new VehicleIds(api.getApi(), conf, dfn, ioDb.getTableByImmutableId(dfn.vehicles.tableId));
+			
+			// Get all distinct vehicle ids which need to be built
+			TreeMap<Integer, List<RowVehicleIndex>> vehiclesToBuild = new TreeMap<>();
+			Set<String> processedIds = api.getApi().stringConventions().createStandardisedSet();
+			ODLTableReadOnly stopOrderTable=ioDb.getTableByImmutableId(dfn.stopOrder.tableId);
+			for (int row = 0; row < stopOrderTable.getRowCount(); row++) {
+				String vehicleId =dfn.stopOrder.getVehicleId(stopOrderTable, row);
+				if(processedIds.contains(vehicleId)){
+					continue;
+				}
+				
+				RowVehicleIndex rvi = vehicleIds.identifyVehicle(row, vehicleId);
+				rvi.id = vehicleId;
+				List<RowVehicleIndex> withinType = vehiclesToBuild.get(rvi.row);
+				if(withinType == null){
+					withinType = new ArrayList<>();
+					vehiclesToBuild.put(rvi.row, withinType);
+				}
+				withinType.add(rvi);
+				processedIds.add(vehicleId);
+			}
+			
+			// always build the VRP to (a) call matrix generation and (b) create the exact neccessary vehicles
+			BuiltVRP built = BuiltVRP.build(ioDb, conf,vehiclesToBuild, api);
 
 			// output details from the pre-existing stop order table
 			CalculateRouteDetails calculator = new CalculateRouteDetails(api, conf, ioDb, built);
-			List<RouteDetail> details = calculator.calculateRouteDetails(ioDb.getTableByImmutableId(dfn.stopOrder.tableId));
+			
+//			//---------------------------
+//			// For testing. Can be removed until required.
+//			List<VehicleRoute> vehicleRoutes = new ArrayList<>();
+//			List<Job> unassignedJobs = new ArrayList<>();
+//			calculator.buildVehicleRoutesAndUnassignedJobs(ioDb.getTableByImmutableId(dfn.stopOrder.tableId), vehicleRoutes, unassignedJobs);
+//
+//			VehicleRoutingProblemSolution vrpSolution = calculator.buildVRPSolution(vehicleRoutes, unassignedJobs);
+//			
+//			SolutionAnalyser solutionAnalyser = calculator.buildSolutionAnalyser(vrpSolution);
+//			
+//			calculator.printStatistics(vrpSolution, solutionAnalyser);
+//			
+//			//---------------------------
+			
+			List<RouteDetail> details = calculator.calculateRouteDetails(stopOrderTable);
 			SolutionDetail solutionDetail = calculator.calculateSolutionDetails(api.getApi(), conf, ioDb.getTableByImmutableId(dfn.stops.tableId), details);
 
 			// Output all details
@@ -286,47 +323,6 @@ public class VRPComponent implements ODLComponent {
 			}
 		}
 	}
-
-	/**
-	 * Experimental method to retrieve all stats directly from jsprit library
-	 * @param vrp
-	 */
-	private void updateStatsV2(VehicleRoutingProblem vrp){
-	
-		StateManager stateManager = new StateManager(vrp.getTransportCosts());
-		stateManager.updateLoadStates();
-		stateManager.updateTimeWindowStates();
-		stateManager.addStateUpdater(new UpdateEndLocationIfRouteIsOpen());
-	//	stateManager.addStateUpdater(new OpenRouteStateVerifier()); // cannot add this as its private and cannot access class
-		stateManager.addStateUpdater(new UpdateActivityTimes(vrp.getTransportCosts()));
-		stateManager.addStateUpdater(new UpdateVariableCosts(vrp.getActivityCosts(), vrp.getTransportCosts(), stateManager));
-
-
-		
-		Collection<VehicleRoutingProblemSolution> solutions = new ArrayList<VehicleRoutingProblemSolution>();
-		List<VehicleRoute> vehicleRoutes = new ArrayList<VehicleRoute>();
-		vehicleRoutes.addAll(vrp.getInitialVehicleRoutes());
-		VehicleRoutingProblemSolution solution = new VehicleRoutingProblemSolution(vehicleRoutes, Double.MAX_VALUE);
-		solutions.add(solution);
-
-		// clear and then recalculate all states
-		stateManager.informIterationStarts(0, vrp, solutions);
-		stateManager.informInsertionStarts(vehicleRoutes, vrp.getJobs().values());
-		
-		// calculate costs
-		VariablePlusFixedSolutionCostCalculatorFactory costsCalculator = new VariablePlusFixedSolutionCostCalculatorFactory(stateManager);
-		solution.setCost(costsCalculator.createCalculator().getCosts(solution));
-		
-		// to do check for constraint breaks
-		ConstraintManager constraintManager = new ConstraintManager(vrp,stateManager,vrp.getConstraints());
-		constraintManager.addTimeWindowConstraint();
-		constraintManager.addLoadConstraint();
-		
-		// problem  constraints are defined relative to do an insertion.... HardRouteStateLevelConstraint.fulfilled(JobInsertionContext insertionContext)
-	//	stateManager.informInsertionStarts(vehicleRoutes, unassignedJobs);
-		
-		
-	}
 	
 	/**
 	 * @param api
@@ -337,10 +333,7 @@ public class VRPComponent implements ODLComponent {
 	 * @param built
 	 */
 	private void runOptimiser(final ComponentExecutionApi api, ODLDatastore<? extends ODLTable> ioDb, VRPConfig conf, InputTablesDfn dfn) {
-		BuiltVRP built = BuiltVRP.build(ioDb, conf, api);
-		
-		// filter out bad jobs to stop the exception...
-		built = filterInvalidJobs(api, built);
+		BuiltVRP built = BuiltVRP.build(ioDb, conf, null,api);
 		
 		api.postStatusMessage("Starting optimisation");
 		
@@ -352,8 +345,8 @@ public class VRPComponent implements ODLComponent {
 		final BestEver bestEver = new BestEver();
 		
 		// get the algorithm out-of-the-box.
-		VehicleRoutingAlgorithm algorithm = new SchrimpfFactory().createAlgorithm(built.getVrpProblem());
-		algorithm.setNuOfIterations(Math.max(conf.getNbIterations(),1));
+		VehicleRoutingAlgorithm algorithm = new SchrimpfFactory().createAlgorithm(built.getJspritProblem());
+		algorithm.setMaxIterations(Math.max(conf.getNbIterations(),1));
 		class LastUpdate {
 			long lastTime = System.currentTimeMillis();
 		}
@@ -412,43 +405,6 @@ public class VRPComponent implements ODLComponent {
 		}
 	}
 
-	/**
-	 * Filter the problem by solving the VRP individually for each job and
-	 * removing any job which causes an issue.
-	 * @param api
-	 * @param allJobs
-	 * @return
-	 */
-	private BuiltVRP filterInvalidJobs(ComponentExecutionApi api,BuiltVRP allJobs){
-		api.postStatusMessage("Analysing jobs");
-		
-		Set<String> passed = api.getApi().stringConventions().createStandardisedSet();
-		
-		for(String jobId : allJobs.getJobIds()){
-			Set<String> set = api.getApi().stringConventions().createStandardisedSet();
-			set.add(jobId);
-			
-			boolean ok = true;
-			try{
-				BuiltVRP filtered = allJobs.buildFilteredJobSubset(set);
-				VehicleRoutingAlgorithm algorithm = new SchrimpfFactory().createAlgorithm(filtered.getVrpProblem());
-				algorithm.setNuOfIterations(0);
-				Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
-				VehicleRoutingProblemSolution bestSolution = Solutions.bestOf(solutions);
-				ok = bestSolution!=null;
-				
-			}catch(Exception e){
-				ok = false;
-			}
-			
-			if(ok){
-				passed.add(jobId);
-			}
-		}
-		
-		return allJobs.buildFilteredJobSubset(passed);
-	}
-	
 	private static List<StopOrder> getStopOrder(ODLApi api, ODLDatastore<? extends ODLTable> ioDb, VRPConfig conf, BuiltVRP built, VehicleRoutingProblemSolution bestSolution) {
 		ArrayList<StopOrder> ret = new ArrayList<>();
 		final InputTablesDfn dfn = new InputTablesDfn(api, conf);
@@ -462,10 +418,10 @@ public class VRPComponent implements ODLComponent {
 		for (VehicleRoute route : bestSolution.getRoutes()) {
 			Vehicle vehicle = route.getVehicle();
 
-			// consider this route a not-load if this is a penalty vehicle ... don't output it....
-			if (PenaltyVehicleType.class.isInstance(vehicle.getType())) {
-				continue;
-			}
+//			// consider this route a not-load if this is a penalty vehicle ... don't output it....
+//			if (PenaltyVehicleType.class.isInstance(vehicle.getType())) {
+//				continue;
+//			}
 			
 			// If fleet size is infinite we have repeated vehicle ids and should use the naming convention to append a number
 			String vehicleId = vehicle.getId();
@@ -497,11 +453,11 @@ public class VRPComponent implements ODLComponent {
 					// create order object
 					StopOrder order = new StopOrder();
 					order.vehicleId = vehicleId;
-					int inputRow = built.getStopRow((JobActivity) activity);
-					if (inputRow == -1) {
+					BuiltStopRec builtStop = built.getBuiltStop((JobActivity) activity);
+					if (builtStop == null) {
 						throw new RuntimeException("Could not identify stop with JSPRIT job id " + ((JobActivity) activity).getJob().getId());
 					}
-					order.stopId = dfn.stops.getId(jobsTable, inputRow);
+					order.stopId = builtStop.getStopIdInStopsTable();
 
 					ret.add(order);
 

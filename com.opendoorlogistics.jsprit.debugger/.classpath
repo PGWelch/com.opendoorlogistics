@@ -5,5 +5,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/com.opendoorlogistics.jsprit"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/com.opendoorlogistics.studio"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/com.opendoorlogistics.api"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.opendoorlogistics.core"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

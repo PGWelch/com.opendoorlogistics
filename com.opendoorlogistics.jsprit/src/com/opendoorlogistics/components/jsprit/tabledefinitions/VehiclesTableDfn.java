@@ -73,7 +73,7 @@ public class VehiclesTableDfn extends TableDfn{
 	}
 	
 	
-	public int getNumber(ODLTableReadOnly table,int row){
+	public int getNumberOfVehiclesInType(ODLTableReadOnly table,int row){
 		Long val= (Long)table.getValueAt(row, number);
 		if(val==null){
 			return 1;
@@ -131,7 +131,7 @@ public class VehiclesTableDfn extends TableDfn{
 	}
 	
 	public String getId(ODLTableReadOnly table,int row, int vehicleIndex){
-		int totalNumber = getNumber(table, row);
+		int totalNumber = getNumberOfVehiclesInType(table, row);
 		String base = getBaseId(table, row);
 		return api.stringConventions().getVehicleId(base, totalNumber, vehicleIndex);
 	}
@@ -162,7 +162,7 @@ public class VehiclesTableDfn extends TableDfn{
 	}
 	
 	public String getName(ODLTableReadOnly table,int row, int vehicleIndx){
-		return api.stringConventions().getVehicleName((String)table.getValueAt(row, vehicleName), getNumber(table, row), vehicleIndx);		
+		return api.stringConventions().getVehicleName((String)table.getValueAt(row, vehicleName), getNumberOfVehiclesInType(table, row), vehicleIndx);		
 	}
 	
 	public ODLTime[]getTimeWindow(ODLTableReadOnly table, int row){
@@ -180,6 +180,7 @@ public class VehiclesTableDfn extends TableDfn{
 		final public int vehicleIndex;
 		final public boolean vehicleExceedsMaximumInVehicleType;
 		final public boolean isSingleInstanceVehicleType;
+		public String id;
 		
 		public RowVehicleIndex(int row, int vehicleIndex,boolean vehicleExceedsMaximumInVehicleType, boolean isSingleInstanceVehicleType) {
 			super();
@@ -190,15 +191,15 @@ public class VehiclesTableDfn extends TableDfn{
 		}
 	}
 	
-	public Map<String,RowVehicleIndex> getVehicleIdToRowIndex(ODLTableReadOnly table){
-		int n = table.getRowCount();
+	public Map<String,RowVehicleIndex> getVehicleIdToRowIndex(ODLTableReadOnly vehiclesTable){
+		int n = vehiclesTable.getRowCount();
 		Map<String,RowVehicleIndex> ret = api.stringConventions().createStandardisedMap();
 		for(int row =0 ; row<n;row++){
-			int n2 = getNumber(table, row);
-			boolean isSingleInstanceVehicleType = table.getValueAt(row, number)==null || n2==1;
+			int n2 = getNumberOfVehiclesInType(vehiclesTable, row);
+			boolean isSingleInstanceVehicleType = vehiclesTable.getValueAt(row, number)==null || n2==1;
 			
 			for(int i =0 ; i<n2;i++){
-				String id = getId(table, row, i);
+				String id = getId(vehiclesTable, row, i);
 				if(ret.get(id)!=null){
 					onRowException("Duplicate " + PredefinedTags.VEHICLE_ID, row);
 				}

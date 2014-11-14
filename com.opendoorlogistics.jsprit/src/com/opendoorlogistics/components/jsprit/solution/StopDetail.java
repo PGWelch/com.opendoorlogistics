@@ -8,20 +8,21 @@ package com.opendoorlogistics.components.jsprit.solution;
 
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
-import com.opendoorlogistics.components.jsprit.RowWriter;
+import com.opendoorlogistics.components.jsprit.BuiltVRP.BuiltStopRec;
 import com.opendoorlogistics.components.jsprit.BuiltVRP.TravelCostType;
+import com.opendoorlogistics.components.jsprit.RowWriter;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.StopDetailsTableDfn;
-import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn.StopType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;
 
 public class StopDetail extends StopOrder {
 	public class TemporaryStopInfo {
 		public double earliestArrival = Double.NEGATIVE_INFINITY;
-		public StopType stopType;
 		public double latestArrival = Double.POSITIVE_INFINITY;
 		public String locationId;
-		public int row;
 		public RowVehicleIndex rowVehicleIndex;
+		public boolean isUnbalancedPickupDelivery;
+		public BuiltStopRec builtStopRec;
+		public int rowNumberInStopOrderTable;
 	}
 
 	final public long[] arrivalQuantities;
@@ -52,6 +53,7 @@ public class StopDetail extends StopOrder {
 	public double waitingTime;
 	public long hasViolation;
 
+	
 	public StopDetail(int nbQuantities) {
 		stopQuantities = new long[nbQuantities];
 		arrivalQuantities = new long[nbQuantities];

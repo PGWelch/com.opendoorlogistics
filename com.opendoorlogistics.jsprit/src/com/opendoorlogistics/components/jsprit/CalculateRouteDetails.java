@@ -7,9 +7,22 @@
 package com.opendoorlogistics.components.jsprit;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import jsprit.core.analysis.SolutionAnalyser;
+import jsprit.core.problem.AbstractActivity;
+import jsprit.core.problem.Capacity;
+import jsprit.core.problem.VehicleRoutingProblem;
+import jsprit.core.problem.job.Job;
+import jsprit.core.problem.job.Service;
+import jsprit.core.problem.solution.VehicleRoutingProblemSolution;
+import jsprit.core.problem.solution.route.VehicleRoute;
+import jsprit.core.problem.solution.route.activity.TimeWindow;
+import jsprit.core.problem.solution.route.activity.TourActivity;
+import jsprit.core.problem.vehicle.Vehicle;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
@@ -30,6 +43,7 @@ import com.opendoorlogistics.components.jsprit.solution.StopOrder;
 import com.opendoorlogistics.components.jsprit.solution.StopDetail.TemporaryStopInfo;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.InputTablesDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn.StopType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.CostType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;
@@ -41,22 +55,22 @@ public class CalculateRouteDetails {
 	private final VRPConfig conf;
 	private final BuiltVRP builtVRP;
 	private final ODLTableReadOnly jobs;
-	private final ODLTableReadOnly vehicles;
+	private final ODLTableReadOnly vehiclesTable;
 	private final Map<String, Integer> stopIdMap;
 	private final VehicleIds vehicleIds;
 
-	public CalculateRouteDetails(ComponentExecutionApi api, VRPConfig config, ODLDatastore<? extends ODLTable> ioDb, BuiltVRP travelCosts) {
+	public CalculateRouteDetails(ComponentExecutionApi api, VRPConfig config, ODLDatastore<? extends ODLTable> ioDb, BuiltVRP builtVRP) {
 		dfn = new InputTablesDfn(api.getApi(), config);
 		this.cApi = api;
 		this.api = api.getApi();
 		this.conf = config;
-		this.builtVRP = travelCosts;
+		this.builtVRP = builtVRP;
 		jobs = ioDb.getTableByImmutableId(dfn.stops.tableId);
-		vehicles = ioDb.getTableByImmutableId(dfn.vehicles.tableId);
+		vehiclesTable = ioDb.getTableByImmutableId(dfn.vehicles.tableId);
 
 		// get stop ids to row and stop number on row... also do same for vehicles
 		stopIdMap = dfn.stops.getStopIdMap(jobs);
-		vehicleIds = new VehicleIds(api.getApi(), config, dfn, vehicles);
+		vehicleIds = new VehicleIds(api.getApi(), config, dfn, vehiclesTable);
 	}
 
 	/**
@@ -93,29 +107,6 @@ public class CalculateRouteDetails {
 		}
 	}
 
-	/**
-	 * Fill times in backwards. The arrival time of the startIndex stop must be set prior to calling this method.
-	 * 
-	 * @param stops
-	 * @param startIndex
-	 */
-	private void fillTimesBackward(List<StopDetail> stops, int startIndex) {
-		for (int i = startIndex - 1; i >= 0; i--) {
-			StopDetail next = stops.get(i + 1);
-			StopDetail stop = stops.get(i);
-
-			// work out arrival assuming no time window on this stop
-			stop.arrivalTime = next.arrivalTime - next.travelCost[TravelCostType.TIME.ordinal()] - stop.stopDuration;
-
-			// check if we have to arrive earlier than this
-			if (stop.endTimeWindow != null && stop.endTimeWindow < stop.arrivalTime) {
-				stop.arrivalTime = stop.endTimeWindow;
-			}
-
-			// finally set the duration
-			stop.leaveTime = stop.arrivalTime + stop.stopDuration;
-		}
-	}
 
 	public List<RouteDetail> calculateRouteDetails(ODLTableReadOnly order) {
 		int n = order.getRowCount();
@@ -163,7 +154,7 @@ public class CalculateRouteDetails {
 	// }
 
 	private List<RouteDetail> calculateRouteDetails(List<StopOrder> order) {
-
+		
 		// parse route order table getting records for each stop in a list for each route
 		int n = order.size();
 		Map<String, RouteDetail> routes = api.stringConventions().createStandardisedMap();
@@ -180,13 +171,13 @@ public class CalculateRouteDetails {
 			if (stopRow == null) {
 				throw new RuntimeException("Unknown " + PredefinedTags.STOP_ID + " found in route-order table on row " + (row + 1) + ".");
 			}
-			detail.temporary.row = stopRow;
+		//	detail.temporary.builtStopRec.getRowNbInStopsTable() = stopRow;
 
 			// get vehicleid and check its known
 			detail.vehicleId = stopOrder.vehicleId;
 			RowVehicleIndex rvi = vehicleIds.identifyVehicle(row, detail.vehicleId);
 			detail.temporary.rowVehicleIndex = rvi;
-			detail.vehicleName = dfn.vehicles.getName(vehicles, rvi.row, rvi.vehicleIndex);
+			detail.vehicleName = dfn.vehicles.getName(vehiclesTable, rvi.row, rvi.vehicleIndex);
 
 			// check for new vehicle
 			if (api.stringConventions().equalStandardised(detail.vehicleId, currentVehicleId) == false) {
@@ -199,10 +190,10 @@ public class CalculateRouteDetails {
 				currentRoute.vehicleId = stopOrder.vehicleId;
 				currentRoute.vehicleName = detail.vehicleName;
 				for (int q = 0; q < nq; q++) {
-					currentRoute.capacity[q] = dfn.vehicles.getCapacity(vehicles, rvi.row, q);
+					currentRoute.capacity[q] = dfn.vehicles.getCapacity(vehiclesTable, rvi.row, q);
 				}
-				currentRoute.costPerKm = dfn.vehicles.getCost(vehicles, rvi.row, CostType.COST_PER_KM);
-				currentRoute.costPerHour = dfn.vehicles.getCost(vehicles, rvi.row, CostType.COST_PER_HOUR);
+				currentRoute.costPerKm = dfn.vehicles.getCost(vehiclesTable, rvi.row, CostType.COST_PER_KM);
+				currentRoute.costPerHour = dfn.vehicles.getCost(vehiclesTable, rvi.row, CostType.COST_PER_HOUR);
 
 				// check if vehicle exceeds the maximum number allowed by the type
 				if (rvi.vehicleExceedsMaximumInVehicleType) {
@@ -225,12 +216,11 @@ public class CalculateRouteDetails {
 				detail.startTimeWindow = (double) tw[0].getTotalMilliseconds();
 				detail.endTimeWindow = (double) tw[1].getTotalMilliseconds();
 			}
-			detail.temporary.stopType = dfn.stops.getStopType(jobs, stopRow);
-
+	
 			// get stop quantities
 			for (int i = 0; i < conf.getNbQuantities(); i++) {
 				int value = dfn.stops.getQuantity(jobs, stopRow, i);
-				switch (detail.temporary.stopType) {
+				switch (detail.temporary.builtStopRec.getType()) {
 				case UNLINKED_DELIVERY:
 				case NORMAL_STOP:
 					// loaded at the depot
@@ -258,20 +248,22 @@ public class CalculateRouteDetails {
 			currentRoute.stops.add(detail);
 		}
 
-		// parse routes
+		// put route detail objects into an array
 		ArrayList<RouteDetail> ret = new ArrayList<>();
 		for (Map.Entry<String, RouteDetail> idRoute : routes.entrySet()) {
 
 			// get vehicle row and fill in vehicle details
 			RouteDetail route = idRoute.getValue();
 			ret.add(route);
-			processRoute(vehicles, route);
+		//	processRoute(builtVRP, vehicles, route);
 		}
+		
+		
 
 		return ret;
 	}
 
-	private void processRoute( ODLTableReadOnly vehicles, RouteDetail route) {
+	private void processRoute(BuiltVRP builtVRP, ODLTableReadOnly vehicles, RouteDetail route) {
 		List<StopDetail> stops = route.stops;
 
 		// get vehicle time window
@@ -414,14 +406,14 @@ public class CalculateRouteDetails {
 
 			// Check if the stop is part of a pickup-deliver pair which is split across routes
 			// or delivery is before pickup
-			if (stop.temporary.stopType != null) {
-				switch (stop.temporary.stopType) {
+			if (stop.temporary.builtStopRec.getType() != null) {
+				switch (stop.temporary.builtStopRec.getType()) {
 				case LINKED_DELIVERY: {
 					boolean found = false;
 					// find the corresponding pickup on the same route before the delivery
 					for (int j = 0; j < i; j++) {
 						StopDetail other = stops.get(j);
-						if (api.stringConventions().equalStandardised(stop.jobId, other.jobId) && other.temporary.stopType == StopType.LINKED_PICKUP) {
+						if (api.stringConventions().equalStandardised(stop.jobId, other.jobId) && other.temporary.builtStopRec.getType() == StopType.LINKED_PICKUP) {
 							found = true;
 							break;
 						}
@@ -438,7 +430,7 @@ public class CalculateRouteDetails {
 					// find the corresponding delivery on the same route after the pickup
 					for (int j = i + 1; j < n; j++) {
 						StopDetail other = stops.get(j);
-						if (api.stringConventions().equalStandardised(stop.jobId, other.jobId) && other.temporary.stopType == StopType.LINKED_DELIVERY) {
+						if (api.stringConventions().equalStandardised(stop.jobId, other.jobId) && other.temporary.builtStopRec.getType() == StopType.LINKED_DELIVERY) {
 							found = true;
 							break;
 						}
@@ -538,178 +530,7 @@ public class CalculateRouteDetails {
 		}
 	}
 
-	/**
-	 * Complex - and currently not working - processing of route times which tries to minimise waiting time.... This method is not called at the
-	 * moment but the code is retained as we may need to fix it and switch to it in the future....
-	 * 
-	 * @param route
-	 */
-	private void processRouteTimesComplex(RouteDetail route) {
-		final List<StopDetail> stops = route.stops;
-		final int n = stops.size();
-
-		// Calculate the earliest arrival times by (a) setting at the start (before the start depot) to -infinity,
-		// (b) parsing the route forward and (c) waiting until the start time whenever we encounter one.
-		stops.get(0).temporary.earliestArrival = Double.NEGATIVE_INFINITY;
-		for (int i = 0; i < n; i++) {
-			StopDetail sd = stops.get(i);
-			TemporaryStopInfo temp = sd.temporary;
-
-			// use the earliest arrival of the previous stop (if we have one)
-			if (i > 0) {
-
-				// set to its earliest arrival time
-				StopDetail psd = stops.get(i - 1);
-				temp.earliestArrival = psd.temporary.earliestArrival;
-
-				// add its service time and the travel time to the current stop
-				if (temp.earliestArrival != Double.NEGATIVE_INFINITY) {
-					temp.earliestArrival += psd.stopDuration;
-					temp.earliestArrival += sd.travelCost[TravelCostType.TIME.ordinal()];
-				}
-			}
-
-			// now set the earliest arrival time at this stop to be the maximum of the current arrival
-			// time and this stop's time window
-			if (sd.startTimeWindow != null && temp.earliestArrival < sd.startTimeWindow) {
-				temp.earliestArrival = sd.startTimeWindow;
-			}
-		}
-
-		// Calculate the latest arrival times by (a) setting the finish time (after the end depot) to +infinity,
-		// (b) parsing the route backwards, and (c) ensuring we do not arrive at each stop after its end time window
-		stops.get(n - 1).temporary.latestArrival = Double.POSITIVE_INFINITY;
-		for (int i = n - 1; i >= 0; i--) {
-			StopDetail sd = stops.get(i);
-			TemporaryStopInfo temp = sd.temporary;
-
-			// if we have a next stop
-			if (i < n - 1) {
-				// initially take latest of next stop
-				temp.latestArrival = stops.get(i + 1).temporary.latestArrival;
-
-				// update latest with travel time to next stop
-				if (temp.latestArrival != Double.POSITIVE_INFINITY) {
-					temp.latestArrival -= stops.get(i + 1).travelCost[TravelCostType.TIME.ordinal()];
-				}
-			}
-
-			// update latest with stop duration
-			if (temp.latestArrival != Double.POSITIVE_INFINITY) {
-				temp.latestArrival -= sd.stopDuration;
-			}
-
-			// update latest with this stop's (arrival) end time window
-			if (sd.endTimeWindow != null && sd.endTimeWindow < temp.latestArrival) {
-				temp.latestArrival = sd.endTimeWindow;
-			}
-		}
-
-		// debug output....
-		class DEBUG {
-			String toStr(Double time) {
-				if (time == null) {
-					return "n/a";
-				}
-				return new ODLTime(time.longValue()).toString();
-			}
-
-			void print() {
-				for (int i = 0; i < n; i++) {
-					StopDetail sd = stops.get(i);
-					System.out.println("" + i + " StartTW=" + toStr(sd.startTimeWindow) + " EndTW=" + toStr(sd.endTimeWindow) + " Earliest=" + toStr(sd.temporary.earliestArrival) + " Latest=" + toStr(sd.temporary.latestArrival));
-				}
-				System.out.println();
-			}
-		}
-		new DEBUG().print();
-
-		// Together the earliest and latest times give the time window violation.
-		// If we were only constrained by earliest times (i.e. earliest times > -infinity),
-		// then we could always complete the route by going later.
-		// Similarly if we were only constrained by latest times (i.e. latest times < + infinity),
-		// then we could always complete the route by going later.
-
-		// get the stop with the biggest time window violation
-		int deciderStop = -1;
-		double biggestViolation = Double.NEGATIVE_INFINITY;
-		for (int i = 0; i < n; i++) {
-			StopDetail stop = stops.get(i);
-			TemporaryStopInfo temp = stop.temporary;
-
-			// check for time window violating stop
-			if (temp.earliestArrival != Double.NEGATIVE_INFINITY && temp.latestArrival != Double.POSITIVE_INFINITY && temp.earliestArrival > temp.latestArrival) {
-				double violation = temp.earliestArrival - temp.latestArrival;
-				if (violation > biggestViolation) {
-					deciderStop = i;
-					biggestViolation = violation;
-				}
-			}
-		}
-
-		// Possible outcomes
-		// (a) no earliest or latest times as no time windows set
-		// (b) we have a time window violation
-		// (c) no time window violation -> minimise waiting times
-
-		// If no TW violation...
-		// Get subset of stops where start time window is between earliest and latest time.
-		// All these stops can have waiting times.
-		// We need to choose a single fixed point in time to lock down timing for the whole route.
-		// We get the time window with the minimum duration between its start time and the stop's latest arrival.
-		// We then set the time at this point to match the stop's start time.
-		if (deciderStop == -1) {
-			double minGap = Double.POSITIVE_INFINITY;
-			for (int i = 0; i < n; i++) {
-				StopDetail stop = stops.get(i);
-				TemporaryStopInfo temp = stop.temporary;
-				if (stop.startTimeWindow != null) {
-					// Check if stop can have waiting time
-					if ((stop.startTimeWindow > temp.earliestArrival) && stop.startTimeWindow < temp.latestArrival) {
-						double gap = temp.latestArrival - stop.startTimeWindow;
-						if (gap < minGap) {
-							minGap = gap;
-							deciderStop = i;
-						}
-					}
-				}
-			}
-		}
-
-		// fill in times based on the decider stop
-		if (deciderStop != -1) {
-			StopDetail stop = stops.get(deciderStop);
-			stop.arrivalTime = stop.startTimeWindow;
-			fillTimesForward(stops, deciderStop);
-			fillTimesBackward(stops, deciderStop);
-		} else {
-			// or use the start depot as a kind of decider stop...
-			TemporaryStopInfo temp = stops.get(0).temporary;
-			if (temp.earliestArrival == Double.NEGATIVE_INFINITY && temp.latestArrival == Double.POSITIVE_INFINITY) {
-				// completely unconstrained...
-				stops.get(0).arrivalTime = 0;
-			} else if (temp.earliestArrival != Double.NEGATIVE_INFINITY) {
-				stops.get(0).arrivalTime = temp.earliestArrival;
-			} else if (temp.latestArrival != Double.NEGATIVE_INFINITY) {
-				stops.get(0).arrivalTime = temp.latestArrival;
-			}
-
-			fillTimesForward(stops, 0);
-		}
-
-		// work out waiting times and time window violations based on the arrival times
-		for (int i = 0; i < n; i++) {
-			StopDetail stop = stops.get(i);
-			if (stop.startTimeWindow != null && stop.arrivalTime < stop.startTimeWindow) {
-				stop.waitingTime = stop.startTimeWindow - stop.arrivalTime;
-			}
-
-			if (stop.endTimeWindow != null && stop.arrivalTime > stop.endTimeWindow) {
-				stop.timeWindowViolation = stop.arrivalTime - stop.endTimeWindow;
-			}
-		}
-	}
-
+	
 	public SolutionDetail calculateSolutionDetails(ODLApi api, VRPConfig config, ODLTableReadOnly stopsTable, List<RouteDetail> routeDetails) {
 		int nq = config.getNbQuantities();
 		SolutionDetail ret = new SolutionDetail(nq);
@@ -756,6 +577,308 @@ public class CalculateRouteDetails {
 			}
 		}
 		return ret;
+	}
+	
+	/*
+	 * Builds a list of route details and list of unassigned stop ids from the stop order table. 
+	 * Used internally to build the vehicle routes and unassigned jobs.
+	 */
+	public List<RouteDetail> buildRouteDetails(ODLTableReadOnly stopOrders) {
+	
+		int numberOfRows = stopOrders.getRowCount();
+		List<StopOrder> listStopOrders = new ArrayList<>(numberOfRows);
+		for (int row = 0; row < numberOfRows; row++) {
+			StopOrder stopOrder = new StopOrder();
+			stopOrder.stopId = dfn.stopOrder.getStopId(stopOrders, row);
+			stopOrder.vehicleId = dfn.stopOrder.getVehicleId(stopOrders, row);
+			listStopOrders.add(stopOrder);
+		}
+		
+		// Parse route order table getting records for each stop in a list for each route.
+		numberOfRows = listStopOrders.size();
+		Map<String, RouteDetail> mapRouteDetails = api.stringConventions().createStandardisedMap();
+		String currentVehicleId = null;
+		RouteDetail currentRoute = null;
+		final int nq = conf.getNbQuantities();
+		for (int row = 0; row < numberOfRows; row++) {
+			StopOrder stopOrder = listStopOrders.get(row);
+			StopDetail detail = new StopDetail(conf.getNbQuantities());
+
+			// Get stopId and check its known.
+			detail.stopId = stopOrder.stopId;
+			Integer stopRow = stopIdMap.get(detail.stopId);
+			if (stopRow == null) {
+				throw new RuntimeException("Unknown " + PredefinedTags.STOP_ID + " found in route-order table on row " + (row + 1) + ".");
+			}
+		//	detail.temporary.row = stopRow;
+
+			// Get vehicleId and check its known.
+			detail.vehicleId = stopOrder.vehicleId;
+			RowVehicleIndex rvi = vehicleIds.identifyVehicle(row, detail.vehicleId);
+			detail.temporary.rowVehicleIndex = rvi;
+			detail.vehicleName = dfn.vehicles.getName(vehiclesTable, rvi.row, rvi.vehicleIndex);
+
+			// Check for new vehicle.
+			if (api.stringConventions().equalStandardised(detail.vehicleId, currentVehicleId) == false) {
+				if (mapRouteDetails.get(detail.vehicleId) != null) {
+					throw new RuntimeException(PredefinedTags.VEHICLE_ID + " \"" + detail.vehicleId + "\" is not consecutive in route-order table on row " + (row + 1));
+				}
+
+				currentVehicleId = detail.vehicleId;
+				currentRoute = new RouteDetail(nq);
+				currentRoute.vehicleId = stopOrder.vehicleId;
+				currentRoute.vehicleName = detail.vehicleName;
+				for (int q = 0; q < nq; q++) {
+					currentRoute.capacity[q] = dfn.vehicles.getCapacity(vehiclesTable, rvi.row, q);
+				}
+				currentRoute.costPerKm = dfn.vehicles.getCost(vehiclesTable, rvi.row, CostType.COST_PER_KM);
+				currentRoute.costPerHour = dfn.vehicles.getCost(vehiclesTable, rvi.row, CostType.COST_PER_HOUR);
+
+				// check if vehicle exceeds the maximum number allowed by the type
+				if (rvi.vehicleExceedsMaximumInVehicleType) {
+					currentRoute.hasViolation = 1;
+				}
+				mapRouteDetails.put(detail.vehicleId, currentRoute);
+			}
+
+			// Fill in stop details.
+			StopsTableDefn stopDfn = dfn.stops;
+			detail.jobId = stopDfn.getJobId(jobs, stopRow);
+			detail.stopName = (String) jobs.getValueAt(stopRow, stopDfn.name);
+			detail.stopNumber = currentRoute.stops.size() + 1;
+			detail.stopAddress = (String) jobs.getValueAt(stopRow, stopDfn.address);
+			detail.stopLatLong = stopDfn.latLong.getLatLong(jobs, stopRow, false);
+			detail.stopDuration = stopDfn.getDuration(jobs, stopRow).getTotalMilliseconds();
+			detail.type = stopDfn.getStopType(jobs, stopRow).getKeyword();
+			ODLTime[] tw = stopDfn.getTW(jobs, stopRow);
+			if (tw != null) {
+				detail.startTimeWindow = (double) tw[0].getTotalMilliseconds();
+				detail.endTimeWindow = (double) tw[1].getTotalMilliseconds();
+			}
+		
+			// Get stop quantities.
+			for (int i = 0; i < conf.getNbQuantities(); i++) {
+				int value = dfn.stops.getQuantity(jobs, stopRow, i);
+				switch (detail.temporary.builtStopRec.getType()) {
+				case UNLINKED_DELIVERY:
+				case NORMAL_STOP:
+					// loaded at the depot
+					currentRoute.startQuantities[i] += value;
+
+					// unloaded on the route
+					detail.stopQuantities[i] = -value;
+					break;
+
+				case LINKED_PICKUP:
+				case UNLINKED_PICKUP:
+					// loaded on the route, not at the depot
+					detail.stopQuantities[i] = value;
+					break;
+
+				case LINKED_DELIVERY:
+					// unloaded on the route
+					detail.stopQuantities[i] = -value;
+					break;
+
+				}
+			}
+
+			// Add route details for this stop to the current route.
+			currentRoute.stops.add(detail);
+		}
+		
+		// Build the list of route details. No processRoute(...) here, so not adding dummy stops.
+		List<RouteDetail> routeDetails = new ArrayList<RouteDetail>();
+		for (Map.Entry<String, RouteDetail> idRouteDetail : mapRouteDetails.entrySet()) {
+
+			// get vehicle row and fill in vehicle details
+			RouteDetail routeDetail = idRouteDetail.getValue();
+			routeDetails.add(routeDetail);
+		}
+		
+		// Find the unassigned stops.
+		Set<String> loadedStopIds = api.stringConventions().createStandardisedSet();
+		for (RouteDetail routeDetail : routeDetails) {
+			for (StopDetail stopDetail : routeDetail.stops) {
+				if (api.stringConventions().equalStandardised(stopDetail.type, VRPConstants.DEPOT) == false) {
+					loadedStopIds.add(stopDetail.stopId);
+				}
+			}
+		}
+
+		List<String> unassignedStopIds = new ArrayList<String>();
+		StopsTableDefn stopsTableDefn = dfn.stops;
+		int numberOfStops = jobs.getRowCount();
+		for (int row = 0; row < numberOfStops; row++) {
+			String stopId = stopsTableDefn.getId(jobs, row);
+			if (loadedStopIds.contains(stopId) == false) {
+				unassignedStopIds.add(stopId);
+			}
+		}
+		
+		// Build the jsprit vehicle route objects
+		ArrayList<VehicleRoute> jspritRoutes = new ArrayList<VehicleRoute>();
+		ArrayList<Job> unassignedJobs = new ArrayList<Job>();
+		buildJspritObjects(routeDetails, unassignedStopIds, jspritRoutes, unassignedJobs);
+		VehicleRoutingProblemSolution vrpsol= new VehicleRoutingProblemSolution(jspritRoutes, unassignedJobs, 0);
+		
+		// Create a solution analyser from the solution.
+		final VehicleRoutingProblem vrp = builtVRP.getJspritProblem();
+		SolutionAnalyser solutionAnalyser = new SolutionAnalyser(vrp, vrpsol, new SolutionAnalyser.DistanceCalculator() {
+
+            @Override
+            public double getDistance(String fromLocationId, String toLocationId) {
+                return vrp.getTransportCosts().getTransportCost(fromLocationId, toLocationId, 0.0, null, null);
+            }
+		
+        });
+		
+        
+		return routeDetails;
+	}
+	
+	// Build the vehicle routes and unassigned jobs from the stop orders table.
+	private void buildJspritObjects(List<RouteDetail> routeDetails,List<String> unassignedStopIds, List<VehicleRoute> vehicleRoutes, List<Job> unassignedJobs) {
+
+		// From the list of route details build the list of vehicle routes.
+		final VehiclesTableDfn vehiclesTableDfn = dfn.vehicles;
+		int numberOfRows = vehiclesTable.getRowCount();
+		for (final RouteDetail routeDetail : routeDetails) {
+			final String vehicleId = routeDetail.vehicleId;
+			List<Vehicle> vehicle = new ArrayList<>(1);
+			// How do I know which row? Have to do this to obtain the correct row in the vehicles table for buildVehiclesForType(...).
+			int rowInVehicleTypesTable = 0;
+			for (int row = 0; row < numberOfRows; row++) {
+				String baseId = vehiclesTableDfn.getBaseId(vehiclesTable, row);
+				if (vehicleId.contains(baseId)) {
+					rowInVehicleTypesTable = row;
+				}
+			}
+			
+			// Build each vehicle associated with a route individually.
+//			builtVRP.buildVehiclesForType(vehiclesTableDfn, vehiclesTable, rowInVehicleTypesTable, 1, new BuiltVRP.VehicleIdProvider() {
+//				@Override
+//			    public String getId(ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int numberToBuild) {
+//					return routeDetail.vehicleId;
+//					//return vehiclesTableDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, numberToBuild);
+//				}
+//			}, vehicle);
+			
+			VehicleRoute.Builder vehicleRouteBuilder = VehicleRoute.Builder.newInstance(vehicle.get(0));
+			vehicleRouteBuilder.setJobActivityFactory(builtVRP.getJspritProblem().getJobActivityFactory());
+			
+			// Go through all the stops on a route and add these to the vehicle route builder as service/job.
+			for (StopDetail stopDetail : routeDetail.stops) {
+				String stopDetailStopId = stopDetail.stopId;
+				VehicleRoutingProblem vrp = builtVRP.getJspritProblem();
+				Collection<Job> jobs = vrp.getJobs().values();
+				for (Job job : jobs) {
+					String jobId = job.getId();
+					if (stopDetailStopId.equals(jobId)) {
+						Service service = (Service) job;
+						vehicleRouteBuilder.addService(service);
+						
+						break;
+					}
+				}
+			}
+			
+			VehicleRoute vehicleRoute = vehicleRouteBuilder.build();
+			vehicleRoutes.add(vehicleRoute);
+		}
+		
+		// From the list of unassigned stop ids build the list of unassigned jobs.
+		for (String unassignedStopId : unassignedStopIds) {
+			VehicleRoutingProblem vrp = builtVRP.getJspritProblem();
+			Collection<Job> jobs = vrp.getJobs().values();
+			for (Job job : jobs) {
+				String jobId = job.getId();
+				if (unassignedStopId.equals(jobId)) {
+					unassignedJobs.add(job);
+					
+					break;
+				}
+			}
+		}
+	}
+
+	
+//	// Build a solution analyser from the VRP solution.
+//	public SolutionAnalyser buildSolutionAnalyser(VehicleRoutingProblemSolution vrpSolution) {
+//		// Create a solution analyser from the solution.
+//		final VehicleRoutingProblem vrp = builtVRP.getVrpProblem();
+//		SolutionAnalyser solutionAnalyser = new SolutionAnalyser(vrp, vrpSolution, new SolutionAnalyser.DistanceCalculator() {
+//
+//            @Override
+//            public double getDistance(String fromLocationId, String toLocationId) {
+//                return vrp.getTransportCosts().getTransportCost(fromLocationId, toLocationId, 0.0, null, null);
+//            }
+//		
+//        });
+//		
+//        return solutionAnalyser;
+//	}
+	
+	// Prints the statistics for a given solution using the solution analyser.
+	public void printStatistics(VehicleRoutingProblemSolution vrpSolution, SolutionAnalyser solutionAnalyser) {
+		for (VehicleRoute vehicleRoute : vrpSolution.getRoutes()) {
+			System.out.println("------");
+            System.out.println("vehicleId: " + vehicleRoute.getVehicle().getId());
+            System.out.println("vehicleCapacity: " + vehicleRoute.getVehicle().getType().getCapacityDimensions() + " maxLoad: " + solutionAnalyser.getMaxLoad(vehicleRoute));
+            System.out.println("totalDistance: " + solutionAnalyser.getDistance(vehicleRoute));
+            System.out.println("waitingTime: " + solutionAnalyser.getWaitingTime(vehicleRoute));
+            System.out.println("load@beginning: " + solutionAnalyser.getLoadAtBeginning(vehicleRoute));
+            System.out.println("load@end: " + solutionAnalyser.getLoadAtEnd(vehicleRoute));
+            System.out.println("operationTime: " + solutionAnalyser.getOperationTime(vehicleRoute));
+            System.out.println("serviceTime: " + solutionAnalyser.getServiceTime(vehicleRoute));
+            System.out.println("transportTime: " + solutionAnalyser.getTransportTime(vehicleRoute));
+            System.out.println("transportCosts: " + solutionAnalyser.getVariableTransportCosts(vehicleRoute));
+            System.out.println("fixedCosts: " + solutionAnalyser.getFixedCosts(vehicleRoute));
+            System.out.println("capViolationOnRoute: " + solutionAnalyser.getCapacityViolation(vehicleRoute));
+            System.out.println("capViolation@beginning: " + solutionAnalyser.getCapacityViolationAtBeginning(vehicleRoute));
+            System.out.println("capViolation@end: " + solutionAnalyser.getCapacityViolationAtEnd(vehicleRoute));
+            System.out.println("timeWindowViolationOnRoute: " + solutionAnalyser.getTimeWindowViolation(vehicleRoute));
+            System.out.println("skillConstraintViolatedOnRoute: " + solutionAnalyser.hasSkillConstraintViolation(vehicleRoute));
+
+            System.out.println("dist@" + vehicleRoute.getStart().getLocationId() + ": " + solutionAnalyser.getDistanceAtActivity(vehicleRoute.getStart(),vehicleRoute));
+            System.out.println("timeWindowViolation@"  + vehicleRoute.getStart().getLocationId() + ": " + solutionAnalyser.getTimeWindowViolationAtActivity(vehicleRoute.getStart(), vehicleRoute));
+            for (TourActivity tourActivity : vehicleRoute.getActivities()){
+                System.out.println("--");
+                System.out.println("actType: " + tourActivity.getName() + " demand: " + tourActivity.getSize());
+                System.out.println("dist@" + tourActivity.getLocationId() + ": " + solutionAnalyser.getDistanceAtActivity(tourActivity,vehicleRoute));
+                System.out.println("load(before)@" + tourActivity.getLocationId() + ": " + solutionAnalyser.getLoadJustBeforeActivity(tourActivity,vehicleRoute));
+                System.out.println("load(after)@" + tourActivity.getLocationId() + ": " + solutionAnalyser.getLoadRightAfterActivity(tourActivity, vehicleRoute));
+                System.out.println("transportCosts@" + tourActivity.getLocationId() + ": " + solutionAnalyser.getVariableTransportCostsAtActivity(tourActivity,vehicleRoute));
+                System.out.println("capViolation(after)@" + tourActivity.getLocationId() + ": " + solutionAnalyser.getCapacityViolationAfterActivity(tourActivity,vehicleRoute));
+                System.out.println("timeWindowViolation@"  + tourActivity.getLocationId() + ": " + solutionAnalyser.getTimeWindowViolationAtActivity(tourActivity,vehicleRoute));
+                System.out.println("skillConstraintViolated@" + tourActivity.getLocationId() + ": " + solutionAnalyser.hasSkillConstraintViolationAtActivity(tourActivity, vehicleRoute));
+            }
+            System.out.println("--");
+            System.out.println("dist@" + vehicleRoute.getEnd().getLocationId() + ": " + solutionAnalyser.getDistanceAtActivity(vehicleRoute.getEnd(),vehicleRoute));
+            System.out.println("timeWindowViolation@"  + vehicleRoute.getEnd().getLocationId() + ": " + solutionAnalyser.getTimeWindowViolationAtActivity(vehicleRoute.getEnd(),vehicleRoute));
+        }
+
+        System.out.println("-----");
+        System.out.println("aggreate solution stats");
+        System.out.println("total freight moved: " + Capacity.addup(solutionAnalyser.getLoadAtBeginning(),solutionAnalyser.getLoadPickedUp()));
+        System.out.println("total no. picks at beginning: " + solutionAnalyser.getNumberOfPickupsAtBeginning());
+        System.out.println("total no. picks on routes: " + solutionAnalyser.getNumberOfPickups());
+        System.out.println("total picked load at beginnnig: " + solutionAnalyser.getLoadAtBeginning());
+        System.out.println("total picked load on routes: " + solutionAnalyser.getLoadPickedUp());
+        System.out.println("total no. deliveries at end: " + solutionAnalyser.getNumberOfDeliveriesAtEnd());
+        System.out.println("total no. deliveries on routes: " + solutionAnalyser.getNumberOfDeliveries());
+        System.out.println("total delivered load at end: " + solutionAnalyser.getLoadAtEnd());
+        System.out.println("total delivered load on routes: " + solutionAnalyser.getLoadDelivered());
+        System.out.println("total tp_distance: " + solutionAnalyser.getDistance());
+        System.out.println("total tp_time: " + solutionAnalyser.getTransportTime());
+        System.out.println("total waiting_time: " + solutionAnalyser.getWaitingTime());
+        System.out.println("total service_time: " + solutionAnalyser.getServiceTime());
+        System.out.println("total operation_time: " + solutionAnalyser.getOperationTime());
+        System.out.println("total twViolation: " + solutionAnalyser.getTimeWindowViolation());
+        System.out.println("total capViolation: " + solutionAnalyser.getCapacityViolation());
+        System.out.println("total fixedCosts: " + solutionAnalyser.getFixedCosts());
+        System.out.println("total variableCosts: " + solutionAnalyser.getVariableTransportCosts());
+        System.out.println("total costs: " + solutionAnalyser.getTotalCosts());
 	}
 
 }

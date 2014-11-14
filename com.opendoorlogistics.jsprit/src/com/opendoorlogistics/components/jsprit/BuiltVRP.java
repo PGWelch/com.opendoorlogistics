@@ -9,6 +9,7 @@ package com.opendoorlogistics.components.jsprit;
 import gnu.trove.map.hash.TObjectIntHashMap;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,13 +53,15 @@ import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn.StopType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.CostType;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;
 
 public class BuiltVRP implements TravelCostAccessor {
 	private VehicleRoutingProblem vrpProblem;
 	private LocationsList locs;
 	private double maxFixedVehicleCost = 0;
 	private VehicleRoutingTransportCostsImpl matrix;
-	private final Map<String,List<Integer>> jspritJobIdToRows;
+	private final Map<String,List<BuiltStopRec>> jspritJobIdToStopRecords;
+	private final Map<String,BuiltStopRec> stopIdToBuiltStopRecord;
 	private InputTablesDfn dfn;
 	private VRPConfig config;
 	private ODLDatastore<? extends ODLTable> ioDb;
@@ -66,7 +69,8 @@ public class BuiltVRP implements TravelCostAccessor {
 	
 	private BuiltVRP(ComponentExecutionApi api){
 		this.api = api;
-		jspritJobIdToRows = api.getApi().stringConventions().createStandardisedMap();
+		jspritJobIdToStopRecords = api.getApi().stringConventions().createStandardisedMap();
+		stopIdToBuiltStopRecord= api.getApi().stringConventions().createStandardisedMap();
 	}
 	
 	public enum TravelCostType {
@@ -81,6 +85,40 @@ public class BuiltVRP implements TravelCostAccessor {
 
 	}
 
+	public static class BuiltStopRec{
+		private final int rowNb;
+		private final String stopId;
+		private final StopType type;
+		private Job job;
+		
+		BuiltStopRec(int rowNb, String stopId, StopType type) {
+			this.rowNb = rowNb;
+			this.stopId = stopId;
+			this.type = type;
+		}
+
+		public Job getJSpritJob() {
+			return job;
+		}
+
+		private void setJspritJob(Job job) {
+			this.job = job;
+		}
+
+		public int getRowNbInStopsTable() {
+			return rowNb;
+		}
+
+		public String getStopIdInStopsTable() {
+			return stopId;
+		}
+
+		public StopType getType() {
+			return type;
+		}
+		
+		
+	}
 
 
 	/**
@@ -266,43 +304,49 @@ public class BuiltVRP implements TravelCostAccessor {
 		return builder.build();
 	}
 
-	private List<Vehicle> buildVehicles() {
+	private List<Vehicle> buildVehicles(Map<Integer,List<RowVehicleIndex>> overrideVehiclesToBuild) {
 		List<Vehicle> vehicles = new ArrayList<>();
 		final VehiclesTableDfn vDfn = dfn.vehicles;
 		ODLTableReadOnly table = ioDb.getTableByImmutableId(vDfn.tableId);
-		int nr = table.getRowCount();
+		
+		if(overrideVehiclesToBuild!=null){
+			int nr = table.getRowCount();
 
-		for (int row = 0; row < nr; row++) {
-
-			int number = vDfn.getNumber(table, row);
-			if(config.isInfiniteFleetSize()){
-				number = 1;
-			}
-			
-			buildVehiclesForType(vDfn, table, row, number,new VehicleIdProvider() {
-				
-				@Override
-				public String getId(ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int vehicleNb) {
-					return vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, vehicleNb);
+			for (int row = 0; row < nr; row++) {
+				int number = vDfn.getNumberOfVehiclesInType(table, row);
+				if (config.isInfiniteFleetSize()) {
+					number = 1;
 				}
-			}, vehicles);
+			   
+				buildVehiclesForType(vDfn, table, row, number,new VehicleIdProvider() {
+					@Override
+				    public String getId(ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int vehicleNb) {
+				    	return vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, vehicleNb);
+				    }
+				}, vehicles);
+			}			
+		}else{
+			for(final Map.Entry<Integer, List<RowVehicleIndex>> entry:overrideVehiclesToBuild.entrySet()){
+				buildVehiclesForType(vDfn, table, entry.getKey(), entry.getValue().size(),new VehicleIdProvider() {
+					int callNb=0;
+					
+					@Override
+				    public String getId(ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int vehicleNb) {
+				    	return entry.getValue().get(callNb++).id;
+				    }
+				}, vehicles);		
+			}
 		}
+		
 
 		return vehicles;
 	}
-
-	public interface VehicleIdProvider{
+	
+	private interface VehicleIdProvider {
 		String getId(ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int vehicleNb);
 	}
-	
-	/**
-	 * @param vDfn
-	 * @param vehicleTypesTable
-	 * @param rowInVehicleTypesTable
-	 * @param numberToBuild
-	 * @param vehicles
-	 */
-	public void buildVehiclesForType(VehiclesTableDfn vDfn, ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int numberToBuild, VehicleIdProvider idProvider, List<Vehicle> vehicles) {
+		 
+	private void buildVehiclesForType(VehiclesTableDfn vDfn, ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int numberToBuild, VehicleIdProvider idProvider, List<Vehicle> vehicles) {
 		// build type first
 		VehicleTypeImpl.Builder vehicleTypeBuilder = VehicleTypeImpl.Builder.newInstance(vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, 0));
 
@@ -325,7 +369,6 @@ public class BuiltVRP implements TravelCostAccessor {
 		VehicleType vehicleType = vehicleTypeBuilder.build();
 
 		for (int i = 0; i < numberToBuild; i++) {
-
 			// get id
 			String id = idProvider.getId(vehicleTypesTable, rowInVehicleTypesTable, i); //vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, i);
 
@@ -337,7 +380,7 @@ public class BuiltVRP implements TravelCostAccessor {
 			// vehicleBuilder.setStartLocationCoordinate(Coordinate.newInstance(start.getLongitude(), start.getLatitude()));
 			vehicleBuilder.setStartLocationId(ends[0]!=null? locs.addLatLong(ends[0]): VRPConstants.NOWHERE);
 			vehicleBuilder.setEndLocationId(ends[1] !=null?locs.addLatLong(ends[1]): VRPConstants.NOWHERE);
-			
+	   
 			// always set this as we always have depot stops - they just might be dummy
 			vehicleBuilder.setReturnToDepot(true);
 
@@ -349,7 +392,6 @@ public class BuiltVRP implements TravelCostAccessor {
 			}
 
 			vehicles.add(vehicleBuilder.build());
-
 		}
 	}
 
@@ -357,8 +399,12 @@ public class BuiltVRP implements TravelCostAccessor {
 //		return stopIdToRow.get(id);
 //	}
 
-	int getStopRow(JobActivity jobActivity){
-		List<Integer> rows = jspritJobIdToRows.get(jobActivity.getJob().getId());
+	BuiltStopRec getBuiltStop(String stopId){
+		return stopIdToBuiltStopRecord.get(stopId);
+	}
+	
+	BuiltStopRec getBuiltStop(JobActivity jobActivity){
+		List<BuiltStopRec> rows = jspritJobIdToStopRecords.get(jobActivity.getJob().getId());
 		if(rows==null){
 			throw new RuntimeException("Unknown " + PredefinedTags.STOP_ID + " or " + PredefinedTags.JOB_ID + ": " + jobActivity.getJob().getId());
 		}
@@ -367,19 +413,16 @@ public class BuiltVRP implements TravelCostAccessor {
 			return rows.get(0);
 		}
 		
-		ODLTableReadOnly stops = ioDb.getTableByImmutableId(dfn.stops.tableId);
-		for(int row:rows){
-			StopType type = dfn.stops.getStopType(stops, row);
-			if(type == StopType.LINKED_PICKUP && PickupActivity.class.isInstance(jobActivity)){
-				return row;
-			}
-			
-			if(type == StopType.LINKED_PICKUP && DeliveryActivity.class.isInstance(jobActivity)){
-				return row;
-			}
+		if(rows.size()>1 && PickupActivity.class.isInstance(jobActivity)){
+			return rows.get(0);
 		}
-		
-		return -1;
+
+		if(rows.size()>1 && DeliveryActivity.class.isInstance(jobActivity)){
+			return rows.get(1);
+		}
+
+
+		return null;
 	}
 	
 //	int getVehicleRowById(String id) {
@@ -392,34 +435,33 @@ public class BuiltVRP implements TravelCostAccessor {
 
 
 	
-	private List<Job> buildJobs(Set<String> jobIdFilter) {
+	private List<Job> buildJobs() {
 		ArrayList<Job> ret = new ArrayList<>();
 
 		// do single stop jobs first
-		StopsTableDefn jdfn = dfn.stops;
-		ODLTableReadOnly table = ioDb.getTableByImmutableId(jdfn.tableId);
-		int nr = table.getRowCount();
+		StopsTableDefn stopsTableDfn = dfn.stops;
+		ODLTableReadOnly stopsTable = ioDb.getTableByImmutableId(stopsTableDfn.tableId);
+		int nr = stopsTable.getRowCount();
 		for (int row = 0; row < nr; row++) {
 	
 			// get type
-			StopType type = jdfn.getStopType(table, row);
+			StopType type = stopsTableDfn.getStopType(stopsTable, row);
 			if (type.getNbStopsInJob() == 1) {
-				String id = jdfn.getId(table, row);
-				
-				// filter if one is set
-				if(jobIdFilter!=null && jobIdFilter.contains(id)==false){
-					continue;
-				}
-				
-				// save jsprit job id to row
-				if(jspritJobIdToRows.get(id)!=null){
-					// this should probably be caught on earlier validation anyway...
+				String id = stopsTableDfn.getId(stopsTable, row);
+
+				// stop id is the same as job id for a single stop - check both are unique
+				if(jspritJobIdToStopRecords.get(id)!=null || stopIdToBuiltStopRecord.get(id)!=null){
 					throw new RuntimeException("Duplicate stop id " + id);
 				}
-				ArrayList<Integer> rows = new ArrayList<>(1);
-				rows.add(row);
-				jspritJobIdToRows.put(id, rows);
 				
+				// add the built stop record
+				ArrayList<BuiltStopRec> rows = new ArrayList<>();
+				BuiltStopRec builtStopRec = new BuiltStopRec(row, id, type);
+				rows.add(builtStopRec);
+				jspritJobIdToStopRecords.put(id, rows);
+				stopIdToBuiltStopRecord.put(id, builtStopRec);
+				
+				// create the correct type of single stop
 				Service.Builder builder = null;
 				switch (type) {
 				case NORMAL_STOP:
@@ -438,47 +480,41 @@ public class BuiltVRP implements TravelCostAccessor {
 					throw new RuntimeException();
 				}
 
-				ret.add(buildStop(table, row, jdfn, builder));
+				// built and save the jsprit stop
+				builtStopRec.setJspritJob(buildStop(stopsTable, row, stopsTableDfn, builder));
+				ret.add(builtStopRec.getJSpritJob());
 			}
 		}
 
 		// do linked stops jobs
-		Map<String,List<Integer>> multistops = jdfn.getGroupedByMultiStopJob(table);
+		Map<String,List<Integer>> multistops = stopsTableDfn.getGroupedByMultiStopJob(stopsTable);
 		for (Map.Entry<String, List<Integer>> entry : multistops.entrySet()) {
 			
 			String shipmentId= entry.getKey();
 			
-			// filter if one is set
-			if(jobIdFilter!=null && jobIdFilter.contains(shipmentId)==false){
-				continue;
-			}
-			
 			Shipment.Builder builder = Shipment.Builder.newInstance(shipmentId);
 			
-			// save jsprit job id to rows
-			if(jspritJobIdToRows.get(shipmentId)!=null){
-				throw new RuntimeException("Duplicate stop id or job id " + shipmentId);				
-			}
-			jspritJobIdToRows.put(shipmentId, entry.getValue());
-			
+
+			// loop over pickup then delivery
+			ArrayList<BuiltStopRec> recs = new ArrayList<BuiltVRP.BuiltStopRec>();
 			for (int i = 0; i <= 1; i++) {
 				int row = entry.getValue().get(i);
 
-				ODLTime serviceTime = jdfn.getDuration(table, row);
-				LatLong ll = jdfn.latLong.getLatLong(table, row,false);
+				ODLTime serviceTime = stopsTableDfn.getDuration(stopsTable, row);
+				LatLong ll = stopsTableDfn.latLong.getLatLong(stopsTable, row,false);
 				String locId = locs.addLatLong(ll);
 
-				// service time and location
+				// service time and location	
 				if (i == 0) {
 					builder.setPickupServiceTime(serviceTime.getTotalMilliseconds());
-					builder.setPickupLocation(locId);
+					builder.setPickupLocationId(locId);
 				} else {
 					builder.setPickupServiceTime(serviceTime.getTotalMilliseconds());
-					builder.setDeliveryLocation(locId);
+					builder.setDeliveryLocationId(locId);
 				}
 
 				// time window
-				ODLTime[] tw = jdfn.getTW(table, row);
+				ODLTime[] tw = stopsTableDfn.getTW(stopsTable, row);
 				if (tw != null) {
 					TimeWindow twObj = new TimeWindow(tw[0].getTotalMilliseconds(), tw[1].getTotalMilliseconds());
 					if (i == 0) {
@@ -487,12 +523,24 @@ public class BuiltVRP implements TravelCostAccessor {
 						builder.setDeliveryTimeWindow(twObj);
 					}
 				}
+				
+				// get the individual stop id and check unique
+				String stopId = stopsTableDfn.getId(stopsTable, row);
+				if(stopIdToBuiltStopRecord.get(stopId)!=null){
+					throw new RuntimeException("Duplicate stop id " + stopId);				
+				}
+								
+				// create built stop record
+				BuiltStopRec rec=  new BuiltStopRec(row, stopId, i==0?StopType.LINKED_PICKUP : StopType.LINKED_DELIVERY);
+				stopIdToBuiltStopRecord.put(stopId, rec);
+				recs.add(rec);
 			}
+			
 
 			// validate and set quantities
 			List<Integer> rows = entry.getValue();
-			int [] quant1 = jdfn.getQuantities(table, rows.get(0));
-			int [] quant2 = jdfn.getQuantities(table, rows.get(1));
+			int [] quant1 = stopsTableDfn.getQuantities(stopsTable, rows.get(0));
+			int [] quant2 = stopsTableDfn.getQuantities(stopsTable, rows.get(1));
 			for(int q = 0 ; q<quant1.length ; q++){
 				if(quant1[q]!=quant2[q]){
 					throw new RuntimeException("Job " + entry.getKey() + " has different quantities on its pickup and deliver stops.");
@@ -501,12 +549,25 @@ public class BuiltVRP implements TravelCostAccessor {
 				builder.addSizeDimension(q, quant1[q]);
 			}
 			
+			// save jsprit job id to builtstoprecs
+			if(jspritJobIdToStopRecords.get(shipmentId)!=null){
+				throw new RuntimeException("Duplicate job id " + shipmentId);				
+			}
+			jspritJobIdToStopRecords.put(shipmentId,recs);
+			
+			// finally build the shipment
+			Shipment shipment = builder.build();
+			for(BuiltStopRec rec:recs){
+				rec.setJspritJob(shipment);
+			}
+			ret.add(shipment);
+			
 		}
 
 		return ret;
 	}
 
-	private void buildProblem(ODLDatastore<? extends ODLTable> ioDb, VRPConfig config,Set<String> jobIdFilter, VehicleRoutingTransportCostsImpl preCalculatedMatrix,ComponentExecutionApi api) {
+	private void buildProblem(ODLDatastore<? extends ODLTable> ioDb, VRPConfig config,Map<Integer,List<RowVehicleIndex>> overrideVehiclesToBuild,ComponentExecutionApi api) {
 
 //		// ensure we can't have stops with the depot names
 //		stopIdToRow.put(VRPComponent.START_DEPOT_ID, null);
@@ -516,53 +577,44 @@ public class BuiltVRP implements TravelCostAccessor {
 		this.config = config;
 		VehicleRoutingProblem.Builder vrpBuilder = VehicleRoutingProblem.Builder.newInstance();
 		
-		if (config.isDeliveriesBeforePickups()) {
-			vrpBuilder.addConstraint(new ServiceDeliveriesFirstConstraint());
-		}
+//		 P.S. This code is currently not activated/enabled. Does not work with jsprit library v1.4.2 due to
+//		 addConstraint(...) not being in VehicleRoutingProblem.Builder class. Needs to be activated/enabled
+//		 properly in the future.
+//		 if (config.isDeliveriesBeforePickups()) {
+//			vrpBuilder.addConstraint(new ServiceDeliveriesFirstConstraint());
+//		}
+		
 
-		if (config.isInfiniteFleetSize()) {
+		if (config.isInfiniteFleetSize() && overrideVehiclesToBuild==null) {
 			vrpBuilder.setFleetSize(FleetSize.INFINITE);
 		} else {
 			vrpBuilder.setFleetSize(FleetSize.FINITE);
 		}
 
 		// build vehicles
-		vrpBuilder.addAllVehicles(buildVehicles());
+		vrpBuilder.addAllVehicles(buildVehicles(overrideVehiclesToBuild));
 		vrpBuilder.setFleetSize(config.isInfiniteFleetSize() ? FleetSize.INFINITE : FleetSize.FINITE);
 
 		// build stops
-		vrpBuilder.addAllJobs(buildJobs(jobIdFilter));
+		vrpBuilder.addAllJobs(buildJobs());
 
-		// build travel matrix or use input matrix
-		if(preCalculatedMatrix!=null){
-			matrix = preCalculatedMatrix;
-		}else{
-			matrix = new VehicleRoutingTransportCostsImpl(config.getDistances(), api);			
-		}
+		// build travel matrix 
+		matrix = new VehicleRoutingTransportCostsImpl(config.getDistances(), api);			
+		
 		vrpBuilder.setRoutingCost(matrix);
-
-		/*
-		 * add penalty vehicles para1 is a penalty-factor - variable costs are penalty-factor times higher than in the original vehicle type para2 is
-		 * an absolute penalty-fixed costs value - if fixed costs are 0.0 in the original vehicle type, multiplying it with penalty factor does not
-		 * make much sense (at least has no effect), thus penalty fixed costs are an absolute penalty value
-		 */
-		if(config.isInfiniteFleetSize()==false){
-			double penaltyCost = Math.max(5000, maxFixedVehicleCost);
-			vrpBuilder.addPenaltyVehicles(5.0, penaltyCost);			
-		}
 
 		vrpProblem = vrpBuilder.build();
 	}
 
-	public static BuiltVRP build(ODLDatastore<? extends ODLTable> ioDb, VRPConfig config, ComponentExecutionApi api) {
+	public static BuiltVRP build(ODLDatastore<? extends ODLTable> ioDb, VRPConfig config,Map<Integer,List<RowVehicleIndex>> overrideVehiclesToBuild, ComponentExecutionApi api) {
 		BuiltVRP ret = new BuiltVRP(api);
 		ret.locs = new LocationsList();
-		ret.buildProblem(ioDb, config,null, null,api);
+		ret.buildProblem(ioDb, config,overrideVehiclesToBuild,api);
 		return ret;
 	}
 	
 
-	public VehicleRoutingProblem getVrpProblem() {
+	public VehicleRoutingProblem getJspritProblem() {
 		return vrpProblem;
 	}
 
@@ -597,20 +649,9 @@ public class BuiltVRP implements TravelCostAccessor {
 		return matrix.getTime(LocationsList.toId(from), LocationsList.toId(to));
 	}
 
-	public Set<String> getJobIds(){
-		return jspritJobIdToRows.keySet();
-	}
+//	public Set<String> getJobIds(){
+//		return jspritJobIdToRows.keySet();
+//	}
 	
-	/**
-	 * Build a subset problem containing only the single job
-	 * @param jobid
-	 * @return
-	 */
-	public BuiltVRP buildFilteredJobSubset(Set<String> jobids){
 
-		BuiltVRP ret = new BuiltVRP(api);
-		ret.locs = new LocationsList();
-		ret.buildProblem(ioDb, config,jobids,matrix, api);
-		return ret;
-	}
 }

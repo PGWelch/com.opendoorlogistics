@@ -9,9 +9,13 @@ package com.opendoorlogistics.components.jsprit.solution;
 import java.util.ArrayList;
 import java.util.List;
 
+import jsprit.core.problem.solution.route.VehicleRoute;
+import jsprit.core.problem.vehicle.Vehicle;
+
 import com.opendoorlogistics.components.jsprit.RowWriter;
 import com.opendoorlogistics.components.jsprit.BuiltVRP.TravelCostType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.RouteDetailsTableDfn;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;
 
 public class RouteDetail {
 	final public long [] capacity;
@@ -36,6 +40,7 @@ public class RouteDetail {
 	public String vehicleId;
 	public String vehicleName;	
 	public double waitingTime=0;
+	public TemporaryRouteInto temp = new TemporaryRouteInto();
 	
 	public RouteDetail(int nbQuantities) {
 		capacity= new long[nbQuantities];
@@ -43,6 +48,12 @@ public class RouteDetail {
 		startQuantities = new long[nbQuantities];
 		pickedUpQuantities = new long[nbQuantities];
 		deliveredQuantities = new long[nbQuantities];
+	}
+	
+	public static class TemporaryRouteInto{
+		public RowVehicleIndex rvi;
+		public Vehicle jspritVehicle;
+		public VehicleRoute jspritRoute;
 	}
 	
 	public void writeDetails(RouteDetailsTableDfn dfn, RowWriter w) {
