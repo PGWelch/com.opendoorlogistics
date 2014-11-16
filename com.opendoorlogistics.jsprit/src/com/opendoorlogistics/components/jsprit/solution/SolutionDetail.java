@@ -6,6 +6,9 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.jsprit.solution;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.opendoorlogistics.components.jsprit.RowWriter;
 import com.opendoorlogistics.components.jsprit.BuiltVRP.TravelCostType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.SolutionDetailsTableDfn;
@@ -24,6 +27,7 @@ public class SolutionDetail {
 	public double timeWindowViolation=0;
 	public double [] travelCosts = new double[TravelCostType.values().length];
 	public double waitingTime=0;
+	public final List<RouteDetail> routes = new ArrayList<RouteDetail>();
 	
 	public SolutionDetail(int nbQuantities) {
 		capacityViolation = new long[nbQuantities];

@@ -6,6 +6,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.jsprit.solution;
 
+import jsprit.core.problem.solution.route.activity.TourActivity;
+
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.components.jsprit.BuiltVRP.BuiltStopRec;
@@ -20,9 +22,10 @@ public class StopDetail extends StopOrder {
 		public double latestArrival = Double.POSITIVE_INFINITY;
 		public String locationId;
 		public RowVehicleIndex rowVehicleIndex;
-		public boolean isUnbalancedPickupDelivery;
+	//	public boolean isUnbalancedPickupDelivery;
 		public BuiltStopRec builtStopRec;
 		public int rowNumberInStopOrderTable;
+		public TourActivity jspritTourActivity;
 	}
 
 	final public long[] arrivalQuantities;

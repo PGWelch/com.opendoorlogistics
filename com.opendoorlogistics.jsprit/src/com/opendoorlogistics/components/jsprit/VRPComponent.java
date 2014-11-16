@@ -202,53 +202,10 @@ public class VRPComponent implements ODLComponent {
 			
 		}else if (mode == VRPConstants.SOLUTION_DETAILS_MODE) {
 
-			// Create the object which identifies vehicle ids
-			VehicleIds vehicleIds = new VehicleIds(api.getApi(), conf, dfn, ioDb.getTableByImmutableId(dfn.vehicles.tableId));
-			
-			// Get all distinct vehicle ids which need to be built
-			TreeMap<Integer, List<RowVehicleIndex>> vehiclesToBuild = new TreeMap<>();
-			Set<String> processedIds = api.getApi().stringConventions().createStandardisedSet();
-			ODLTableReadOnly stopOrderTable=ioDb.getTableByImmutableId(dfn.stopOrder.tableId);
-			for (int row = 0; row < stopOrderTable.getRowCount(); row++) {
-				String vehicleId =dfn.stopOrder.getVehicleId(stopOrderTable, row);
-				if(processedIds.contains(vehicleId)){
-					continue;
-				}
-				
-				RowVehicleIndex rvi = vehicleIds.identifyVehicle(row, vehicleId);
-				rvi.id = vehicleId;
-				List<RowVehicleIndex> withinType = vehiclesToBuild.get(rvi.row);
-				if(withinType == null){
-					withinType = new ArrayList<>();
-					vehiclesToBuild.put(rvi.row, withinType);
-				}
-				withinType.add(rvi);
-				processedIds.add(vehicleId);
-			}
-			
-			// always build the VRP to (a) call matrix generation and (b) create the exact neccessary vehicles
-			BuiltVRP built = BuiltVRP.build(ioDb, conf,vehiclesToBuild, api);
-
-			// output details from the pre-existing stop order table
-			CalculateRouteDetails calculator = new CalculateRouteDetails(api, conf, ioDb, built);
-			
-//			//---------------------------
-//			// For testing. Can be removed until required.
-//			List<VehicleRoute> vehicleRoutes = new ArrayList<>();
-//			List<Job> unassignedJobs = new ArrayList<>();
-//			calculator.buildVehicleRoutesAndUnassignedJobs(ioDb.getTableByImmutableId(dfn.stopOrder.tableId), vehicleRoutes, unassignedJobs);
-//
-//			VehicleRoutingProblemSolution vrpSolution = calculator.buildVRPSolution(vehicleRoutes, unassignedJobs);
-//			
-//			SolutionAnalyser solutionAnalyser = calculator.buildSolutionAnalyser(vrpSolution);
-//			
-//			calculator.printStatistics(vrpSolution, solutionAnalyser);
-//			
-//			//---------------------------
-			
-			List<RouteDetail> details = calculator.calculateRouteDetails(stopOrderTable);
-			SolutionDetail solutionDetail = calculator.calculateSolutionDetails(api.getApi(), conf, ioDb.getTableByImmutableId(dfn.stops.tableId), details);
-
+			CalculateRouteDetailsV2 calculator = new CalculateRouteDetailsV2(conf, api, ioDb);			
+			SolutionDetail solutionDetail =calculator.getSolutionDetail();
+			List<RouteDetail> details =solutionDetail.routes;
+					
 			// Output all details
 			OutputTablesDfn outDfn = new OutputTablesDfn(odlApi, conf);
 			ODLTable solutionDetailsTable = outputDb.getTableAt(outDfn.solutionDetails.tableIndex);
