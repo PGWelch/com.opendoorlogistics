@@ -10,8 +10,8 @@ import jsprit.core.problem.solution.route.activity.TourActivity;
 
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
-import com.opendoorlogistics.components.jsprit.BuiltVRP.BuiltStopRec;
-import com.opendoorlogistics.components.jsprit.BuiltVRP.TravelCostType;
+import com.opendoorlogistics.components.jsprit.VRPBuilder.BuiltStopRec;
+import com.opendoorlogistics.components.jsprit.VRPBuilder.TravelCostType;
 import com.opendoorlogistics.components.jsprit.RowWriter;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.StopDetailsTableDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;

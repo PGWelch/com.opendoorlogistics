@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.opendoorlogistics.components.jsprit.RowWriter;
-import com.opendoorlogistics.components.jsprit.BuiltVRP.TravelCostType;
+import com.opendoorlogistics.components.jsprit.VRPBuilder.TravelCostType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.SolutionDetailsTableDfn;
 
 public class SolutionDetail {

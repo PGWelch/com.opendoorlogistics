@@ -12,7 +12,7 @@ import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.components.jsprit.VRPConfig;
-import com.opendoorlogistics.components.jsprit.BuiltVRP.TravelCostType;
+import com.opendoorlogistics.components.jsprit.VRPBuilder.TravelCostType;
 
 public class RouteDetailsTableDfn extends TableDfn{
 	public final int []capacity;

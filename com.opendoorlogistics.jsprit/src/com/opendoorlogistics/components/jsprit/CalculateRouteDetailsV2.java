@@ -16,8 +16,6 @@ import jsprit.core.problem.job.Service;
 import jsprit.core.problem.job.Shipment;
 import jsprit.core.problem.solution.VehicleRoutingProblemSolution;
 import jsprit.core.problem.solution.route.VehicleRoute;
-import jsprit.core.problem.solution.route.activity.End;
-import jsprit.core.problem.solution.route.activity.Start;
 import jsprit.core.problem.solution.route.activity.TourActivity;
 import jsprit.core.problem.solution.route.activity.TourActivity.JobActivity;
 import jsprit.core.problem.vehicle.Vehicle;
@@ -25,12 +23,14 @@ import jsprit.core.problem.vehicle.Vehicle;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.ODLTime;
-import com.opendoorlogistics.components.jsprit.BuiltVRP.BuiltStopRec;
-import com.opendoorlogistics.components.jsprit.BuiltVRP.TravelCostType;
+import com.opendoorlogistics.components.jsprit.VRPBuilder.BuiltStopRec;
+import com.opendoorlogistics.components.jsprit.VRPBuilder.TravelCostType;
+import com.opendoorlogistics.components.jsprit.VRPConfig.BooleanOptions;
 import com.opendoorlogistics.components.jsprit.solution.RouteDetail;
 import com.opendoorlogistics.components.jsprit.solution.SolutionDetail;
 import com.opendoorlogistics.components.jsprit.solution.StopDetail;
@@ -40,20 +40,23 @@ import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;
 
 public class CalculateRouteDetailsV2 {
+	private final ComponentExecutionApi componentApi;
 	private final ODLApi odlApi;
 	private final InputTablesDfn dfn;
 	private final VRPConfig config;
 	private final ODLTableReadOnly jobsTable;
 	private final ODLTableReadOnly vehiclesTable;
 	private final ODLTableReadOnly stopOrderTable;
-	private final BuiltVRP builtProblem;
+	private final VRPBuilder builtProblem;
 	// private final Map<String, Integer> stopIdMap;
 	private final Map<String, RouteDetail> vehicleIdToRouteDetails;
+	private final Map<String,StopDetail> loadedStopsByStopId;
 	private final VehicleRoutingProblemSolution jspritSol;
 	private final SolutionAnalyser jspritSA;
 	private final SolutionDetail sd;
 
 	public CalculateRouteDetailsV2(VRPConfig conf, ComponentExecutionApi api, ODLDatastore<? extends ODLTable> ioDb) {
+		componentApi = api;
 		odlApi = api.getApi();
 		dfn = new InputTablesDfn(api.getApi(), conf);
 		config = conf;
@@ -61,7 +64,7 @@ public class CalculateRouteDetailsV2 {
 		vehiclesTable = ioDb.getTableByImmutableId(dfn.vehicles.tableId);
 		stopOrderTable = ioDb.getTableByImmutableId(dfn.stopOrder.tableId);
 		sd = new SolutionDetail(config.getNbQuantities());
-		
+
 		// build map of route details
 		vehicleIdToRouteDetails = buildEmptyRouteDetails();
 
@@ -69,7 +72,7 @@ public class CalculateRouteDetailsV2 {
 		builtProblem = buildVRPProblem(conf, api, dfn, ioDb);
 
 		// get the empty (i.e. without stats) stop objects
-		buildEmptyStopDetails();
+		loadedStopsByStopId = buildEmptyStopDetails();
 
 		// add stops for the depots
 		buildDepotStops();
@@ -82,19 +85,19 @@ public class CalculateRouteDetailsV2 {
 		Map.Entry<VehicleRoutingProblemSolution, SolutionAnalyser> tmp = buildJspritSolution();
 		jspritSol = tmp.getKey();
 		jspritSA = tmp.getValue();
-		
+
 		fillInStopStats();
-		
+
 		fillInRouteStats();
-		
+
 		fillInSolutionStats();
 	}
-	
 
 	private void fillInStopStats() {
 		for (final RouteDetail routeDetail : vehicleIdToRouteDetails.values()) {
 			VehicleRoute vr = routeDetail.temp.jspritRoute;
 			int n = routeDetail.stops.size();
+
 			for (int i = 0; i < n; i++) {
 				StopDetail stopDetail = routeDetail.stops.get(i);
 				TourActivity ta = stopDetail.temporary.jspritTourActivity;
@@ -102,21 +105,6 @@ public class CalculateRouteDetailsV2 {
 				if (ta == null) {
 					continue;
 				}
-
-				// if(stopDetail.type.equals(VRPConstants.DEPOT)){
-				//
-				// if(i==0){
-				// // start depot
-				// copyQuantities(jspritSA.getLoadAtBeginning(vr),stopDetail.leaveQuantities);
-				// copyQuantities(jspritSA.getCapacityViolationAtBeginning(vr),stopDetail.leaveCapacityViolation);
-				// }else{
-				// // end depot
-				// copyQuantities(jspritSA.getLoadAtEnd(vr),stopDetail.arrivalQuantities);
-				// copyQuantities(jspritSA.getCapacityViolationAtEnd(vr),stopDetail.arrivalCapacityViolation);
-				// }
-				// }
-				//
-				// else if (stopDetail.temporary.builtStopRec != null) {
 
 				// times
 				stopDetail.arrivalTime = ta.getArrTime();
@@ -130,7 +118,9 @@ public class CalculateRouteDetailsV2 {
 				Capacity violationBefore = Capacity.max(Capacity.Builder.newInstance().build(),
 						Capacity.subtract(before, routeDetail.temp.jspritVehicle.getType().getCapacityDimensions()));
 				copyQuantities(violationBefore, stopDetail.arrivalCapacityViolation);
-				copyQuantities(jspritSA.getLoadRightAfterActivity(ta, vr), stopDetail.leaveQuantities);
+				Capacity after = jspritSA.getLoadRightAfterActivity(ta, vr);
+				copyQuantities(after, stopDetail.leaveQuantities);
+				copyQuantities(Capacity.subtract(after, before), stopDetail.stopQuantities);
 				copyQuantities(jspritSA.getCapacityViolationAfterActivity(ta, vr), stopDetail.leaveCapacityViolation);
 
 				// check for quantity violations
@@ -139,11 +129,15 @@ public class CalculateRouteDetailsV2 {
 						stopDetail.hasViolation = 1;
 					}
 				}
-				// TO DO ... modify solution analyser to get distance & time
-				// from last stop, total travel time at stop etc...
-
+				
 				// travel costs
-				stopDetail.totalTravelCost[TravelCostType.DISTANCE_KM.ordinal()] = jspritSA.getDistanceAtActivity(ta, vr);
+				stopDetail.travelCost[TravelCostType.TIME.ordinal()] = jspritSA.getLastTransportTimeAtActivity(ta, vr);
+				stopDetail.travelCost[TravelCostType.DISTANCE_KM.ordinal()] = jspritSA.getLastTransportDistanceAtActivity(ta, vr);
+				stopDetail.travelCost[TravelCostType.COST.ordinal()] = jspritSA.getLastTransportCostAtActivity(ta, vr);
+				
+				// total travel costs
+				stopDetail.totalTravelCost[TravelCostType.TIME.ordinal()] = jspritSA.getTransportTimeAtActivity(ta,vr);
+				stopDetail.totalTravelCost[TravelCostType.DISTANCE_KM.ordinal()] = jspritSA.getDistanceAtActivity(ta, vr) ;
 				stopDetail.totalTravelCost[TravelCostType.COST.ordinal()] = jspritSA.getVariableTransportCostsAtActivity(ta, vr);
 
 				// check for violations
@@ -151,60 +145,114 @@ public class CalculateRouteDetailsV2 {
 						|| jspritSA.hasSkillConstraintViolationAtActivity(ta, vr) || stopDetail.timeWindowViolation > 0) {
 					stopDetail.hasViolation = 1;
 				}
-				// }
+
+			}
+			
+			// calculate incoming and outgoing paths
+			for (int i = 0; i < n; i++) {
+				for (int j = 0; j <= 1; j++) {
+					boolean outgoing = j == 0;
+					int prevIndx = outgoing ? i : i - 1;
+					int nextIndx = outgoing ? i + 1 : i;
+					if (prevIndx >= 0 && nextIndx < n) {
+						LatLong prevLL = routeDetail.stops.get(prevIndx).stopLatLong;
+						LatLong nextLL = routeDetail.stops.get(nextIndx).stopLatLong;
+						if (prevLL != null && nextLL != null) {
+							ODLGeom geom = null;
+							if (config.getBool(BooleanOptions.OUTPUT_STRAIGHT_LINES_BETWEEN_STOPS)) {
+								geom = odlApi.geometry().createLineGeometry(prevLL, nextLL);
+							} else {
+								geom = componentApi.calculateRouteGeom(config.getDistances(), prevLL, nextLL);
+							}
+							if (outgoing) {
+								routeDetail.stops.get(i).outgoingPath = geom;
+							} else {
+								routeDetail.stops.get(i).incomingPath = geom;
+							}
+						}
+					}
+
+				}
 			}
 		}
 	}
-	
+
 	private void fillInRouteStats() {
 		for (final RouteDetail rd : vehicleIdToRouteDetails.values()) {
 			VehicleRoute vr = rd.temp.jspritRoute;
-			
+
 			rd.travelCosts[TravelCostType.DISTANCE_KM.ordinal()] = jspritSA.getDistance(vr);
 			rd.travelCosts[TravelCostType.TIME.ordinal()] = jspritSA.getTransportTime(vr);
 			rd.travelCosts[TravelCostType.COST.ordinal()] = jspritSA.getVariableTransportCosts(vr);
 			rd.waitingTime = jspritSA.getWaitingTime(vr);
+			rd.timeWindowViolation = jspritSA.getTimeWindowViolation(vr);
 			copyQuantities(jspritSA.getCapacityViolation(vr), rd.capacityViolation);
 			copyQuantities(jspritSA.getLoadDelivered(vr), rd.deliveredQuantities);
 			copyQuantities(jspritSA.getLoadPickedUp(vr), rd.pickedUpQuantities);
 			copyQuantities(jspritSA.getLoadAtBeginning(vr), rd.startQuantities);
-			
+
 			rd.pickupsCount = jspritSA.getNumberOfPickups(vr);
 			rd.deliveriesCount = jspritSA.getNumberOfDeliveries(vr);
 			
-			for(StopDetail sd : rd.stops){
-				if(sd.hasViolation==1){
-					rd.hasViolation=1;
+			// start and end times
+			if(vr.getStart()!=null){
+				rd.startTime = vr.getStart().getEndTime();
+			}
+			if(vr.getEnd()!=null){
+				rd.endTime = vr.getEnd().getArrTime();
+			}
+			rd.time = rd.endTime - rd.startTime;
+			
+			// update hasViolation
+			for (StopDetail sd : rd.stops) {
+				if (sd.hasViolation == 1) {
+					rd.hasViolation = 1;
 				}
 			}
-			
-			if(jspritSA.hasBackhaulConstraintViolation(vr) || jspritSA.hasShipmentConstraintViolation(vr)||jspritSA.hasSkillConstraintViolation(vr)){
-				rd.hasViolation=1;
+
+			if (jspritSA.hasBackhaulConstraintViolation(vr) || jspritSA.hasShipmentConstraintViolation(vr) || jspritSA.hasSkillConstraintViolation(vr)) {
+				rd.hasViolation = 1;
 			}
 		}
 	}
-	
-	private void fillInSolutionStats(){
+
+	private void fillInSolutionStats() {
 		sd.routesCount = sd.routes.size();
 		copyQuantities(jspritSA.getCapacityViolation(), sd.capacityViolation);
-		sd.travelCosts[TravelCostType.DISTANCE_KM.ordinal()] =jspritSA.getDistance();
-		sd.travelCosts[TravelCostType.TIME.ordinal()] =jspritSA.getTransportTime();
-		sd.travelCosts[TravelCostType.COST.ordinal()] =jspritSA.getVariableTransportCosts();
+		sd.travelCosts[TravelCostType.DISTANCE_KM.ordinal()] = jspritSA.getDistance();
+		sd.travelCosts[TravelCostType.TIME.ordinal()] = jspritSA.getTransportTime();
+		sd.travelCosts[TravelCostType.COST.ordinal()] = jspritSA.getVariableTransportCosts();
 		sd.waitingTime = jspritSA.getWaitingTime();
+		sd.timeWindowViolation = jspritSA.getTimeWindowViolation();
+	
+		// total time
+		sd.time=0;
+		for(RouteDetail rd:sd.routes){
+			sd.time += rd.time;
+		}
+		
 		copyQuantities(jspritSA.getLoadDelivered(), sd.deliveredQuantities);
 		copyQuantities(jspritSA.getLoadPickedUp(), sd.pickedUpQuantities);
 		sd.pickupsCount = jspritSA.getNumberOfPickups();
 		sd.deliveriesCount = jspritSA.getNumberOfDeliveries();
-		
-		for(RouteDetail rd:sd.routes){
-			if(rd.hasViolation==1){
-				sd.hasViolation=1;
+
+		for (RouteDetail rd : sd.routes) {
+			if (rd.hasViolation == 1) {
+				sd.hasViolation = 1;
 			}
 		}
+
+		if (jspritSA.hasBackhaulConstraintViolation() || jspritSA.hasShipmentConstraintViolation() || jspritSA.hasSkillConstraintViolation()) {
+			sd.hasViolation = 1;
+		}
 		
-		if(jspritSA.hasBackhaulConstraintViolation() || jspritSA.hasShipmentConstraintViolation()||jspritSA.hasSkillConstraintViolation()){
-			sd.hasViolation=1;
-		}		
+		// unassigned stops
+		sd.unassignedStops=0;
+		for(BuiltStopRec stop:builtProblem.getBuiltStops()){
+			if(!loadedStopsByStopId.containsKey(stop.getStopIdInStopsTable())){
+				sd.unassignedStops++;
+			}
+		}
 	}
 
 	private static void copyQuantities(Capacity from, long[] to) {
@@ -330,21 +378,24 @@ public class CalculateRouteDetailsV2 {
 							}
 						}
 					}
-				} else if (Start.class.isInstance(activity) && i == 0) {
-					if (routeDetail.stops.size() > 0) {
-						StopDetail sd = routeDetail.stops.get(0);
-						if (sd.type.equals(VRPConstants.DEPOT)) {
-							sd.temporary.jspritTourActivity = activity;
-						}
-					}
-				} else if (End.class.isInstance(activity) && i == (n - 1)) {
-					if (routeDetail.stops.size() > 1) {
-						StopDetail sd = routeDetail.stops.get(routeDetail.stops.size() - 1);
-						if (sd.type.equals(VRPConstants.DEPOT)) {
-							sd.temporary.jspritTourActivity = activity;
-						}
-					}
+				} 
+			}
+			
+			// fill in start
+			int nsd = routeDetail.stops.size();
+			if (nsd> 0) {
+				StopDetail sd = routeDetail.stops.get(0);
+				if (sd.type.equals(VRPConstants.DEPOT)) {
+					sd.temporary.jspritTourActivity = routeDetail.temp.jspritRoute.getStart();
 				}
+			}
+			
+			// fill in end
+			if(nsd>1){
+				StopDetail sd = routeDetail.stops.get(nsd-1);
+				if (sd.type.equals(VRPConstants.DEPOT)) {
+					sd.temporary.jspritTourActivity = routeDetail.temp.jspritRoute.getEnd();
+				}				
 			}
 		}
 
@@ -372,16 +423,16 @@ public class CalculateRouteDetailsV2 {
 		VehicleRoutingProblemSolution sol = new VehicleRoutingProblemSolution(vehicleRoutes, unassignedJobs, 0);
 
 		// Create a solution analyser from the solution.
-		SolutionAnalyser analyser = new SolutionAnalyser(builtProblem.getJspritProblem(), jspritSol, new SolutionAnalyser.DistanceCalculator() {
+		SolutionAnalyser analyser = new SolutionAnalyser(builtProblem.getJspritProblem(), sol, new SolutionAnalyser.DistanceCalculator() {
 
 			@Override
 			public double getDistance(String fromLocationId, String toLocationId) {
-				return builtProblem.getJspritProblem().getTransportCosts().getTransportCost(fromLocationId, toLocationId, 0.0, null, null);
+				return builtProblem.getTravelDistanceKM(fromLocationId, toLocationId);
 			}
 
 		});
 
-		return new AbstractMap.SimpleEntry<VehicleRoutingProblemSolution, SolutionAnalyser>(sol,analyser);
+		return new AbstractMap.SimpleEntry<VehicleRoutingProblemSolution, SolutionAnalyser>(sol, analyser);
 	}
 
 	// private void findUnbalancedPickupDelivers() {
@@ -445,13 +496,16 @@ public class CalculateRouteDetailsV2 {
 	// }
 	// }
 
-	private void buildEmptyStopDetails() {
+	private Map<String,StopDetail> buildEmptyStopDetails() {
+		Map<String,StopDetail> ret = odlApi.stringConventions().createStandardisedMap();
+		
 		// parse route order table getting records for each stop in a list for
 		// each route
 		int n = stopOrderTable.getRowCount();
 		for (int stopOrderRow = 0; stopOrderRow < n; stopOrderRow++) {
 			StopDetail stopDetail = new StopDetail(config.getNbQuantities());
 			stopDetail.temporary.rowNumberInStopOrderTable = stopOrderRow;
+			stopDetail.stopId = dfn.stopOrder.getStopId(stopOrderTable, stopOrderRow);
 
 			// identify stop from the built problem
 			stopDetail.temporary.builtStopRec = builtProblem.getBuiltStop(stopDetail.stopId);
@@ -512,12 +566,15 @@ public class CalculateRouteDetailsV2 {
 
 			// add route details for this stop to the current route
 			routeDetail.stops.add(stopDetail);
+			ret.put(stopDetail.stopId, stopDetail);
 		}
-		
+
 		// fill in stops count
 		for (final RouteDetail routeDetail : vehicleIdToRouteDetails.values()) {
 			routeDetail.stopsCount = routeDetail.stops.size();
 		}
+		
+		return ret;
 	}
 
 	private Map<String, RouteDetail> buildEmptyRouteDetails() {
@@ -526,7 +583,7 @@ public class CalculateRouteDetailsV2 {
 
 		Map<String, RouteDetail> ret = odlApi.stringConventions().createStandardisedMap();
 		for (int row = 0; row < stopOrderTable.getRowCount(); row++) {
-			
+
 			// check if routedetails object already built
 			String vehicleId = dfn.stopOrder.getVehicleId(stopOrderTable, row);
 			if (ret.containsKey(vehicleId)) {
@@ -543,13 +600,19 @@ public class CalculateRouteDetailsV2 {
 			int vehicleTypeRow = detail.temp.rvi.row;
 			detail.vehicleName = dfn.vehicles.getName(vehiclesTable, vehicleTypeRow, detail.temp.rvi.vehicleIndex);
 
-			detail.vehicleName = detail.vehicleName;
 			for (int q = 0; q < config.getNbQuantities(); q++) {
 				detail.capacity[q] = dfn.vehicles.getCapacity(vehiclesTable, vehicleTypeRow, q);
 			}
 
 			detail.costPerKm = dfn.vehicles.getCost(vehiclesTable, vehicleTypeRow, CostType.COST_PER_KM);
 			detail.costPerHour = dfn.vehicles.getCost(vehiclesTable, vehicleTypeRow, CostType.COST_PER_HOUR);
+
+			// route time windows
+			ODLTime[] tw = dfn.vehicles.getTimeWindow(vehiclesTable, vehicleTypeRow);
+			if (tw != null) {
+				detail.startTimeWindow = (double) tw[0].getTotalMilliseconds();
+				detail.endTimeWindow = (double) tw[1].getTotalMilliseconds();
+			}
 			
 			// save
 			sd.routes.add(detail);
@@ -559,7 +622,7 @@ public class CalculateRouteDetailsV2 {
 		return ret;
 	}
 
-	private BuiltVRP buildVRPProblem(VRPConfig conf, ComponentExecutionApi api, InputTablesDfn dfn, ODLDatastore<? extends ODLTable> ioDb) {
+	private VRPBuilder buildVRPProblem(VRPConfig conf, ComponentExecutionApi api, InputTablesDfn dfn, ODLDatastore<? extends ODLTable> ioDb) {
 
 		// Get vehicle ids in the format expected by the VRP builder
 		TreeMap<Integer, List<RowVehicleIndex>> vehiclesToBuild = new TreeMap<>();
@@ -575,7 +638,7 @@ public class CalculateRouteDetailsV2 {
 
 		// build the VRP to (a) call matrix generation and (b) create the exact
 		// needed vehicles
-		BuiltVRP built = BuiltVRP.build(ioDb, conf, vehiclesToBuild, api);
+		VRPBuilder built = VRPBuilder.build(ioDb, conf, vehiclesToBuild, api);
 
 		// set the jsprit object onto the vehicle record
 		for (Vehicle vehicle : built.getJspritProblem().getVehicles()) {
@@ -583,8 +646,8 @@ public class CalculateRouteDetailsV2 {
 		}
 		return built;
 	}
-	
-	public SolutionDetail getSolutionDetail(){
+
+	public SolutionDetail getSolutionDetail() {
 		return sd;
 	}
 }

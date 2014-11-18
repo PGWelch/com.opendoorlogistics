@@ -13,38 +13,34 @@ import java.util.Map;
 import java.util.Set;
 
 import jsprit.core.analysis.SolutionAnalyser;
-import jsprit.core.problem.AbstractActivity;
 import jsprit.core.problem.Capacity;
 import jsprit.core.problem.VehicleRoutingProblem;
 import jsprit.core.problem.job.Job;
 import jsprit.core.problem.job.Service;
 import jsprit.core.problem.solution.VehicleRoutingProblemSolution;
 import jsprit.core.problem.solution.route.VehicleRoute;
-import jsprit.core.problem.solution.route.activity.TimeWindow;
 import jsprit.core.problem.solution.route.activity.TourActivity;
 import jsprit.core.problem.vehicle.Vehicle;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.components.PredefinedTags;
-import com.opendoorlogistics.api.distances.DistancesConfiguration.CalculationMethod;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.ODLTime;
-import com.opendoorlogistics.components.jsprit.BuiltVRP.TravelCostType;
+import com.opendoorlogistics.components.jsprit.VRPBuilder.TravelCostType;
 import com.opendoorlogistics.components.jsprit.VRPConfig.BooleanOptions;
 import com.opendoorlogistics.components.jsprit.solution.RouteDetail;
 import com.opendoorlogistics.components.jsprit.solution.SolutionDetail;
 import com.opendoorlogistics.components.jsprit.solution.StopDetail;
 import com.opendoorlogistics.components.jsprit.solution.StopOrder;
-import com.opendoorlogistics.components.jsprit.solution.StopDetail.TemporaryStopInfo;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.InputTablesDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn;
-import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn.StopType;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.CostType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;
 
@@ -53,13 +49,13 @@ public class CalculateRouteDetails {
 	private final ODLApi api;
 	private final InputTablesDfn dfn;
 	private final VRPConfig conf;
-	private final BuiltVRP builtVRP;
+	private final VRPBuilder builtVRP;
 	private final ODLTableReadOnly jobs;
 	private final ODLTableReadOnly vehiclesTable;
 	private final Map<String, Integer> stopIdMap;
 	private final VehicleIds vehicleIds;
 
-	public CalculateRouteDetails(ComponentExecutionApi api, VRPConfig config, ODLDatastore<? extends ODLTable> ioDb, BuiltVRP builtVRP) {
+	public CalculateRouteDetails(ComponentExecutionApi api, VRPConfig config, ODLDatastore<? extends ODLTable> ioDb, VRPBuilder builtVRP) {
 		dfn = new InputTablesDfn(api.getApi(), config);
 		this.cApi = api;
 		this.api = api.getApi();
@@ -263,7 +259,7 @@ public class CalculateRouteDetails {
 		return ret;
 	}
 
-	private void processRoute(BuiltVRP builtVRP, ODLTableReadOnly vehicles, RouteDetail route) {
+	private void processRoute(VRPBuilder builtVRP, ODLTableReadOnly vehicles, RouteDetail route) {
 		List<StopDetail> stops = route.stops;
 
 		// get vehicle time window
@@ -344,15 +340,15 @@ public class CalculateRouteDetails {
 				int indx = costType.ordinal();
 				switch (costType) {
 				case COST:
-					current.travelCost[indx] = builtVRP.getTravelCost(previous.stopLatLong, current.stopLatLong, route.costPerHour / (60 * 60 * 1000), route.costPerKm / 1000);
+				//	current.travelCost[indx] = builtVRP.getTravelCost(previous.stopLatLong, current.stopLatLong, route.costPerHour / (60 * 60 * 1000), route.costPerKm / 1000);
 					break;
 
 				case TIME:
-					current.travelCost[indx] = builtVRP.getTravelTime(previous.stopLatLong, current.stopLatLong);
+				//	current.travelCost[indx] = builtVRP.getTravelTime(previous.stopLatLong, current.stopLatLong);
 					break;
 
 				case DISTANCE_KM:
-					current.travelCost[indx] = builtVRP.getTravelDistance(previous.stopLatLong, current.stopLatLong);
+					//current.travelCost[indx] = builtVRP.getTravelDistance(previous.stopLatLong, current.stopLatLong);
 					break;
 				}
 				current.totalTravelCost[indx] = previous.totalTravelCost[indx] + current.travelCost[indx];

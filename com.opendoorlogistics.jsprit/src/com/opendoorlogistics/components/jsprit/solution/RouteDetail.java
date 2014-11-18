@@ -13,7 +13,7 @@ import jsprit.core.problem.solution.route.VehicleRoute;
 import jsprit.core.problem.vehicle.Vehicle;
 
 import com.opendoorlogistics.components.jsprit.RowWriter;
-import com.opendoorlogistics.components.jsprit.BuiltVRP.TravelCostType;
+import com.opendoorlogistics.components.jsprit.VRPBuilder.TravelCostType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.RouteDetailsTableDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;
 

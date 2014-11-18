@@ -55,7 +55,7 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.UIFactory.IntChangedListener;
-import com.opendoorlogistics.components.jsprit.BuiltVRP.BuiltStopRec;
+import com.opendoorlogistics.components.jsprit.VRPBuilder.BuiltStopRec;
 import com.opendoorlogistics.components.jsprit.demo.DemoBuilder;
 import com.opendoorlogistics.components.jsprit.solution.RouteDetail;
 import com.opendoorlogistics.components.jsprit.solution.SolutionDetail;
@@ -290,7 +290,7 @@ public class VRPComponent implements ODLComponent {
 	 * @param built
 	 */
 	private void runOptimiser(final ComponentExecutionApi api, ODLDatastore<? extends ODLTable> ioDb, VRPConfig conf, InputTablesDfn dfn) {
-		BuiltVRP built = BuiltVRP.build(ioDb, conf, null,api);
+		VRPBuilder built = VRPBuilder.build(ioDb, conf, null,api);
 		
 		api.postStatusMessage("Starting optimisation");
 		
@@ -362,7 +362,7 @@ public class VRPComponent implements ODLComponent {
 		}
 	}
 
-	private static List<StopOrder> getStopOrder(ODLApi api, ODLDatastore<? extends ODLTable> ioDb, VRPConfig conf, BuiltVRP built, VehicleRoutingProblemSolution bestSolution) {
+	private static List<StopOrder> getStopOrder(ODLApi api, ODLDatastore<? extends ODLTable> ioDb, VRPConfig conf, VRPBuilder built, VehicleRoutingProblemSolution bestSolution) {
 		ArrayList<StopOrder> ret = new ArrayList<>();
 		final InputTablesDfn dfn = new InputTablesDfn(api, conf);
 		ODLTableReadOnly jobsTable = ioDb.getTableByImmutableId(dfn.stops.tableId);

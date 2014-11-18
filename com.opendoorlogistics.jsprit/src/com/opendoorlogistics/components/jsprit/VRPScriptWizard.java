@@ -34,7 +34,7 @@ import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.TableFlags;
-import com.opendoorlogistics.components.jsprit.BuiltVRP.TravelCostType;
+import com.opendoorlogistics.components.jsprit.VRPBuilder.TravelCostType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.InputTablesDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.OutputTablesDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.RouteDetailsTableDfn;
