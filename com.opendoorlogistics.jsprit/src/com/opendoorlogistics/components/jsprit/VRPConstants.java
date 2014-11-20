@@ -27,10 +27,5 @@ public class VRPConstants {
 	
 	static final int DEFAULT_NB_ITERATIONS = 500;
 	
-	/**
-	 * Turn this on when we enable proper pick-up delivery
-	 */
-	public static final boolean ENABLE_PD = false;
-	
 	public static final boolean ROUTE_EDITING_SHOWS_STATS = true;
 }

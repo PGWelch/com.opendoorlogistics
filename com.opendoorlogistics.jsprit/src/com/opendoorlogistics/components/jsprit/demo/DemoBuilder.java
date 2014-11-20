@@ -19,16 +19,28 @@ import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.components.jsprit.VRPConfig;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.InputTablesDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn.StopType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.CostType;
 
 public class DemoBuilder {
+	private final static int MIN_STOP_START_TIME = 8;
+	private final static int MAX_STOP_END_TIME= 18;
 	private final Random random = new Random(123);
 	private final ArrayList<Integer> freelocs = new ArrayList<>();
 	private final ODLApi api;
+	private final DemoConfig demoConfig;
+	private final VRPConfig config;
+	private final ODLDatastore<? extends ODLTable> ioDb;
+	private final InputTablesDfn dfn;
 	
-	public DemoBuilder(ODLApi api) {
+	public DemoBuilder(ODLApi api,DemoConfig demoConfig, VRPConfig config, ODLDatastore<? extends ODLTable> ioDb) {
 		this.api = api;
+		this.demoConfig = demoConfig;
+		this.config = config;
+		this.ioDb = ioDb;
+		
+		dfn = new InputTablesDfn(api, config);
 		
 		for(int i =0;  i< DemoAddresses.size() ; i++){
 			freelocs.add(i);
@@ -43,18 +55,39 @@ public class DemoBuilder {
 		return ret;
 	}
 	
-	public void build(int nbStops, int nbVehicles, int nbDepots, int depotConcentration, VRPConfig config, ODLDatastore<? extends ODLTable> ioDb){
-		if(depotConcentration<1){
-			depotConcentration=1;
+	private String getRandomSkills(){
+		StringBuilder builder = new StringBuilder();
+		if(random.nextDouble() < 0.25){
+			builder.append("tail-lift");
+		}
+		
+		if(random.nextDouble() < 0.25){
+			if(builder.length()>0){
+				builder.append(", ");
+			}
+			builder.append("refridgerated");
+		}
+		
+		return builder.toString();
+	}
+	
+	private class StopSeed{
+		int addressIndex1=-1;
+		int addressIndex2=-1;
+	}
+	
+	public void build(){
+		if(demoConfig.depotConcentration<1){
+			demoConfig.depotConcentration=1;
 		}
 
-		if(nbDepots > 100){
-			nbDepots = 100;
+		if(demoConfig.nbDepots > 100){
+			demoConfig.nbDepots = 100;
 		}
 		
 		// choose depots
 		ArrayList<Integer> depots = new ArrayList<>();
-		for(int i =0 ; i < nbDepots && freelocs.size()>0 ; i++){
+		for(int i =0 ; i < demoConfig.nbDepots && freelocs.size()>0 ; i++){
 			depots.add(allocateAddress(0));
 //			if(i==0){
 //				depots.add(allocateAddress());				
@@ -64,7 +97,7 @@ public class DemoBuilder {
 		}
 
 		// assign vehicles evenly
-		int nbFreeVehicles = nbVehicles;
+		int nbFreeVehicles = demoConfig.nbVehicles;
 		int [] vehicleCountByDepot = new int[depots.size()];
 		while(nbFreeVehicles>0){
 			for(int i =0 ; i< vehicleCountByDepot.length && nbFreeVehicles>0;i++){
@@ -75,87 +108,196 @@ public class DemoBuilder {
 
 		// choose stop addresses
 		LatLong[] depotlls = getLatLongs(depots);
-		ArrayList<Integer> stops = new ArrayList<>();
-		for(int i =0 ; i<nbStops && freelocs.size()>0; i++){
-			stops.add(allocateNearestFreeAddress(depotConcentration,new LatLong[]{depotlls[random.nextInt(depotlls.length)]}));
+		ArrayList<StopSeed> stopSeeds = new ArrayList<>();
+		int nbChosenStops=0;
+		while(nbChosenStops< demoConfig.nbStops && freelocs.size()>0){
+			StopSeed ss = new StopSeed();
+			
+			LatLong [] centre = new LatLong[]{depotlls[random.nextInt(depotlls.length)]};
+			ss.addressIndex1= allocateNearestFreeAddress(demoConfig.depotConcentration,centre);
+			
+			nbChosenStops++;
+			if(demoConfig.includePDs && nbChosenStops< demoConfig.nbStops && freelocs.size()>0 && random.nextBoolean()){
+				ss.addressIndex2= allocateNearestFreeAddress(demoConfig.depotConcentration,centre);
+				nbChosenStops++;
+			}
+
+			stopSeeds.add(ss);
 		}
 		
-		// assume vehicles have 5,000 kilos each
+		// assume vehicles have 5,000 kilos each and get average stop quantity based on number of stops
 		long capacity = 5000;
-		long totalCapacity = nbVehicles * capacity;
-		double averageStopQuantity = (double)0.5 * totalCapacity / stops.size();
+		long totalCapacity = demoConfig.nbVehicles * capacity;
+		double averageStopQuantity = (double)0.5 * totalCapacity / stopSeeds.size();
 		
-		InputTablesDfn dfn = new InputTablesDfn(api, config);
 		
 		// write stops
 		ODLTable stopsTable = ioDb.getTableAt(dfn.stops.tableIndex);
 		api.tables().clearTable(stopsTable);
-		StopsTableDefn stopsDefn = dfn.stops;
-		for(int i =0 ; i< stops.size() ; i++){
-			int addressIndx = stops.get(i);
-			int row=stopsTable.createEmptyRow(-1);
-			stopsTable.setValueAt("Stop" + (i+1), row, stopsDefn.id);
-			stopsTable.setValueAt(DemoAddresses.companyName(addressIndx), row, stopsDefn.name);
-			stopsTable.setValueAt(DemoAddresses.address(addressIndx), row, stopsDefn.address);
-			stopsTable.setValueAt(DemoAddresses.position(addressIndx).getLatitude(), row, stopsDefn.latLong.latitude);
-			stopsTable.setValueAt(DemoAddresses.position(addressIndx).getLongitude(), row, stopsDefn.latLong.longitude);
-
-			// set quantities
-			for(int q=0 ; q<config.getNbQuantities() ; q++){
-				double quantity = averageStopQuantity + (random.nextDouble()-0.5) * averageStopQuantity * 0.5;
-				quantity = Math.ceil(quantity);
-				stopsTable.setValueAt(quantity, row, stopsDefn.quantityIndices[q]);				
+		for(int i =0 ; i< stopSeeds.size() ; i++){
+			StopSeed seed = stopSeeds.get(i);
+			if(seed.addressIndex2==-1){
+				createNonPDStop(averageStopQuantity, i, seed,stopsTable);	
+			}else{
+				createPDStops(averageStopQuantity, i, seed, stopsTable);
 			}
-			
-			// set service
-			int duration = 2 + random.nextInt(8);
-			ODLTime time = new ODLTime(0, duration);
-			stopsTable.setValueAt(time, row, stopsDefn.serviceDuration);
 
-			ODLTime startTime = new ODLTime(8 + random.nextInt(2), random.nextBoolean()?30:0);
-			ODLTime endTime = new ODLTime(18-random.nextInt(2), 0);
-			stopsTable.setValueAt(startTime, row, stopsDefn.tw.earliest);
-			stopsTable.setValueAt(endTime, row, stopsDefn.tw.latest);
-			
 		}
 
 		// write vehicles
 		ODLTable vehiclesTable = ioDb.getTableAt(dfn.vehicles.tableIndex);
-		VehiclesTableDfn vehiclesDfn = dfn.vehicles;
 		api.tables().clearTable(vehiclesTable);
-		for(int i =0 ; i< depots.size();i++){
-			// create row
-			int row=vehiclesTable.createEmptyRow(-1);
-			
-			// set name and id
-			String name = "Dep" + (i+1) + "-Veh";
-			vehiclesTable.setValueAt(name, row, vehiclesDfn.id);
-			vehiclesTable.setValueAt(name, row, vehiclesDfn.vehicleName);
 
-			// set position
-			LatLong ll = depotlls[i];
-			vehiclesTable.setValueAt(ll.getLatitude(), row, vehiclesDfn.start.latitude);
-			vehiclesTable.setValueAt(ll.getLongitude(), row, vehiclesDfn.start.longitude);
-			vehiclesTable.setValueAt(ll.getLatitude(), row, vehiclesDfn.end.latitude);
-			vehiclesTable.setValueAt(ll.getLongitude(), row, vehiclesDfn.end.longitude);
+	
+		for(int depotIndex =0 ; depotIndex< depots.size();depotIndex++){
 			
-			// set start and end times
-			ODLTime startTime = new ODLTime(8, 30);
-			ODLTime endTime = new ODLTime(18, 0);
-			vehiclesTable.setValueAt(startTime, row, vehiclesDfn.tw.earliest);
-			vehiclesTable.setValueAt(endTime, row, vehiclesDfn.tw.latest);
-			
-			// capacity
-			for(int q=0; q < config.getNbQuantities(); q++){
-				vehiclesTable.setValueAt(capacity, row, vehiclesDfn.capacities[q]);				
+			if(demoConfig.includeSkills){
+				// create individual vehicles so they each have different skills
+				for(int vehicle = 0 ; vehicle < vehicleCountByDepot[depotIndex]; vehicle++){
+					createVehicles(depotlls, capacity, vehiclesTable,depotIndex, 1, new Integer(vehicle+1).toString());									
+				}
+			}else{
+				// create vehicle types
+				createVehicles(depotlls, capacity, vehiclesTable,depotIndex, vehicleCountByDepot[depotIndex], "");				
 			}
-			
-			vehiclesTable.setValueAt(100.0, row, vehiclesDfn.costs[CostType.FIXED_COST.ordinal()]);
-			vehiclesTable.setValueAt(10.0, row, vehiclesDfn.costs[CostType.COST_PER_HOUR.ordinal()]);
-			vehiclesTable.setValueAt(0.25, row, vehiclesDfn.costs[CostType.COST_PER_KM.ordinal()]);
-			
-			vehiclesTable.setValueAt((long)vehicleCountByDepot[i], row, vehiclesDfn.number);
 		}
+		
+	
+	}
+
+	private void createVehicles(LatLong[] depotlls, long capacity,
+			ODLTable vehiclesTable,
+			int depotIndex, int nbVehicles, String namePostfix) {
+		VehiclesTableDfn vehiclesDfn = dfn.vehicles;
+		
+		// create row
+		int row=vehiclesTable.createEmptyRow(-1);
+		
+		// set name and id
+		String name = "Dep" + (depotIndex+1) + "-Veh" + namePostfix;
+		vehiclesTable.setValueAt(name, row, vehiclesDfn.id);
+		vehiclesTable.setValueAt(name, row, vehiclesDfn.vehicleName);
+
+		// set position
+		LatLong ll = depotlls[depotIndex];
+		vehiclesTable.setValueAt(ll.getLatitude(), row, vehiclesDfn.start.latitude);
+		vehiclesTable.setValueAt(ll.getLongitude(), row, vehiclesDfn.start.longitude);
+		vehiclesTable.setValueAt(ll.getLatitude(), row, vehiclesDfn.end.latitude);
+		vehiclesTable.setValueAt(ll.getLongitude(), row, vehiclesDfn.end.longitude);
+		
+		// set start and end times
+		ODLTime startTime = new ODLTime(8, 30);
+		ODLTime endTime = new ODLTime(18, 0);
+		vehiclesTable.setValueAt(startTime, row, vehiclesDfn.tw.earliest);
+		vehiclesTable.setValueAt(endTime, row, vehiclesDfn.tw.latest);
+		
+		// capacity
+		for(int q=0; q < config.getNbQuantities(); q++){
+			vehiclesTable.setValueAt(capacity, row, vehiclesDfn.capacities[q]);				
+		}
+		
+		// skills
+		if(demoConfig.includeSkills){
+			vehiclesTable.setValueAt(getRandomSkills(), row, vehiclesDfn.skills);
+		}
+		
+		vehiclesTable.setValueAt(100.0, row, vehiclesDfn.costs[CostType.FIXED_COST.ordinal()]);
+		vehiclesTable.setValueAt(10.0, row, vehiclesDfn.costs[CostType.COST_PER_HOUR.ordinal()]);
+		vehiclesTable.setValueAt(0.25, row, vehiclesDfn.costs[CostType.COST_PER_KM.ordinal()]);
+		
+		vehiclesTable.setValueAt((long)nbVehicles, row, vehiclesDfn.number);
+	}
+
+	private void createPDStops(double averageStopQuantity, int i, StopSeed seed, ODLTable stopsTable) {
+		StopsTableDefn stopsDefn = dfn.stops;
+
+		// create the pickup
+		int row=stopsTable.createEmptyRow(-1);
+		
+		stopsTable.setValueAt("Pickup" + (i+1), row, stopsDefn.id);
+		stopsTable.setValueAt(StopType.LINKED_PICKUP.getPrimaryCode(), row, stopsDefn.type);
+		stopsTable.setValueAt("Job" + (i+1), row, stopsDefn.jobId);
+		
+		setStopAddress( seed.addressIndex1, row, stopsTable);
+		setQuantitySkillsDuration(averageStopQuantity, row, stopsTable);
+		
+		// create the delivery
+		row=stopsTable.createEmptyRow(-1);		
+		stopsTable.setValueAt("Delivery" + (i+1), row, stopsDefn.id);
+		stopsTable.setValueAt(StopType.LINKED_DELIVERY.getPrimaryCode(), row, stopsDefn.type);
+		stopsTable.setValueAt("Job" + (i+1), row, stopsDefn.jobId);
+		setStopAddress( seed.addressIndex2, row, stopsTable);
+		setDuration(row, stopsTable);
+		
+		// create time windows suitable for both
+		int midHour = (int)(MIN_STOP_START_TIME + MAX_STOP_END_TIME)/2;
+		ODLTime s1 = new ODLTime(MIN_STOP_START_TIME + random.nextInt(1), random.nextBoolean()?30:0);	
+		ODLTime e1 = new ODLTime(midHour - 1, random.nextInt(60));
+		
+		ODLTime s2 = new ODLTime(midHour , random.nextInt(60));
+		ODLTime e2 = new ODLTime(MAX_STOP_END_TIME- 1, random.nextInt(60));
+		
+		stopsTable.setValueAt(s1, row-1, stopsDefn.tw.earliest);
+		stopsTable.setValueAt(e1, row-1, stopsDefn.tw.latest);
+		stopsTable.setValueAt(s2, row, stopsDefn.tw.earliest);
+		stopsTable.setValueAt(e2, row, stopsDefn.tw.latest);
+		
+	}
+	
+	private void createNonPDStop(double averageStopQuantity, int i, StopSeed seed, ODLTable stopsTable) {
+		int addressIndx = seed.addressIndex1;
+		int row=stopsTable.createEmptyRow(-1);
+		StopsTableDefn stopsDefn = dfn.stops;
+		stopsTable.setValueAt("Stop" + (i+1), row, stopsDefn.id);
+		
+		setStopAddress( addressIndx, row, stopsTable);
+
+		setQuantitySkillsDuration(averageStopQuantity, row, stopsTable);
+
+		// set type
+		String type = StopType.UNLINKED_DELIVERY.getPrimaryCode();
+		if(demoConfig.includeUnlinkedPickups && random.nextBoolean()){
+			type = StopType.LINKED_PICKUP.getPrimaryCode();
+		}
+		stopsTable.setValueAt(type, row, stopsDefn.type);
+				
+		ODLTime startTime = new ODLTime(MIN_STOP_START_TIME + random.nextInt(2), random.nextBoolean()?30:0);
+		ODLTime endTime = new ODLTime(MAX_STOP_END_TIME-random.nextInt(2), 0);
+		stopsTable.setValueAt(startTime, row, stopsDefn.tw.earliest);
+		stopsTable.setValueAt(endTime, row, stopsDefn.tw.latest);
+	}
+
+	private void setQuantitySkillsDuration(double averageStopQuantity, int row,ODLTable stopsTable) {
+		StopsTableDefn stopsDefn= dfn.stops;
+		
+		// set quantities
+		for(int q=0 ; q<config.getNbQuantities() ; q++){
+			double quantity = averageStopQuantity + (random.nextDouble()-0.5) * averageStopQuantity * 0.5;
+			quantity = Math.ceil(quantity);
+			stopsTable.setValueAt(quantity, row, stopsDefn.quantityIndices[q]);				
+		}
+		
+		// skills
+		if(demoConfig.includeSkills){
+			stopsTable.setValueAt(getRandomSkills(), row, stopsDefn.requiredSkills);
+		}
+					
+		// set service
+		setDuration(row, stopsTable);
+	}
+
+	private void setDuration(int row, ODLTable stopsTable) {
+		int duration = 2 + random.nextInt(8);
+		ODLTime time = new ODLTime(0, duration);
+		stopsTable.setValueAt(time, row, dfn.stops.serviceDuration);
+	}
+
+	private void setStopAddress( int addressIndx,int row, ODLTable stopsTable) {
+		StopsTableDefn stopsDefn = dfn.stops;
+		stopsTable.setValueAt(DemoAddresses.companyName(addressIndx), row, stopsDefn.name);
+		stopsTable.setValueAt(DemoAddresses.address(addressIndx), row, stopsDefn.address);
+		stopsTable.setValueAt(DemoAddresses.position(addressIndx).getLatitude(), row, stopsDefn.latLong.latitude);
+		stopsTable.setValueAt(DemoAddresses.position(addressIndx).getLongitude(), row, stopsDefn.latLong.longitude);
 	}
 
 	/**
