@@ -257,7 +257,7 @@ public class DemoBuilder {
 		// set type
 		String type = StopType.UNLINKED_DELIVERY.getPrimaryCode();
 		if(demoConfig.includeUnlinkedPickups && random.nextBoolean()){
-			type = StopType.LINKED_PICKUP.getPrimaryCode();
+			type = StopType.UNLINKED_PICKUP.getPrimaryCode();
 		}
 		stopsTable.setValueAt(type, row, stopsDefn.type);
 				

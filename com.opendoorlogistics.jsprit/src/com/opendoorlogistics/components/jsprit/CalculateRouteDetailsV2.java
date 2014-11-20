@@ -146,6 +146,17 @@ public class CalculateRouteDetailsV2 {
 					stopDetail.hasViolation = 1;
 				}
 
+				if(stopDetail.type.equals(VRPConstants.DEPOT)){
+					// Depot stops by default from jsprit arrive at the start depot at midnight and leave
+					// the end depot at their final time window, which makes the Gantt chart look odd.
+					// We therefore change this behaviour.
+					if(i==0){
+						stopDetail.arrivalTime = stopDetail.leaveTime;
+					}else{
+						stopDetail.leaveTime = stopDetail.arrivalTime;
+					}
+					stopDetail.waitingTime=0;
+				}
 			}
 			
 			// calculate incoming and outgoing paths
