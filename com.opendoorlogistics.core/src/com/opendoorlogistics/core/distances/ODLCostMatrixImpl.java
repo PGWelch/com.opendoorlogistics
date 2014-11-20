@@ -232,5 +232,10 @@ public final class ODLCostMatrixImpl extends ODLTableDefinitionImpl implements O
 		return true;
 	}
 
+	@Override
+	public long getRowLastModifiedTimeMillsecs(long rowId) {
+		return 0;
+	}
+
 
 }

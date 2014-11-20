@@ -244,6 +244,13 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 		return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getRowFlags(rowId):0;
 	}
 
+
+	@Override
+	protected long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
+		return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getRowLastModifiedTimeMillsecs(rowId):0;
+		
+	}
+	
 	@Override
 	protected void setRowFlags(int tableId, long flags, long rowId) {
 		if(writable(tableId)!=null){
@@ -251,4 +258,5 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 		}
 	}
 
+	
 }

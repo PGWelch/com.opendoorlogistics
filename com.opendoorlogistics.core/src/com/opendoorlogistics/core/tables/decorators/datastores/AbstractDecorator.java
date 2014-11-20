@@ -224,6 +224,11 @@ public abstract class AbstractDecorator<T extends ODLTableDefinition> implements
 			return AbstractDecorator.this.deepCopyWithShallowValueCopy(tableId);
 		}
 
+		@Override
+		public long getRowLastModifiedTimeMillsecs(long rowId) {
+			return AbstractDecorator.this.getRowLastModifiedTimeMillisecs(tableId, rowId);
+		}
+
 
 
 	}
@@ -317,6 +322,8 @@ public abstract class AbstractDecorator<T extends ODLTableDefinition> implements
 	protected abstract long getRowGlobalId(int tableId,int rowIndex);
 
 	protected abstract long getRowFlags(int tableId,long rowId);
+
+	protected abstract long getRowLastModifiedTimeMillisecs(int tableId,long rowId);
 
 	//protected abstract long getRowGlobalIdByLocal(int tableId,int rowId);
 	

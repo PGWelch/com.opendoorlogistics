@@ -6,8 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.tables.memory;
 
-import java.awt.Color;
-
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
@@ -16,7 +14,6 @@ import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.ODLTableFactory;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
-import com.opendoorlogistics.core.utils.DeepCopyable;
 import com.opendoorlogistics.core.utils.IntIDGenerator;
 import com.opendoorlogistics.core.utils.IntIDGenerator.IsExistingId;
 import com.opendoorlogistics.core.utils.MapList;
@@ -342,6 +339,15 @@ final public class ODLTableImpl extends ODLTableDefinitionImpl implements ODLTab
 		if (row != null) {
 			row.setFlags(flags);
 		}
+	}
+
+	@Override
+	public long getRowLastModifiedTimeMillsecs(long rowId) {
+		ODLRowImpl row = list.getByID(TableUtils.getLocalRowId(rowId));
+		if (row != null) {
+			return row.getLastModifiedMillisecs();
+		}
+		return 0;
 	}
 
 }

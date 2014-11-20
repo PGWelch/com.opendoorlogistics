@@ -429,6 +429,15 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	protected long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
+		int dsIndx = dsIndexWithRowId(tableId, rowId);
+		if(dsIndx!=-1){
+			return ((ODLTableReadOnly)stores.get(dsIndx).getTableByImmutableId(tableId)).getRowLastModifiedTimeMillsecs(rowId);
+		}
+		return 0;
+	}
+
 
 
 }

@@ -210,7 +210,7 @@ public class StopsTableDefn extends TableDfn {
 		return ret;
 	}
 	
-	public Map<String,List<Integer>>  getGroupedByMultiStopJob(ODLTableReadOnly stops){
+	public Map<String,List<Integer>>  getGroupedByMultiStopJob(ODLTableReadOnly stops, boolean validate){
 		// check multi-stop jobs are correct
 		Map<String,List<Integer>> rowsByJobMap = api.stringConventions().createStandardisedMap();
 		int n = stops.getRowCount();
@@ -230,8 +230,11 @@ public class StopsTableDefn extends TableDfn {
 		// validate pickup-deliveries and ensure pickup is first in the list
 		for(Map.Entry<String,List<Integer>> entry:rowsByJobMap.entrySet()){
 			List<Integer> jobStops = entry.getValue();
-			if(jobStops.size()!=2){
-				throw new RuntimeException("Incorrect number of stops for job " + entry.getKey() + " in stops table.");
+			
+			if(validate){
+				if(jobStops.size()!=2){
+					throw new RuntimeException("Incorrect number of stops for job " + entry.getKey() + " in stops table.");
+				}				
 			}
 			
 			// get pickup first, delivery second
@@ -239,8 +242,10 @@ public class StopsTableDefn extends TableDfn {
 				Collections.reverse(jobStops);
 			}
 			
-			if(getStopType(stops, jobStops.get(0))!= StopType.LINKED_PICKUP || getStopType(stops, jobStops.get(1))!=StopType.LINKED_DELIVERY){
-				throw new RuntimeException("Job " + entry.getKey() + " in stops is a pickup-delivery but does not have one pickup stop and one delivery stop.");				
+			if(validate){
+				if(getStopType(stops, jobStops.get(0))!= StopType.LINKED_PICKUP || getStopType(stops, jobStops.get(1))!=StopType.LINKED_DELIVERY){
+					throw new RuntimeException("Job " + entry.getKey() + " in stops is a pickup-delivery but does not have one pickup stop and one delivery stop.");				
+				}				
 			}
 		
 		}

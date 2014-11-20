@@ -218,7 +218,7 @@ public class VRPComponent implements ODLComponent {
 		ODLApi odlApi = api.getApi();
 
 		if(mode == ODLComponent.MODE_DATA_UPDATER){
-			validateStopOrderRelations(api.getApi(),conf, ioDb, dfn);
+			new CleanStopOrderTable(api.getApi(), conf, ioDb, dfn).validate();
 			return;
 		}
 		
@@ -260,60 +260,7 @@ public class VRPComponent implements ODLComponent {
 
 	}
 
-	/**
-	 * @param api
-	 * @param ioDb
-	 * @param dfn
-	 */
-	private void validateStopOrderRelations(ODLApi api,  VRPConfig conf,ODLDatastore<? extends ODLTable> ioDb, InputTablesDfn dfn) {
-		// remove any stop order records with an unknown stop id
-		ODLTable stopOrder = ioDb.getTableAt(dfn.stopOrder.tableIndex);
-		api.tables().validateForeignKey(ioDb.getTableAt(dfn.stops.tableIndex), dfn.stops.id, stopOrder, dfn.stopOrder.stopid, KeyValidationMode.REMOVE_CORRUPT_FOREIGN_KEY);
-		
-		StringConventions strings = api.stringConventions();
-		Set<String> processedVehicleIds = strings.createStandardisedSet();
-		Set<String> processedStopIds = strings.createStandardisedSet();
-		
-		// remove any stop order records with unknown vehicle id
-		VehicleIds vehicleIds = new VehicleIds(api, conf, dfn, ioDb.getTableAt(dfn.vehicles.tableIndex));
-		int row =0 ;
-		String currentVehicleId=null;
-		while(row < stopOrder.getRowCount()){
-			boolean delete=false;
-			
-			// check for known vehicle id
-			String vehicleId = dfn.stopOrder.getVehicleId(stopOrder, row);
-			if(vehicleId==null || vehicleIds.isKnown(vehicleId)==false){
-				delete = true;
-			}
-			
-			// check for empty stop id
-			String stopId = (String)stopOrder.getValueAt(row, dfn.stopOrder.stopid);
-			if(strings.isEmptyString(stopId)){
-				delete = true;
-			}
-			
-			// check for repeated stop id
-			if(stopId!=null && processedStopIds.contains(stopId)){
-				delete = true;
-			}
-			
-			// check for non-consecutive vehicle ids
-			if(vehicleId!=null && strings.equalStandardised(vehicleId, currentVehicleId)==false && processedVehicleIds.contains(vehicleId)){
-				delete = true;
-			}
-			
-			if(delete){
-				stopOrder.deleteRow(row);
-			}
-			else{
-				currentVehicleId = vehicleId;
-				processedVehicleIds.add(currentVehicleId);
-				processedStopIds.add(stopId);
-				row++;
-			}
-		}
-	}
+
 
 	private VehicleRoutingAlgorithm initOptimiser(VRPConfig config, VehicleRoutingProblem problem) {
 	

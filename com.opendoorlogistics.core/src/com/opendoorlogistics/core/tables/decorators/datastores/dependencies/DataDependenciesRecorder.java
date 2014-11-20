@@ -169,6 +169,13 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 		return super.getRowFlags(tableId, rowId);
 	}
 
+	@Override
+	protected long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
+		getDependencies().addReadTableId(tableId,true);
+		return super.getRowLastModifiedTimeMillisecs(tableId, rowId);
+		
+	}
+	
 //	@Override
 //	protected int getRowIndexByGlobalId(int tableId, long immutableId) {
 //		getDependencies().addReadTableId(tableId);

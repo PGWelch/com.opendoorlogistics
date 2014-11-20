@@ -646,4 +646,13 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	protected long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
+		T src = sourceTable(tableId);
+		if (src != null) {
+			return ((ODLTableReadOnly) src).getRowLastModifiedTimeMillsecs(rowId);
+		}
+		return -1;
+	}
+
 }

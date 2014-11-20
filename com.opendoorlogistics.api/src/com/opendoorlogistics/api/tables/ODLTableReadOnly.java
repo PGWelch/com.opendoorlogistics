@@ -14,6 +14,7 @@ public interface ODLTableReadOnly extends ODLTableDefinition {
 	long getRowId(int rowIndex);
 	boolean containsRowId(long rowId);
 	long getRowFlags(long rowId);
+	long getRowLastModifiedTimeMillsecs(long rowId);
 	
 	/**
 	 * Return the rowids of all matching values, using an index

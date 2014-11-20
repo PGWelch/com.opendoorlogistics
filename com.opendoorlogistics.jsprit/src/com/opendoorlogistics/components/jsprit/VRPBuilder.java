@@ -514,7 +514,7 @@ public class VRPBuilder {
 		}
 
 		// do linked stops jobs
-		Map<String,List<Integer>> multistops = stopsTableDfn.getGroupedByMultiStopJob(stopsTable);
+		Map<String,List<Integer>> multistops = stopsTableDfn.getGroupedByMultiStopJob(stopsTable,true);
 		for (Map.Entry<String, List<Integer>> entry : multistops.entrySet()) {
 			
 			String shipmentId= entry.getKey();

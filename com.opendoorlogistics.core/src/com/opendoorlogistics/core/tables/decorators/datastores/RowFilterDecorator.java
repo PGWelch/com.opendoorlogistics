@@ -581,6 +581,16 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
+	protected long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
+		ODLTableReadOnly srcTable = getSourceTable(tableId);
+		if(srcTable!= null){
+			return srcTable.getRowLastModifiedTimeMillsecs(rowId);
+		}
+
+		return 0;
+	}
+	
+	@Override
 	protected void setRowFlags(int tableId, long flags, long rowId) {
 		ODLTableReadOnly srcTable = getSourceTable(tableId);
 		if(srcTable!= null){
@@ -610,5 +620,7 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 		throw new UnsupportedOperationException();
 
 	}
+
+
 
 }

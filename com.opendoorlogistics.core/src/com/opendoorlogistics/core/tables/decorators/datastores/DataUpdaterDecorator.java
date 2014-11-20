@@ -55,7 +55,7 @@ public class DataUpdaterDecorator extends SimpleDecorator<ODLTableAlterable> imp
 						executor.execute(subpath, this);
 					}
 				} catch (Exception e) {
-					// TODO: report this somewhere....
+					// TODO: report this somewhere....?
 				}
 			}
 		}

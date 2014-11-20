@@ -15,6 +15,8 @@ final public class ODLRowImpl implements ODLRow {
 	private final ArrayList<Object> rowInternal;
 	private final int tableInternalId;
 	private long flags;
+	private long lastModifiedMillisecs;
+	
 	// private TreeList<ODLRowImpl>.TreeListNode treeListNode;
 
 	/**
@@ -25,6 +27,8 @@ final public class ODLRowImpl implements ODLRow {
 	public ODLRowImpl(int tableInternalId, int capacity) {
 		this.tableInternalId = tableInternalId;
 		rowInternal = new ArrayList<Object>(capacity);
+		modified();
+		
 	}
 
 	@Override
@@ -46,6 +50,7 @@ final public class ODLRowImpl implements ODLRow {
 	public synchronized void set(int indx, Object obj) {
 		if(indx < rowInternal.size()){
 			rowInternal.set(indx, obj);			
+			modified();			
 		}
 	}
 
@@ -60,16 +65,19 @@ final public class ODLRowImpl implements ODLRow {
 	@Override
 	public synchronized void add(Object o) {
 		rowInternal.add(o);
+		modified();
 	}
 
 	@Override
 	public synchronized void add(int indx, Object o) {
 		rowInternal.add(indx, o);
+		modified();
 	}
 
 	@Override
 	public synchronized void remove(int indx) {
 		rowInternal.remove(indx);
+		modified();
 	}
 
 	/**
@@ -87,6 +95,7 @@ final public class ODLRowImpl implements ODLRow {
 
 	public void setFlags(long flags) {
 		this.flags = flags;
+		modified();
 	}
 
 	// TreeList<ODLRowImpl>.TreeListNode getTreeListNode() {
@@ -97,4 +106,11 @@ final public class ODLRowImpl implements ODLRow {
 	// this.treeListNode = treeListNode;
 	// }
 
+	private void modified(){
+		lastModifiedMillisecs = System.currentTimeMillis();
+	}
+	
+	public long getLastModifiedMillisecs(){
+		return lastModifiedMillisecs;
+	}
 }
