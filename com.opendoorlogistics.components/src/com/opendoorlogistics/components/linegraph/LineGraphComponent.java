@@ -4,7 +4,7 @@
  * are made available under the terms of the GNU Lesser Public License v3
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
-package com.opendoorlogistics.components.barchart;
+package com.opendoorlogistics.components.linegraph;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -28,62 +28,68 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.components.barchart.basechart.BaseChartConfigPanel;
 import com.opendoorlogistics.components.barchart.basechart.BaseChartPanel;
 import com.opendoorlogistics.components.barchart.basechart.BaseComponent;
 import com.opendoorlogistics.components.barchart.basechart.BaseConfig;
 import com.opendoorlogistics.utils.ui.Icons;
 
-final public class BarchartComponent extends BaseComponent {
+final public class LineGraphComponent extends BaseComponent {
 	
 	@Override
 	public String getId() {
-		return "com.opendoorlogistics.components.barchart";
+		return "com.opendoorlogistics.components.linegraph";
 	}
 
 	@Override
 	public String getName() {
-		return "Barchart";
+		return "Linegraph";
 	}
 
 	@Override
 	public ODLDatastore<? extends ODLTableDefinition> getIODsDefinition(ODLApi api, Serializable configuration) {
 		ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ret = api.tables().createAlterableDs();
-		ODLTableDefinitionAlterable table = ret.createTable("ChartData", -1);
+		ODLTableDefinitionAlterable table = ret.createTable("LineData", -1);
 		
-		BarchartConfig config = (BarchartConfig) configuration;		
+		BaseConfig config = (BaseConfig) configuration;		
 		addFilterGroupsToIODs(table, config);
+
+		int keyCol=table.addColumn(-1, "Key", ODLColumnType.STRING, 0);
+		table.setColumnFlags(keyCol, table.getColumnFlags(keyCol) | TableFlags.FLAG_IS_OPTIONAL);
+		table.addColumn(-1, "X", ODLColumnType.DOUBLE, 0);
+		table.addColumn(-1, "Y", ODLColumnType.DOUBLE, 0);
 		
-		table.addColumn(-1, "Category", ODLColumnType.STRING, 0);
-		
-		for (int i = 1; i <= config.getSeriesNames().size(); i++) {
-			table.addColumn(-1, "Series" + i, ODLColumnType.DOUBLE, 0);
-		}
+
 		return ret;
 	}
 
-	
+
+
+	@Override
+	public ODLDatastore<? extends ODLTableDefinition> getOutputDsDefinition(ODLApi api, int mode, Serializable configuration) {
+		return null;
+	}
+
 	
 	@Override
 	public Class<? extends Serializable> getConfigClass() {
-		return BarchartConfig.class;
+		return BaseConfig.class;
 	}
 
 	@Override
 	public JPanel createConfigEditorPanel(ComponentConfigurationEditorAPI factory, int mode, Serializable config, boolean isFixedIO) {
-		return new BarchartConfigPanel((BarchartConfig) config);
+		return new BaseChartConfigPanel((BaseConfig) config);
 	}
 
 	@Override
 	public void registerScriptTemplates(ScriptTemplatesBuilder templatesApi) {
-		for (int i = 1; i <= 3; i++) {
-			String name = "Barchart with " + i + " series";
-			BarchartConfig barchartConfig = new BarchartConfig();
-			ArrayList<String> names = new ArrayList<>();
-			for (int j = 1; j <= i; j++) {
-				names.add("Series" + j);
-			}
-			barchartConfig.setSeriesNames(names);
-			templatesApi.registerTemplate(name, name, name,getIODsDefinition(templatesApi.getApi(), barchartConfig), barchartConfig);
+		for(int nbFilter=0; nbFilter <=3 ; nbFilter++){
+			String name = "Line graph with " + nbFilter + " filter group levels";
+			BaseConfig config = new BaseConfig();
+			config.setNbFilterGroupLevels(nbFilter);
+			config.setXLabel("x");
+			config.setYLabel("y");
+			templatesApi.registerTemplate(name, name, name,getIODsDefinition(templatesApi.getApi(), config), config);
 		}
 	}
 
@@ -91,13 +97,13 @@ final public class BarchartComponent extends BaseComponent {
 
 	@Override
 	public Icon getIcon(ODLApi api, int mode) {
-		return Icons.loadFromStandardPath("office-chart-bar.png");
+		return Icons.loadFromStandardPath("linegraph-component.png");
 	}
 
 	@Override
 	protected BaseChartPanel createPanel(ODLApi api,BaseConfig config,
 			ODLTableReadOnly table) {
-		return new BarchartPanel(api,(BarchartConfig)config, table);
+		return new LineGraphPanel(api,config, table); 
 	}
 
 

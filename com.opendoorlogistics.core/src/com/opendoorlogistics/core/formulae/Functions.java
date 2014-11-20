@@ -64,6 +64,34 @@ public class Functions {
 		}
 	}
 
+	public static class FmDecimalHours extends FunctionImpl{
+		public FmDecimalHours(Function time){
+			super(time);
+		}
+		
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object v = child(0).execute(parameters);
+			if(v==Functions.EXECUTION_ERROR){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			v = ColumnValueProcessor.convertToMe(ODLColumnType.LONG, v);
+			if (v==null){
+				return null;
+			}			
+			
+			Long l = (Long)v;
+			return ((double)l) / ODLTime.MILLIS_IN_HOUR;
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmDecimalHours(child(0).deepCopy());
+		}
+		
+	}
+	
 	public static class FmTime extends FunctionImpl {
 
 		public FmTime(Function... components) {

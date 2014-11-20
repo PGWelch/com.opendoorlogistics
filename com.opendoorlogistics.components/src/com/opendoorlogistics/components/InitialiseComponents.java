@@ -12,6 +12,7 @@ import com.opendoorlogistics.components.cluster.kmeans.latlng.KMeansLatLngCompon
 import com.opendoorlogistics.components.gantt.GanttChartComponent;
 import com.opendoorlogistics.components.geocode.postcodes.PCGeocoderComponent;
 import com.opendoorlogistics.components.geocode.postcodes.PCImporterComponent;
+import com.opendoorlogistics.components.linegraph.LineGraphComponent;
 import com.opendoorlogistics.components.reports.ReporterComponent;
 import com.opendoorlogistics.components.reports.builder.ReportsReflectionValidation;
 import com.opendoorlogistics.components.scheduleeditor.ScheduleEditorComponent;
@@ -43,6 +44,7 @@ final public class InitialiseComponents {
 		ODLGlobalComponents.register(new ScheduleEditorComponent());
 		ODLGlobalComponents.register(new GanttChartComponent());
 		ODLGlobalComponents.register(new ShapefileExporterComponent());
+		ODLGlobalComponents.register(new LineGraphComponent());
 		registered = true;
 	}
 }
