@@ -41,6 +41,7 @@ public class RouteDetail {
 	public String vehicleName;	
 	public double waitingTime=0;
 	public TemporaryRouteInto temp = new TemporaryRouteInto();
+	public String skills;
 	
 	public RouteDetail(int nbQuantities) {
 		capacity= new long[nbQuantities];
@@ -82,6 +83,7 @@ public class RouteDetail {
 		w.write(vehicleName, dfn.vehicleName);
 		w.write(waitingTime, dfn.waitingTime);
 		w.write(hasViolation, dfn.hasViolation);
+		w.write(skills, dfn.skills);
 	}
 	
 	

@@ -70,9 +70,9 @@ final class VRPConfigPanel extends JPanel {
 		optPanel.add(iterations);
 		optPanel.add(quantities);
 		for (BooleanOptions opt : BooleanOptions.values()) {
-			if(VRPConstants.ENABLE_PD==false && opt == BooleanOptions.FORCE_ALL_DELIVERIES_BEFORE_PICKUPS){
-				continue;
-			}
+//			if(VRPConstants.ENABLE_PD==false && opt == BooleanOptions.FORCE_ALL_DELIVERIES_BEFORE_PICKUPS){
+//				continue;
+//			}
 			boxes[opt.ordinal()] = new JCheckBox(opt.displayName, rc.getBool(opt));
 			boxes[opt.ordinal()].addItemListener(itemListener);
 			optPanel.add(boxes[opt.ordinal()]);

@@ -44,7 +44,7 @@ public class CalculateRouteDetailsV2 {
 	private final ODLApi odlApi;
 	private final InputTablesDfn dfn;
 	private final VRPConfig config;
-	private final ODLTableReadOnly jobsTable;
+	private final ODLTableReadOnly stopsTable;
 	private final ODLTableReadOnly vehiclesTable;
 	private final ODLTableReadOnly stopOrderTable;
 	private final VRPBuilder builtProblem;
@@ -60,7 +60,7 @@ public class CalculateRouteDetailsV2 {
 		odlApi = api.getApi();
 		dfn = new InputTablesDfn(api.getApi(), conf);
 		config = conf;
-		jobsTable = ioDb.getTableByImmutableId(dfn.stops.tableId);
+		stopsTable = ioDb.getTableByImmutableId(dfn.stops.tableId);
 		vehiclesTable = ioDb.getTableByImmutableId(dfn.vehicles.tableId);
 		stopOrderTable = ioDb.getTableByImmutableId(dfn.stopOrder.tableId);
 		sd = new SolutionDetail(config.getNbQuantities());
@@ -141,7 +141,7 @@ public class CalculateRouteDetailsV2 {
 				stopDetail.totalTravelCost[TravelCostType.COST.ordinal()] = jspritSA.getVariableTransportCostsAtActivity(ta, vr);
 
 				// check for violations
-				if (jspritSA.hasBackhaulConstraintViolationAtActivity(ta, vr) || jspritSA.hasShipmentConstraintViolationAtActivity(ta, vr)
+				if ((config.isDeliveriesBeforePickups() && jspritSA.hasBackhaulConstraintViolationAtActivity(ta, vr)) || jspritSA.hasShipmentConstraintViolationAtActivity(ta, vr)
 						|| jspritSA.hasSkillConstraintViolationAtActivity(ta, vr) || stopDetail.timeWindowViolation > 0) {
 					stopDetail.hasViolation = 1;
 				}
@@ -210,7 +210,7 @@ public class CalculateRouteDetailsV2 {
 				}
 			}
 
-			if (jspritSA.hasBackhaulConstraintViolation(vr) || jspritSA.hasShipmentConstraintViolation(vr) || jspritSA.hasSkillConstraintViolation(vr)) {
+			if ((config.isDeliveriesBeforePickups() && jspritSA.hasBackhaulConstraintViolation(vr)) || jspritSA.hasShipmentConstraintViolation(vr) || jspritSA.hasSkillConstraintViolation(vr)) {
 				rd.hasViolation = 1;
 			}
 		}
@@ -242,11 +242,12 @@ public class CalculateRouteDetailsV2 {
 			}
 		}
 
-		if (jspritSA.hasBackhaulConstraintViolation() || jspritSA.hasShipmentConstraintViolation() || jspritSA.hasSkillConstraintViolation()) {
+		if ((config.isDeliveriesBeforePickups() & jspritSA.hasBackhaulConstraintViolation()) || jspritSA.hasShipmentConstraintViolation() || jspritSA.hasSkillConstraintViolation()) {
 			sd.hasViolation = 1;
 		}
 		
-		// unassigned stops
+		// assigned and unassigned stops
+		sd.assignedStopsCount = loadedStopsByStopId.size();
 		sd.unassignedStops=0;
 		for(BuiltStopRec stop:builtProblem.getBuiltStops()){
 			if(!loadedStopsByStopId.containsKey(stop.getStopIdInStopsTable())){
@@ -343,10 +344,6 @@ public class CalculateRouteDetailsV2 {
 
 				case UNLINKED_DELIVERY:
 					vehicleRouteBuilder.addDelivery((Delivery) job);
-					break;
-
-				case NORMAL_STOP:
-					vehicleRouteBuilder.addService((Service) job);
 					break;
 				}
 
@@ -525,13 +522,14 @@ public class CalculateRouteDetailsV2 {
 			StopsTableDefn stopDfn = dfn.stops;
 			stopDetail.jobId = stopDetail.temporary.builtStopRec.getJSpritJob().getId();
 			int stopRow = stopDetail.temporary.builtStopRec.getRowNbInStopsTable();
-			stopDetail.stopName = (String) jobsTable.getValueAt(stopRow, stopDfn.name);
+			stopDetail.stopName = (String) stopsTable.getValueAt(stopRow, stopDfn.name);
 			stopDetail.stopNumber = routeDetail.stops.size() + 1;
-			stopDetail.stopAddress = (String) jobsTable.getValueAt(stopRow, stopDfn.address);
-			stopDetail.stopLatLong = stopDfn.latLong.getLatLong(jobsTable, stopRow, false);
-			stopDetail.stopDuration = stopDfn.getDuration(jobsTable, stopRow).getTotalMilliseconds();
-			stopDetail.type = stopDfn.getStopType(jobsTable, stopRow).getKeyword();
-			ODLTime[] tw = stopDfn.getTW(jobsTable, stopRow);
+			stopDetail.stopAddress = (String) stopsTable.getValueAt(stopRow, stopDfn.address);
+			stopDetail.stopLatLong = stopDfn.latLong.getLatLong(stopsTable, stopRow, false);
+			stopDetail.stopDuration = stopDfn.getDuration(stopsTable, stopRow).getTotalMilliseconds();
+			stopDetail.type = stopDfn.getStopType(stopsTable, stopRow).getKeyword();
+			stopDetail.requiredSkills = (String)stopsTable.getValueAt(stopRow, stopDfn.requiredSkills);
+			ODLTime[] tw = stopDfn.getTW(stopsTable, stopRow);
 			if (tw != null) {
 				stopDetail.startTimeWindow = (double) tw[0].getTotalMilliseconds();
 				stopDetail.endTimeWindow = (double) tw[1].getTotalMilliseconds();
@@ -613,6 +611,9 @@ public class CalculateRouteDetailsV2 {
 				detail.startTimeWindow = (double) tw[0].getTotalMilliseconds();
 				detail.endTimeWindow = (double) tw[1].getTotalMilliseconds();
 			}
+			
+			// skills
+			detail.skills = (String)vehiclesTable.getValueAt(vehicleTypeRow, dfn.vehicles.skills);
 			
 			// save
 			sd.routes.add(detail);

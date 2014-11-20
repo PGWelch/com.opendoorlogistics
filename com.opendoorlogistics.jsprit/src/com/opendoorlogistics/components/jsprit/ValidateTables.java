@@ -36,27 +36,27 @@ public class ValidateTables {
 		Map<String,Integer> stopIdByRow = dfn.stops.getStopIdMap(stops);
 		dfn.vehicles.getVehicleIdToRowIndex(ioDs.getTableByImmutableId(dfn.vehicles.tableId));
 		
-		// check no mixed stop types
-		int [] jobCountByType = new int[StopType.values().length];
-		int n = stops.getRowCount();
-		for(int row =0 ; row<n;row++){
-			StopType type = dfn.stops.getStopType(stops, row);		
-			jobCountByType[type.ordinal()]++;
-		}
-		if(jobCountByType[StopType.NORMAL_STOP.ordinal()]>0){
-			for(StopType other: StopType.values()){
-				if(other!=StopType.NORMAL_STOP){
-					if(jobCountByType[other.ordinal()]>0){
-						throw new RuntimeException("Cannot have job type " + StopType.NORMAL_STOP.getPrimaryCode() + " and job type " + other.getPrimaryCode() + " together in the same problem. Replace with other job types.");
-					}
-				}
-			}
-		}
+//		// check no mixed stop types
+//		int [] jobCountByType = new int[StopType.values().length];
+//		for(int row =0 ; row<n;row++){
+//			StopType type = dfn.stops.getStopType(stops, row);		
+//			jobCountByType[type.ordinal()]++;
+//		}
+//		if(jobCountByType[StopType.NORMAL_STOP.ordinal()]>0){
+//			for(StopType other: StopType.values()){
+//				if(other!=StopType.NORMAL_STOP){
+//					if(jobCountByType[other.ordinal()]>0){
+//						throw new RuntimeException("Cannot have job type " + StopType.NORMAL_STOP.getPrimaryCode() + " and job type " + other.getPrimaryCode() + " together in the same problem. Replace with other job types.");
+//					}
+//				}
+//			}
+//		}
 		
 		// check multi-stop jobs are correct by building the grouped map (validation happens in the get)
 		dfn.stops.getGroupedByMultiStopJob(stops);
 		
 		// check no job id is also used as a stop id
+		int n = stops.getRowCount();
 		for(int row =0 ; row<n;row++){
 			String jobId = dfn.stops.getJobId(stops, row);
 			if(api.stringConventions().isEmptyString(jobId)==false && stopIdByRow.get(jobId)!=null){

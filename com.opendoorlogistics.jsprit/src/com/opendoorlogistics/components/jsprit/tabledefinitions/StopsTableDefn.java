@@ -24,6 +24,7 @@ import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.ODLTime;
+import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.components.jsprit.VRPConfig;
 import com.opendoorlogistics.components.jsprit.VRPConstants;
 import com.opendoorlogistics.components.jsprit.VRPUtils;
@@ -32,17 +33,19 @@ public class StopsTableDefn extends TableDfn {
 
 	public final int[] quantityIndices;
 	private final ODLApi api;
-	private final int jobId;
-	private final int type;
+	public final int jobId;
+	public final int type;
 	public final int name;
 	public final int id;
 	public final int address;
+	public final int requiredSkills;
 	public final LatLongDfn latLong;
 	public final int serviceDuration;
 	public final TimeWindowDfn tw;
 
 	public enum StopType {
-		NORMAL_STOP(1,"stop","S", null, ""), UNLINKED_DELIVERY(1,"delivery" , "UD"), UNLINKED_PICKUP(1,"pickup", "UP"), LINKED_PICKUP(2,"pickup (paired)", "LP"), LINKED_DELIVERY(2,"delivery (paired)", "LD");
+		//NORMAL_STOP(1,"stop","S", null, ""), 
+		UNLINKED_DELIVERY(1,"delivery" , "D"), UNLINKED_PICKUP(1,"pickup", "P"), LINKED_PICKUP(2,"pickup (paired)", "LP"), LINKED_DELIVERY(2,"delivery (paired)", "LD");
 
 		private final String[] codes;
 		private final int nbStopsInJob;
@@ -121,16 +124,12 @@ public class StopsTableDefn extends TableDfn {
 		this.api = api;
 		id = addStrColumn(ID);
 		
-		if(VRPConstants.ENABLE_PD){
-			jobId = addStrColumn(JOB_ID);
-			type = addStrColumn(TYPE);			
-			table.setColumnDefaultValue(type, StopType.NORMAL_STOP.getPrimaryCode());
-		}else{
-			jobId=-1;
-			type=-1;
-		}
-		
-
+		jobId = addStrColumn(JOB_ID);
+		type = addStrColumn(TYPE);			
+		table.setColumnDefaultValue(type, StopType.UNLINKED_DELIVERY.getPrimaryCode());
+		table.setColumnFlags(jobId, table.getColumnFlags(jobId)|TableFlags.FLAG_IS_OPTIONAL);
+		table.setColumnFlags(type, table.getColumnFlags(type)|TableFlags.FLAG_IS_OPTIONAL);
+	
 		name = addStrColumn(NAME);
 		api.tables().setColumnIsOptional(table, name, true);
 
@@ -144,6 +143,9 @@ public class StopsTableDefn extends TableDfn {
 		tw = new TimeWindowDfn(table, "");
 
 		quantityIndices = addQuantities(QUANTITY, config);
+		
+		requiredSkills = addStrColumn("required-skills");
+		table.setColumnFlags(requiredSkills, table.getColumnFlags(requiredSkills)|TableFlags.FLAG_IS_OPTIONAL);
 
 	}
 
@@ -172,13 +174,13 @@ public class StopsTableDefn extends TableDfn {
 	
 	public StopType getStopType(ODLTableReadOnly table, int row) {
 		if(type == -1){
-			return StopType.NORMAL_STOP;
+			return StopType.UNLINKED_DELIVERY;
 		}
 		
 		StopType ret = StopType.identify(api,(String) table.getValueAt(row, type));
 
 		if (ret == null) {
-			onRowException("Unidentified job type", row);
+			onRowException("Unidentified stop type", row);
 		}
 
 		return ret;

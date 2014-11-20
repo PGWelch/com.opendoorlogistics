@@ -21,6 +21,7 @@ import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.ODLTime;
+import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.components.jsprit.VRPConfig;
 import com.opendoorlogistics.components.jsprit.VRPUtils;
 
@@ -34,6 +35,7 @@ public class VehiclesTableDfn extends TableDfn{
 	public final int [] capacities;
 	public final int number;
 	public final int [] costs;
+	public final int skills;
 	
 	public enum CostType{
 		COST_PER_KM,
@@ -63,11 +65,13 @@ public class VehiclesTableDfn extends TableDfn{
 		costs[CostType.FIXED_COST.ordinal()] = addDblColumn(100,CostType.FIXED_COST.fieldname());		
 		costs[CostType.COST_PER_HOUR.ordinal()] = addDblColumn(1,CostType.COST_PER_HOUR.fieldname());		
 		costs[CostType.COST_PER_KM.ordinal()] = addDblColumn(0,CostType.COST_PER_KM.fieldname());		
-			
+		
+		skills= addStrColumn("skills");
+		table.setColumnFlags(skills, table.getColumnFlags(skills)|TableFlags.FLAG_IS_OPTIONAL);
+
 		number = addColumn(ODLColumnType.LONG, NUMBER_OF_VEHICLES);
 		table.setColumnDefaultValue(number, new Long(1));
 		api.tables().setColumnIsOptional(table, number, true);
-		
 		
 		table.setColumnDefaultValue(number, new Long(1));
 	}

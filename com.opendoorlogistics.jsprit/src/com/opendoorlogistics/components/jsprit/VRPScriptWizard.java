@@ -145,9 +145,9 @@ class VRPScriptWizard {
 		builder.append(PredefinedTags.TYPE);
 		builder.append(",\"" + VRPConstants.DEPOT + "\",\"fat-star\"");
 		builder.append(",\"" + StopType.LINKED_DELIVERY.getKeyword() + "\",\"inverted-triangle\"");
-		builder.append(",\"" + StopType.UNLINKED_DELIVERY.getKeyword() + "\",\"inverted-triangle\"");
+		builder.append(",\"" + StopType.UNLINKED_DELIVERY.getKeyword() + "\",\"circle\"");
 		builder.append(",\"" + StopType.LINKED_PICKUP.getKeyword() + "\",\"triangle\"");
-		builder.append(",\"" + StopType.UNLINKED_PICKUP.getKeyword() + "\",\"triangle\"");
+		builder.append(",\"" + StopType.UNLINKED_PICKUP.getKeyword() + "\",\"square\"");
 		builder.append(",\"circle\")");
 		points.setFormula("symbol", builder.toString());
 

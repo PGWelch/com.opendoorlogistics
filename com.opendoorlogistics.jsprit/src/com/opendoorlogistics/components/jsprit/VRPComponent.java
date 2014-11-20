@@ -6,6 +6,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.jsprit;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -20,16 +22,21 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import jsprit.core.algorithm.SearchStrategy.DiscoveredSolution;
 import jsprit.core.algorithm.VehicleRoutingAlgorithm;
+import jsprit.core.algorithm.VehicleRoutingAlgorithmBuilder;
 import jsprit.core.algorithm.box.SchrimpfFactory;
 import jsprit.core.algorithm.listener.IterationEndsListener;
+import jsprit.core.algorithm.state.StateManager;
 import jsprit.core.algorithm.termination.PrematureAlgorithmTermination;
 import jsprit.core.analysis.SolutionAnalyser;
 import jsprit.core.problem.VehicleRoutingProblem;
+import jsprit.core.problem.constraint.ConstraintManager;
+import jsprit.core.problem.constraint.ServiceDeliveriesFirstConstraint;
 import jsprit.core.problem.job.Job;
 import jsprit.core.problem.solution.VehicleRoutingProblemSolution;
 import jsprit.core.problem.solution.route.VehicleRoute;
@@ -57,6 +64,7 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.UIFactory.IntChangedListener;
 import com.opendoorlogistics.components.jsprit.VRPBuilder.BuiltStopRec;
 import com.opendoorlogistics.components.jsprit.demo.DemoBuilder;
+import com.opendoorlogistics.components.jsprit.demo.DemoConfig;
 import com.opendoorlogistics.components.jsprit.solution.RouteDetail;
 import com.opendoorlogistics.components.jsprit.solution.SolutionDetail;
 import com.opendoorlogistics.components.jsprit.solution.StopDetail;
@@ -100,14 +108,10 @@ public class VRPComponent implements ODLComponent {
 	}
 
 	private void buildDemo(final ComponentExecutionApi api,final  VRPConfig conf , ODLDatastore<? extends ODLTable> ioDb){
-		class DemoConfig{
-			int nbStops = 150;
-			int nbVehicles= 25;
-			int nbDepots = 5;
-			int depotConcentration = 5;
+		class DemoConfigExt extends DemoConfig{
 			ModalDialogResult result=null;
 		}
-		final DemoConfig demoConfig = new DemoConfig();
+		final DemoConfigExt demoConfig = new DemoConfigExt();
 		
 		
 		Runnable runnable = new Runnable() {
@@ -154,8 +158,38 @@ public class VRPComponent implements ODLComponent {
 					}
 				}));
 				
+				panel.add(createCheck("Include skills", demoConfig.includeSkills, new ActionListener() {
+					
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						demoConfig.includeSkills = ((JCheckBox)e.getSource()).isSelected();
+					}
+				}));
+	
+				panel.add(createCheck("Include unlinked pickups", demoConfig.includeUnlinkedPickups, new ActionListener() {
+					
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						demoConfig.includeUnlinkedPickups = ((JCheckBox)e.getSource()).isSelected();
+					}
+				}));
+	
+				panel.add(createCheck("Include linked pickup-delivery requests", demoConfig.includePDs, new ActionListener() {
+					
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						demoConfig.includePDs = ((JCheckBox)e.getSource()).isSelected();
+					}
+				}));
+			
 				// call modal
 				demoConfig.result = api.showModalPanel(panel, "Select demo configuration", ModalDialogResult.OK, ModalDialogResult.CANCEL);
+			}
+			
+			private JCheckBox createCheck(String name, boolean selected, ActionListener listenr){
+				JCheckBox ret = new JCheckBox(name, selected);
+				ret.addActionListener(listenr);
+				return ret;
 			}
 		};
 		
@@ -171,8 +205,8 @@ public class VRPComponent implements ODLComponent {
 		}
 		
 		if(demoConfig.result == ModalDialogResult.OK){
-			DemoBuilder builder = new DemoBuilder(api.getApi());
-			builder.build(demoConfig.nbStops, demoConfig.nbVehicles, demoConfig.nbDepots,demoConfig.depotConcentration, conf, ioDb);			
+			DemoBuilder builder = new DemoBuilder(api.getApi(),demoConfig, conf, ioDb);
+			builder.build();			
 		}
 	}
 	
@@ -280,6 +314,23 @@ public class VRPComponent implements ODLComponent {
 			}
 		}
 	}
+
+	private VehicleRoutingAlgorithm initOptimiser(VRPConfig config, VehicleRoutingProblem problem) {
+	
+        VehicleRoutingAlgorithmBuilder vraBuilder = new VehicleRoutingAlgorithmBuilder(problem,"schrimpf.xml");
+        vraBuilder.addDefaultCostCalculators();
+        vraBuilder.addCoreConstraints();
+
+        StateManager stateManager = new StateManager(problem);
+        ConstraintManager constraintManager = new ConstraintManager(problem,stateManager);
+        if(config.isDeliveriesBeforePickups()){
+            constraintManager.addConstraint(new ServiceDeliveriesFirstConstraint(), ConstraintManager.Priority.CRITICAL);        	
+        }
+
+        vraBuilder.setStateAndConstraintManager(stateManager,constraintManager);
+        VehicleRoutingAlgorithm vra = vraBuilder.build();
+		return vra;
+	}
 	
 	/**
 	 * @param api
@@ -301,8 +352,9 @@ public class VRPComponent implements ODLComponent {
 		}
 		final BestEver bestEver = new BestEver();
 		
-		// get the algorithm out-of-the-box.
-		VehicleRoutingAlgorithm algorithm = new SchrimpfFactory().createAlgorithm(built.getJspritProblem());
+		// get the algorithm out-of-the-box
+		VehicleRoutingAlgorithm algorithm =initOptimiser(conf,built.getJspritProblem());
+	//	VehicleRoutingAlgorithm algorithm = new SchrimpfFactory().createAlgorithm(built.getJspritProblem());
 		algorithm.setMaxIterations(Math.max(conf.getNbIterations(),1));
 		class LastUpdate {
 			long lastTime = System.currentTimeMillis();
@@ -327,7 +379,12 @@ public class VRPComponent implements ODLComponent {
 					StringBuilder builder = new StringBuilder();
 					builder.append("Solving VRP, step " + i);
 					if(bestEver.cost != Double.POSITIVE_INFINITY){
-						builder.append(" best cost " + DecimalFormat.getInstance().format(bestEver.cost) );
+						builder.append(", " + DecimalFormat.getInstance().format(bestEver.cost) + " cost" );
+					}
+					
+					if(bestEver.solution!=null){
+						builder.append(", " + bestEver.solution.getRoutes().size() + " routes");						
+						builder.append(", " + bestEver.solution.getUnassignedJobs().size() + " unassigned jobs");						
 					}
 					
 					api.postStatusMessage(builder.toString());

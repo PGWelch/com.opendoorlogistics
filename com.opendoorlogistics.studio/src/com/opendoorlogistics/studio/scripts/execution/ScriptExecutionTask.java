@@ -271,7 +271,7 @@ class ScriptExecutionTask {
 				final HashSet<ReporterFrame<?>> frames = new HashSet<>();
 				try {
 					cb.getCb().launchControls(createComponentControlLauncherApi(cb, frames));
-				} catch (Exception e) {
+				} catch (Throwable e) {
 					result.setFailed(e);
 				}
 

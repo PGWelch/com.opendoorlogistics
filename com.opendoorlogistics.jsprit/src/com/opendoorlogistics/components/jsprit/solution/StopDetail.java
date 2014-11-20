@@ -55,7 +55,7 @@ public class StopDetail extends StopOrder {
 	public String vehicleName;
 	public double waitingTime;
 	public long hasViolation;
-
+	public String requiredSkills;
 	
 	public StopDetail(int nbQuantities) {
 		stopQuantities = new long[nbQuantities];
@@ -110,6 +110,8 @@ public class StopDetail extends StopOrder {
 		writer.write(leaveTime, dfn.leaveTime);
 		writer.write(waitingTime, dfn.waitingTime);
 		writer.write(stopDuration, dfn.stopDuration);
+		writer.write(requiredSkills, dfn.requiredSkills);
+		
 		if(stopLatLong!=null){
 			writer.write(stopLatLong.getLatitude(), dfn.stopLatLong.latitude);
 			writer.write(stopLatLong.getLongitude(), dfn.stopLatLong.longitude);			

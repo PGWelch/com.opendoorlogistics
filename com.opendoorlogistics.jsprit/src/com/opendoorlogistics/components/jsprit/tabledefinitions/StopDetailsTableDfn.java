@@ -40,6 +40,7 @@ public class StopDetailsTableDfn extends StopOrderTableDfn {
 	public final int stopName;
 	public final int stopNumber;
 	public final int[] stopQuantities;
+	public final int requiredSkills;
 	public final int timeWindowEnd;
 	public final int timeWindowStart;
 
@@ -60,6 +61,7 @@ public class StopDetailsTableDfn extends StopOrderTableDfn {
 		type = addColumn(ODLColumnType.STRING, TYPE);		
 		stopAddress = addStrColumn(STOP_ADDRESS);
 		stopLatLong = new LatLongDfn(api,table, "stop-");
+		requiredSkills = addStrColumn("required-skills");
 		hasViolation = addLngColumn("has-violation");
 		
 		arrivalTime = addTimeColumn(ARRIVAL_TIME);

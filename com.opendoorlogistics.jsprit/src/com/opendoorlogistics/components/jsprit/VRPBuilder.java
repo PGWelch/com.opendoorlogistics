@@ -15,7 +15,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
+import jsprit.core.problem.Skills;
 import jsprit.core.problem.VehicleRoutingProblem;
 import jsprit.core.problem.VehicleRoutingProblem.FleetSize;
 import jsprit.core.problem.constraint.ServiceDeliveriesFirstConstraint;
@@ -303,6 +305,10 @@ public class VRPBuilder {
 			builder.setTimeWindow(new TimeWindow(tw[0].getTotalMilliseconds(), tw[1].getTotalMilliseconds()));
 		}
 
+		// add required skills
+		for(String skill: getSkillsArray((String)table.getValueAt(row, dfn.requiredSkills))){
+			builder.addRequiredSkill(skill);
+		}
 		return builder.build();
 	}
 
@@ -364,6 +370,9 @@ public class VRPBuilder {
 		vehicleTypeBuilder.setFixedCost(fixedCost);
 		maxFixedVehicleCost = Math.max(maxFixedVehicleCost, fixedCost);
 
+		// get available skills
+		String [] skills = getSkillsArray((String)vehicleTypesTable.getValueAt(rowInVehicleTypesTable, dfn.vehicles.skills));
+
 		// read start and locations (can be null.. indicating zero distance)
 		LatLong[] ends = vDfn.getStartAndEnd(vehicleTypesTable, rowInVehicleTypesTable);
 
@@ -393,6 +402,11 @@ public class VRPBuilder {
 				vehicleBuilder.setLatestArrival(tw[1].getTotalMilliseconds());
 			}
 
+			// add skills
+			for(String skill:skills){
+				vehicleBuilder.addSkill(skill);
+			}
+			
 			vehicles.add(vehicleBuilder.build());
 		}
 	}
@@ -435,7 +449,21 @@ public class VRPBuilder {
 //		return ret;
 //	}
 
-
+	private String [] getSkillsArray(String s){
+		if(s==null){
+			return new String[]{};
+		}
+		
+		String [] split = s.split(",");
+		ArrayList<String> ret = new ArrayList<>();
+		for(String splitStr : split){
+			splitStr = api.getApi().stringConventions().standardise(splitStr);
+			if(splitStr.length()>0){
+				ret.add(splitStr);
+			}
+		}
+		return ret.toArray(new String[ret.size()]);
+	}
 	
 	private List<Job> buildJobs() {
 		ArrayList<Job> ret = new ArrayList<>();
@@ -466,10 +494,6 @@ public class VRPBuilder {
 				// create the correct type of single stop
 				Service.Builder builder = null;
 				switch (type) {
-				case NORMAL_STOP:
-					// have delivery as the default as this means everything is loaded at the depot
-					builder = Delivery.Builder.newInstance(id);
-					break;
 
 				case UNLINKED_DELIVERY:
 					builder = Delivery.Builder.newInstance(id);
@@ -500,8 +524,9 @@ public class VRPBuilder {
 
 			// loop over pickup then delivery
 			ArrayList<BuiltStopRec> recs = new ArrayList<VRPBuilder.BuiltStopRec>();
+			List<Integer> rows = entry.getValue();			
 			for (int i = 0; i <= 1; i++) {
-				int row = entry.getValue().get(i);
+				int row = rows.get(i);
 
 				ODLTime serviceTime = stopsTableDfn.getDuration(stopsTable, row);
 				LatLong ll = stopsTableDfn.latLong.getLatLong(stopsTable, row,false);
@@ -541,15 +566,26 @@ public class VRPBuilder {
 			
 
 			// validate and set quantities
-			List<Integer> rows = entry.getValue();
 			int [] quant1 = stopsTableDfn.getQuantities(stopsTable, rows.get(0));
 			int [] quant2 = stopsTableDfn.getQuantities(stopsTable, rows.get(1));
 			for(int q = 0 ; q<quant1.length ; q++){
-				if(quant1[q]!=quant2[q]){
+				
+				// check quantities the same or the second one is zero (which probably means it was null)
+				if(quant1[q]!=quant2[q] && quant2[q]!=0){
 					throw new RuntimeException("Job " + entry.getKey() + " has different quantities on its pickup and deliver stops.");
 				}
 				
 				builder.addSizeDimension(q, quant1[q]);
+			}
+			
+			// take the union of skills from both records and set them
+			String [] pSkills = getSkillsArray((String)stopsTable.getValueAt(rows.get(0), stopsTableDfn.requiredSkills));
+			String [] dSkills = getSkillsArray((String)stopsTable.getValueAt(rows.get(1), stopsTableDfn.requiredSkills));
+			TreeSet<String> skillSet = new TreeSet<>();
+			skillSet.addAll(Arrays.asList(pSkills));
+			skillSet.addAll(Arrays.asList(dSkills));
+			for(String skill:skillSet){
+				builder.addRequiredSkill(skill);
 			}
 			
 			// save jsprit job id to builtstoprecs
