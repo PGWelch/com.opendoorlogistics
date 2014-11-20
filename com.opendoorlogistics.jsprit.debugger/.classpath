@@ -6,5 +6,7 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/com.opendoorlogistics.studio"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/com.opendoorlogistics.api"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/com.opendoorlogistics.core"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.opendoorlogistics.codefromweb"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.opendoorlogistics.components"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
