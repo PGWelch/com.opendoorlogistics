@@ -6,6 +6,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.api.components;
 
+import java.util.List;
+
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.ODLApi;
@@ -32,6 +34,14 @@ public interface ComponentControlLauncherApi {
 	 */
 	<T extends JPanel & Disposable> boolean registerPanel(String panelId,String title, T panel, boolean refreshable);
 
+	List<JPanel> getRegisteredPanels();
+	
+	void disposeRegisteredPanel(JPanel panel);
+	
+	void setTitle(JPanel panel, String title);
+	
+	void toFront(JPanel panel);
+	
 	ODLApi getApi();
 	
 	public interface ControlLauncherCallback{

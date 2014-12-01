@@ -98,10 +98,10 @@ public class ScheduleEditorComponent implements ScheduleEditor {
 				if (panel != null && SchedulesEditorPanel.class.isInstance(panel)) {
 					rep = (SchedulesEditorPanel) panel;
 				} else {
-					rep = new SchedulesEditorPanel(launcherApi.getApi());
+					rep = new SchedulesEditorPanel(launcherApi);
 					launcherApi.registerPanel("schedule-editor",null, rep, true);
 				}
-				rep.setData(ioDs);
+				rep.setData(launcherApi,ioDs);
 			}
 		});
 
@@ -178,7 +178,11 @@ public class ScheduleEditorComponent implements ScheduleEditor {
 
 			case RESOURCE_ID:
 				return "resource-id";
+				
+			case COLOUR:
+				return "colour";
 			}
+			
 			break;
 
 		case RESOURCE_DESCRIPTIONS:

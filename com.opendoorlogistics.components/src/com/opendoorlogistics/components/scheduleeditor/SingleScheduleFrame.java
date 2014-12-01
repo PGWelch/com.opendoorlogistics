@@ -11,21 +11,24 @@ import java.awt.BorderLayout;
 import javax.swing.BorderFactory;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.border.EtchedBorder;
 
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.components.scheduleeditor.data.EditorData;
 import com.opendoorlogistics.components.scheduleeditor.data.Resource;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
-public class SingleScheduleFrame extends JInternalFrame{
+public class SingleScheduleFrame extends JPanel implements Disposable{
 	private final String id;
 	private final TasksTable stopsList;
 	private final JLabel descriptionLabel;
+	private String title="";
 	
 	SingleScheduleFrame(String vehicleId, TaskMover stopMover, ODLApi api){
-		super(vehicleId, true,true,true,false);
+	//	super(vehicleId, true,true,true,false);
 		this.id = vehicleId;
 		setLayout(new BorderLayout());
 		
@@ -38,6 +41,7 @@ public class SingleScheduleFrame extends JInternalFrame{
 		stopsList.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));	
 
 	}
+
 	
 	void setData(EditorData data ){
 		Resource vehicle = data.getResource(id);
@@ -45,18 +49,29 @@ public class SingleScheduleFrame extends JInternalFrame{
 			descriptionLabel.setText(vehicle.getDescription());
 		}
 		
-		// set the window title
+		// set what title should be
 		if(Strings.isEmpty(vehicle.getName())==false && Strings.equalsStd(vehicle.getName(), vehicle.getId())==false){
-			setTitle(vehicle.getName() + " - " + id);
+			title  = vehicle.getName() + " - " + id;
 		}else{
-			setTitle(id);
+			title = id;
 		}
 
 		stopsList.setData(data);
 	}
 	
+	String getTitle(){
+		return title;
+	}
+	
 	String getVehicleId(){
 		return id;
+	}
+
+
+	@Override
+	public void dispose() {
+		// TODO Auto-generated method stub
+		
 	}
 	
 

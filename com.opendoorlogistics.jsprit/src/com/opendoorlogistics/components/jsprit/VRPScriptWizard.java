@@ -485,7 +485,8 @@ class VRPScriptWizard {
 		stops.setSourceTable(inputDataAdapterId, inputDfn.stops.table.getName());
 		helper.setSourceColumn(EditorTable.TASKS, TaskField.ID, PredefinedTags.ID, stops);
 		helper.setSourceColumn(EditorTable.TASKS, TaskField.NAME, PredefinedTags.NAME, stops);
-		stops.addColumn(PredefinedTags.ADDRESS, ODLColumnType.STRING, false, PredefinedTags.ADDRESS);
+		stops.addColumn("Type", ODLColumnType.STRING, false, PredefinedTags.TYPE);
+		stops.addColumn("Address", ODLColumnType.STRING, false, PredefinedTags.ADDRESS);
 
 		// configure vehicle types table
 		ScriptAdapterTable vehicles=helper.createAdapterTable(EditorTable.RESOURCE_TYPES);
@@ -499,10 +500,13 @@ class VRPScriptWizard {
 		order.setSourceTable(inputDataAdapterId, inputDfn.stopOrder.table.getName());
 		helper.setSourceColumn(EditorTable.TASK_ORDER, OrderField.RESOURCE_ID, PredefinedTags.VEHICLE_ID, order);
 		helper.setSourceColumn(EditorTable.TASK_ORDER, OrderField.TASK_ID, PredefinedTags.STOP_ID, order);
-		order.addColumn(PredefinedTags.ADDRESS, ODLColumnType.STRING, true, "lookup(\"stop-id\", \"stops\", \"id\",\"address\")");
+		helper.setFormula(EditorTable.TASK_ORDER, OrderField.COLOUR, "if( lookup(\"stop-id\",\"Solution details,stop-details\", \"stop-id\",\"has-violation\") ,color(1,0.9,0.9) ,null)", order);
+		
+		order.addColumn("Type", ODLColumnType.STRING, true, "lookup(\"stop-id\", \"stops\", \"id\",\"type\")");
+		order.addColumn("Address", ODLColumnType.STRING, true, "lookup(\"stop-id\", \"stops\", \"id\",\"address\")");
 		if(detailsDs!=null){
 			String tableRef ="\"" + detailsDs + ",stop-details" + "\"";
-			order.addColumn(PredefinedTags.ARRIVAL_TIME, ODLColumnType.STRING, true, "lookup(\"stop-id\"," + tableRef + ", \"stop-id\",\"arrival-time\")");		
+			order.addColumn("Arrival time", ODLColumnType.STRING, true, "lookup(\"stop-id\"," + tableRef + ", \"stop-id\",\"arrival-time\")");		
 		}
 		
 		// configure resource description table

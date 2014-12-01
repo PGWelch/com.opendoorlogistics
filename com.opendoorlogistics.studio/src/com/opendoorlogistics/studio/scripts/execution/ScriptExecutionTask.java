@@ -8,8 +8,10 @@ package com.opendoorlogistics.studio.scripts.execution;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import javax.swing.JPanel;
@@ -235,10 +237,11 @@ class ScriptExecutionTask {
 		ExecutionUtils.throwIfNotOnEDT();
 
 		// If we're not auto-refreshing, close any controls which used an old version of the script as they will be out-of-date
+		// providing they're not an 'never refresh' control which has a null script
 		if(!isScriptRefresh){
 			String myXML = new ScriptIO().toXMLString(unfiltered);
 			for(ReporterFrame<?> rf:runner.getReporterFrames()){
-				if(getScriptId().equals(rf.getId().getScriptId())){
+				if(getScriptId().equals(rf.getId().getScriptId()) && rf.getUnfilteredScript()!=null){
 					String otherXML = new ScriptIO().toXMLString(rf.getUnfilteredScript());
 					if(!Strings.equalsStd(myXML, otherXML)){
 						rf.dispose();
@@ -450,6 +453,49 @@ class ScriptExecutionTask {
 			@Override
 			public ODLApi getApi() {
 				return guiFascade.getApi();
+			}
+
+			@Override
+			public List<JPanel> getRegisteredPanels() {
+				ReporterFrameIdentifier id = getReporterFrameId( cb.getInstructionId(), "");
+				ArrayList<JPanel> ret = new ArrayList<JPanel>();
+				for(ReporterFrame<?> rf:runner.getReporterFrames(id.getScriptId(), id.getInstructionId())){
+					ret.add(rf.getUserPanel());
+				}
+				return ret;
+			}
+
+			@Override
+			public void disposeRegisteredPanel(JPanel panel) {
+				ReporterFrame<?> rf = getReporterFrame(panel);
+				if(rf!=null){
+					rf.dispose();
+				}
+			}
+			
+			private ReporterFrame<?> getReporterFrame(JPanel panel) {
+				for(ReporterFrame<?> rf : new ArrayList<ReporterFrame<?>>(runner.getReporterFrames())){
+					if(rf.getUserPanel() == panel){
+						return rf;
+					}
+				}
+				return null;
+			}
+
+			@Override
+			public void setTitle(JPanel panel, String title) {
+				ReporterFrame<?> rf = getReporterFrame(panel);
+				if(rf!=null){
+					rf.setTitle(title);
+				}
+			}
+
+			@Override
+			public void toFront(JPanel panel) {
+				ReporterFrame<?> rf = getReporterFrame(panel);
+				if(rf!=null){
+					rf.toFront();
+				}
 			}
 		};
 	}

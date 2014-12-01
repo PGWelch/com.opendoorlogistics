@@ -6,12 +6,15 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.scheduleeditor.data.beans;
 
+import java.awt.Color;
+
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.components.scheduleeditor.data.BeanMappedRowExt;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMapping;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 
 @ODLTableName(TaskOrder.TABLE_NAME)
@@ -20,6 +23,7 @@ public class TaskOrder extends BeanMappedRowExt{
 	
 	private String resourceId;
 	private String taskId;
+	private Color color;
 	
 	public String getResourceId() {
 		return resourceId;
@@ -40,7 +44,20 @@ public class TaskOrder extends BeanMappedRowExt{
 		this.taskId = stopId;
 	}
 	
-	public static void main(String[]args){
-		System.out.println(BeanMapping.buildDatastore(TaskOrder.class).getDefinition());
+
+	
+//	public static void main(String[]args){
+//		System.out.println(BeanMapping.buildDatastore(TaskOrder.class).getDefinition());
+//	}
+
+	public Color getColor() {
+		return color;
+	}
+
+	@ODLColumnOrder(2)
+	@ODLColumnName("colour")
+	@ODLNullAllowed
+	public void setColor(Color color) {
+		this.color = color;
 	}
 }

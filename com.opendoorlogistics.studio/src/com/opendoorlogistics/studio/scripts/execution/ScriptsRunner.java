@@ -366,5 +366,16 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 		}
 		return null;
 	}
+	
+	List<ReporterFrame<?>> getReporterFrames(String scriptId, String instructionId){
+		ArrayList<ReporterFrame<?>> ret = new ArrayList<ReporterFrame<?>>();
+		for(ReporterFrame<?> rf : getReporterFrames()){
+			ReporterFrameIdentifier id = rf.getId();
+			if(Strings.equals(id.getScriptId(), scriptId) && Strings.equals(id.getInstructionId(), instructionId)){
+				ret.add(rf);
+			}
+		}
+		return ret;
+	}
 
 }

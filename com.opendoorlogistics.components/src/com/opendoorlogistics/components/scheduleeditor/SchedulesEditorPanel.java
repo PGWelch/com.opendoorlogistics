@@ -39,6 +39,7 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EtchedBorder;
 
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.TableFlags;
@@ -57,24 +58,24 @@ import com.opendoorlogistics.utils.ui.ODLAction;
 
 public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposable, DataProvider {
 	private final ResourcesList vehiclesList = new ResourcesList(this);
-	private final JDesktopPane desktopPane;
-	private final ODLApi api;
+//	private final JDesktopPane desktopPane;
+	private ComponentControlLauncherApi api;
 	private ODLDatastore<? extends ODLTable> ioDs;
 	private EditorData data;
 	private ArrayList<Task> notLoadsOrder = new ArrayList<>();
 	
-	public SchedulesEditorPanel(ODLApi api) {
+	public SchedulesEditorPanel(ComponentControlLauncherApi api) {
 		// routes panel
 		this.api = api;
-		JPanel vehiclesPanel = new JPanel();
-		vehiclesPanel.setLayout(new BorderLayout());
+	//	JPanel vehiclesPanel = new JPanel();
+		setLayout(new BorderLayout());
 		JLabel vehiclesLabel = new JLabel("Vehicles");
 		vehiclesLabel.setHorizontalAlignment(SwingConstants.CENTER);
-		vehiclesPanel.add(vehiclesLabel, BorderLayout.NORTH);
-		vehiclesPanel.add(new JScrollPane(vehiclesList), BorderLayout.CENTER);
+		add(vehiclesLabel, BorderLayout.NORTH);
+		add(new JScrollPane(vehiclesList), BorderLayout.CENTER);
 		vehiclesList.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
 
-		// do a custom renderer for the vehicles list
+		// do a custom renderer for the list of vehicle names
 		vehiclesList.setCellRenderer(new DefaultListCellRenderer() {
 
 			@Override
@@ -87,6 +88,7 @@ public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposabl
 				setText(vehicle.getId() + " (" + count + ")");
 				
 				if(unloaded && !isSelected){
+					// red if we have unassigned stops, green if not
 					if(count>0){
 						setBackground(new Color(255, 200, 200));						
 					}else{
@@ -112,44 +114,45 @@ public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposabl
 		});
 
 		// add components to the panel
-		desktopPane = new JDesktopPane();
-		JPanel rightFrame = new JPanel();
-		rightFrame.setLayout(new BorderLayout());
+	//	desktopPane = new JDesktopPane();
+	//	JPanel rightFrame = new JPanel();
+		//rightFrame.setLayout(new BorderLayout());
 		
 		// don't use desktop scroll pane as tiling gets the incorrect size...
-		rightFrame.add( desktopPane, BorderLayout.CENTER);
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, vehiclesPanel,rightFrame);
-		setLayout(new BorderLayout());
-		add(splitPane, BorderLayout.CENTER);
+	//	rightFrame.add( desktopPane, BorderLayout.CENTER);
+	//	JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, vehiclesPanel,rightFrame);
+	//	setLayout(new BorderLayout());
+	//	add(splitPane, BorderLayout.CENTER);
 		
 		// create toolbar on the right frame
 		JToolBar toolBar = new JToolBar();
 		toolBar.setLayout(new FlowLayout(FlowLayout.RIGHT));		
 		toolBar.setFloatable(false);
-		rightFrame.add(toolBar, BorderLayout.SOUTH);
-		toolBar.add(new ODLAction("Open all", "Open all routes", Icons.loadFromStandardPath("open-16x16.png")) {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				closeSingleScheduleWindows();
-
-				// open all.. doing in reverse order gets the same order as the list on-screen when tiled
-				for(int i =vehiclesList.getModel().getSize()-1; i>=0 ;i--){
-					launchSingleScheduleEditor(vehiclesList.getModel().getElementAt(i));
-				}
-				
-				tileRoutes();					
-				
-			}
-		});
+		add(toolBar, BorderLayout.SOUTH);
+	//	rightFrame.add(toolBar, BorderLayout.SOUTH);
+//		toolBar.add(new ODLAction("Open all", "Open all routes", Icons.loadFromStandardPath("open-16x16.png")) {
+//			
+//			@Override
+//			public void actionPerformed(ActionEvent e) {
+//				closeSingleScheduleWindows();
+//
+//				// open all.. doing in reverse order gets the same order as the list on-screen when tiled
+//				for(int i =vehiclesList.getModel().getSize()-1; i>=0 ;i--){
+//					launchSingleScheduleEditor(vehiclesList.getModel().getElementAt(i));
+//				}
+//				
+//				tileRoutes();					
+//				
+//			}
+//		});
 		
-		toolBar.add(new ODLAction("Tile", "Tile all open route windows",Icons.loadFromStandardPath("application-tile-horizontal-16x16.png")) {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				tileRoutes();
-			}
-		});
+//		toolBar.add(new ODLAction("Tile", "Tile all open route windows",Icons.loadFromStandardPath("application-tile-horizontal-16x16.png")) {
+//			
+//			@Override
+//			public void actionPerformed(ActionEvent e) {
+//				tileRoutes();
+//			}
+//		});
 		toolBar.add(new ODLAction("Close windows", "Close all route windows", Icons.loadFromStandardPath("close-all-windows.png")) {
 			
 			@Override
@@ -161,7 +164,7 @@ public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposabl
 		// allowing unloading by dropping onto the desktop pane
 		DropTarget dropTarget = new DropTarget();
 		dropTarget.setActive(true);
-		desktopPane.setDropTarget(dropTarget);
+		//desktopPane.setDropTarget(dropTarget);
 		try {
 			dropTarget.addDropTargetListener(new DropTargetListener() {
 				
@@ -206,9 +209,10 @@ public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposabl
 
 	}
 
-	public void setData(ODLDatastore<? extends ODLTable> ioDs) {
+	public void setData(ComponentControlLauncherApi api,ODLDatastore<? extends ODLTable> ioDs) {
+		this.api = api;
 		this.ioDs = ioDs;
-		this.data = EditorData.read(api,ioDs);
+		this.data = EditorData.read(api.getApi(),ioDs);
 		
 		// set vehicles
 		this.vehiclesList.setListData(data.getResources());
@@ -235,14 +239,15 @@ public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposabl
 		}
 
 		// Update open windows; if vehicle no longer exists they will close themselves
-		for (JInternalFrame frame : desktopPane.getAllFrames()) {
+		for(JPanel frame : api.getRegisteredPanels()){
 			if (SingleScheduleFrame.class.isInstance(frame)) {
 				SingleScheduleFrame sre = (SingleScheduleFrame)frame;
 				AbstractResource vehicle = data.getResource(sre.getVehicleId());
 				if(vehicle==null){
-					sre.dispose();
+					api.disposeRegisteredPanel(sre);
 				}else{
-					sre.setData(data);						
+					sre.setData(data);
+					api.setTitle(frame, sre.getTitle());
 				}
 				
 			}
@@ -261,25 +266,28 @@ public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposabl
 	
 	private SingleScheduleFrame launchSingleScheduleEditor(AbstractResource vehicle) {
 		// close if already exists
-		for (JInternalFrame frame : desktopPane.getAllFrames()) {
-			if (SingleScheduleFrame.class.isInstance(frame) && Strings.equalsStd(((SingleScheduleFrame) frame).getVehicleId(), vehicle.getId())) {
-				frame.dispose();
+		for(JPanel frame : api.getRegisteredPanels()){
+			if (SingleScheduleFrame.class.isInstance(frame)) {
+				SingleScheduleFrame sre = (SingleScheduleFrame)frame;
+				if (Strings.equalsStd(sre.getVehicleId(), vehicle.getId())) {
+					api.disposeRegisteredPanel(frame);
+				}
 			}
 		}
 
-		SingleScheduleFrame sre = new SingleScheduleFrame(vehicle.getId(), this,api);
-		desktopPane.add(sre);
+
+		SingleScheduleFrame sre = new SingleScheduleFrame(vehicle.getId(), this,api.getApi());
 		sre.setData(data);
-		sre.setPreferredSize(new Dimension(200, sre.getPreferredSize().height));
-		sre.pack();
-		sre.setVisible(true);
+		
+		// register panel setting it *not* refreshable as the main panel controls the refresh
+		api.registerPanel("SSF" + vehicle.getId(), sre.getTitle(), sre, false);
 	
-		try {
-			sre.setMaximum(true);
-		} catch (PropertyVetoException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		try {
+//			sre.setMaximum(true);
+//		} catch (PropertyVetoException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		
 		return sre;
 	}
@@ -486,7 +494,7 @@ public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposabl
 
 			// Update all controls. This call is probably not needed when running this class
 			// from a component as the framework will call an update anyway...
-			setData(ioDs);
+			setData(api,ioDs);
 		} catch (Exception e) {
 			ioDs.rollbackTransaction();
 			e.printStackTrace();
@@ -521,31 +529,32 @@ public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposabl
 
 	@Override
 	public void dispose() {
-		// TODO Auto-generated method stub
-		
+		closeSingleScheduleWindows();
 	}
 
-	/**
-	 * 
-	 */
-	private void tileRoutes() {
-		for(JInternalFrame frame:desktopPane.getAllFrames()){
-			try {
-				frame.setMaximum(false);
-			} catch (PropertyVetoException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		TileInternalFrames.tile(desktopPane);
-	}
+//	/**
+//	 * 
+//	 */
+//	private void tileRoutes() {
+//		for(JInternalFrame frame:desktopPane.getAllFrames()){
+//			try {
+//				frame.setMaximum(false);
+//			} catch (PropertyVetoException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//		}
+//		TileInternalFrames.tile(desktopPane);
+//	}
 
 	/**
 	 * 
 	 */
 	private void closeSingleScheduleWindows() {
-		for(JInternalFrame frame:desktopPane.getAllFrames()){
-			frame.dispose();
+		for(JPanel frame : api.getRegisteredPanels()){
+			if(SingleScheduleFrame.class.isInstance(frame)){
+				api.disposeRegisteredPanel(frame);
+			}
 		}
 	}
 	

@@ -32,7 +32,7 @@ public interface ScheduleEditor extends ODLComponent {
 	}
 
 	enum OrderField {
-		RESOURCE_ID, TASK_ID,
+		RESOURCE_ID, TASK_ID,COLOUR
 	}
 	
 	enum ResourceDescriptionField{

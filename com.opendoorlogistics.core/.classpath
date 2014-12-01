@@ -20,7 +20,6 @@
 	<classpathentry kind="lib" path="libs/jsr-275-1.0-beta-2.jar"/>
 	<classpathentry kind="lib" path="libs/junit-3.8.1.jar"/>
 	<classpathentry kind="lib" path="libs/junit.jar"/>
-	<classpathentry kind="lib" path="libs/log4j-1.2.13.jar"/>
 	<classpathentry kind="lib" path="libs/opencsv-2.3.jar"/>
 	<classpathentry kind="lib" path="libs/org.hamcrest.core_1.3.0.v201303031735.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/trove-3.0.3.jar" sourcepath="C:/Users/Phil/.m2/repository/net/sf/trove4j/trove4j/3.0.3/trove4j-3.0.3-sources.jar"/>
@@ -47,5 +46,6 @@
 	<classpathentry kind="lib" path="libs/poi-3.11-beta2-20140822.jar" sourcepath="C:/Users/Phil/.m2/repository/org/apache/poi/poi/3.11-beta2/poi-3.11-beta2-sources.jar"/>
 	<classpathentry kind="lib" path="libs/poi-ooxml-3.11-beta2-20140822.jar" sourcepath="C:/Users/Phil/Dropbox/Business/DevelopmentSpace/3rdParty/poi-3.11-beta2/src"/>
 	<classpathentry kind="lib" path="libs/poi-ooxml-schemas-3.11-beta2-20140822.jar"/>
+	<classpathentry kind="lib" path="libs/log4j-1.2.13.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
