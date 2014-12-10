@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import javafx.print.Collation;
+
 import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -313,6 +315,9 @@ final public class AdapterBuilder {
 				
 				// be sure to copy column flags as well (needed for group-by)
 				stdCol.setFlags(col.getFlags());
+				
+				// and sort state
+				stdCol.setSortField(col.getSortField());
 			}
 
 			// Set any unsourced columns not in the original config to be optional 
@@ -467,11 +472,7 @@ final public class AdapterBuilder {
 
 		Function buildFunction(ODLTableReadOnly sourceTable, AdapterColumnConfig col) {
 			Function formula;
-			String uncompiled = col.getFormula();
-			if (col.isUseFormula() == false) {
-				// just use the field name as the formula
-				uncompiled = col.getFrom();
-			}
+			String uncompiled = getSafeFormula(col); 
 			formula = buildFormulaWithTableVariables(sourceTable, uncompiled, sourceTableRef.dsIndex);
 			return formula;
 		}
@@ -660,6 +661,16 @@ final public class AdapterBuilder {
 
 	}
 
+	private String getSafeFormula(AdapterColumnConfig col){
+		if(col.isUseFormula()){
+			return col.getFormula();
+		}
+		else{
+			// wrap in speech marks in-case we have a field like "stop-id"
+			return "\"" + col.getFrom() + "\"";
+		}
+	}
+	
 	private void buildGroupedByTable(final InternalTableRef srcTableRef, int destTableIndex, int defaultDsIndex) {
 		AdaptedTableConfig rawTableConfig = processedConfig.getTable(destTableIndex);
 
@@ -704,7 +715,7 @@ final public class AdapterBuilder {
 
 			// build the formula, converting a field reference to a formula
 			AdapterColumnConfig field = nonSortCols.getColumn(gbf);
-			String formulaText = field.isUseFormula() ? field.getFormula() : field.getFrom();
+			String formulaText = getSafeFormula(field);
 			nonSortFormulae[gbf] = buildFormulaWithTableVariables(srcTable, formulaText, defaultDsIndex);
 			if (env.isFailed()) {
 				return;
@@ -831,7 +842,7 @@ final public class AdapterBuilder {
 			Function build(AdapterColumnConfig field) {
 				// We compile the formula against the source table as only source table fields are accessible
 				// (should only be via an aggregate method...)
-				String formulaText = field.isUseFormula() ? field.getFormula() : field.getFrom();
+				String formulaText =getSafeFormula(field);
 				Function ret = buildFormula(formulaText, library, uvp);
 				if (ret == null) {
 					env.setFailed("Failed to build non-group formula or access field in group-by query: " + formulaText);
