@@ -13,6 +13,7 @@ import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.scripts.ScriptAdapter;
 import com.opendoorlogistics.api.scripts.ScriptAdapterTable;
+import com.opendoorlogistics.api.scripts.ScriptAdapterTable.ColumnSortType;
 import com.opendoorlogistics.api.scripts.ScriptComponentConfig;
 import com.opendoorlogistics.api.scripts.ScriptElement;
 import com.opendoorlogistics.api.scripts.ScriptInputTables;
@@ -22,6 +23,8 @@ import com.opendoorlogistics.api.scripts.ScriptOption.OutputType;
 import com.opendoorlogistics.api.scripts.ScriptTemplatesBuilder;
 import com.opendoorlogistics.api.scripts.ScriptTemplatesBuilder.BuildScriptCallback;
 import com.opendoorlogistics.api.standardcomponents.GanntChart;
+import com.opendoorlogistics.api.standardcomponents.LineGraph;
+import com.opendoorlogistics.api.standardcomponents.LineGraph.LGColumn;
 import com.opendoorlogistics.api.standardcomponents.Maps;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor.EditorTable;
@@ -181,6 +184,55 @@ class VRPScriptWizard {
 		// final String id = adapter.getAdapterId();
 		addMapTables(api, inputDataAdapterId, detailsDsId, null, adapter, false);
 		return adapter;
+	}
+	
+	private void buildLoadGraph(ScriptOption showSolution , String detailsDsId, ODLApi api,VRPConfig config){
+		
+		LineGraph lgc = api.standardComponents().lineGraph();
+		
+		StopDetailsTableDfn sdfn = new OutputTablesDfn(api, config).stopDetails;
+		
+		for(int i =0 ; i < config.getNbQuantities() ; i++){
+			String s = "View loads " + (i+1);
+			ScriptOption builder = showSolution.addOption(s,s);
+			builder.setSynced(true);
+			
+			// set the data adapter
+			ScriptAdapter adapter = builder.addDataAdapter("Input to view loads " + (i+1));
+			
+			for(int j=0; j <= 1 ; j++){
+				ScriptAdapterTable table = adapter.addSourcelessTable(lgc.getInputTableDefinition(api));
+				table.setSourceTable(detailsDsId, sdfn.table.getName());
+				table.setFormula(lgc.getColumnName(LGColumn.Key), "\""+PredefinedTags.VEHICLE_ID + "\"");
+				
+				if(j==1){
+					table.setFormula(lgc.getColumnName(LGColumn.X), "decimalhours(\"" + PredefinedTags.LEAVE_TIME + "\")");
+					table.setSourceColumn(lgc.getColumnName(LGColumn.Y), sdfn.table.getColumnName(sdfn.leaveQuantities[i]));					
+				}else{
+					table.setFormula(lgc.getColumnName(LGColumn.X), "decimalhours(\"" + PredefinedTags.ARRIVAL_TIME + "\")");
+					table.setSourceColumn(lgc.getColumnName(LGColumn.Y), sdfn.table.getColumnName(sdfn.arrivalQuantities[i]));										
+				}
+				
+				// set sorting...
+				int sortIndx=table.addColumn("SortField", ODLColumnType.STRING, true, "\""+PredefinedTags.VEHICLE_ID + "\"");
+				table.setSortType(sortIndx, ColumnSortType.ASCENDING);
+			}
+			
+			// set the config
+			Serializable lgconfig = null;
+			try {
+				lgconfig = lgc.getConfigClass().newInstance();;
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			
+			lgc.setXLabel("Decimal hours", lgconfig);
+			lgc.setYLabel("Quantity " + (i+1), lgconfig);
+			lgc.setTitle("Load on vehicles over time", lgconfig);
+			
+			// create the instruction
+			builder.addInstruction(adapter.getAdapterId(), lgc.getId(), ODLComponent.MODE_DEFAULT, lgconfig);
+		}
 	}
 	
 	private void buildGantt(ScriptOption builder, String detailsDsId, ODLApi api) {
@@ -432,6 +484,9 @@ class VRPScriptWizard {
 
 		// create gantt chart
 		buildGantt(showSolution.addOption("Gantt chart", "Gantt chart"), detailsDsId, api);
+		
+		// create load graph(s)
+		buildLoadGraph(showSolution, detailsDsId, api, config);
 		
 		// add export options
 		buildExportTables(showSolution.addOption("Export solution tables", "Export solution tables"), detailsDsId, outTables);

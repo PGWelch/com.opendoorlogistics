@@ -7,6 +7,7 @@
 package com.opendoorlogistics.api;
 
 import com.opendoorlogistics.api.standardcomponents.GanntChart;
+import com.opendoorlogistics.api.standardcomponents.LineGraph;
 import com.opendoorlogistics.api.standardcomponents.Maps;
 import com.opendoorlogistics.api.standardcomponents.Reporter;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor;
@@ -20,4 +21,5 @@ public interface StandardComponents {
 	GanntChart ganttChart();
 	TableCreator tableCreator();
 	ScheduleEditor scheduleEditor();
+	LineGraph lineGraph();
 }

@@ -19,6 +19,7 @@ import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlL
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.scripts.ScriptTemplatesBuilder;
+import com.opendoorlogistics.api.standardcomponents.LineGraph;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -34,7 +35,7 @@ import com.opendoorlogistics.components.barchart.basechart.BaseComponent;
 import com.opendoorlogistics.components.barchart.basechart.BaseConfig;
 import com.opendoorlogistics.utils.ui.Icons;
 
-final public class LineGraphComponent extends BaseComponent {
+final public class LineGraphComponent extends BaseComponent implements LineGraph{
 	
 	@Override
 	public String getId() {
@@ -54,10 +55,10 @@ final public class LineGraphComponent extends BaseComponent {
 		BaseConfig config = (BaseConfig) configuration;		
 		addFilterGroupsToIODs(table, config);
 
-		int keyCol=table.addColumn(-1, "Key", ODLColumnType.STRING, 0);
+		int keyCol=table.addColumn(-1,getColumnName(LGColumn.Key), ODLColumnType.STRING, 0);
 		table.setColumnFlags(keyCol, table.getColumnFlags(keyCol) | TableFlags.FLAG_IS_OPTIONAL);
-		table.addColumn(-1, "X", ODLColumnType.DOUBLE, 0);
-		table.addColumn(-1, "Y", ODLColumnType.DOUBLE, 0);
+		table.addColumn(-1, getColumnName(LGColumn.X), ODLColumnType.DOUBLE, 0);
+		table.addColumn(-1, getColumnName(LGColumn.Y), ODLColumnType.DOUBLE, 0);
 		
 
 		return ret;
@@ -106,6 +107,49 @@ final public class LineGraphComponent extends BaseComponent {
 		return new LineGraphPanel(api,config, table); 
 	}
 
+	@Override
+	public void setTitle(String title, Serializable config) {
+		((BaseConfig)config).setTitle(title);
+	}
+
+	@Override
+	public void setXLabel(String title, Serializable config) {
+		((BaseConfig)config).setXLabel(title);
+	}
+
+	@Override
+	public void setYLabel(String title, Serializable config) {
+		((BaseConfig)config).setYLabel(title);
+		
+	}
+
+	@Override
+	public ODLTableDefinition getInputTableDefinition(ODLApi api) {
+		try {
+			return getIODsDefinition(api, getConfigClass().newInstance()).getTableAt(0);
+		
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+
+	@Override
+	public String getColumnName(LGColumn col) {
+		switch(col){
+		case Key:
+			return "Key";
+			
+		case X:
+			return "X";
+			
+		case Y:
+			return "Y";
+		}
+		return null;
+	}
+
+	
 
 
 }

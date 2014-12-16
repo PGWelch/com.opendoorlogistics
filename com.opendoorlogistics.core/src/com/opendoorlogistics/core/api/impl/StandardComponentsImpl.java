@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.api.impl;
 import com.opendoorlogistics.api.StandardComponents;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.standardcomponents.GanntChart;
+import com.opendoorlogistics.api.standardcomponents.LineGraph;
 import com.opendoorlogistics.api.standardcomponents.Maps;
 import com.opendoorlogistics.api.standardcomponents.Reporter;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor;
@@ -55,5 +56,10 @@ public class StandardComponentsImpl implements StandardComponents{
 	@Override
 	public ScheduleEditor scheduleEditor() {
 		return find(ScheduleEditor.class);
+	}
+
+	@Override
+	public LineGraph lineGraph() {
+		return find(LineGraph.class);
 	}
 }

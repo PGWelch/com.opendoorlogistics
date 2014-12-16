@@ -13,6 +13,7 @@ import com.opendoorlogistics.core.api.impl.scripts.ScriptOptionImpl.FindMode;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
+import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig.SortField;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 public class ScriptAdapterTableImpl implements ScriptAdapterTable{
@@ -149,6 +150,23 @@ public class ScriptAdapterTableImpl implements ScriptAdapterTable{
 	@Override
 	public void removeColumn(int i) {
 		table.deleteColumn(i);
+	}
+
+	@Override
+	public void setSortType(int col, ColumnSortType cst) {
+		switch(cst){
+		case ASCENDING:
+			table.getColumn(col).setSortField(SortField.ASCENDING);
+			break;
+			
+		case DESCENDING:
+			table.getColumn(col).setSortField(SortField.DESCENDING);
+			break;
+			
+		case NONE:
+			table.getColumn(col).setSortField(SortField.NO);
+			break;
+		}
 	}
 
 }

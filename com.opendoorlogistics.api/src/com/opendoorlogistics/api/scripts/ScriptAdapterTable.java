@@ -67,4 +67,12 @@ public interface ScriptAdapterTable {
 	
 	void removeColumn(int i);
 	
+	public enum ColumnSortType{
+		NONE,
+		ASCENDING,
+		DESCENDING
+	}
+	
+	void setSortType(int col, ColumnSortType cst);
+	
 }
