@@ -24,6 +24,8 @@ import com.opendoorlogistics.api.ui.UIFactory.IntChangedListener;
 import com.opendoorlogistics.components.jsprit.VRPConfig.BooleanOptions;
 
 final class VRPConfigPanel extends JPanel {
+	private static boolean SHOW_QUANTITIES=false;
+	
 	final private VRPConfig conf;
 	final private JCheckBox[] boxes = new JCheckBox[BooleanOptions.values().length];
 	final private ComponentConfigurationEditorAPI editorAPI;
@@ -45,15 +47,19 @@ final class VRPConfigPanel extends JPanel {
 			}
 		});
 
+		
+		JPanel quantities = null;
+		if(SHOW_QUANTITIES){
+			quantities = editorAPI.getApi().uiFactory().createIntegerEntryPane("Number of quantities  ", conf.getNbQuantities(), "How many quantity dimensions in the VRP model (e.g. size, weight, etc...)?", new IntChangedListener() {
 
-		JPanel quantities = editorAPI.getApi().uiFactory().createIntegerEntryPane("Number of quantities  ", conf.getNbQuantities(), "How many quantity dimensions in the VRP model (e.g. size, weight, etc...)?", new IntChangedListener() {
+				@Override
+				public void intChange(int newInt) {
+					conf.setNbQuantities(newInt);
+					VRPConfigPanel.this.editorAPI.onIODataChanged();
+				}
+			});			
+		}
 
-			@Override
-			public void intChange(int newInt) {
-				conf.setNbQuantities(newInt);
-				VRPConfigPanel.this.editorAPI.onIODataChanged();
-			}
-		});
 		ItemListener itemListener = new ItemListener() {
 
 			@Override
@@ -68,7 +74,11 @@ final class VRPConfigPanel extends JPanel {
 		optPanel.setLayout(new GridLayout(nbLines, nbPerLine, 8, 2));
 
 		optPanel.add(iterations);
-		optPanel.add(quantities);
+		
+		if(SHOW_QUANTITIES){
+			optPanel.add(quantities);			
+		}
+		
 		for (BooleanOptions opt : BooleanOptions.values()) {
 //			if(VRPConstants.ENABLE_PD==false && opt == BooleanOptions.FORCE_ALL_DELIVERIES_BEFORE_PICKUPS){
 //				continue;
@@ -81,7 +91,7 @@ final class VRPConfigPanel extends JPanel {
 		add(optPanel);
 
 		if (editorAPI != null) {
-			add(Box.createRigidArea(new Dimension(0,6)));
+		//	add(Box.createRigidArea(new Dimension(0,6)));
 			JPanel leftAlignHack = new JPanel();
 			leftAlignHack.setLayout(new BorderLayout());
 			JPanel distances = editorAPI.getApi().uiFactory().createDistancesEditor(conf.getDistances(), 0);
