@@ -39,7 +39,7 @@ import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
 
-class MapsforgeTileFactory extends TileFactory implements Closeable , ODLSynchronousTileFactory{
+class MapsforgeTileFactory extends TileFactory {
 	private static final int TILE_SIZE = 256;
 	private static final float TEXT_SCALE = 0.5f;
 
@@ -215,7 +215,13 @@ class MapsforgeTileFactory extends TileFactory implements Closeable , ODLSynchro
 
 	@Override
 	public void dispose() {
-	
+		if (service != null) {
+			service.shutdown();
+			service = null;
+		}
+
+		databaseRenderer.destroy();
+		mapDatabase.closeFile();
 	}
 
 	@Override
@@ -358,15 +364,5 @@ class MapsforgeTileFactory extends TileFactory implements Closeable , ODLSynchro
 	}
 
 
-	@Override
-	public void close() {
-		if (service != null) {
-			service.shutdown();
-			service = null;
-		}
-
-		databaseRenderer.destroy();
-		mapDatabase.closeFile();
-	}
 
 }

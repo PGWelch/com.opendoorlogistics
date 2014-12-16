@@ -12,6 +12,7 @@ import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.core.gis.map.OnscreenGeometry;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
@@ -48,8 +49,23 @@ public class ODLLoadedGeometry extends ODLLoadableGeometry{
 				return null;
 			}
 		
-			Point pnt = getJTSGeometry().getCentroid();
-			wgsCentroid = new LatLongImpl(pnt.getY(), pnt.getX());
+			Geometry geometry = getJTSGeometry();
+			
+			// JTS library gives centroid of NaN for 0-length linestrings.
+			// We can generate these between 2 points if we have two stops at the same location.
+			// Do a fix for this.
+			if(LineString.class.isInstance(geometry)){
+				LineString ls = (LineString)geometry;
+				Coordinate [] coords = ls.getCoordinates();
+				if(coords!=null && coords.length==2 && coords[0].equals2D(coords[1])){
+					wgsCentroid = new LatLongImpl(coords[0].y, coords[0].x);
+				}
+			}
+			
+			if(wgsCentroid==null){
+				Point pnt = geometry.getCentroid();
+				wgsCentroid = new LatLongImpl(pnt.getY(), pnt.getX());				
+			}
 		}
 		return wgsCentroid;
 	}

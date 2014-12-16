@@ -21,19 +21,16 @@ import javax.swing.UIManager.LookAndFeelInfo;
 import com.opendoorlogistics.components.InitialiseComponents;
 import com.opendoorlogistics.core.InitialiseCore;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
-import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.execution.OptionsSubpath;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilder;
 import com.opendoorlogistics.core.scripts.execution.adapters.FunctionsBuilder;
-import com.opendoorlogistics.core.scripts.execution.adapters.IndexedDatastores;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.AbstractDependencyInjector;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.DependencyInjector;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.DependencyInjectorDecorator;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.ProcessingApiDecorator;
-import com.opendoorlogistics.core.utils.ui.SwingUtils;
 import com.opendoorlogistics.studio.components.geocoder.component.NominatimGeocoderComponent;
 import com.opendoorlogistics.studio.components.map.FilteredDrawablesContainer;
 import com.opendoorlogistics.studio.components.map.InteractiveMapControl;
@@ -51,8 +48,8 @@ import com.opendoorlogistics.studio.components.map.ZoomUtils;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdaptedTableControl;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdapterTableDefinitionGrid;
-import com.opendoorlogistics.studio.scripts.editor.adapters.QueryAvailableData;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdapterTablesTabControl;
+import com.opendoorlogistics.studio.scripts.editor.adapters.QueryAvailableData;
 import com.opendoorlogistics.studio.scripts.editor.wizardgenerated.ScriptEditorWizardGenerated;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManagerImpl;
@@ -199,7 +196,6 @@ final public class InitialiseStudio {
 					com.opendoorlogistics.core.geometry.GreateCircle.class,
 					com.opendoorlogistics.core.geometry.Spatial.class,
 					com.opendoorlogistics.core.gis.map.background.BackgroundTileFactorySingleton.class,
-					com.opendoorlogistics.core.gis.map.background.ODLSynchronousTileFactory.class,
 					com.opendoorlogistics.core.gis.map.CachedGeomImageRenderer.class,
 					com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox.class,
 					com.opendoorlogistics.core.gis.map.DatastoreRenderer.class,

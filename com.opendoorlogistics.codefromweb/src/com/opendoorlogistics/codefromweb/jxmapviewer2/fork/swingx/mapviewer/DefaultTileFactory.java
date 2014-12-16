@@ -9,6 +9,8 @@
 
 package com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer;
 
+import java.awt.image.BufferedImage;
+
 /**
  * A tile factory which configures itself using a TileFactoryInfo object and uses a Google Maps like mercator
  * projection.
@@ -23,6 +25,12 @@ public class DefaultTileFactory extends AbstractTileFactory
 	public DefaultTileFactory(TileFactoryInfo info)
 	{
 		super(info);
+	}
+
+	@Override
+	public BufferedImage renderSynchronously(int x, int y, int zoom) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

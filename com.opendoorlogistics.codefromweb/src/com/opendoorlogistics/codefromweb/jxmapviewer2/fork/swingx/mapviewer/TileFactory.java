@@ -11,6 +11,7 @@ package com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer;
 
 import java.awt.Dimension;
 import java.awt.geom.Point2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -141,4 +142,13 @@ public abstract class TileFactory
 	 */
 	protected abstract void startLoading(Tile tile);
 
+
+	/**
+	 * Added by Phil. Render the tile straight away.
+	 * @param x
+	 * @param y
+	 * @param zoom
+	 * @return
+	 */
+	public abstract BufferedImage renderSynchronously(int x, int y, int zoom);
 }

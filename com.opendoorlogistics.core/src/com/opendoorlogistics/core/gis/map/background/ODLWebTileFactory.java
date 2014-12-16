@@ -30,7 +30,7 @@ import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
 
-class ODLWebTileFactory extends AbstractTileFactory implements ODLSynchronousTileFactory {
+class ODLWebTileFactory extends AbstractTileFactory  {
 	private final Color fadeColor;
 	
 	public ODLWebTileFactory(TileFactoryInfo info, Color fadeColor) {
@@ -39,10 +39,7 @@ class ODLWebTileFactory extends AbstractTileFactory implements ODLSynchronousTil
 		this.fadeColor = fadeColor;
 	}
 
-	@Override
-	public void close() throws IOException {
-		dispose();
-	}
+
 
 	private BufferedImage multiAttemptDownload(String url) {
 		int tries = 0;

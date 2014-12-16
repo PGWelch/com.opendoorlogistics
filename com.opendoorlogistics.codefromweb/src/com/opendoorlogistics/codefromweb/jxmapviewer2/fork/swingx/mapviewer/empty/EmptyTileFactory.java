@@ -100,4 +100,10 @@ public class EmptyTileFactory extends TileFactory
 		// noop
 	}
 
+	@Override
+	public BufferedImage renderSynchronously(int x, int y, int zoom) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

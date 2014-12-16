@@ -6,8 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.core;
 
-import java.io.IOException;
-
 import com.opendoorlogistics.core.distances.DistancesSingleton;
 import com.opendoorlogistics.core.geometry.rog.RogSingleton;
 import com.opendoorlogistics.core.gis.map.background.BackgroundTileFactorySingleton;
@@ -19,11 +17,7 @@ public class DisposeCore {
 		if(!disposed){
 			DistancesSingleton.singleton().close();
 			RogSingleton.singleton().close();
-			try {
-				BackgroundTileFactorySingleton.getFactory().close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			BackgroundTileFactorySingleton.getFactory().dispose();
 			
 			disposed = true;
 		}

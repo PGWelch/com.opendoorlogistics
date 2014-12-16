@@ -37,8 +37,8 @@ public final class BackgroundTileFactorySingleton {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <TFactory extends TileFactory & ODLSynchronousTileFactory> TFactory getFactory() {
-		return (TFactory) singleton;
+	public static TileFactory getFactory() {
+		return singleton;
 	}
 
 	static {
@@ -84,7 +84,7 @@ public final class BackgroundTileFactorySingleton {
 //		}
 	}
 
-	private static class EmptyTileFactory extends TileFactory implements ODLSynchronousTileFactory{
+	private static class EmptyTileFactory extends TileFactory{
 		final BufferedImage blankImage;
 		
 		EmptyTileFactory(TileFactoryInfo info, BackgroundMapConfig config) {
@@ -92,11 +92,7 @@ public final class BackgroundTileFactorySingleton {
 			blankImage = ImageUtils.createBlankImage(256, 256, BufferedImage.TYPE_INT_ARGB, Colours.lerp(Color.WHITE, config.getFade(), config.getFade().getAlpha() / 255.0));
 		}
 
-		@Override
-		public void close() throws IOException {
-			// TODO Auto-generated method stub
-			
-		}
+
 
 		@Override
 		public BufferedImage renderSynchronously(int x, int y, int zoom) {
