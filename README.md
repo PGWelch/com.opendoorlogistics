@@ -10,11 +10,11 @@ ODL Studio works off an Excel spreadsheet and supports data editing, geocoding, 
 
 ### Building the projects 
 
-To build and run ODL Studio through Eclipse you need to import all of the following Eclipse projects. You do not need to import the Maven project *odl-geotools-fat-jar* as this is pre-built and its jar is available in the libs directory of com.opendoorlogistics.core.
+To build and run ODL Studio through Eclipse you need to import all of the following Eclipse projects. You do not need to import the Maven project *odl-geotools-fat-jar* as this is pre-built and its jar is available in the *lib* directory of *com.opendoorlogistics.core*.
 
-After importing Eclipse should automatically link the dependencies between various projects (available under project properties, Java Build Path, Projects). If this fails then setup the dependencies as listed below for each project.
+After importing Eclipse should automatically link the dependencies between various projects (available under *Project properties, Java Build Path, Projects*). If this fails then setup the dependencies as listed below for each project.
 
-Each project holds any 3rd party jars it is dependent on within its lib folder, so you don't need to download any other jars to build them.
+Each project holds any 3rd party jars it is dependent on within its *lib* folder, so you don't need to download any other jars to build them.
 
 ### Debugging in Eclipse
 Once the projects are building correctly if you don't need to use the vehicle routing functionality, then simply start ODL Studio by selecting *Debug As, Java Application* for the file *AppFrame.java* in the project *com.opendoorlogistics.studio*. If you plan to use the vehicle routing functionality, debug the file *RunJsprit.java* in the project *com.opendoorlogistics.jsprit.debugger*.
