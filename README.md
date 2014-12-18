@@ -1,10 +1,13 @@
-
+# Introduction #
 ODL Studio is free open source software for (a) customer mapping and analysis, (b) sales territory design, management and mapping and (c) vehicle fleet scheduling. 
 ODL Studio works off an Excel spreadsheet and supports data editing, geocoding, interactive mapping and pdf report generation.
 
 **To download ODL Studio, please go to http://www.opendoorlogistics.com**
 
-### com.opendoorlogistics project structure
+# Programmer's guide #
+
+*The following guide is intended for programmers wishing to modify or add to the ODL Studio project. If you simply want to use ODL Studio, download it from http://www.opendoorlogistics.com and work through the tutorials on the website.*
+
 To build and run ODL Studio through eclipse you need to import all of the eclipse projects (beginning com.opendoorlogistics....).
 You do not need to import the odl-geotools-fat-jar project.
 
