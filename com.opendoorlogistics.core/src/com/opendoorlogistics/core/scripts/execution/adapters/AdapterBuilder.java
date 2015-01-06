@@ -527,7 +527,7 @@ final public class AdapterBuilder {
 				
 				// check for simple field = value case where we can use the index (if exists)
 				boolean didIndexedSearch=false;
-				if(FmEquals.class.isInstance(formula) && formula.nbChildren()==2){
+				if(FmEquals.class.isInstance(formula) && formula.nbChildren()==2 && ((FmEquals)formula).isNot()==false){
 					FmConst constFnc=null;
 					FmLocalElement localVar=null;
 					for(int i =0 ; i < 2 ; i++){

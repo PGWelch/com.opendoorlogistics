@@ -1402,6 +1402,10 @@ public class Functions {
 		public String toString() {
 			return toStringWithChildOp(operator());
 		}
+		
+		public boolean isNot(){
+			return not;
+		}
 	}
 
 	public static final class FmGreaterThan extends FmComparisonBase {
