@@ -51,7 +51,8 @@ final public class AboutBoxDialog extends TextInformationDialog {
 
 	private static String info(boolean showLicenses) {
 
-		InputStream is = Object.class.getResourceAsStream(
+		// Use own class loader to prevent problems when jar loaded by reflection
+		InputStream is = AboutBoxDialog.class.getResourceAsStream(
 				showLicenses? "/resources/Licences.html":"/resources/About.html"  );
 		StringWriter writer = new StringWriter();
 		try {

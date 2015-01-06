@@ -159,7 +159,8 @@ public final class UpdateQueryComponent implements ODLComponent {
 
 	@Override
 	public Icon getIcon(ODLApi api,int mode) {
-		return new ImageIcon(Object.class.getResource("/resources/icons/update-query.png"));
+		// Use own class loader to prevent problems when jar loaded by reflection
+		return new ImageIcon(this.getClass().getResource("/resources/icons/update-query.png"));
 	}
 	
 	@Override

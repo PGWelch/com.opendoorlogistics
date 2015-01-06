@@ -25,6 +25,8 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyVetoException;
 import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -183,8 +185,51 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 	public static void main(String[] args) {
 		InitialiseStudio.initialise();
+	//	loadComponentFromEclipseProject("C:\\Users\\Phil\\Dropbox\\Business\\DevelopmentSpace\\Github\\com.opendoorlogistics\\com.opendoorlogistics.jsprit", "com.opendoorlogistics.components.jsprit.VRPComponent");
 		new AppFrame();
 	}
+	
+//	private static void loadComponentFromEclipseProject(String basedir, String componentClsName){
+//		try{
+//			// code assumes no slash at end...
+//			while(basedir.endsWith("/") || basedir.endsWith("\\")){
+//				basedir = basedir.substring(0, basedir.length()-1);
+//			}
+//			
+//			// add jars
+//			ArrayList<URL> urls = new ArrayList<>();
+//			File libsdir = new File(basedir + "/" + "libs");
+//			for(File file : libsdir.listFiles()){
+//				String name = file.getName().toLowerCase();
+//				if(name.contains("sources") || name.contains("javadoc") || name.contains("tests")){
+//					continue;
+//				}
+//				if(Strings.equalsStd(FilenameUtils.getExtension(file.getAbsolutePath()),"jar")){
+//					urls.add(file.toURI().toURL());
+//				}
+//			}
+//
+//			// add bin
+//			urls.add(new File(basedir + "/bin/").toURI().toURL());	
+//			
+//			// get class loader
+//			URL [] urlarr = urls.toArray(new URL[urls.size()]);
+//			@SuppressWarnings("resource")
+//			ClassLoader cl1 = new URLClassLoader(urlarr);
+//			
+//			// find the class
+//			Class<?> cls = cl1.loadClass(componentClsName);
+//			
+//			// create instance
+//			ODLComponent component = (ODLComponent)cls.newInstance();
+//			
+//			// register
+//			ODLGlobalComponents.register(component);
+//			
+//		}catch(Exception e){
+//			throw new RuntimeException(e);
+//		}
+//	}
 
 	public AppFrame() {
 

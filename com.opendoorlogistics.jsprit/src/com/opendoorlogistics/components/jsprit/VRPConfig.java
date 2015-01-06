@@ -40,6 +40,7 @@ final public class VRPConfig implements Serializable {
 	private DistancesConfiguration distances = new DistancesConfiguration();
 	private int nbIterations=VRPConstants.DEFAULT_NB_ITERATIONS;
 	private int nbQuantities=1;
+	private int nbThreads=1;
 	
 //	public boolean isStopTimeWindows() {
 //		return getBool(BooleanOptions.USE_STOP_TIME_WINDOWS);
@@ -147,6 +148,16 @@ final public class VRPConfig implements Serializable {
 	public void setNbIterations(int nbIterations) {
 		this.nbIterations = nbIterations;
 	}
+
+	public int getNbThreads() {
+		return nbThreads;
+	}
+
+	@XmlAttribute	
+	public void setNbThreads(int nbThreads) {
+		this.nbThreads = nbThreads;
+	}
+	
 	
 	
 }

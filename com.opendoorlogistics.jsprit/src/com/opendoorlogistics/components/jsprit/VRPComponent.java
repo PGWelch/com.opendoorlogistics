@@ -267,7 +267,17 @@ public class VRPComponent implements ODLComponent {
         VehicleRoutingAlgorithmBuilder vraBuilder = new VehicleRoutingAlgorithmBuilder(problem,"schrimpf.xml");
         vraBuilder.addDefaultCostCalculators();
         vraBuilder.addCoreConstraints();
-
+        
+        // validate and set the number of threads
+        int nbThreads = config.getNbThreads();
+        if(nbThreads<=0){
+        	nbThreads=1;
+        }
+        if(nbThreads>100){
+        	nbThreads= 100;
+        }
+        vraBuilder.setNuOfThreads(nbThreads);
+        
         StateManager stateManager = new StateManager(problem);
         ConstraintManager constraintManager = new ConstraintManager(problem,stateManager);
         if(config.isDeliveriesBeforePickups()){
@@ -307,6 +317,9 @@ public class VRPComponent implements ODLComponent {
 			long lastTime = System.currentTimeMillis();
 		}
 		final LastUpdate lastUpdate = new LastUpdate();
+		
+		final long startTime = System.currentTimeMillis();
+		
 		algorithm.addListener(new IterationEndsListener() {
 
 			@Override
@@ -324,7 +337,9 @@ public class VRPComponent implements ODLComponent {
 				if (time - lastUpdate.lastTime > 250) {
 					lastUpdate.lastTime = time;
 					StringBuilder builder = new StringBuilder();
-					builder.append("Solving VRP, step " + i);
+					
+					builder.append("Runtime " + ((time-startTime)/1000) + "s");
+					builder.append(", Step " + i);
 					if(bestEver.cost != Double.POSITIVE_INFINITY){
 						builder.append(", " + DecimalFormat.getInstance().format(bestEver.cost) + " cost" );
 					}
@@ -451,8 +466,8 @@ public class VRPComponent implements ODLComponent {
 
 	@Override
 	public Icon getIcon(ODLApi api, int mode) {
+		// Use own class loader to prevent problems when jar loaded by reflection
 		return new ImageIcon(VRPComponent.class.getResource("/resources/icons/vrp.png"));
-		// return Icons.loadFromStandardPath("vrp.png");
 	}
 
 	@Override

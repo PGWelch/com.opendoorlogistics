@@ -67,7 +67,8 @@ public class AppProperties {
 	private static void loadEmbedded(Properties addTo){
 		InputStream stream =null;
 		try {
-			stream = Object.class.getResourceAsStream(AppConstants.ODL_EMBEDED_PROPERTIES_FILE);
+			// Use own class loader to prevent problems when jar loaded by reflection
+			stream = AppProperties.class.getResourceAsStream(AppConstants.ODL_EMBEDED_PROPERTIES_FILE);
 			addTo.load(stream);
 			System.out.println("Loaded embededd properties.");
 		} catch (Exception e) {

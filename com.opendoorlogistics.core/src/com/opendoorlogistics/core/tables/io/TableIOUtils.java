@@ -40,19 +40,24 @@ final public class TableIOUtils {
 	
 	public static ODLDatastoreAlterable<ODLTableAlterable> importExampleDatastore(String name, ExecutionReport report){
 		ODLDatastoreAlterable<ODLTableAlterable> ret =null;
-		InputStream is = Object.class.getResourceAsStream( "/resources/datastores/"+ name);	
+		// Use own class loader to prevent problems when jar loaded by reflection
+		InputStream is = TableIOUtils.class.getResourceAsStream( "/resources/datastores/"+ name);	
 		try {
 			ret = PoiIO.importExcel(is, report);
 		} catch (Exception e) {
 			ret = null;
-			report.setFailed(e);
+			if(report!=null){
+				report.setFailed(e);				
+			}
 		}
 		finally{
 			if(is!=null){
 				try {
 					is.close();					
 				} catch (Exception e2) {
-					report.setFailed(e2);
+					if(report!=null){
+						report.setFailed(e2);				
+					}
 				}
 			}
 		}

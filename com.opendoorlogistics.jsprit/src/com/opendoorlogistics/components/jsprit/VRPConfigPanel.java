@@ -47,6 +47,14 @@ final class VRPConfigPanel extends JPanel {
 			}
 		});
 
+
+		JPanel threads = editorAPI.getApi().uiFactory().createIntegerEntryPane("Number of CPU threads  ", conf.getNbThreads(), "How many CPU threads should the optimiser use?", new IntChangedListener() {
+
+			@Override
+			public void intChange(int newInt) {
+				conf.setNbThreads(newInt);
+			}
+		});	
 		
 		JPanel quantities = null;
 		if(SHOW_QUANTITIES){
@@ -74,6 +82,7 @@ final class VRPConfigPanel extends JPanel {
 		optPanel.setLayout(new GridLayout(nbLines, nbPerLine, 8, 2));
 
 		optPanel.add(iterations);
+		optPanel.add(threads);
 		
 		if(SHOW_QUANTITIES){
 			optPanel.add(quantities);			

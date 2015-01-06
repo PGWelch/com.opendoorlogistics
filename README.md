@@ -16,9 +16,6 @@ After importing Eclipse should automatically link the dependencies between vario
 
 Each project holds any 3rd party jars it is dependent on within its *lib* folder, so you don't need to download any other jars to build them.
 
-### Debugging in Eclipse
-Once the projects are building correctly if you don't need to use the vehicle routing functionality, then simply start ODL Studio by selecting *Debug As, Java Application* for the file *AppFrame.java* in the project *com.opendoorlogistics.studio*. If you plan to use the vehicle routing functionality, debug the file *RunJsprit.java* in the project *com.opendoorlogistics.jsprit.debugger*.
-
 ## List of Eclipse projects
 
 #### com.opendoorlogistics.api
@@ -43,22 +40,19 @@ The engine is the framework which loads components, runs scripts, draws the map 
 
 *Dependencies on other com.opendoorlogistics projects* : com.opendoorlogistics.api, com.opendoorlogistics.codefromweb
 
-#### com.opendoorlogistics.jsprit.debugger
-You should run this project to debug jsprit within ODL Studio.
-
 *Dependencies on other com.opendoorlogistics projects* : com.opendoorlogistics.api, com.opendoorlogistics.codefromweb, com.opendoorlogistics.components, com.opendoorlogistics.core, com.opendoorlogistics.jsprit, com.opendoorlogistics.studio
 
 #### com.opendoorlogistics.jsprit
-This is the jsprit integration project which integrates the jsprit vehicle routing toolkit (https://github.com/jsprit/jsprit) into ODL Studio. If you are building it to run outside of Eclipse, then (a) export it from Eclipse as a fat jar (*Export, Runnable jar*) and (b) place the exported jar in the *plugins* subdirectory of the ODL Studio installation directory.
-The jar will be automatically loaded by ODL Studio, using the java simple plugin framework (https://code.google.com/p/jspf/).
-If you only wish to debug within ODL Studio then use the *jsprit.debugger* project.
+This is the jsprit integration project which integrates the jsprit vehicle routing toolkit (https://github.com/jsprit/jsprit) into ODL Studio. To build it (a) export it from Eclipse as a fat jar (*Export, Runnable jar*) and (b) place the exported jar in the *plugins* subdirectory of the ODL Studio installation directory.
+The jar will be automatically loaded by ODL Studio, using the java simple plugin framework (https://code.google.com/p/jspf/). To debug it, place the fat jar in a plugins subdirectory within 
+the Studio code directory and then debug ODL Studio as normal. You must build the jar before debugging.
 
 When jsprit is loaded as a plugin it has its own separate class loader, to avoid 'jar hell' problems.
 
 *Dependencies on other com.opendoorlogistics projects* : com.opendoorlogistics.api
 
 #### com.opendoorlogistics.studio
-This project contains the ODL Studio UI, based on java swing.
+This project contains the ODL Studio UI, based on java swing. To debug it, start the AppFrame.java class.
 
 *Dependencies on other com.opendoorlogistics projects* : com.opendoorlogistics.api, com.opendoorlogistics.codefromweb, com.opendoorlogistics.components, com.opendoorlogistics.core
 

@@ -540,7 +540,8 @@ final public class Strings {
 	}
 
 	public static String readUTF8Resource(String name) {
-		InputStream is = Object.class.getResourceAsStream(name);
+		// Use own class loader to prevent problems when jar loaded by reflection
+		InputStream is = Strings.class.getResourceAsStream(name);
 		StringWriter writer = new StringWriter();
 		try {
 			IOUtils.copy(is, writer, Charsets.UTF_8);

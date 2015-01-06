@@ -21,7 +21,9 @@ final public class Icons {
 	}
 
 	public static ImageIcon loadFromStandardPath(String name) {
-		return new ImageIcon(Object.class.getResource("/resources/icons/" + name));
+		// Load using our own class loader (not Object's) so embedded resources are
+		// loaded correctly if the jar is loaded by reflection.
+		return new ImageIcon(Icons.class.getResource("/resources/icons/" + name));
 	}
 
 	/**

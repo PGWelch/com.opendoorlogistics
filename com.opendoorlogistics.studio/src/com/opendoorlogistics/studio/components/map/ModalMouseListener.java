@@ -65,7 +65,8 @@ final public class ModalMouseListener extends MouseInputAdapter {
 			Toolkit toolkit = Toolkit.getDefaultToolkit();
 			BufferedImage image;
 			try {
-				URL url = Object.class.getResource("/resources/icons/" + imagefile);
+				// Use own class loader to prevent problems when jar loaded by reflection
+				URL url = this.getClass().getResource("/resources/icons/" + imagefile);
 				image = ImageIO.read(url);
 			} catch (IOException e) {
 				throw new RuntimeException();
