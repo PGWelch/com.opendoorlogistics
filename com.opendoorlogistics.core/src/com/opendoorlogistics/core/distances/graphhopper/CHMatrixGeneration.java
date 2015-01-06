@@ -39,10 +39,12 @@ import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.AppProperties;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 import com.opendoorlogistics.core.geometry.Spatial;
 import com.opendoorlogistics.core.utils.UpdateTimer;
+import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -97,11 +99,26 @@ public class CHMatrixGeneration implements Disposable {
 		ODLGeomImpl ret = new ODLLoadedGeometry(geometry);
 		return ret;
 	}
+
+	private static GraphHopper createHopper(){
+		String config = AppProperties.getValue("graphhopper.config");
+		if(Strings.equalsStd(config, "mobile")){
+			return new GraphHopper().forMobile();
+		}
+		else if(Strings.equalsStd(config, "server")){
+			return new GraphHopper().forServer();
+		}
+		else if(Strings.equalsStd(config, "desktop")){
+			return new GraphHopper().forDesktop();
+		}	
+		
+		System.err.println("Unidentified grapphopper config, defaulting to desktop.");
+		return new GraphHopper().forDesktop();
+	}
 	
 	public CHMatrixGeneration(String graphFolder) {
 		this.graphFolder = graphFolder;
-		this.hopper = new GraphHopper().forDesktop();
-		hopper.setInMemory(true);
+		this.hopper = createHopper();
 		hopper.setGraphHopperLocation(this.graphFolder);
 		hopper.setEncodingManager(new EncodingManager("car"));
 		hopper.importOrLoad();

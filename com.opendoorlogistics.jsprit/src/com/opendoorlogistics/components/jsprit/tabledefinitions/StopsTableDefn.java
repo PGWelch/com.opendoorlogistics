@@ -145,6 +145,8 @@ public class StopsTableDefn extends TableDfn {
 		quantityIndices = addQuantities(QUANTITY, config);
 		
 		requiredSkills = addStrColumn("required-skills");
+		table.setColumnDefaultValue(requiredSkills, "");
+		
 		table.setColumnFlags(requiredSkills, table.getColumnFlags(requiredSkills)|TableFlags.FLAG_IS_OPTIONAL);
 
 	}

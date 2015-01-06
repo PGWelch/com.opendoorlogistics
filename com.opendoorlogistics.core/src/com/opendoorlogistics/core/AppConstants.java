@@ -30,11 +30,13 @@ final public class AppConstants {
 
 	public static final String OSM_COPYRIGHT = "© OpenStreetMap contributors";
 	
-	public static final String ODL_EXTERNAL_PROPERTIES_FILE = "odl.properties";
 	
-	public static final String ODL_EMBEDED_PROPERTIES_FILE = File.separator + "resources" + File.separator + "odl-defaults.properties";
+	// Don't use File.separator when loading resources as its wrong!
+	public static final String ODL_EMBEDED_PROPERTIES_FILE = "/resources/odl-defaults.properties";
 
 	public static final String ODL_CONFIG_DIR = "config" + File.separator;
+
+	public static final String ODL_EXTERNAL_PROPERTIES_FILE =ODL_CONFIG_DIR +  "odl.properties";
 
 	public static final String ODL_BACKGROUND_MAP_PROPERTIES_FILE =ODL_CONFIG_DIR + "backgroundmap.properties";
 

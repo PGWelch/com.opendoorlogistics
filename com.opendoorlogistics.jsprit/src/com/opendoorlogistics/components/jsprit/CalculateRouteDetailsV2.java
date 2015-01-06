@@ -538,7 +538,7 @@ public class CalculateRouteDetailsV2 {
 			stopDetail.stopAddress = (String) stopsTable.getValueAt(stopRow, stopDfn.address);
 			stopDetail.stopLatLong = stopDfn.latLong.getLatLong(stopsTable, stopRow, false);
 			stopDetail.stopDuration = stopDfn.getDuration(stopsTable, stopRow).getTotalMilliseconds();
-			stopDetail.type = stopDfn.getStopType(stopsTable, stopRow).getKeyword();
+			stopDetail.type = stopDfn.getStopType(stopsTable, stopRow).getPrimaryCode();
 			stopDetail.requiredSkills = (String)stopsTable.getValueAt(stopRow, stopDfn.requiredSkills);
 			ODLTime[] tw = stopDfn.getTW(stopsTable, stopRow);
 			if (tw != null) {

@@ -9,7 +9,6 @@
 package com.opendoorlogistics.core;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
@@ -64,13 +63,23 @@ public class AppProperties {
 		return ret;
 	}
 	
+	public static String getValue(String key){
+		if(applicationProperties!=null){
+			Object val = applicationProperties.get(key);
+			if(val!=null){
+				return val.toString();
+			}
+		}
+		return null;
+	}
+	
 	private static void loadEmbedded(Properties addTo){
 		InputStream stream =null;
 		try {
 			// Use own class loader to prevent problems when jar loaded by reflection
 			stream = AppProperties.class.getResourceAsStream(AppConstants.ODL_EMBEDED_PROPERTIES_FILE);
 			addTo.load(stream);
-			System.out.println("Loaded embededd properties.");
+			System.out.println("Loaded embedded properties.");
 		} catch (Exception e) {
 		}finally{
 			if(stream!=null){
@@ -82,5 +91,9 @@ public class AppProperties {
 		}
 	}
 	
+	
+	public static void main(String []args){
+		loadEmbedded(new Properties());
+	}
 
 }

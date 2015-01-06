@@ -135,7 +135,6 @@ class VRPScriptWizard {
 		points.setFormulae(new String[][] { 
 				new String[] { "label", "if(" + PredefinedTags.TYPE + "=\"" + VRPConstants.DEPOT + "\",\"depot\",\"stop-number\")" },
 				new String[] { "colour", "randcolour(\"" + PredefinedTags.VEHICLE_ID + "\")" }, 
-				new String[] { "pixelWidth", "if(" + PredefinedTags.TYPE + "=\"" + VRPConstants.DEPOT + "\"," + (isReport ? "100,50)" : "24,12)") },
 				new String[] { "drawOutline", "true" },
 				new String[] { "tooltip", "\"arrival-time\" & \" - \"  & \"stop-name\" & \", \" & \"stop-address\"" },
 				});
@@ -143,19 +142,32 @@ class VRPScriptWizard {
 			points.setTableName(outputTableName);
 		}
 
+		// setup stops symbols
 		StringBuilder builder = new StringBuilder();
 		builder.append("switch(");
 		builder.append(PredefinedTags.TYPE);
 		builder.append(",\"" + VRPConstants.DEPOT + "\",\"fat-star\"");
-		builder.append(",\"" + StopType.LINKED_DELIVERY.getKeyword() + "\",\"inverted-triangle\"");
-		builder.append(",\"" + StopType.UNLINKED_DELIVERY.getKeyword() + "\",\"circle\"");
-		builder.append(",\"" + StopType.LINKED_PICKUP.getKeyword() + "\",\"triangle\"");
-		builder.append(",\"" + StopType.UNLINKED_PICKUP.getKeyword() + "\",\"square\"");
-		builder.append(",\"circle\")");
+		builder.append(",\"" + StopType.LINKED_DELIVERY.getPrimaryCode() + "\",\"inverted-triangle\"");
+		builder.append(",\"" + StopType.UNLINKED_DELIVERY.getPrimaryCode() + "\",\"circle\"");
+		builder.append(",\"" + StopType.LINKED_PICKUP.getPrimaryCode() + "\",\"triangle\"");
+		builder.append(",\"" + StopType.UNLINKED_PICKUP.getPrimaryCode() + "\",\"square\"");
+		builder.append(")");
 		points.setFormula("symbol", builder.toString());
 
 		points.setFlags(points.getFlags() | TableFlags.FLAG_IS_DRAWABLES);
 
+		// setup stops sizes
+		builder = new StringBuilder();
+		builder.append("switch(");
+		builder.append(PredefinedTags.TYPE);
+		builder.append(",\"" + VRPConstants.DEPOT + "\"," + (isReport?"60":"30") );
+		builder.append(",\"" + StopType.LINKED_DELIVERY.getPrimaryCode()+ "\"," + (isReport?"36":"18") );
+		builder.append(",\"" + StopType.UNLINKED_DELIVERY.getPrimaryCode()+ "\"," + (isReport?"24":"12") );
+		builder.append(",\"" + StopType.LINKED_PICKUP.getPrimaryCode()+ "\"," + (isReport?"36":"18") );
+		builder.append(",\"" + StopType.UNLINKED_PICKUP.getPrimaryCode()+ "\"," + (isReport?"28":"14") );
+		builder.append(")");
+		points.setFormula("pixelWidth", builder.toString());
+			
 		// init unassigned stops adapter
 		ScriptAdapterTable unassigned = adapter.addSourcelessTable(drawable);
 		unassigned.setTableFilterFormula("lookupcount(id,\"" + inputDataAdapterId + ", stop-order\",\"stop-id\")=0");
