@@ -18,8 +18,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import javafx.print.Collation;
-
 import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
