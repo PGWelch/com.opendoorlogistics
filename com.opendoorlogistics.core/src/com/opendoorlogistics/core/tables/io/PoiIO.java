@@ -275,10 +275,11 @@ final public class PoiIO {
 			Number dVal = (Number)table.getValueAt(row, col);
 			if(dVal!=null){
 				cell.setCellValue(dVal.doubleValue());
+				cell.setCellType(Cell.CELL_TYPE_NUMERIC);
 			}else{
 				cell.setCellValue((String)null);
+				cell.setCellType(Cell.CELL_TYPE_BLANK);
 			}
-			cell.setCellType(Cell.CELL_TYPE_NUMERIC);
 			break;
 		default:
 			String sval = TableUtils.getValueAsString(table, row, col);

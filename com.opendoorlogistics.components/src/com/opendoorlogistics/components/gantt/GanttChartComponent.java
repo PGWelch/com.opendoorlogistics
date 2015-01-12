@@ -107,6 +107,19 @@ public class GanttChartComponent implements ODLComponent, GanntChart {
 		// Get items and sort by resource then date
 		final StringConventions sc = api.getApi().stringConventions();
 		List<GanttItem> items = GanttItem.beanMapping.getTableMapping(0).readObjectsFromTable(ioDs.getTableAt(0));
+		
+		// Rounding doubles to longs can create small errors where a start time is 1 millisecond after an end.
+		// Set all start times to be <= end time
+		for(GanttItem item:items){
+			if(item.getStart()==null || item.getEnd()==null){
+				throw new RuntimeException("Found Gannt item with null start or end time.");
+			}
+			
+			if(item.getStart().getValue() > item.getEnd().getValue()){
+				item.setStart(item.getEnd());
+			}
+		}
+		
 		Collections.sort(items, new Comparator<GanttItem>() {
 
 			@Override

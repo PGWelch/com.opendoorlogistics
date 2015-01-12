@@ -537,7 +537,7 @@ public class VRPBuilder {
 					builder.setPickupServiceTime(serviceTime.getTotalMilliseconds());
 					builder.setPickupLocationId(locId);
 				} else {
-					builder.setPickupServiceTime(serviceTime.getTotalMilliseconds());
+					builder.setDeliveryServiceTime(serviceTime.getTotalMilliseconds());
 					builder.setDeliveryLocationId(locId);
 				}
 

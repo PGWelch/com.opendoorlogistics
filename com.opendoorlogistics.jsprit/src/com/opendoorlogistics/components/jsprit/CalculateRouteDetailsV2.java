@@ -76,11 +76,7 @@ public class CalculateRouteDetailsV2 {
 
 		// add stops for the depots
 		buildDepotStops();
-
-		// find and pickups and delivers on different routes or with only one
-		// loaded
-		// findUnbalancedPickupDelivers();
-
+		
 		// build jsprit solution using the built problem etc
 		Map.Entry<VehicleRoutingProblemSolution, SolutionAnalyser> tmp = buildJspritSolution();
 		jspritSol = tmp.getKey();
@@ -627,9 +623,13 @@ public class CalculateRouteDetailsV2 {
 			detail.skills = (String)vehiclesTable.getValueAt(vehicleTypeRow, dfn.vehicles.skills);
 			
 			// save
-			sd.routes.add(detail);
 			ret.put(vehicleId, detail);
 
+		}
+		
+		// add all routes to the solution details object in sorted orded...
+		for(RouteDetail rd : ret.values()){
+			sd.routes.add(rd);			
 		}
 		return ret;
 	}
