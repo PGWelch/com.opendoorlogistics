@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+
+
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -29,6 +31,7 @@ import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.strings.Strings;
+import com.vividsolutions.jts.geom.Envelope;
 
 final public class MapUtils {
 
@@ -70,7 +73,15 @@ final public class MapUtils {
 			if(Strings.isEmpty(legendKeyFilter) || Strings.equalsStd(pnt.getLegendKey(), legendKeyFilter)){
 				if(pnt.getGeometry()==null){
 					ret.add(pnt);
-				}else if(pnt.getGeometry().getWGSCentroid()!=null){
+				}
+				else if(pnt.getGeometry().getWGSBounds()!=null){
+					Envelope env = pnt.getGeometry().getWGSBounds();
+					ret.add(env.getMinY(), env.getMinX());
+					ret.add(env.getMinY(), env.getMaxX());
+					ret.add(env.getMaxY(), env.getMinX());
+					ret.add(env.getMaxY(), env.getMaxX());
+				}
+				else if(pnt.getGeometry().getWGSCentroid()!=null){
 					ret.add(pnt.getGeometry().getWGSCentroid());
 				}				
 			}
