@@ -33,6 +33,7 @@ public class DemoBuilder {
 	private final VRPConfig config;
 	private final ODLDatastore<? extends ODLTable> ioDb;
 	private final InputTablesDfn dfn;
+	private final DemoAddresses addresses;
 	
 	public DemoBuilder(ODLApi api,DemoConfig demoConfig, VRPConfig config, ODLDatastore<? extends ODLTable> ioDb) {
 		this.api = api;
@@ -41,16 +42,19 @@ public class DemoBuilder {
 		this.ioDb = ioDb;
 		
 		dfn = new InputTablesDfn(api, config);
-		
-		for(int i =0;  i< DemoAddresses.size() ; i++){
+
+		addresses = DemoAddresses.UK;
+
+		for(int i =0;  i< addresses.size() ; i++){
 			freelocs.add(i);
 		}
+		
 	}
 	
 	private LatLong [] getLatLongs(List<Integer> list){
 		LatLong [] ret = new LatLong[list.size()];
 		for(int i =0 ; i < ret.length;i++){
-			ret[i] = DemoAddresses.position(list.get(i));
+			ret[i] = addresses.position(list.get(i));
 		}
 		return ret;
 	}
@@ -294,10 +298,10 @@ public class DemoBuilder {
 
 	private void setStopAddress( int addressIndx,int row, ODLTable stopsTable) {
 		StopsTableDefn stopsDefn = dfn.stops;
-		stopsTable.setValueAt(DemoAddresses.companyName(addressIndx), row, stopsDefn.name);
-		stopsTable.setValueAt(DemoAddresses.address(addressIndx), row, stopsDefn.address);
-		stopsTable.setValueAt(DemoAddresses.position(addressIndx).getLatitude(), row, stopsDefn.latLong.latitude);
-		stopsTable.setValueAt(DemoAddresses.position(addressIndx).getLongitude(), row, stopsDefn.latLong.longitude);
+		stopsTable.setValueAt(addresses.companyName(addressIndx), row, stopsDefn.name);
+		stopsTable.setValueAt(addresses.address(addressIndx), row, stopsDefn.address);
+		stopsTable.setValueAt(addresses.position(addressIndx).getLatitude(), row, stopsDefn.latLong.latitude);
+		stopsTable.setValueAt(addresses.position(addressIndx).getLongitude(), row, stopsDefn.latLong.longitude);
 	}
 
 	/**
@@ -368,7 +372,7 @@ public class DemoBuilder {
 	 * @return
 	 */
 	private double getMinDistance(int addressIndex, LatLong... froms) {
-		LatLong other = DemoAddresses.position(addressIndex);
+		LatLong other = addresses.position(addressIndex);
 		
 		// get the min distance from this point to any other depot
 		double mindist=Double.MAX_VALUE;

@@ -25,29 +25,31 @@ final public class UKPostcodes {
 	public static final String stdDistrict = area + "\\d\\d?";
 	public static final String allDistrict = area + "\\d\\d?[a-z]?";
 	public static final String std2ndPart = "\\d[a-z][a-z]";
-	public static final String stdSector = stdDistrict + "\\s+" + "\\d";
+//	public static final String stdSector = stdDistrict + "\\s+" + "\\d";
 	public static final String allSector = allDistrict + "\\s+" + "\\d";
-	public static final String stdUnit= stdSector + "[a-z][a-z]";
+//	public static final String stdUnit= stdSector + "[a-z][a-z]";
 	public static final String allUnit= allSector + "[a-z][a-z]";
-	public static final Pattern sectorFromStandardUnit = Pattern.compile("^(" + stdSector + ")[a-z][a-z]$",Pattern.CASE_INSENSITIVE);
-	public static final Pattern districtFromAnyLevelStdPC = Pattern.compile("^(" + stdDistrict + ").*",Pattern.CASE_INSENSITIVE);
-	public static final Pattern areaFromAnyLevelStdPC = Pattern.compile("^(" + area + ").*",Pattern.CASE_INSENSITIVE);
+	public static final Pattern sectorFromUnit = Pattern.compile("^(" + allSector + ")[a-z][a-z]$",Pattern.CASE_INSENSITIVE);
+	public static final Pattern districtFromAnyLevelPC = Pattern.compile("^(" + allDistrict + ").*",Pattern.CASE_INSENSITIVE);
+	public static final Pattern areaFromAnyLevelPC = Pattern.compile("^(" + area + ").*",Pattern.CASE_INSENSITIVE);
 	public static final Pattern LondonExtraDigitFormatSectorLevel = Pattern.compile("^" + "("+ stdDistrict+  ")"+ "[a-z]\\s" + "(" + std2ndPart +")"+ "$",Pattern.CASE_INSENSITIVE);
         
 	public static final Pattern isArea = Pattern.compile("^(" + area + ")$",Pattern.CASE_INSENSITIVE);
-	public static final Pattern isDistrict = Pattern.compile("^(" + stdDistrict + ")$",Pattern.CASE_INSENSITIVE);
-	public static final Pattern isSector = Pattern.compile("^(" + stdSector + ")$",Pattern.CASE_INSENSITIVE);
-	public static final Pattern isUnit = Pattern.compile("^(" + stdDistrict + ")\\s*(" + std2ndPart + ")$",Pattern.CASE_INSENSITIVE);
+	public static final Pattern isDistrict = Pattern.compile("^(" + allDistrict + ")$",Pattern.CASE_INSENSITIVE);
+	public static final Pattern isSector = Pattern.compile("^(" + allSector + ")$",Pattern.CASE_INSENSITIVE);
+	public static final Pattern isUnit = Pattern.compile("^(" + allDistrict + ")\\s*(" + std2ndPart + ")$",Pattern.CASE_INSENSITIVE);
 	
-	public static String standardisePostcode(String s){
+	public static String standardisePostcode(String s, boolean removeExtraDistrictLetter){
 		// run basic standardise
 		s = Strings.std(s);
 		
 		// remove the extra postcode digits used for some areas in London
-		Matcher special = UKPostcodes.LondonExtraDigitFormatSectorLevel.matcher(s);
-		if(special.find()){
-			s = special.group(1) + " " + special.group(2);
-		}		
+		if(removeExtraDistrictLetter){
+			Matcher special = UKPostcodes.LondonExtraDigitFormatSectorLevel.matcher(s);
+			if(special.find()){
+				s = special.group(1) + " " + special.group(2);
+			}					
+		}
 		
 		// ensure one space between the last 3 characters and the first, if its a unit pc
 		Matcher unitMatcher= UKPostcodes.isUnit.matcher(s);

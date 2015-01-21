@@ -2198,9 +2198,8 @@ public class Functions {
 
 				ret = matcher.group();
 
-				// call standardising on the UK postcode, which removes the extra
-				// digit used in some london districts (e.g. 'district' E1 has 'district' E1W).
-				ret = UKPostcodes.standardisePostcode(ret);
+				// call standardising on the UK postcode
+				ret = UKPostcodes.standardisePostcode(ret, true);
 
 			}
 

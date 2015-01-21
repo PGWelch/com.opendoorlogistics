@@ -138,11 +138,11 @@ final public class CountryConfigs {
 	};
 	
 	public static class GBProcessor extends DefaultProcessor{
-
-	 	
+		private final boolean removeExtraDistrictLetter;
 		
-		public GBProcessor() {
+		public GBProcessor(boolean removeExtraDistrictLetter ) {
 			super(HierarchyType.GB);
+			this.removeExtraDistrictLetter = removeExtraDistrictLetter;
 		}
 	
 		@Override
@@ -161,15 +161,15 @@ final public class CountryConfigs {
 					Pattern pattern=null;
 					switch(fetchLevel){
 					case Area:
-						pattern = UKPostcodes.areaFromAnyLevelStdPC;
+						pattern = UKPostcodes.areaFromAnyLevelPC;
 						break;
 						
 					case District:
-						pattern = UKPostcodes.districtFromAnyLevelStdPC;
+						pattern = UKPostcodes.districtFromAnyLevelPC;
 						break;
 						
 					case Sector:
-						pattern = UKPostcodes.sectorFromStandardUnit;
+						pattern = UKPostcodes.sectorFromUnit;
 						break;
 						
 					default:
@@ -224,7 +224,7 @@ final public class CountryConfigs {
 		 */
 		@Override
 		public String standardisePostcode(String s){
-			return UKPostcodes.standardisePostcode(s);
+			return UKPostcodes.standardisePostcode(s, removeExtraDistrictLetter);
 		}
 		
 	}
@@ -232,7 +232,7 @@ final public class CountryConfigs {
 
 	public static void main(String[] args) {
 	//	Pattern getNumber = Pattern.compile("^([a-z][a-z]?).*");
-		GBProcessor gb = new GBProcessor();
+		GBProcessor gb = new GBProcessor(true);
 		System.out.println(gb.splitByLevels("E1W 1AA", false));
 //		Pattern pattern = gb.areaFromAnyLevelStdPC;
 //		String s = "ab10 1aa";
@@ -247,7 +247,7 @@ final public class CountryConfigs {
 	}
 	
 	
-	private static final GBProcessor gb = new GBProcessor();
+	private static final GBProcessor gb = new GBProcessor(true);
 	
 	public static CountryProcessor getProcessor(String countryCode){
 		countryCode = Strings.std(countryCode);
