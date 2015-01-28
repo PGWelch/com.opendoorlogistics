@@ -8,6 +8,7 @@ package com.opendoorlogistics.core.utils;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * A list which uses multiple memory blocks to store its contents and therefore doesn't require a single contiguous memory block for the whole list.
@@ -39,6 +40,13 @@ final public class LargeList<T> extends AbstractList<T> {
 	public LargeList(int initialCapacity,int blockSize){
 		this.blockSize = blockSize;
 		ensureCapacity(initialCapacity);
+	}
+	
+	public LargeList(Collection<T> collection){
+		this(collection.size());
+		for(T o : collection){
+			add(o);
+		}
 	}
 
 	@Override

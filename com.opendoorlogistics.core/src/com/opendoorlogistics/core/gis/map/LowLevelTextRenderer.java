@@ -163,6 +163,9 @@ class LowLevelTextRenderer {
 		approxHeight = Math.max(approxHeight, MIN_FREE_SPACE_TO_ATTEMPT_TEXT_DRAW.height);
 		
 		Point2D screenPos = getScreenPos(converter, obj, font, new Point2D.Double(approxWidth,approxHeight));
+		if(screenPos==null){
+			return false;
+		}
 		Envelope envelope = new Envelope(screenPos.getX(),screenPos.getX() + approxWidth, screenPos.getY(),screenPos.getY() + approxHeight);
 		
 		return isPositionFree(envelope, textQuadtree);

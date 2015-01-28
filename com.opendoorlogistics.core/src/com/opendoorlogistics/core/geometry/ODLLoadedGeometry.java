@@ -63,8 +63,11 @@ public class ODLLoadedGeometry extends ODLLoadableGeometry{
 			}
 			
 			if(wgsCentroid==null){
+				// dodgy geometry get sometimes get an empty point here, check for it
 				Point pnt = geometry.getCentroid();
-				wgsCentroid = new LatLongImpl(pnt.getY(), pnt.getX());				
+				if(pnt!=null && pnt.isEmpty()==false){
+					wgsCentroid = new LatLongImpl(pnt.getY(), pnt.getX());									
+				}
 			}
 		}
 		return wgsCentroid;
