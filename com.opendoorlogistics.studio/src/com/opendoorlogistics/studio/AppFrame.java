@@ -18,6 +18,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.TexturePaint;
+import java.awt.dnd.DropTarget;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
@@ -322,6 +323,9 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 			}
 		});
 
+		// add myself as a drop target for importing excels etc from file
+		new DropTarget(this, new DropFileImporterListener(this));
+		
 		setVisible(true);
 		updateAppearance();
 
@@ -630,17 +634,22 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	}
 
 	private void importFile(final SupportedFileType option) {
-		// to do.. excel import needs to show progress dialog (as its slow)
 
 		final JFileChooser chooser = option.createFileChooser();
 		IOUtils.setFile(PreferencesManager.getSingleton().getLastImportFile(option), chooser);
-		final ExecutionReport report = new ExecutionReportImpl();
 		if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
 			return;
 		}
 
 		final File file = chooser.getSelectedFile();
 		PreferencesManager.getSingleton().setLastImportFile(file, option);
+
+		importFile(file, option);
+
+	}
+
+	void importFile(final File file, final SupportedFileType option) {
+		final ExecutionReport report = new ExecutionReportImpl();
 
 		// open the datastore if we don't have it open
 		if (loaded == null) {
@@ -684,7 +693,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 				} else {
 					report.log("Error importing " + Strings.convertEnumToDisplayFriendly(option));
-					report.log("Could not import file: " + chooser.getSelectedFile().getAbsolutePath());
+					report.log("Could not import file: " + file.getAbsolutePath());
 					String message = report.getReportString(true, false);
 					if (message.length() > 0) {
 						message += System.lineSeparator();
@@ -693,7 +702,6 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 				ExecutionReportDialog.show(AppFrame.this, "Import result", report);
 			}
 		});
-
 	}
 
 	void updateAppearance() {
@@ -740,7 +748,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 		updateAppearance();
 	}
 
-	private void openFile(final File file) {
+	void openFile(final File file) {
 
 		String message = "Loading " + file;
 		final ProgressDialog<ODLDatastoreAlterable<ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, message, false,true);

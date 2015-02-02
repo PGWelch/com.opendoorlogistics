@@ -279,11 +279,14 @@ public class VRPComponent implements ODLComponent {
         vraBuilder.setNuOfThreads(nbThreads);
         
         StateManager stateManager = new StateManager(problem);
+        stateManager.updateTimeWindowStates();
+        
         ConstraintManager constraintManager = new ConstraintManager(problem,stateManager);
         if(config.isDeliveriesBeforePickups()){
             constraintManager.addConstraint(new ServiceDeliveriesFirstConstraint(), ConstraintManager.Priority.CRITICAL);        	
         }
-
+        constraintManager.addTimeWindowConstraint();
+        
         vraBuilder.setStateAndConstraintManager(stateManager,constraintManager);
         VehicleRoutingAlgorithm vra = vraBuilder.build();
 		return vra;
