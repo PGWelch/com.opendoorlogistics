@@ -37,7 +37,12 @@ class BackgroundMapConfig {
 
 			tileserverUrl = getStr(map, "tileserver.url", tileserverUrl);
 
-			mapsforgeFilename = getStr(map, "mapsforge.file", mapsforgeFilename);
+			// get mapsforge filename and remove any speech marks
+			String tmp  = getStr(map, "mapsforge.file", mapsforgeFilename);
+			if(tmp!=null){
+				tmp=tmp.replaceAll("\"", "");
+			}
+			mapsforgeFilename = tmp;
 
 			String typeString = getStr(map, "type", type.name());
 			for (BackgroundType t : BackgroundType.values()) {

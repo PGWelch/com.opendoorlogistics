@@ -24,6 +24,10 @@ import java.util.concurrent.ThreadFactory;
 import org.mapsforge.core.graphics.Canvas;
 import org.mapsforge.core.graphics.TileBitmap;
 import org.mapsforge.map.awt.AwtGraphicFactory;
+import org.mapsforge.map.layer.cache.FileSystemTileCache;
+import org.mapsforge.map.layer.cache.InMemoryTileCache;
+import org.mapsforge.map.layer.cache.TileCache;
+import org.mapsforge.map.layer.cache.TwoLevelTileCache;
 import org.mapsforge.map.layer.renderer.DatabaseRenderer;
 import org.mapsforge.map.layer.renderer.RendererJob;
 import org.mapsforge.map.model.DisplayModel;
@@ -57,7 +61,7 @@ class MapsforgeTileFactory extends TileFactory {
 		this.fadeColour =fadeColour;
 		this.mapDatabase = mapDatabase;
 
-		databaseRenderer = new DatabaseRenderer(mapDatabase, AwtGraphicFactory.INSTANCE);
+		databaseRenderer = new DatabaseRenderer(mapDatabase, AwtGraphicFactory.INSTANCE,createTileCache());
 		renderTheme = InternalRenderTheme.OSMARENDER;
 		model = new DisplayModel();
 		model.setFixedTileSize(TILE_SIZE);
@@ -281,8 +285,8 @@ class MapsforgeTileFactory extends TileFactory {
 			}
 
 			// render the mapsforge tile
-			org.mapsforge.core.model.Tile mtile = new org.mapsforge.core.model.Tile(tile.getX(), tile.getY(), mapsforgeZoom);
-			RendererJob job = new RendererJob(mtile, mapFile, renderTheme, model, TEXT_SCALE, true);
+			org.mapsforge.core.model.Tile mtile = new org.mapsforge.core.model.Tile(tile.getX(), tile.getY(), mapsforgeZoom, TILE_SIZE);
+			RendererJob job = new RendererJob(mtile, mapFile, renderTheme, model, TEXT_SCALE, true, false);
 			TileBitmap bitmap = databaseRenderer.executeJob(job);
 
 			// copy it over onto an image (CompressedImage needs TYPE_INT_ARGB and anyway we can't access the buffered image internal to the tile)
@@ -363,6 +367,12 @@ class MapsforgeTileFactory extends TileFactory {
 		// cache.put(getTileId(x,y,zoom), compressed);
 	}
 
+	private TileCache createTileCache() {
+		TileCache firstLevelTileCache = new InMemoryTileCache(128);
+		File cacheDirectory = new File(System.getProperty("java.io.tmpdir"), "mapsforge");
+		TileCache secondLevelTileCache = new FileSystemTileCache(1024, cacheDirectory,  AwtGraphicFactory.INSTANCE);
+		return new TwoLevelTileCache(firstLevelTileCache, secondLevelTileCache);
+	}
 
 
 }
