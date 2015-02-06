@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import jsprit.core.problem.Location;
 import jsprit.core.problem.Skills;
 import jsprit.core.problem.VehicleRoutingProblem;
 import jsprit.core.problem.VehicleRoutingProblem.FleetSize;
@@ -263,23 +264,23 @@ public class VRPBuilder {
 		}
 
 		@Override
-		public double getBackwardTransportCost(String fromId, String toId, double arrivalTime, Driver driver, Vehicle vehicle) {
-			return getCost(fromId, toId, vehicle);
+		public double getBackwardTransportCost(Location fromId, Location toId, double arrivalTime, Driver driver, Vehicle vehicle) {
+			return getCost(fromId.getId(), toId.getId(), vehicle);
 		}
 
 		@Override
-		public double getTransportCost(String fromId, String toId, double departureTime, Driver driver, Vehicle vehicle) {
-			return getCost(fromId, toId,vehicle);
+		public double getTransportCost(Location fromId, Location toId, double departureTime, Driver driver, Vehicle vehicle) {
+			return getCost(fromId.getId(), toId.getId(),vehicle);
 		}
 
 		@Override
-		public double getBackwardTransportTime(String fromId, String toId, double arrivalTime, Driver driver, Vehicle vehicle) {
-			return getTime(fromId, toId);
+		public double getBackwardTransportTime(Location fromId, Location toId, double arrivalTime, Driver driver, Vehicle vehicle) {
+			return getTime(fromId.getId(), toId.getId());
 		}
 
 		@Override
-		public double getTransportTime(String fromId, String toId, double departureTime, Driver driver, Vehicle vehicle) {
-			return getTime(fromId, toId);
+		public double getTransportTime(Location fromId, Location toId, double departureTime, Driver driver, Vehicle vehicle) {
+			return getTime(fromId.getId(), toId.getId());
 		}
 	}
 

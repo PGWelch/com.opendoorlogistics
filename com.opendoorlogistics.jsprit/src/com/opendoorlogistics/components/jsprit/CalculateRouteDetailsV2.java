@@ -9,6 +9,7 @@ import java.util.TreeMap;
 
 import jsprit.core.analysis.SolutionAnalyser;
 import jsprit.core.problem.Capacity;
+import jsprit.core.problem.Location;
 import jsprit.core.problem.job.Delivery;
 import jsprit.core.problem.job.Job;
 import jsprit.core.problem.job.Pickup;
@@ -430,8 +431,8 @@ public class CalculateRouteDetailsV2 {
 		SolutionAnalyser analyser = new SolutionAnalyser(builtProblem.getJspritProblem(), sol, new SolutionAnalyser.DistanceCalculator() {
 
 			@Override
-			public double getDistance(String fromLocationId, String toLocationId) {
-				return builtProblem.getTravelDistanceKM(fromLocationId, toLocationId);
+			public double getDistance(Location fromLocationId, Location toLocationId) {
+				return builtProblem.getTravelDistanceKM(fromLocationId.getId(), toLocationId.getId());
 			}
 
 		});
