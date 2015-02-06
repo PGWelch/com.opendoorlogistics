@@ -244,6 +244,9 @@ public class VRPBuilder {
 		 * @return
 		 */
 		float getDistance(String fromId, String toId) {
+			if(fromId == VRPConstants.NOWHERE || toId == VRPConstants.NOWHERE){
+				return 0;
+			}			
 			return (float)distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.DISTANCE_KM.matrixIndex);
 		}
 		

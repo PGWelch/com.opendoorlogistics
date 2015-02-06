@@ -277,18 +277,20 @@ public class CalculateRouteDetailsV2 {
 
 			// add start depot
 			LatLong[] ends = dfn.vehicles.getStartAndEnd(vehiclesTable, vRow);
-			StopDetail startDepot = new StopDetail(nq);
-			startDepot.stopLatLong = ends[0];
-			startDepot.type = VRPConstants.DEPOT;
-			startDepot.stopId = VRPConstants.VEHICLE_START_ID + "_" + dfn.vehicles.getBaseId(vehiclesTable, vRow);
-			startDepot.stopName = startDepot.stopId;
-			startDepot.stopNumber = 0;
-			startDepot.startTimeWindow = route.startTimeWindow;
-			startDepot.endTimeWindow = route.endTimeWindow;
-			startDepot.vehicleId = route.vehicleId;
-			startDepot.vehicleName = route.vehicleName;
-			startDepot.temporary.rowVehicleIndex = route.temp.rvi;
-			route.stops.add(0, startDepot);
+			if(ends[0]!=null){
+				StopDetail startDepot = new StopDetail(nq);
+				startDepot.stopLatLong = ends[0];
+				startDepot.type = VRPConstants.DEPOT;
+				startDepot.stopId = VRPConstants.VEHICLE_START_ID + "_" + dfn.vehicles.getBaseId(vehiclesTable, vRow);
+				startDepot.stopName = startDepot.stopId;
+				startDepot.stopNumber = 0;
+				startDepot.startTimeWindow = route.startTimeWindow;
+				startDepot.endTimeWindow = route.endTimeWindow;
+				startDepot.vehicleId = route.vehicleId;
+				startDepot.vehicleName = route.vehicleName;
+				startDepot.temporary.rowVehicleIndex = route.temp.rvi;
+				route.stops.add(0, startDepot);				
+			}
 
 			// add end depot
 			if (ends[1] != null) {
