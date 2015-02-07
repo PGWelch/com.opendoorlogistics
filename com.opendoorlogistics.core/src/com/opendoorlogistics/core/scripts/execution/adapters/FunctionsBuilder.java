@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.scripts.execution.adapters;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.map.hash.TLongObjectHashMap;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import com.opendoorlogistics.api.ExecutionReport;
@@ -27,6 +28,7 @@ import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary
 import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.annotations.ImageFormulaKey;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
+import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.TableReference;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.formulae.FmAggregate;
@@ -41,13 +43,14 @@ import com.opendoorlogistics.core.scripts.formulae.FmLookupNearest;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupWeightedCentroid;
 import com.opendoorlogistics.core.scripts.formulae.FmRow;
 import com.opendoorlogistics.core.scripts.formulae.FmRowId;
+import com.opendoorlogistics.core.scripts.formulae.FmThis;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 final public class FunctionsBuilder {
 	public static void buildNonAggregateFormulae(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTable> datastores,
-			final int defaultDatastoreIndex, final ExecutionReport result) {
+			final int defaultDatastoreIndex,final ODLTableDefinition targetTableDefinition, final ExecutionReport result) {
 		buildBasicLookups(library, datastores, defaultDatastoreIndex, result);
 		buildImage(library, datastores, result);
 		for(FunctionDefinition dfn : FmLookupNearest.createDefinitions(datastores, defaultDatastoreIndex, result)){
@@ -58,6 +61,33 @@ final public class FunctionsBuilder {
 		library.addStandardFunction(FmIsSelectedInMap.class, "isSelected", "Returns true (i.e. 1) if the row is selected in the map.");
 		library.addStandardFunction(FmRowId.class, "rowid", "Global identifier of the row.");
 		library.addStandardFunction(FmRow.class, "row", "One-based index of the current row.");
+		
+		FunctionDefinition thisDfn = new FunctionDefinition("this");
+		thisDfn.setDescription("Access a field in the current adapter rather than its source table. "
+				+ "The field name must be surrounded by speech marks - e.g. \"field_name\". "
+				+ "Use this(\"field_name\") to call one calculated field in an adapter from another in the same adapter. "
+				+ "Warning - use of this(\"field_name\")) is not permitted in some formulae contexts and "
+				+ "care should be taken to never create a circular loop.");
+		thisDfn.addArg("field_name", ArgumentType.STRING_CONSTANT);
+		thisDfn.setFactory(new FunctionFactory() {
+			
+			@Override
+			public Function createFunction(Function... children) {
+				if(targetTableDefinition==null){
+					throw new RuntimeException("Attempted to use this(field_name) in an unsupported formulae context.");
+				}
+				
+				// get field index
+				String colname = children[0].execute(null).toString();
+				int indx = TableUtils.findColumnIndx(targetTableDefinition, colname);
+				if(indx==-1){
+					throw new RuntimeException("Could not find column " + colname + " in this(field_name) formulae.");					
+				}
+				
+				return new FmThis(indx);
+			}
+		});
+		library.add(thisDfn);
 	}
 
 	public static void buildGroupAggregates(FunctionDefinitionLibrary library, final TLongObjectHashMap<TLongArrayList> groupRowIdToSourceRowIds,
@@ -396,48 +426,94 @@ final public class FunctionsBuilder {
 		FunctionFactory lookupFirstMatchFactory=null;
 		for (final LookupType lookupType : LookupType.values()) {
 
-			// create the function definition
-			FunctionDefinition dfn = new FunctionDefinition(lookupType.getFormulaKeyword());
-			dfn.addArg("search_value", ArgumentType.GENERAL, "Value to search for in the other table.");
-			dfn.addArg("table", ArgumentType.TABLE_REFERENCE_CONSTANT, "Reference to the table to search in.");
-			dfn.addArg("search_field", ArgumentType.STRING_CONSTANT, "Name of the field to search for the value in.");
-			dfn.setDescription(lookupType.getDescription());
-			if (lookupType != LookupType.COUNT && lookupType!=LookupType.SEL_COUNT) {
-				dfn.addArg("return_field", ArgumentType.STRING_CONSTANT, "Name of the field from the other table to return the value of.");
-			}
-
-			// create the factory if datastores are available
-			if (datastores != null) {
-				FunctionFactory factory = new FunctionFactory() {
-
-					@Override
-					public Function createFunction(Function... children) {
-
-						ToProcessLookupReferences toProcess = new ToProcessLookupReferences();
-						toProcess.tableReferenceFunction = children[1];
-						if (lookupType != LookupType.COUNT && lookupType!=LookupType.SEL_COUNT) {
-							toProcess.fieldnameFunctions = new Function[] { children[2], children[3] };
-						} else {
-							toProcess.fieldnameFunctions = new Function[] { children[2] };
-						}
-
-						ProcessedLookupReferences processed = processLookupReferenceNames(lookupType.getFormulaKeyword(), datastores,
-								defaultDatastoreIndex, toProcess, result);
-
-						return new FmLookup(children[0], processed.datastoreIndx, processed.tableId, processed.columnIndices[0],
-								(lookupType != LookupType.COUNT && lookupType!=LookupType.SEL_COUNT)? processed.columnIndices[1] : -1, lookupType);
-
-					}
-				};
-
-				// Save the factory for lookup first match as its used below for the param function
-				if(lookupType == LookupType.RETURN_FIRST_MATCH){
-					lookupFirstMatchFactory = factory;
+			for(int lookupSize = 0 ; lookupSize <= 3 ; lookupSize++){
+				// create the function definition
+				FunctionDefinition dfn = new FunctionDefinition(lookupType.getFormulaKeyword());
+				
+				for(int i = 1 ; i <=lookupSize ; i++){
+					dfn.addArg("search_value" + i, ArgumentType.GENERAL, "Value number " + i  + " to search for in the other table.");					
 				}
-				dfn.setFactory(factory);
+				dfn.addArg("table", ArgumentType.TABLE_REFERENCE_CONSTANT, "Reference to the table to search in.");
+				for(int i = 1 ; i <=lookupSize ; i++){
+					dfn.addArg("search_field" + i, ArgumentType.STRING_CONSTANT, "Name of field " + i + " to search for value " + i  +" in.");	
+				}				
+
+				dfn.setDescription(lookupType.getDescription());
+				if(lookupSize>1){
+					dfn.setDescription(dfn.getDescription() + " When searching on multiple values in the other table, always search in order of least-common value first as this is much quicker."
+							+ " So for example, if you are searching on two columns Type and Active where Type can take many different values but Active is "
+							+ "only true or false, then your search_field1 should be Type.");
+				}
+				if (lookupType != LookupType.COUNT && lookupType!=LookupType.SEL_COUNT) {
+					dfn.addArg("return_field", ArgumentType.STRING_CONSTANT, "Name of the field from the other table to return the value of.");
+				}
+
+				// create the factory if datastores are available
+				final int finalLookupSize= lookupSize;
+				if (datastores != null) {
+					FunctionFactory factory = new FunctionFactory() {
+
+						@Override
+						public Function createFunction(Function... children) {
+
+							ToProcessLookupReferences toProcess = new ToProcessLookupReferences();
+							
+							int fldIndx=0;
+							
+							// Get lookup value functions
+							Function[] lookupValueFunctions = new Function[finalLookupSize];
+							for(int i = 0 ; i < finalLookupSize ; i++){
+								lookupValueFunctions[i] = children[fldIndx++];
+							}
+
+							// Get table reference
+							toProcess.tableReferenceFunction = children[fldIndx++];
+							
+							// Get other fieldname functions
+							ArrayList<Function> fieldNameFunctions = new ArrayList<>();
+							for(int i = 0 ; i < finalLookupSize ; i++){
+								fieldNameFunctions.add(children[fldIndx++]);
+							}
+							
+							// Get return fieldname function if needed
+							if (lookupType != LookupType.COUNT && lookupType!=LookupType.SEL_COUNT) {
+								fieldNameFunctions.add(children[fldIndx++]);								
+							}
+
+							// Process the fieldname functions
+							toProcess.fieldnameFunctions = fieldNameFunctions.toArray(new Function[fieldNameFunctions.size()]);
+							ProcessedLookupReferences processed = processLookupReferenceNames(lookupType.getFormulaKeyword(), datastores,
+									defaultDatastoreIndex, toProcess, result);
+
+							// Get the return column index and other column indices
+							int returnColumnIndex=-1;
+							int [] otherColIndices = processed.columnIndices;
+							if (lookupType != LookupType.COUNT && lookupType!=LookupType.SEL_COUNT) {
+								
+								// If we have a return column it's the last element in processed.columnIndices
+								returnColumnIndex = processed.columnIndices[processed.columnIndices.length-1];
+								
+								// And our search column indices shouldn't include the last column
+								otherColIndices = Arrays.copyOf(processed.columnIndices, processed.columnIndices.length-1);
+							}
+							
+							// Create the formula
+							return new FmLookup(lookupValueFunctions, processed.datastoreIndx, processed.tableId, 
+									otherColIndices,returnColumnIndex, lookupType);
+
+						}
+					};
+
+					// Save the factory for lookup first match as its used below for the param function
+					if(lookupType == LookupType.RETURN_FIRST_MATCH && lookupSize==1){
+						lookupFirstMatchFactory = factory;
+					}
+					dfn.setFactory(factory);
+				}
+
+				library.add(dfn);				
 			}
 
-			library.add(dfn);
 		}
 		
 		// Add function param("key") as shorthand for lookup("key", "Params", const("Key"), const("Value"))
@@ -450,7 +526,7 @@ final public class FunctionsBuilder {
 				
 				@Override
 				public Function createFunction(Function... children) {
-					return finalLookupFactory.createFunction(children[0], new FmConst("Parameters"), new FmConst("Key"), new FmConst("Value"));
+					return finalLookupFactory.createFunction(children[0], new FmConst(ScriptConstants.EXTERNAL_DS_NAME + ", Parameters"), new FmConst("Key"), new FmConst("Value"));
 				}
 			});
 		}
@@ -461,7 +537,7 @@ final public class FunctionsBuilder {
 
 		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
 		library.build();
-		buildNonAggregateFormulae(library, null, -1, null);
+		buildNonAggregateFormulae(library, null, -1, null,null);
 		buildGroupAggregates(library, null, -1, -1);
 		return library;
 	}

@@ -30,6 +30,8 @@ import com.opendoorlogistics.core.geometry.functions.FmLongitude;
 import com.opendoorlogistics.core.scripts.formulae.TableParameters;
 import com.opendoorlogistics.core.scripts.wizard.TagUtils;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
+import com.opendoorlogistics.core.tables.ODLRow;
+import com.opendoorlogistics.core.tables.ODLRowReadOnly;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -273,7 +275,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	 * @param columnIndex
 	 * @return
 	 */
-	private Object getValue(int tableId, long rowId, int rowIndex, int columnIndex) {
+	private Object getValue(final int tableId,final long original_rowId,final int rowIndex,final int columnIndex) {
 		T src = sourceTable(tableId);
 		if (src == null) {
 			return null;
@@ -284,15 +286,42 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 		Object ret = null;
 		ODLTableDefinition destTable = mapping.getDestinationModel().getTableByImmutableId(tableId);
 
+		long rowId = original_rowId;
 		if (formula != null) {
 			// we need to use the rowid... so get it
 			if (rowId == -1) {
 				rowId = ((ODLTableReadOnly) src).getRowId(rowIndex);
 			}
+			
+			// create the 'this row' object
+			ODLRowReadOnly thisRow = new ODLRowReadOnly() {
+				
+				@Override
+				public int getRowIndex() {
+					throw new UnsupportedOperationException();
+				}
+				
+				@Override
+				public ODLTableDefinition getDefinition() {
+					throw new UnsupportedOperationException();
+				}
+				
+				@Override
+				public int getColumnCount() {
+					throw new UnsupportedOperationException();
+				}
+				
+				@Override
+				public Object get(int col) {
+					return getValue(tableId, original_rowId, rowIndex, col);
+				}
+				
+	
+			};
 
 			ArrayList<ODLDatastore<? extends ODLTableDefinition>> tmpList = new ArrayList<>(sources.size());
 			tmpList.addAll(sources);
-			FunctionParameters parameters = new TableParameters(tmpList, mapping.getSourceDatasourceIndx(tableId), mapping.getSourceTableId(tableId), rowId, rowIndex);
+			FunctionParameters parameters = new TableParameters(tmpList, mapping.getSourceDatasourceIndx(tableId), mapping.getSourceTableId(tableId), rowId, rowIndex, thisRow);
 			ret = formula.execute(parameters);
 			if (ret == Functions.EXECUTION_ERROR) {
 				ret = null;
