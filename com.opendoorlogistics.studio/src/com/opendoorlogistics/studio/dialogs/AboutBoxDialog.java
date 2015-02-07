@@ -64,8 +64,10 @@ final public class AboutBoxDialog extends TextInformationDialog {
 		
 		String s = writer.toString();
 		
+		long maxMemoryMb = Runtime.getRuntime().maxMemory() / (1024*1024);
+
 		s = s.replace("VERSION_NUMBER", AppConstants.getAppVersion().toString());
-		s = s.replace("JAVA_VERSION", System.getProperty("java.version"));
+		s = s.replace("JAVA_VERSION", System.getProperty("java.version") + ", max memory " + maxMemoryMb + " MB");
 		return s;
 	}
 
