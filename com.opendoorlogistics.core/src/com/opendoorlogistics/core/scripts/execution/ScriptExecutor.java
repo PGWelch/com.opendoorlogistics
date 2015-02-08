@@ -504,7 +504,7 @@ final public class ScriptExecutor {
 	private void executeSingleInstruction(Option root,final InstructionConfig instruction, ODLDatastore<? extends ODLTable> availableIODS, final String batchKey, final ScriptExecutionBlackboard result) {
 
 		// get the component
-		ODLComponent component = getComponent(instruction, result);
+		final ODLComponent component = getComponent(instruction, result);
 		if (result.isFailed()) {
 			return;
 		}
@@ -577,7 +577,7 @@ final public class ScriptExecutor {
 
 			@Override
 			public void submitControlLauncher(ControlLauncherCallback cb) {
-				internalExecutionApi.submitControlLauncher(instruction.getUuid(),cb);
+				internalExecutionApi.submitControlLauncher(instruction.getUuid(),component,cb);
 			}
 
 			@Override

@@ -20,14 +20,13 @@ import java.awt.Rectangle;
 import java.awt.TexturePaint;
 import java.awt.dnd.DropTarget;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyVetoException;
 import java.io.File;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -35,6 +34,7 @@ import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -46,12 +46,14 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import javax.swing.border.BevelBorder;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 
@@ -73,6 +75,7 @@ import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptTemplatesImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.components.ODLWizardTemplateConfig;
+import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.ScriptsProvider;
 import com.opendoorlogistics.core.scripts.ScriptsProvider.HasScriptsProvider;
 import com.opendoorlogistics.core.scripts.elements.Script;
@@ -99,16 +102,19 @@ import com.opendoorlogistics.studio.dialogs.ProgressDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog.OnFinishedSwingThreadCB;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
 import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
+import com.opendoorlogistics.studio.internalframes.ODLInternalFrame.FramesChangedListener;
 import com.opendoorlogistics.studio.internalframes.ProgressFrame;
 import com.opendoorlogistics.studio.panels.FunctionsListPanel;
 import com.opendoorlogistics.studio.panels.ProgressPanel;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.editor.ScriptWizardActions;
 import com.opendoorlogistics.studio.scripts.editor.ScriptWizardActions.WizardActionsCallback;
+import com.opendoorlogistics.studio.scripts.execution.ReporterFrame;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManagerImpl;
 import com.opendoorlogistics.studio.scripts.list.ScriptNode;
 import com.opendoorlogistics.studio.scripts.list.ScriptsPanel;
+import com.opendoorlogistics.studio.tables.grid.GridFrame;
 import com.opendoorlogistics.studio.tables.grid.ODLGridFrame;
 import com.opendoorlogistics.studio.tables.schema.TableSchemaEditor;
 import com.opendoorlogistics.studio.utils.WindowState;
@@ -121,7 +127,8 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	private final DesktopScrollPane desktopScrollPane;
 	private final JSplitPane splitterTablesScripts;
 	private final JSplitPane splitterLeftPanelMain;
-
+	private final JToolBar windowToolBar;
+	
 	private final JDesktopPane desktopPane = new JDesktopPane() {
 
 		@Override
@@ -149,7 +156,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	private final DatastoreTablesPanel tables;
 	private final ScriptUIManagerImpl scriptManager;
 	private final ScriptsPanel scriptsPanel;
-	private final JToolBar toolbar = new JToolBar(SwingConstants.VERTICAL);
+	private final JToolBar mainToolbar = new JToolBar(SwingConstants.VERTICAL);
 	private final List<MyAction> fileActions;
 	private final List<MyAction> editActions;
 	private final ODLApi api = new ODLApiImpl();
@@ -303,7 +310,13 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 		// split center part into tables/scripts browser on the left and desktop
 		// pane on the right
 		desktopScrollPane = new DesktopScrollPane(desktopPane);
-		splitterLeftPanelMain = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitterTablesScripts, desktopScrollPane);
+		JPanel rightPane = new JPanel();
+		rightPane.setLayout(new BorderLayout());
+		rightPane.add(desktopPane, BorderLayout.CENTER);
+		windowToolBar = new JToolBar();
+		windowToolBar.setFloatable(false);
+		rightPane.add(windowToolBar,BorderLayout.SOUTH);
+		splitterLeftPanelMain = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitterTablesScripts, rightPane);
 		con.add(splitterLeftPanelMain, BorderLayout.CENTER);
 
 		// add toolbar
@@ -331,6 +344,69 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 	}
 
+	private void updateWindowsToolbar(){
+		windowToolBar.removeAll();
+		for (final JInternalFrame frame : desktopPane.getAllFrames()) {
+			if(ODLInternalFrame.class.isInstance(frame)){
+				
+				// get the title
+				String title = frame.getTitle();
+				if(ScriptEditor.class.isInstance(frame)){
+					File file = ((ScriptEditor)frame).getFile();
+					if(file!=null){
+						title = file.getName();
+						title = Strings.caseInsensitiveReplace(title,"."+ ScriptConstants.FILE_EXT, "");
+					}
+				}
+				if(title!=null){
+					int maxchar = 16;
+					if(title.length()>maxchar){
+						title = title.substring(0, maxchar) + "...";						
+					}
+				}
+				
+				// get an icon if we can
+				Icon icon = null;
+				if(ReporterFrame.class.isInstance(frame)){
+					ReporterFrame<?> rf = (ReporterFrame<?>)frame;
+					if(rf.getComponent()!=null){
+						icon = rf.getComponent().getIcon(getApi(), ODLComponent.MODE_DEFAULT);
+					}
+				}
+				else if(GridFrame.class.isInstance(frame)){
+					icon = Icons.loadFromStandardPath("table-window-toolbar-icon.png");
+				}
+				else if(TableSchemaEditor.class.isInstance(frame)){
+					icon = Icons.loadFromStandardPath("table-edit.png");
+				}
+				else if (ScriptEditor.class.isInstance(frame)){
+					icon = Icons.loadFromStandardPath("script-window-toolbar.png");
+				}
+				
+				// create the button
+				JButton button =null;
+				if(icon!=null){
+					button = new JButton(title, icon);
+				}else{
+					button = new JButton(title);
+				}
+				button.addActionListener(new ActionListener() {
+					
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						frame.toFront();
+					}
+				});
+				button.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createSoftBevelBorder(BevelBorder.RAISED), BorderFactory.createEmptyBorder(2, 2, 2, 2))) ;
+				windowToolBar.add(button);
+			}
+		}
+		
+		windowToolBar.repaint();
+		
+		// need updateUI here otherwise toolbar sometimes disappears!
+		windowToolBar.updateUI();
+	}
 	/**
 	 * 
 	 */
@@ -341,20 +417,20 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	}
 
 	private void initToolbar(Container con) {
-		con.add(toolbar, BorderLayout.WEST);
-		toolbar.setFloatable(false);
+		con.add(mainToolbar, BorderLayout.WEST);
+		mainToolbar.setFloatable(false);
 		for (MyAction action : fileActions) {
 			if (action != null && action.getConfig().getLargeicon() != null) {
-				toolbar.add(action);
+				mainToolbar.add(action);
 			}
 		}
 		for (Action action : editActions) {
 			if (action != null) {
-				toolbar.add(action);
+				mainToolbar.add(action);
 			}
 		}
 
-		toolbar.add(initGotoWebsiteAction());
+		mainToolbar.add(initGotoWebsiteAction());
 
 	}
 
@@ -1215,7 +1291,21 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 			int y = remaining.height / 4 + random.nextInt(halfRemaining.height);
 			frame.setLocation(x, y);
 		}
+		
+		
+		if(ODLInternalFrame.class.isInstance(frame)){
+			ODLInternalFrame odlf = (ODLInternalFrame)frame;
+			odlf.setChangedListener(new FramesChangedListener() {
+				
+				@Override
+				public void internalFrameChange(ODLInternalFrame f) {
+					updateWindowsToolbar();
+				}
+			});
+		}
+		
 		frame.toFront();
+		updateWindowsToolbar();
 	}
 
 	void launchTableSchemaEditor(int tableId) {

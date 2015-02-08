@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.scripts.execution.dependencyinjection;
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStatusObservable;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
@@ -110,7 +111,7 @@ public class AbstractDependencyInjector implements DependencyInjector{
 //	}
 
 	@Override
-	public void submitControlLauncher(String instructionId,ControlLauncherCallback cb) {
+	public void submitControlLauncher(String instructionId,ODLComponent component,ControlLauncherCallback cb) {
 		// TODO Auto-generated method stub
 		
 	}

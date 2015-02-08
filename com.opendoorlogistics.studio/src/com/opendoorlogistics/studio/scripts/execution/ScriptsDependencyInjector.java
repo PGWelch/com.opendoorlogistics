@@ -11,6 +11,7 @@ import java.util.List;
 
 import javax.swing.JPanel;
 
+import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStateListener;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStatusObservable;
@@ -29,11 +30,13 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 	public static class RecordedLauncherCallback {
 		final private ControlLauncherCallback cb;
 		final private String instructionId;
+		final private ODLComponent callingComponent;
 
-		public RecordedLauncherCallback(ControlLauncherCallback cb, String instructionId) {
+		public RecordedLauncherCallback(ControlLauncherCallback cb, String instructionId , ODLComponent callingComponent) {
 			super();
 			this.cb = cb;
 			this.instructionId = instructionId;
+			this.callingComponent = callingComponent;
 		}
 
 		public ControlLauncherCallback getCb() {
@@ -44,6 +47,9 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 			return instructionId;
 		}
 
+		public ODLComponent getComponent(){
+			return callingComponent;
+		}
 	}
 
 	ScriptsDependencyInjector(AppFrame appFrame) {
@@ -126,8 +132,8 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 //	}
 
 	@Override
-	public void submitControlLauncher(String instructionId, ControlLauncherCallback cb) {
-		controlLauncherCallbacks.add(new RecordedLauncherCallback(cb, instructionId));
+	public void submitControlLauncher(String instructionId,ODLComponent component,  ControlLauncherCallback cb) {
+		controlLauncherCallbacks.add(new RecordedLauncherCallback(cb, instructionId,component));
 	}
 
 	public List<RecordedLauncherCallback> getControlLauncherCallbacks() {

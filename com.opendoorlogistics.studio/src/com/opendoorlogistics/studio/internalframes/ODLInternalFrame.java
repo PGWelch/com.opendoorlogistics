@@ -22,6 +22,7 @@ import com.opendoorlogistics.studio.utils.WindowState;
 public class ODLInternalFrame extends JInternalFrame {
 	private final String positioningId;
 	private boolean isDisposed=false;
+	private FramesChangedListener framesChangedListener;
 	
 	public ODLInternalFrame(String positioningId) {
 		this.positioningId = positioningId;
@@ -42,6 +43,8 @@ public class ODLInternalFrame extends JInternalFrame {
 				Rectangle bounds = getBounds();
 				PreferencesManager.getSingleton().setWindowState(positioningId, new WindowState(bounds, -1));
 			}	
+			
+			fireChangedListener();
 		}
 
 	}
@@ -49,8 +52,23 @@ public class ODLInternalFrame extends JInternalFrame {
 	@Override
 	public void setTitle(String s){
 		super.setTitle(s);
+		
+		fireChangedListener();
+		
+	}
+
+	private void fireChangedListener() {
+		if(framesChangedListener!=null){
+			framesChangedListener.internalFrameChange(this);
+		}
 	}
 	
+	@Override
+    public void show() {
+		super.show();
+		fireChangedListener();
+    }
+    
 	public boolean isDisposed(){
 		return isDisposed;
 	}
@@ -101,4 +119,13 @@ public class ODLInternalFrame extends JInternalFrame {
 			}
 		});
 	}
+	
+	public interface FramesChangedListener{
+		void internalFrameChange(ODLInternalFrame f);
+	}
+	
+	public void setChangedListener(FramesChangedListener listener){
+		this.framesChangedListener = listener;
+	}
+	
 }
