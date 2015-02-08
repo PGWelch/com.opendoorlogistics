@@ -42,8 +42,4 @@ final public class FmThis extends FunctionImpl{
 		return new FmThis(col);
 	}
 
-	@Override
-	public String toString(){
-		return "this(" + child(0).toString() + ")";
-	}
 }

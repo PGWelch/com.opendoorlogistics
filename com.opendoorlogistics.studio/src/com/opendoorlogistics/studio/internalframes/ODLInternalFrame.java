@@ -22,6 +22,7 @@ import com.opendoorlogistics.studio.utils.WindowState;
 public class ODLInternalFrame extends JInternalFrame {
 	private final String positioningId;
 	private boolean isDisposed=false;
+	
 	public ODLInternalFrame(String positioningId) {
 		this.positioningId = positioningId;
 		setIconifiable(true);
@@ -43,7 +44,11 @@ public class ODLInternalFrame extends JInternalFrame {
 			}	
 		}
 
-
+	}
+	
+	@Override
+	public void setTitle(String s){
+		super.setTitle(s);
 	}
 	
 	public boolean isDisposed(){

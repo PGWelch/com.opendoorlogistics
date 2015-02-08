@@ -35,4 +35,13 @@ public final class FunctionUtils {
 		return ret;
 	}
 
+	public static Function [] toSingleArray(Function a, Function ...arr){
+		Function [] ret = new Function[arr.length+1];
+		ret[0] = a;
+		for(int i =0 ; i < arr.length ; i++){
+			ret[i+1] = arr[i];
+		}
+		return ret;
+	}
+	
 }

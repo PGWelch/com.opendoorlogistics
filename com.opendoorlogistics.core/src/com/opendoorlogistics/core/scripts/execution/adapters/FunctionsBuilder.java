@@ -76,9 +76,9 @@ final public class FunctionsBuilder {
 				if(targetTableDefinition==null){
 					throw new RuntimeException("Attempted to use this(field_name) in an unsupported formulae context.");
 				}
-				
+							
 				// get field index
-				String colname = children[0].execute(null).toString();
+				String colname = FunctionUtils.getConstantString(children[0]);
 				int indx = TableUtils.findColumnIndx(targetTableDefinition, colname);
 				if(indx==-1){
 					throw new RuntimeException("Could not find column " + colname + " in this(field_name) formulae.");					

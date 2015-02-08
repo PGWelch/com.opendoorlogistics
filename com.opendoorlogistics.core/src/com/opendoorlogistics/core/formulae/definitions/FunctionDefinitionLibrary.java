@@ -8,6 +8,7 @@ package com.opendoorlogistics.core.formulae.definitions;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -34,6 +35,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmConst;
 import com.opendoorlogistics.core.formulae.Functions.FmContains;
 import com.opendoorlogistics.core.formulae.Functions.FmCos;
 import com.opendoorlogistics.core.formulae.Functions.FmDecimalFormat;
+import com.opendoorlogistics.core.formulae.Functions.FmDecimalHours;
 import com.opendoorlogistics.core.formulae.Functions.FmDivide;
 import com.opendoorlogistics.core.formulae.Functions.FmEquals;
 import com.opendoorlogistics.core.formulae.Functions.FmFadeImage;
@@ -41,7 +43,6 @@ import com.opendoorlogistics.core.formulae.Functions.FmFirstNonNull;
 import com.opendoorlogistics.core.formulae.Functions.FmFloor;
 import com.opendoorlogistics.core.formulae.Functions.FmGreaterThan;
 import com.opendoorlogistics.core.formulae.Functions.FmGreaterThanEqualTo;
-import com.opendoorlogistics.core.formulae.Functions.FmDecimalHours;
 import com.opendoorlogistics.core.formulae.Functions.FmIfThenElse;
 import com.opendoorlogistics.core.formulae.Functions.FmIndexOf;
 import com.opendoorlogistics.core.formulae.Functions.FmLeft;
@@ -60,14 +61,15 @@ import com.opendoorlogistics.core.formulae.Functions.FmOr;
 import com.opendoorlogistics.core.formulae.Functions.FmPostcodeUk;
 import com.opendoorlogistics.core.formulae.Functions.FmRand;
 import com.opendoorlogistics.core.formulae.Functions.FmRandColour;
-import com.opendoorlogistics.core.formulae.Functions.FmRandData.RandDataType;
 import com.opendoorlogistics.core.formulae.Functions.FmRandData;
+import com.opendoorlogistics.core.formulae.Functions.FmRandData.RandDataType;
 import com.opendoorlogistics.core.formulae.Functions.FmRandomSymbol;
 import com.opendoorlogistics.core.formulae.Functions.FmReplace;
 import com.opendoorlogistics.core.formulae.Functions.FmRound;
 import com.opendoorlogistics.core.formulae.Functions.FmRound2Second;
 import com.opendoorlogistics.core.formulae.Functions.FmSin;
 import com.opendoorlogistics.core.formulae.Functions.FmSqrt;
+import com.opendoorlogistics.core.formulae.Functions.FmStringFormat;
 import com.opendoorlogistics.core.formulae.Functions.FmSubtract;
 import com.opendoorlogistics.core.formulae.Functions.FmSum;
 import com.opendoorlogistics.core.formulae.Functions.FmSwitch;
@@ -165,7 +167,10 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmCeil.class, "ceil","", "value");
 		addStandardFunction(FmFloor.class, "floor","Return the integer part of the number, e.g. 2.3 returns 2.", "value");
 		addStandardFunction(FmRound.class, "round","Round to the nearest integer value.", "value");
-		addStandardFunction(FmConst.class, "const","Create a constant string value from the input value. This is used to distinguish between string constants and source columns. For example, if your data adapter's source table has a column called \"name\" and you want to create a string constant also containing \"name\", you should use const(\"name\") as \"name\" on its own will automatically be converted to a source column reference.", "value");		
+		for(String constName : new String[]{"const", "c"}){
+			addStandardFunction(FmConst.class, constName,"Create a constant string value from the input value. This is used to distinguish between string constants and source columns. For example, if your data adapter's source table has a column called \"name\" and you want to create a string constant also containing \"name\", you should use const(\"name\") as \"name\" on its own will automatically be converted to a source column reference.", "value");					
+		}
+		
 		for(String spelling : new String[]{"colour", "color"}){
 			addStandardFunction(FmColour.class, spelling,"Create a colour object from red, green and blue values in the range 0 to 1.", "red", "green", "blue");			
 			addStandardFunction(FmColour.class, spelling,"Create a colour object from red, green, blue and alpha (transparency) values in the range 0 to 1.", "red", "green", "blue", "alpha");			
@@ -339,7 +344,19 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmContains.class, "contains","", "find_string", "find_within_string");
 		addStandardFunction(FmIndexOf.class, "indexof","", "find_string", "find_within_string");
 		addStandardFunction(FmReplace.class, "replace","", "find_within_string", "old_string", "new_string");
-
+		FunctionDefinition formatDfn = new FunctionDefinition(FunctionType.FUNCTION, "stringformat");
+		formatDfn.addArg("FormatString");
+		formatDfn.addVarArgs("Args", ArgumentType.GENERAL, "Format arguments");
+		formatDfn.setDescription("String formatter equivalent to Java's String.Format.");
+		formatDfn.setFactory(new FunctionFactory() {
+			
+			@Override
+			public Function createFunction(Function... children) {
+				return new FmStringFormat(children[0], Arrays.copyOfRange(children, 1, children.length));
+			}
+		});
+		add(formatDfn);
+		
 		// decimal format
 		FunctionDefinition dfn = new FunctionDefinition(FunctionType.FUNCTION, "decimalformat");
 		dfn.setDescription("Format a double number using the input formatting pattern, which is the same as Java's DecimalFormat class");

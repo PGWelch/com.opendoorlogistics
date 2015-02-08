@@ -15,6 +15,7 @@ import java.awt.image.ImageFilter;
 import java.awt.image.ImageProducer;
 import java.awt.image.RGBImageFilter;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,6 +31,7 @@ import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
+import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Geometry;
 
 public class Functions {
@@ -1028,6 +1030,37 @@ public class Functions {
 		}
 	}
 
+	public static final class FmStringFormat extends FunctionImpl{
+
+		
+		public FmStringFormat(Function format, Function ...args){
+			super(FunctionUtils.toSingleArray(format, args));
+		}
+		
+		private FmStringFormat(Function ...fncs){
+			super(fncs);
+		}
+		
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object [] chdl = executeChildFormulae(parameters, false);
+			if(chdl==null || chdl[0] == null){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			String s = ColumnValueProcessor.convertToMe(ODLColumnType.STRING, chdl[0]).toString();
+			Object [] args = Arrays.copyOfRange(chdl, 1, chdl.length);
+			String ret = String.format(s, args);
+			return ret;
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmStringFormat(deepCopy(children));
+		}
+		
+	}
+	
 	/**
 	 * Base class for all comparisons.
 	 * 

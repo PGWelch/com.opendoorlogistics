@@ -46,6 +46,7 @@ import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard;
 import com.opendoorlogistics.core.scripts.formulae.FmLocalElement;
 import com.opendoorlogistics.core.scripts.formulae.TableParameters;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
+import com.opendoorlogistics.core.tables.ODLRowReadOnly;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator.AdapterMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.RowFilterDecorator;
@@ -340,14 +341,18 @@ final public class AdapterBuilder {
 				throw new UnionTableException(e);
 			}
 		}
-
-		// Create union decorator from each datastore and save to class-wide datastores list
+		
+		// 7th Feb 2015. True 2-way union decorators create an issue in group-bys as rowids aren't unique.
+		// We therefore just copy the union result over to a different table.
 		UnionDecorator<ODLTable> union = new UnionDecorator<>(built);
+		ODLDatastoreAlterable<ODLTableAlterable> ret =  buildSingleTableInternalDatastore(union.getTableAt(0));
+		DatastoreCopier.copyData(union.getTableAt(0), ret.getTableAt(0));
+		
 		int dsIndx = datasources.size();
-		datasources.add(union);
+		datasources.add(ret);
 
 		// Finally we need a dummy mapping to directly read from this
-		mapping.setTableSourceId(destinationTableId, dsIndx, union.getTableAt(0).getImmutableId());
+		mapping.setTableSourceId(destinationTableId, dsIndx, ret.getTableAt(0).getImmutableId());
 		for (int col = 0; col < combinedDfn.getColumnCount(); col++) {
 			mapping.setFieldSourceIndx(destinationTableId, col, col);
 		}
@@ -731,13 +736,11 @@ final public class AdapterBuilder {
 
 		// Create empty grouped table with no edit permissions (permissions are used by UI later-on).
 		// Sort fields are not included in this table.
-		ODLDatastoreAlterable<ODLTableAlterable> groupedDs = ODLDatastoreImpl.alterableFactory.create();
 		ODLTableDefinition destinationTable = destination.getTableAt(destTableIndex);
-		DatastoreCopier.copyTableDefinition(destinationTable, groupedDs);
+		ODLDatastoreAlterable<ODLTableAlterable> groupedDs = buildSingleTableInternalDatastore(destinationTable);		
 		final int groupedDsIndex = datasources.size();
 		datasources.add(groupedDs);
 		final ODLTableAlterable groupedTable = groupedDs.getTableAt(0);
-		TableUtils.removeTableFlags(groupedTable, TableFlags.UI_EDIT_PERMISSION_FLAGS);
 
 		// Fill in group table for the columns defining the groups, creating the groups as we do this.
 		// We build all groups with complexity O( nrows x ngroups).
@@ -785,7 +788,7 @@ final public class AdapterBuilder {
 		}
 
 		// create function library with the aggregate functions
-		final FunctionDefinitionLibrary library = buildFunctionLibrary(defaultDsIndex, null);
+		final FunctionDefinitionLibrary library = buildFunctionLibrary(defaultDsIndex, destinationTable);
 		FunctionsBuilder.buildGroupAggregates(library, groupRowIdToSourceRowIds, srcTableRef.dsIndex, srcTable.getImmutableId());
 
 		// Also create a special user variable provider which acts differently if we're
@@ -866,17 +869,15 @@ final public class AdapterBuilder {
 			for (int col : nonGroupByFields) {
 
 				// execute formula against the grouped table; aggregate formulae redirect to source table
-				FunctionParameters parameters = new TableParameters(datasources, groupedDsIndex, groupedTable.getImmutableId(), groupRow, groupRow,null);
-				Object val = nonSortFormulae[col].execute(parameters);
+				Object val = executeNonSortNonGroupByFormulaInGroupedTable(nonSortFormulae, groupedDsIndex, groupedTable, groupRow, col);
 				if (val == Functions.EXECUTION_ERROR) {
-					env.setFailed("Error executing formula or reading field in grouping: " + nonSortFormulae[col]);
+					env.setFailed("Error executing formula or reading field in grouping.");
 					return;
 				}
 
 				// save the value to the grouped table
 				groupedTable.setValueAt(val, groupRow, col);
 
-				// To do .. update message here..
 			}
 			
 			if(continueCb!=null && continueCb.isCancelled()){
@@ -927,6 +928,44 @@ final public class AdapterBuilder {
 		for (int col = 0; col < nbDestCols; col++) {
 			mapping.setFieldSourceIndx(destinationTable.getImmutableId(), col, col);
 		}
+	}
+
+	private ODLDatastoreAlterable<ODLTableAlterable> buildSingleTableInternalDatastore(ODLTableDefinition destinationTable) {
+		ODLDatastoreAlterable<ODLTableAlterable> ret = ODLDatastoreImpl.alterableFactory.create();
+		DatastoreCopier.copyTableDefinition(destinationTable, ret);
+		TableUtils.removeTableFlags(ret.getTableAt(0), TableFlags.UI_EDIT_PERMISSION_FLAGS);
+		return ret;
+	}
+
+	private Object executeNonSortNonGroupByFormulaInGroupedTable(final Function[] nonSortFormulae, final int groupedDsIndex, final ODLTableAlterable groupedTable,final int groupRow, int col) {
+		FunctionParameters parameters = new TableParameters(datasources, groupedDsIndex, groupedTable.getImmutableId(), groupRow, groupRow,new ODLRowReadOnly() {
+			
+			@Override
+			public int getRowIndex() {
+				// TODO Auto-generated method stub
+				return 0;
+			}
+			
+			@Override
+			public ODLTableDefinition getDefinition() {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public int getColumnCount() {
+				// TODO Auto-generated method stub
+				return 0;
+			}
+			
+			@Override
+			public Object get(int otherCol) {
+				return executeNonSortNonGroupByFormulaInGroupedTable(nonSortFormulae, groupedDsIndex, groupedTable, groupRow, otherCol);
+			}
+		});
+		
+		Object val = nonSortFormulae[col].execute(parameters);
+		return val;
 	}
 
 	private Function buildFormulaWithTableVariables(final ODLTableDefinition srcTable, String formulaText, final int defaultDsIndx, ODLTableDefinition targetTableDefinition) {

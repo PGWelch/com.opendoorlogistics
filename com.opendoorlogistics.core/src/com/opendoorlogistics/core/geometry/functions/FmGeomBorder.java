@@ -80,10 +80,13 @@ public class FmGeomBorder extends FunctionImpl {
 	public Object execute(FunctionParameters parameters) {
 
 		// get input parameters
-		Object[] childEx = executeChildFormulae(parameters, true);
-		if (childEx == null) {
-			return Functions.EXECUTION_ERROR;
-		}		
+		Object[] childEx = executeChildFormulae(parameters, false);
+		for(Object o :childEx){
+			if(o==null){
+				return null;
+			}
+		}
+		
 		Object converted0 = ColumnValueProcessor.convertToMe(ODLColumnType.GEOM, childEx[0]);
 		Object converted1 = ColumnValueProcessor.convertToMe(ODLColumnType.LONG, childEx[1]);
 		if (converted0 == null || converted1 == null) {

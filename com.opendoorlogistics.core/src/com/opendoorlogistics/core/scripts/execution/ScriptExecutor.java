@@ -669,7 +669,9 @@ final public class ScriptExecutor {
 				switch (output.getType()) {
 
 				case REPLACE_CONTENTS_OF_EXISTING_TABLE:
-				case APPEND_TO_EXISTING_TABLE: {
+				case APPEND_TO_EXISTING_TABLE:
+				case APPEND_ALL_TO_EXISTING_TABLES:
+				{
 					// find table
 					ODLTableAlterable outTable = TableUtils.findTable(externalDb, destinationTable, true);
 
@@ -755,22 +757,22 @@ final public class ScriptExecutor {
 		}
 		Helper helper = new Helper();
 
-		if (output.getType() == OutputType.COPY_ALL_TABLES) {
-			// get all tables from datastore
+		if (output.getType() == OutputType.COPY_ALL_TABLES || output.getType()== OutputType.APPEND_ALL_TO_EXISTING_TABLES) {
+			// get all input tables from datastore
 			for (int i = 0; i < inputDs.getTableCount(); i++) {
-				ODLTableReadOnly table = inputDs.getTableAt(i);
-				if (!helper.create(table, table.getName())) {
+				ODLTableReadOnly copyFromTable = inputDs.getTableAt(i);
+				if (!helper.create(copyFromTable, copyFromTable.getName())) {
 					return;
 				}
 			}
 		} else {
-			// get specific table
-			ODLTableReadOnly table = TableUtils.findTable(inputDs, output.getInputTable(), true);
-			if (table == null) {
+			// get specific input table
+			ODLTableReadOnly copyFromTable = TableUtils.findTable(inputDs, output.getInputTable(), true);
+			if (copyFromTable == null) {
 				result.setFailed("Failed to get input table '" + output.getInputTable() + "' for output command.");
 				return;
 			}
-			helper.create(table, output.getDestinationTable());
+			helper.create(copyFromTable, output.getDestinationTable());
 		}
 
 	}
