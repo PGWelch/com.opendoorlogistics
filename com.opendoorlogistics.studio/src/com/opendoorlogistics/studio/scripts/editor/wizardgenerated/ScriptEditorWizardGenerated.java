@@ -83,6 +83,7 @@ import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel.TextChangedListener;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
+import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.scripts.componentwizard.SetupComponentWizard;
 import com.opendoorlogistics.studio.scripts.editor.OutputPanel;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
@@ -1156,7 +1157,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 	}
 
 	private JToolBar createTreeToolBar() {
-		JToolBar ret = new JToolBar();
+		JToolBar ret = new ODLScrollableToolbar().getToolBar();
 		for (ODLAction action : treeActions) {
 			ret.add(action);
 		}

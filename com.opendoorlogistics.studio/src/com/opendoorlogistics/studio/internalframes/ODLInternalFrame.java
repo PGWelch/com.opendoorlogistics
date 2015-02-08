@@ -89,9 +89,6 @@ public class ODLInternalFrame extends JInternalFrame {
 	
 	
 
-	// public HasInternalFrames getOwner(){
-	// return owner;
-	// }
 
 	public static void showInDummyDesktopPane(final ODLInternalFrame frame) {
 		SwingUtils.invokeLaterOnEDT(new Runnable() {

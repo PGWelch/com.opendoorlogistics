@@ -96,6 +96,7 @@ import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
 import com.opendoorlogistics.studio.components.map.RegisterMapComponent;
 import com.opendoorlogistics.studio.components.tables.EditableTableComponent;
+import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.controls.buttontable.ButtonTableDialog;
 import com.opendoorlogistics.studio.dialogs.AboutBoxDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog;
@@ -127,7 +128,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	private final DesktopScrollPane desktopScrollPane;
 	private final JSplitPane splitterTablesScripts;
 	private final JSplitPane splitterLeftPanelMain;
-	private final JToolBar windowToolBar;
+	private final ODLScrollableToolbar windowToolBar;
 	
 	private final JDesktopPane desktopPane = new JDesktopPane() {
 
@@ -156,7 +157,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	private final DatastoreTablesPanel tables;
 	private final ScriptUIManagerImpl scriptManager;
 	private final ScriptsPanel scriptsPanel;
-	private final JToolBar mainToolbar = new JToolBar(SwingConstants.VERTICAL);
+	private final JToolBar mainToolbar = new ODLScrollableToolbar(SwingConstants.VERTICAL).getToolBar();
 	private final List<MyAction> fileActions;
 	private final List<MyAction> editActions;
 	private final ODLApi api = new ODLApiImpl();
@@ -197,47 +198,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 		new AppFrame();
 	}
 	
-//	private static void loadComponentFromEclipseProject(String basedir, String componentClsName){
-//		try{
-//			// code assumes no slash at end...
-//			while(basedir.endsWith("/") || basedir.endsWith("\\")){
-//				basedir = basedir.substring(0, basedir.length()-1);
-//			}
-//			
-//			// add jars
-//			ArrayList<URL> urls = new ArrayList<>();
-//			File libsdir = new File(basedir + "/" + "libs");
-//			for(File file : libsdir.listFiles()){
-//				String name = file.getName().toLowerCase();
-//				if(name.contains("sources") || name.contains("javadoc") || name.contains("tests")){
-//					continue;
-//				}
-//				if(Strings.equalsStd(FilenameUtils.getExtension(file.getAbsolutePath()),"jar")){
-//					urls.add(file.toURI().toURL());
-//				}
-//			}
-//
-//			// add bin
-//			urls.add(new File(basedir + "/bin/").toURI().toURL());	
-//			
-//			// get class loader
-//			URL [] urlarr = urls.toArray(new URL[urls.size()]);
-//			@SuppressWarnings("resource")
-//			ClassLoader cl1 = new URLClassLoader(urlarr);
-//			
-//			// find the class
-//			Class<?> cls = cl1.loadClass(componentClsName);
-//			
-//			// create instance
-//			ODLComponent component = (ODLComponent)cls.newInstance();
-//			
-//			// register
-//			ODLGlobalComponents.register(component);
-//			
-//		}catch(Exception e){
-//			throw new RuntimeException(e);
-//		}
-//	}
+
 
 	public AppFrame() {
 
@@ -313,8 +274,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 		JPanel rightPane = new JPanel();
 		rightPane.setLayout(new BorderLayout());
 		rightPane.add(desktopPane, BorderLayout.CENTER);
-		windowToolBar = new JToolBar();
-		windowToolBar.setFloatable(false);
+		windowToolBar = new ODLScrollableToolbar();
 		rightPane.add(windowToolBar,BorderLayout.SOUTH);
 		splitterLeftPanelMain = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitterTablesScripts, rightPane);
 		con.add(splitterLeftPanelMain, BorderLayout.CENTER);
@@ -345,7 +305,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	}
 
 	private void updateWindowsToolbar(){
-		windowToolBar.removeAll();
+		windowToolBar.getToolBar().removeAll();
 		for (final JInternalFrame frame : desktopPane.getAllFrames()) {
 			if(ODLInternalFrame.class.isInstance(frame)){
 				
@@ -359,7 +319,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 					}
 				}
 				if(title!=null){
-					int maxchar = 16;
+					int maxchar = 20;
 					if(title.length()>maxchar){
 						title = title.substring(0, maxchar) + "...";						
 					}
@@ -398,7 +358,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 					}
 				});
 				button.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createSoftBevelBorder(BevelBorder.RAISED), BorderFactory.createEmptyBorder(2, 2, 2, 2))) ;
-				windowToolBar.add(button);
+				windowToolBar.getToolBar().add(button);
 			}
 		}
 		
