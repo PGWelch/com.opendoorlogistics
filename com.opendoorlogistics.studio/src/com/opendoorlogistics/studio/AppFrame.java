@@ -157,7 +157,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	private final DatastoreTablesPanel tables;
 	private final ScriptUIManagerImpl scriptManager;
 	private final ScriptsPanel scriptsPanel;
-	private final JToolBar mainToolbar = new ODLScrollableToolbar(SwingConstants.VERTICAL).getToolBar();
+	private final JToolBar mainToolbar = new JToolBar(SwingConstants.VERTICAL);
 	private final List<MyAction> fileActions;
 	private final List<MyAction> editActions;
 	private final ODLApi api = new ODLApiImpl();

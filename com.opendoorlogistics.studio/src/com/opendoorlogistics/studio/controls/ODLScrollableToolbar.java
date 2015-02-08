@@ -21,6 +21,8 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToolBar;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.MouseInputAdapter;
@@ -95,6 +97,25 @@ public class ODLScrollableToolbar extends JPanel {
 			}
 		});
 
+//		addAncestorListener(new AncestorListener() {
+//			
+//			@Override
+//			public void ancestorRemoved(AncestorEvent event) {
+//				// TODO Auto-generated method stub
+//				
+//			}
+//			
+//			@Override
+//			public void ancestorMoved(AncestorEvent event) {
+//				updateScrollState();
+//			}
+//			
+//			@Override
+//			public void ancestorAdded(AncestorEvent event) {
+//				// TODO Auto-generated method stub
+//				
+//			}
+//		});
 	}
 
 	private MouseListener createMouseListener(final boolean isLeft) {
