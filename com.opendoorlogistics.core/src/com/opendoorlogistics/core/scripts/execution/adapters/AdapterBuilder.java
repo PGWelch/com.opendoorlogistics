@@ -30,6 +30,7 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.formulae.FormulaParser;
 import com.opendoorlogistics.core.formulae.Function;
+import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.formulae.Functions.FmConst;
@@ -64,6 +65,15 @@ import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 final public class AdapterBuilder {
+
+	private final static UserVariableProvider EMPTY_UVP = new UserVariableProvider() {
+		
+		@Override
+		public Function getVariable(String name) {
+			return null;
+		}
+	};
+	
 	private final String id;
 	private final BuiltAdapters builtAdapters;
 	private final ScriptExecutionBlackboard env;
@@ -84,6 +94,7 @@ final public class AdapterBuilder {
 		this.builtAdapters = result;
 		this.continueCb = continueCb;
 	}
+	
 
 	public AdapterBuilder(String id, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env, ProcessingApi continueCb,BuiltAdapters result) {
 		this(env.getAdapterConfig(id), id, callerAdapters, env, continueCb,result);
@@ -345,17 +356,25 @@ final public class AdapterBuilder {
 		// 7th Feb 2015. True 2-way union decorators create an issue in group-bys as rowids aren't unique.
 		// We therefore just copy the union result over to a different table.
 		UnionDecorator<ODLTable> union = new UnionDecorator<>(built);
-		ODLDatastoreAlterable<ODLTableAlterable> ret =  buildSingleTableInternalDatastore(union.getTableAt(0));
+		ODLTableDefinition destDfn = union.getTableAt(0);
+		ODLDatastoreAlterable<ODLTableAlterable> ret = mapToNewEmptyTable(destinationTableId, destDfn);
 		DatastoreCopier.copyData(union.getTableAt(0), ret.getTableAt(0));
+
+	}
+
+
+	ODLDatastoreAlterable<ODLTableAlterable> mapToNewEmptyTable(int destinationTableId, ODLTableDefinition destDfn) {
+		ODLDatastoreAlterable<ODLTableAlterable> ret =  buildSingleTableInternalDatastore(destDfn);
 		
 		int dsIndx = datasources.size();
 		datasources.add(ret);
 
 		// Finally we need a dummy mapping to directly read from this
 		mapping.setTableSourceId(destinationTableId, dsIndx, ret.getTableAt(0).getImmutableId());
-		for (int col = 0; col < combinedDfn.getColumnCount(); col++) {
+		for (int col = 0; col < destDfn.getColumnCount(); col++) {
 			mapping.setFieldSourceIndx(destinationTableId, col, col);
 		}
+		return ret;
 	}
 
 	/**
@@ -481,6 +500,52 @@ final public class AdapterBuilder {
 		}
 	}
 
+	private boolean isAlwaysFalseFilterFormula(String filter){
+
+		// built the function lib with the parameter function but nothing else, so row-level fields are not readable
+		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
+		library.build();
+		FunctionsBuilder.buildParametersFormulae(library, createIndexDatastoresWrapper(), env);
+		if(env.isFailed()){
+			return false;
+		}
+		
+		Function f= buildFormula(filter, library, EMPTY_UVP, FormulaParser.UnidentifiedPolicy.CREATE_UNIDENTIFIED_PLACEHOLDER_FUNCTION);
+		
+		// test for unidentified
+		if(f!=null && !env.isFailed() && !FormulaParser.FmUnidentified.containsUnidentified(f)){
+		
+			Object val = null;
+			try {
+				// try executing the function
+				FunctionParameters parameters = new TableParameters(datasources, -1, -1, -1,-1,null);	
+				val = f.execute(parameters);
+				if(!isTrue(val)){
+					return true;
+				}
+				
+			} catch (Exception e) {
+				env.setFailed(e);
+				val = Functions.EXECUTION_ERROR;
+			}
+			if(val==Functions.EXECUTION_ERROR){
+				env.setFailed("Failed to execute filter function:"  + filter);
+			}
+		}
+		
+		return false;
+	}
+	
+	private static boolean isTrue(Object exec){
+		if (exec != null) {
+			Long val = Numbers.toLong(exec);
+			if(val!=null && val.intValue()==1){
+				return true;						
+			}
+		}
+		return false;
+	}
+	
 	/**
 	 * Build a non-unioned table by filling in the field sources into the mapping object and recursively building other adapters as needed
 	 * 
@@ -489,7 +554,26 @@ final public class AdapterBuilder {
 	private void buildNonUnionNonGroupedTable(int destTableIndx) {
 
 		AdaptedTableConfig tableConfig = processedConfig.getTables().get(destTableIndx);
-
+		
+		// should we process sorting now?
+		boolean processSortNow = AdapterBuilderUtils.hasGroupByColumn(tableConfig) == false;
+		
+		// get the filter formula and if we're sorting create a dummy one (as we need the filter decorator)
+		int[] sortCols = getOrderedSortColumns(tableConfig);
+		String filterFormula = tableConfig.getFilterFormula();
+		if (processSortNow && sortCols.length > 0 && (filterFormula == null || filterFormula.trim().length() == 0)) {
+			filterFormula = "true";
+		}
+		
+		// get definitions of destination table
+		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);
+		
+		// Check for case where we have a filter formula based only on a parameter that's false and hence we can skip recurse building
+		if(filterFormula!=null && filterFormula.trim().length() >0 && isAlwaysFalseFilterFormula(filterFormula)){
+			mapToNewEmptyTable(destTable.getImmutableId(), destTable);
+			return;
+		}
+		
 		// get the input datastore, building adapters recursively when needed
 		InternalTableRef tableRef = new InternalTableRef();
 		int originalFromDsIndex = recurseBuild(tableConfig.getFromDatastore());
@@ -505,16 +589,6 @@ final public class AdapterBuilder {
 			env.setFailed("Could not find table \"" + tableConfig.getFromTable() + "\".");
 			setFailed();
 			return;
-		}
-
-		// should we process sorting now?
-		boolean processSortNow = AdapterBuilderUtils.hasGroupByColumn(tableConfig) == false;
-
-		// get the filter formula and if we're sorting create a dummy one (as we need the filter decorator)
-		int[] sortCols = getOrderedSortColumns(tableConfig);
-		String filterFormula = tableConfig.getFilterFormula();
-		if (processSortNow && sortCols.length > 0 && (filterFormula == null || filterFormula.trim().length() == 0)) {
-			filterFormula = "true";
 		}
 
 		// create a filter if needed - used when either filtering or sorting or both
@@ -554,6 +628,7 @@ final public class AdapterBuilder {
 					}
 				}
 				else if(FmLocalElement.class.isInstance(formula)){
+					// Using an actual field .. so get all the values where this field = 1 (i.e. true)
 					long [] vals = srcTable.find(((FmLocalElement)formula).getColumnIndex(), 1);
 					if(vals!=null){
 						rowIds.addAll(vals);							
@@ -571,11 +646,8 @@ final public class AdapterBuilder {
 							return;
 						}
 	
-						if (exec != null) {
-							Long val = Numbers.toLong(exec);
-							if(val!=null && val.intValue()==1){
-								rowIds.add(srcTable.getRowId(row));							
-							}
+						if(isTrue(exec)){
+							rowIds.add(srcTable.getRowId(row));														
 						}
 					}
 				}
@@ -621,9 +693,6 @@ final public class AdapterBuilder {
 		for (int i = sortCols.length - 1; i >= 0; i--) {
 			tableConfig.getColumns().remove(sortCols[i]);
 		}
-
-		// get definitions of destination table
-		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);
 
 		// tell the mapping where to find the table
 		ODLTable srcTable = table(tableRef);
@@ -844,7 +913,7 @@ final public class AdapterBuilder {
 				// We compile the formula against the source table as only source table fields are accessible
 				// (should only be via an aggregate method...)
 				String formulaText =getSafeFormula(field);
-				Function ret = buildFormula(formulaText, library, uvp);
+				Function ret = buildFormula(formulaText, library, uvp,FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION);
 				if (ret == null) {
 					env.setFailed("Failed to build non-group formula or access field in group-by query: " + formulaText);
 				}
@@ -983,19 +1052,20 @@ final public class AdapterBuilder {
 		};
 
 		FunctionDefinitionLibrary library = buildFunctionLibrary(defaultDsIndx, targetTableDefinition);
-		return buildFormula(formulaText, library, uvp);
+		return buildFormula(formulaText, library, uvp, FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION);
 	}
 
-	private Function buildFormula(String formulaText, FunctionDefinitionLibrary library, UserVariableProvider uvp) {
+	private Function buildFormula(String formulaText, FunctionDefinitionLibrary library, UserVariableProvider uvp, FormulaParser.UnidentifiedPolicy unidentifiedPolicy) {
 
 		try {
-			FormulaParser parser = new FormulaParser(uvp, library);
 
 			// replace empty with null (so we get sensible behaviour from an empty formula)
 			if (formulaText == null || Strings.isEmptyWhenStandardised(formulaText)) {
 				formulaText = "null";
 			}
 
+			FormulaParser parser = new FormulaParser(uvp, library);
+			parser.setUnidentifiedPolicy(unidentifiedPolicy);
 			Function formula = parser.parse(formulaText);
 			if (formula == null) {
 				throw new RuntimeException();

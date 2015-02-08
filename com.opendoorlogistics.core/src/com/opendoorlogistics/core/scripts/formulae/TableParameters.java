@@ -56,7 +56,7 @@ final public class TableParameters implements FunctionParameters {
 	}
 
 	public ODLTableReadOnly getTableById(int datastoreIndx, int tableId) {
-		if (datastoreIndx < datastores.size() && dsIndx >= 0) {
+		if (datastoreIndx < datastores.size() && datastoreIndx >= 0) {
 			ODLDatastore<?> ds = (ODLDatastore<?>) datastores.get(datastoreIndx);
 			return (ODLTableReadOnly) ds.getTableByImmutableId(tableId);
 		}

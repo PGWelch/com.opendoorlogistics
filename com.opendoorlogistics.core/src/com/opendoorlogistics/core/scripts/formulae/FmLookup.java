@@ -21,7 +21,7 @@ import com.opendoorlogistics.core.utils.Numbers;
  * @author Phil
  * 
  */
-final public class FmLookup extends FunctionImpl {
+public class FmLookup extends FunctionImpl {
 	private final LookupType type;
 	private final int nbLookups;
 	private final int []otherTableSearchKeyColumns;

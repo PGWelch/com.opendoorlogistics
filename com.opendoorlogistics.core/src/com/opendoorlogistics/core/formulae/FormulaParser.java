@@ -20,7 +20,22 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.strings.Strings.ToString;
 
 public final class FormulaParser {
+	private UnidentifiedPolicy unidentifiedPolicy = UnidentifiedPolicy.THROW_EXCEPTION;
+	
+	
+	public UnidentifiedPolicy getUnidentifiedPolicy() {
+		return unidentifiedPolicy;
+	}
 
+	public void setUnidentifiedPolicy(UnidentifiedPolicy unidentifiedPolicy) {
+		this.unidentifiedPolicy = unidentifiedPolicy;
+	}
+
+	public enum UnidentifiedPolicy{
+		THROW_EXCEPTION,
+		CREATE_UNIDENTIFIED_PLACEHOLDER_FUNCTION
+	}
+	
 	private class ReadFunctionToken {
 		String token;
 		ArrayList<ReadFunctionToken> children = new ArrayList<>();
@@ -94,11 +109,11 @@ public final class FormulaParser {
 		this.library =lib;
 	}
 
-	public FormulaParser(final UserVariableProvider userVariableProvider) {
-		this.userVariableProvider = userVariableProvider;
-		this.library = new FunctionDefinitionLibrary();
-		library.build();
-	}
+//	public FormulaParser(final UserVariableProvider userVariableProvider) {
+//		this.userVariableProvider = userVariableProvider;
+//		this.library = new FunctionDefinitionLibrary();
+//		library.build();
+//	}
 
 	private Function compileNestedExpression( ReadFunctionToken token) {
 		ArrayList<SourceFormula> tmp = new ArrayList<>();
@@ -294,7 +309,11 @@ public final class FormulaParser {
 			}
 			
 			if(ret==null){
-				throw new RuntimeException("Unidentified variable: " + token.token);
+				if(unidentifiedPolicy == UnidentifiedPolicy.THROW_EXCEPTION){
+					throw new RuntimeException("Unidentified variable: " + token.token);					
+				}else{
+					ret = FmUnidentified.FACTORY.createFunction();
+				}
 			}
 			break;
 
@@ -458,7 +477,11 @@ public final class FormulaParser {
 					rft.identified = library.identify(rft.token, FunctionType.FUNCTION);
 
 					if (rft.identified == null) {
-						throw new RuntimeException("Unknown function \"" + rft.token + "\"");
+						if(unidentifiedPolicy == UnidentifiedPolicy.THROW_EXCEPTION){
+							throw new RuntimeException("Unknown function \"" + rft.token + "\"");							
+						}else{
+							rft.identified = FmUnidentified.FACTORY;
+						}
 					}
 					rft.tokenType = TokenType.function;
 				}
@@ -539,4 +562,50 @@ public final class FormulaParser {
 	public String toString(){
 		return library.toString();
 	}
+	
+	/**
+	 * Placeholder formula to mark anything that couldn't be identified
+	 * @author Phil
+	 *
+	 */
+	public static class FmUnidentified extends FunctionImpl{
+		public FmUnidentified(Function ... children) {
+			super(children);
+		}
+		
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			return Functions.EXECUTION_ERROR;
+		}
+
+		@Override
+		public Function deepCopy() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		
+		public static final FunctionFactory FACTORY = new FunctionFactory() {
+			
+			@Override
+			public Function createFunction(Function... children) {
+				return new FmUnidentified(children);
+			}
+		};
+		
+		public static boolean containsUnidentified(Function f){
+			if(f!=null ){
+				if(FmUnidentified.class.isInstance(f)){
+					return true;
+				}
+				int n = f.nbChildren();
+				for(int i =0 ; i < n ; i++){
+					if(containsUnidentified(f.child(i))){
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+	}
+	
 }

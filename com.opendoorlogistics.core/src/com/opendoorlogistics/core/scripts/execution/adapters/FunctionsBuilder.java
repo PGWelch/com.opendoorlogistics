@@ -41,6 +41,7 @@ import com.opendoorlogistics.core.scripts.formulae.FmLookup.LookupType;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupGeomUnion;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupNearest;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupWeightedCentroid;
+import com.opendoorlogistics.core.scripts.formulae.FmParameter;
 import com.opendoorlogistics.core.scripts.formulae.FmRow;
 import com.opendoorlogistics.core.scripts.formulae.FmRowId;
 import com.opendoorlogistics.core.scripts.formulae.FmThis;
@@ -363,8 +364,10 @@ final public class FunctionsBuilder {
 		class Helper {
 
 			void setFailed(String message) {
-				result.setFailed(message);
-				result.setFailed("Failed to build function: " + formulaName);
+				if(result!=null){
+					result.setFailed(message);
+					result.setFailed("Failed to build function: " + formulaName);					
+				}
 			}
 
 			int findColumn(ODLTableDefinition table, String colName) {
@@ -423,7 +426,6 @@ final public class FunctionsBuilder {
 
 
 		// loop over every lookup type
-		FunctionFactory lookupFirstMatchFactory=null;
 		for (final LookupType lookupType : LookupType.values()) {
 
 			for(int lookupSize = 0 ; lookupSize <= 3 ; lookupSize++){
@@ -504,10 +506,6 @@ final public class FunctionsBuilder {
 						}
 					};
 
-					// Save the factory for lookup first match as its used below for the param function
-					if(lookupType == LookupType.RETURN_FIRST_MATCH && lookupSize==1){
-						lookupFirstMatchFactory = factory;
-					}
 					dfn.setFactory(factory);
 				}
 
@@ -516,21 +514,40 @@ final public class FunctionsBuilder {
 
 		}
 		
-		// Add function param("key") as shorthand for lookup("key", "Params", const("Key"), const("Value"))
-		FunctionDefinition dfn = new FunctionDefinition("parameter");
-		dfn.setDescription("Shorthand for the function lookup(\"key\", \"Parameters\", const(\"Key\"), const(\"Value\")). This provides a quick lookup for global parameters in a key-value table.");
-		dfn.addArg("key", ArgumentType.STRING_CONSTANT,null);
-		final FunctionFactory finalLookupFactory=lookupFirstMatchFactory;
-		if (lookupFirstMatchFactory != null) {
+		
+		buildParametersFormulae(library, datastores, result);
+
+	}
+
+	static void buildParametersFormulae(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTableReadOnly> datastores, final ExecutionReport result) {
+		for(String keyword: new String[]{"parameter","p"}){
+			FunctionDefinition dfn = new FunctionDefinition(keyword);
+			dfn.setDescription("Shorthand for the function lookup(\"key\", \"Parameters\", const(\"Key\"), const(\"Value\")). This provides a quick lookup for global parameters in a key-value table.");
+			dfn.addArg("key", ArgumentType.STRING_CONSTANT,null);
 			dfn.setFactory(new FunctionFactory() {
 				
 				@Override
 				public Function createFunction(Function... children) {
-					return finalLookupFactory.createFunction(children[0], new FmConst(ScriptConstants.EXTERNAL_DS_NAME + ", Parameters"), new FmConst("Key"), new FmConst("Value"));
+					int index = datastores.getIndex(ScriptConstants.EXTERNAL_DS_NAME);
+					ODLDatastore<? extends ODLTableDefinition> ds = datastores.getDatastore(index);
+					if(ds!=null){
+						ODLTableDefinition table = TableUtils.findTable(ds, "Parameters", true);
+						if(table!=null){
+							int key = TableUtils.findColumnIndx(table, "Key");
+							int value = TableUtils.findColumnIndx(table, "Value");
+							if(key!=-1 && value!=-1){
+								return new FmParameter(children[0], index, table.getImmutableId(), key, value);
+							}
+						}
+					}
+					result.setFailed("Failed to compile parameters function. "
+							+ "Parameters requires the spreadsheet contains a table called Parameters with columns called Key and Value.");
+					return null;
 				}
 			});
+		
+			library.add(dfn);		
 		}
-		library.add(dfn);
 	}
 
 	public static FunctionDefinitionLibrary getAllDefinitions() {
