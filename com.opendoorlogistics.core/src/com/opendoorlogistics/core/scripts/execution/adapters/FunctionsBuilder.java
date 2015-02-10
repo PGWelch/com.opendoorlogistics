@@ -44,6 +44,7 @@ import com.opendoorlogistics.core.scripts.formulae.FmLookupWeightedCentroid;
 import com.opendoorlogistics.core.scripts.formulae.FmParameter;
 import com.opendoorlogistics.core.scripts.formulae.FmRow;
 import com.opendoorlogistics.core.scripts.formulae.FmRowId;
+import com.opendoorlogistics.core.scripts.formulae.FmRuleLookup;
 import com.opendoorlogistics.core.scripts.formulae.FmThis;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -54,6 +55,7 @@ final public class FunctionsBuilder {
 			final int defaultDatastoreIndex,final ODLTableDefinition targetTableDefinition, final ExecutionReport result) {
 		buildBasicLookups(library, datastores, defaultDatastoreIndex, result);
 		buildImage(library, datastores, result);
+		FmRuleLookup.buildRuleLookup(library, datastores, result);
 		for(FunctionDefinition dfn : FmLookupNearest.createDefinitions(datastores, defaultDatastoreIndex, result)){
 			library.add(dfn);
 		}
@@ -143,6 +145,8 @@ final public class FunctionsBuilder {
 		library.add(dfn);
 	}
 
+	
+	
 	private static void buildImage(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTable> datastores,
 			final ExecutionReport result) {
 

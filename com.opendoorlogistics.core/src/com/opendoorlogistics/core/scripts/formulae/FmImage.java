@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.core.cache.ApplicationCache;
+import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
@@ -34,7 +36,7 @@ final public class FmImage extends FunctionImpl {
 	final private Mode mode;
 
 	// fmimage uses an image cache... It assumes the script execution framework takes care of refreshing etc when data changes
-	final private SimpleSoftReferenceMap<CacheKey, BufferedImage> cache = new SimpleSoftReferenceMap<>();
+	//final private SimpleSoftReferenceMap<CacheKey, BufferedImage> cache = new SimpleSoftReferenceMap<>();
 
 	public enum Mode {
 		SHOW_SELECTED("1", "Show only the matching objects in the table and the background map, zooming on the matching objects."), 
@@ -75,6 +77,10 @@ final public class FmImage extends FunctionImpl {
 			flags.setFlag(RenderProperties.SKIP_BACKGROUND_COLOUR_RENDERING, true);
 		}
 		this.properties = flags;
+	}
+	
+	private RecentlyUsedCache cache(){
+		return ApplicationCache.singleton().get(ApplicationCache.IMAGE_FORMULAE_CACHE);
 	}
 
 	public static FmImage createFixedPixelSize(Function foreignKeyValue, ODLTableReadOnly table, int groupKeyIndx, Mode mode,Function width, Function height,
@@ -190,7 +196,7 @@ final public class FmImage extends FunctionImpl {
 		}
 
 		// try to fetch using the cache key
-		BufferedImage image = cache.get(key);
+		BufferedImage image = (BufferedImage)cache().get(key);
 		if (image != null) {
 			return image;
 		}
@@ -221,7 +227,7 @@ final public class FmImage extends FunctionImpl {
 
 
 		// add to cache
-		cache.put(key, ret);
+		cache().put(key, ret, (long)ret.getWidth() * (long)ret.getHeight() * 4);
 
 		return ret;
 	}
