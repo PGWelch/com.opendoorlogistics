@@ -19,6 +19,8 @@ import com.opendoorlogistics.core.scripts.TableReference;
 import com.opendoorlogistics.core.scripts.execution.adapters.IndexedDatastores;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
+import com.opendoorlogistics.core.utils.strings.StandardisedCache;
+import com.opendoorlogistics.core.utils.strings.Strings;
 
 /**
  * A rule lookup is built from an input table which is comprised of one or more
@@ -36,17 +38,52 @@ import com.opendoorlogistics.core.tables.utils.TableUtils;
 public class FmRuleLookup extends FunctionImpl {
 	private final Object[] results;
 	private final int nc;
-
+	private final StandardisedCache standardisedCache = new StandardisedCache();
+	private final String[] selectorFieldNames;
+	
 	private class CascadeNode {
-		Object value;
+		final int ruleNb;
+		final int colIndx;
+		final Object value;
 		ArrayList<CascadeNode> children;
-		int ruleNb = -1;
+				
+		CascadeNode(int ruleNb, int colIndx, Object value) {
+			this.ruleNb = ruleNb;
+			this.colIndx = colIndx;
+			this.value = value;
+		}
+
+		@Override
+		public String toString(){
+			StringBuilder b = new StringBuilder();
+			toString(b);
+			return b.toString();
+		}
+		
+		private void toString(StringBuilder b){
+			if(colIndx>=0){
+				b.append(Strings.repeat("\t", colIndx) + selectorFieldNames[colIndx] +" = " + value + (colIndx == nc-1? " (rule #" + ruleNb + ")":"") + System.lineSeparator());				
+			}
+			if(children!=null){
+				for(CascadeNode n:children){
+					n.toString(b);
+				}
+			}
+		}
 	}
 
 	private final CascadeNode tree;
 
+	private FmRuleLookup(Object[] results, int nc, String[] selectorFieldNames,CascadeNode tree) {
+		this.results = results;
+		this.nc = nc;
+		this.tree = tree;
+		this.selectorFieldNames = selectorFieldNames;
+	}
+	
 	public FmRuleLookup(Function[] inputSelectors, String[] selectorFieldNames, ODLTableReadOnly table, String returnField) {
 		super(inputSelectors);
+		this.selectorFieldNames = selectorFieldNames;
 
 		// Match the columns
 		nc = selectorFieldNames.length;
@@ -61,15 +98,15 @@ public class FmRuleLookup extends FunctionImpl {
 		// Build a lookup tree
 		int n = table.getRowCount();
 		results = new Object[n];
-		tree = new CascadeNode();
+		tree = new CascadeNode(-1,-1,null);
 		tree.children = new ArrayList<CascadeNode>();
-		for (int i = 0; i < n; i++) {
+		for (int rule = 0; rule < n; rule++) {
 
 			CascadeNode parent = tree;
-			for (int j = 0; j < nc; j++) {
+			for (int col = 0; col < nc; col++) {
 
 				// get selector value and ensure zero length is treated as null
-				Object s = table.getValueAt(i, cols[j]);
+				Object s = table.getValueAt(rule, cols[col]);
 				if (s != null && s.toString().length() == 0) {
 					s = null;
 				}
@@ -79,7 +116,7 @@ public class FmRuleLookup extends FunctionImpl {
 				CascadeNode nextParent = null;
 				for (int k = 0; k < nc; k++) {
 					CascadeNode child = parent.children.get(k);
-					if (ColumnValueProcessor.isEqual(s, child)) {
+					if (ColumnValueProcessor.isEqual(s, child.value, standardisedCache)) {
 						nextParent = child;
 						break;
 					}
@@ -87,20 +124,19 @@ public class FmRuleLookup extends FunctionImpl {
 
 				// make a node if none exists, marking the rule number
 				if (nextParent == null) {
-					nextParent = new CascadeNode();
-					nextParent.value = s;
-					nextParent.ruleNb = i;
+					nextParent = new CascadeNode(rule, col, s);
+					
+					// add to parent
+					if (parent.children == null) {
+						parent.children = new ArrayList<CascadeNode>(3);
+					}
+					parent.children.add(nextParent);
 				}
 
-				// add to parent
-				if (parent.children == null) {
-					parent.children = new ArrayList<CascadeNode>(3);
-				}
-				parent.children.add(nextParent);
 				parent = nextParent;
 			}
 
-			results[i] = table.getValueAt(i, resultCol);
+			results[rule] = table.getValueAt(rule, resultCol);
 		}
 	}
 
@@ -112,11 +148,11 @@ public class FmRuleLookup extends FunctionImpl {
 		return col;
 	}
 
-	private void recurseMatch(Object[] values, int column, CascadeNode node, int[] lowestRuleNumber) {
+	private void recurseMatch(Object[] values, CascadeNode node, int[] lowestRuleNumber) {
 
 		// record the rule if we're on the last one and its lower than the
 		// current lowest
-		if (column == nc - 1) {
+		if (node.colIndx == nc - 1) {
 			lowestRuleNumber[0] = Math.min(lowestRuleNumber[0], node.ruleNb);
 		} else {
 			// recurse to the next level if we find a null selector (which
@@ -127,11 +163,11 @@ public class FmRuleLookup extends FunctionImpl {
 					CascadeNode childNode = node.children.get(i);
 					boolean recurse = childNode.value == null;
 					if (!recurse) {
-						recurse = ColumnValueProcessor.isEqual(values[column], childNode.value);
+						recurse = ColumnValueProcessor.isEqual(values[childNode.colIndx], childNode.value, standardisedCache);
 					}
 
 					if (recurse) {
-						recurseMatch(values, column + 1, childNode, lowestRuleNumber);
+						recurseMatch(values,  childNode, lowestRuleNumber);
 					}
 				}
 			}
@@ -150,7 +186,7 @@ public class FmRuleLookup extends FunctionImpl {
 		lowestRuleNumber[0] = Integer.MAX_VALUE;
 
 		// Find the lowest matching rule number
-		recurseMatch(childexe, 0, tree, lowestRuleNumber);
+		recurseMatch(childexe, tree, lowestRuleNumber);
 		if (lowestRuleNumber[0] != Integer.MAX_VALUE) {
 			return results[lowestRuleNumber[0]];
 		}
@@ -161,12 +197,12 @@ public class FmRuleLookup extends FunctionImpl {
 
 	@Override
 	public Function deepCopy() {
-		// Just return the object as its immutable
-		return this;
+		// Return a new object giving it the immutable internal data 
+		return new FmRuleLookup(results, nc,selectorFieldNames, tree);
 	}
 
-	public static void buildRuleLookup(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTable> datastores, final ExecutionReport result) {
-		for (int lookupsize = 1; lookupsize <= 4; lookupsize++) {
+	public static void buildRuleLookup(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTable> datastores,final int defaultDatastoreIndex, final ExecutionReport result) {
+		for (int lookupsize = 1; lookupsize <= 7; lookupsize++) {
 			FunctionDefinition dfn = new FunctionDefinition("rulelookup");
 
 			dfn.setDescription("A rule lookup is built from an input table which is comprised of one or more selector fields and one result field."
@@ -199,17 +235,24 @@ public class FmRuleLookup extends FunctionImpl {
 						return null;
 					}
 
-					// find the table ...
-					int dsIndx = datastores.getIndex(tableRef.getDatastoreName());
-					if (dsIndx == -1) {
-						result.setFailed("Error getting datastore " + tableRef.getDatastoreName() + " used in formula rulelookup.");
-						return null;
+					// find the datastore index ...
+					int dsIndx = defaultDatastoreIndex;
+					if (Strings.isEmpty(tableRef.getDatastoreName()) == false) {	
+						dsIndx = datastores.getIndex(tableRef.getDatastoreName());
+						if (dsIndx == -1) {
+							result.setFailed("Error getting datastore " + tableRef.getDatastoreName() + " used in formula rulelookup.");
+							return null;
+						}				
 					}
+					
+					// Then the datastore
 					ODLDatastore<? extends ODLTable> ds = datastores.getDatastore(dsIndx);
 					if (ds == null || result.isFailed()) {
 						result.setFailed("Error getting datastore " + tableRef + " used in formula rulelookup.");
 						return null;
 					}
+					
+					// Then the table
 					ODLTableReadOnly table = TableUtils.findTable(ds, tableRef.getTableName());
 					if (table == null) {
 						result.setFailed("Error getting table " + tableRef + " used in formula rulelookup.");

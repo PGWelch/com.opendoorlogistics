@@ -55,7 +55,7 @@ final public class FunctionsBuilder {
 			final int defaultDatastoreIndex,final ODLTableDefinition targetTableDefinition, final ExecutionReport result) {
 		buildBasicLookups(library, datastores, defaultDatastoreIndex, result);
 		buildImage(library, datastores, result);
-		FmRuleLookup.buildRuleLookup(library, datastores, result);
+		FmRuleLookup.buildRuleLookup(library, datastores,defaultDatastoreIndex, result);
 		for(FunctionDefinition dfn : FmLookupNearest.createDefinitions(datastores, defaultDatastoreIndex, result)){
 			library.add(dfn);
 		}

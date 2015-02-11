@@ -83,13 +83,19 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		this.Colour = copyThis.getColour();
 		this.colourKey = copyThis.getColourKey();
 		this.drawOutline = copyThis.getDrawOutline();
-		this.imageFormula = copyThis.getImageFormulaKey();
-		this.legend = copyThis.getLegendKey();
-		this.label = copyThis.getLabel();
 		this.fontSize = copyThis.getFontSize();
 		this.geometry = copyThis.getGeometry();
-		this.pixelWidth = copyThis.getPixelWidth();
+		this.imageFormula = copyThis.getImageFormulaKey();
+		this.label = copyThis.getLabel();
+		this.labelGroupKey = copyThis.getLabelGroupKey();
+		this.legend = copyThis.getLegendKey();
+		this.legendColour = copyThis.getLegendColour();
+		this.nonOverlappingPolygonLayerGroupKey = copyThis.getNonOverlappingPolygonLayerGroupKey();
 		this.opaque =copyThis.getOpaque();
+		this.pixelWidth = copyThis.getPixelWidth();
+		this.selectable = copyThis.getSelectable();
+		this.symbol  = copyThis.getSymbol();
+		this.tooltip = copyThis.getTooltip();
 	}
 	
 
@@ -210,7 +216,10 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	
 	@ODLNullAllowed
 	@ODLColumnOrder(COL_SYMBOL)
-	@ODLColumnDescription("Name of the symbol used when drawing a point. If this is null a circle is used.")		
+	@ODLColumnDescription("<html>Name of the symbol used when drawing a point."
+			+ "<br>If this is null a circle is used. "
+			+ "<br>Available symbols are \"triangle\",\"inverted-triangle\",\"diamond\",\"square\",\"pentagon\",\"star\",\"fat-star\",\"hexagon\",\"circle\"."
+			+ "</html>")		
 	public void setSymbol(String symbol){
 		this.symbol = symbol;
 	}

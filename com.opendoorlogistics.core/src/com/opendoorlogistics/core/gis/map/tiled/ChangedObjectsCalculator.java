@@ -239,6 +239,11 @@ public class ChangedObjectsCalculator {
 		if (!modified) {
 			modified = oldObj.getOpaque() != newObj.getOpaque();
 		}
+		
+		// symbol
+		if(!modified){
+			modified = !Strings.equals(oldObj.getSymbol(), newObj.getSymbol());
+		}
 		return modified;
 	}
 

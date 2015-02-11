@@ -22,6 +22,7 @@ import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.NullComparer;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
+import com.opendoorlogistics.core.utils.strings.StandardisedCache;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.WKTReader;
@@ -481,6 +482,10 @@ public class ColumnValueProcessor {
 	}
 
 	public static boolean isEqual(Object a, Object b) {
+		return isEqual(a, b, null);
+	}
+	
+	public static boolean isEqual(Object a, Object b, StandardisedCache stdCache) {
 		boolean equals = false;
 		if (a == null && b == null) {
 			// both null are equal
@@ -509,7 +514,7 @@ public class ColumnValueProcessor {
 
 		} else {
 			// test the string-representation values
-			equals = Strings.equalsStd(a.toString(), b.toString());
+			equals = Strings.equalsStd(a.toString(), b.toString(), stdCache);
 		}
 
 		return equals;

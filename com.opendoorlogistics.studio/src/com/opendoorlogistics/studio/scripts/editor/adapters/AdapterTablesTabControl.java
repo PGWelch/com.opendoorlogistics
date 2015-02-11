@@ -9,6 +9,7 @@ package com.opendoorlogistics.studio.scripts.editor.adapters;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.event.ActionEvent;
@@ -188,11 +189,21 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 		}
 		
+		// Standing naming
+		// "territory_polygons" -> "inactive-foreground"
+		// "inactive-foreground" from "territory_polygons"
+		// "territory_polygons" to "inactive-foreground"
+		// inactive-foreground from territory_polygons
+		// territory_polygons > inactive-foreground
 		return "Table \"" + config.getTable(configIndex).getName() + "\"";
+	//	AdaptedTableConfig table = config.getTable(configIndex);
+		//return "" + table.getFromTable() + " > " + table.getName();
 		
 	
 	}
 
+//	private final Font tabTitleFont = new Font("Helvetica", Font.BOLD, 8);
+	
 	public void updateAppearance() {
 		for (int i = 0; i < tabs.getTabCount(); i++) {
 			if (i < config.getTableCount()) {
@@ -201,6 +212,7 @@ public class AdapterTablesTabControl extends JPanel {
 
 				// set tab title with a right-click menu
 				JLabel titleLabel = new JLabel(getTabTitle(i, config));
+				///titleLabel.setFont(tabTitleFont);
 				tabs.setTabComponentAt(i, titleLabel);
 				final int tabIndex = i;
 				titleLabel.addMouseListener(new MouseAdapter() {
