@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.tables;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
+import java.text.NumberFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -313,7 +314,13 @@ public class ColumnValueProcessor {
 				}
 				
 				try {
-					return Double.parseDouble((String) sOther);
+				//	return Double.parseDouble((String) sOther);
+					
+					// Changed from parseDouble to NumberFormat as this takes locale into account
+					// and don't load correctly otherwise on French computers.
+					NumberFormat nf = NumberFormat.getInstance();
+					double number = nf.parse((String) sOther).doubleValue();
+					return number;
 				} catch (Throwable e) {
 					return null;
 				}
