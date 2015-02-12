@@ -308,6 +308,7 @@ public class ColumnValueProcessor {
 				return ((Number) other).doubleValue();
 
 			case STRING:
+				// Always trim whitespace
 				String sOther = ((String) other).trim();
 
 				if(onlyConvertStringIfFormatMatches && startsWith0AndOtherDigit((String)other)){
@@ -315,12 +316,18 @@ public class ColumnValueProcessor {
 				}
 				
 				try {
-				//	return Double.parseDouble((String) sOther);
+			
+					// Test if we have a . in the number and if so, use java's parsedouble which always uses .
+					double number=0;
+					if(sOther.indexOf(".")!=-1){
+						number = Double.parseDouble(sOther);
+					}else{
+						// If not, use the number format which takes account of localisation and will use commas in the correct country.	
+						NumberFormat nf = NumberFormat.getInstance();
+						number = nf.parse((String) sOther).doubleValue();
+						return number;	
+					}
 					
-					// Changed from parseDouble to NumberFormat as this takes locale into account
-					// and don't load correctly otherwise on French computers.
-					NumberFormat nf = NumberFormat.getInstance();
-					double number = nf.parse((String) sOther).doubleValue();
 					return number;
 				} catch (Throwable e) {
 					return null;
