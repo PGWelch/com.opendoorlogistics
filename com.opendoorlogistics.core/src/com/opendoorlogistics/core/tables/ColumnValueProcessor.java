@@ -314,12 +314,18 @@ public class ColumnValueProcessor {
 				}
 				
 				try {
-				//	return Double.parseDouble((String) sOther);
 					
-					// Changed from parseDouble to NumberFormat as this takes locale into account
-					// and don't load correctly otherwise on French computers.
-					NumberFormat nf = NumberFormat.getInstance();
-					double number = nf.parse((String) sOther).doubleValue();
+					// Test if we have a . in the number and if so, use java's parsedouble which always uses .
+					double number=0;
+					if(sOther.indexOf(".")!=-1){
+						number = Double.parseDouble(sOther);
+					}else{
+						// If not, use the number format which takes account of localisation and will use commas in the correct country.	
+						NumberFormat nf = NumberFormat.getInstance();
+						number = nf.parse((String) sOther).doubleValue();
+						return number;	
+					}
+					
 					return number;
 				} catch (Throwable e) {
 					return null;
