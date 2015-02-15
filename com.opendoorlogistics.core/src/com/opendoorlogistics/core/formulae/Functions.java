@@ -1933,6 +1933,38 @@ public class Functions {
 
 	}
 
+	public static final class FmBitwiseOr extends FunctionImpl {
+
+		public FmBitwiseOr(Function a, Function b) {
+			super(a, b);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmBitwiseOr(child(0).deepCopy(), child(1).deepCopy());
+		}
+
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object [] childVals = executeChildFormulae(parameters, false);
+			if(childVals==null){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			Long l1 = Numbers.toLong(childVals[0]);
+			Long l2 = Numbers.toLong(childVals[1]);
+			l1 = l1!=null ? l1:0L;
+			l2 = l2!=null ? l2:0L;
+			return l1 | l2;
+		}
+
+		@Override
+		public String toString() {
+			return toStringWithChildOp("|");
+		}
+
+	}
+	
 	public static final class FmSubtract extends Fm2ParamBase {
 
 		public FmSubtract(Function a, Function b) {

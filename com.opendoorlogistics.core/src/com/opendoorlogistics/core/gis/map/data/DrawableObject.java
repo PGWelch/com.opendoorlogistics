@@ -59,4 +59,6 @@ public interface DrawableObject extends LatLong, HasGlobalRowId{
 	ODLGeomImpl getGeometry();
 	
 	String getTooltip();
+	
+	long getFlags();
 }

@@ -253,6 +253,11 @@ public class ChangedObjectsCalculator {
 		if(!modified){
 			modified = !Strings.equals(oldObj.getSymbol(), newObj.getSymbol());
 		}
+		
+		// flags
+		if(!modified){
+			modified = oldObj.getFlags()!=newObj.getFlags();
+		}
 		return modified;
 	}
 

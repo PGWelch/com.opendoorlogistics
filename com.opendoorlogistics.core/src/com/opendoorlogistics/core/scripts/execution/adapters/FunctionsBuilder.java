@@ -60,7 +60,10 @@ final public class FunctionsBuilder {
 			library.add(dfn);
 		}
 		library.add(FmLookupGeomUnion.createDefinition(datastores, defaultDatastoreIndex, result));
-		library.add(FmLookupWeightedCentroid.createDefinition(datastores, defaultDatastoreIndex, result));
+		
+		for(boolean isWeighted:new boolean[]{true,false}){
+			library.add(FmLookupWeightedCentroid.createDefinition(datastores, defaultDatastoreIndex,isWeighted, result));			
+		}
 		library.addStandardFunction(FmIsSelectedInMap.class, "isSelected", "Returns true (i.e. 1) if the row is selected in the map.");
 		library.addStandardFunction(FmRowId.class, "rowid", "Global identifier of the row.");
 		library.addStandardFunction(FmRow.class, "row", "One-based index of the current row.");

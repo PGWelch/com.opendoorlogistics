@@ -45,6 +45,7 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	private static final int COL_SELECTABLE= COL_TOOLTIP + 1;
 	private static final int COL_LPO= COL_SELECTABLE + 1;
 	private static final int COL_LABEL_COLOUR= COL_LPO + 1;
+	private static final int COL_FLAGS= COL_LABEL_COLOUR + 1;
 
 	private static final BeanDatastoreMapping mapping;
 	private static final double DEFAULT_OPAQUE = 1.0;
@@ -74,6 +75,7 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	private long selectable=1;
 	private String labelPositioningOption;
 	private Color labelColor;
+	private long flags;
 	
 	public DrawableObjectImpl(){}
 	
@@ -102,6 +104,7 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		this.selectable = copyThis.getSelectable();
 		this.symbol  = copyThis.getSymbol();
 		this.tooltip = copyThis.getTooltip();
+		this.flags = copyThis.getFlags();
 	}
 	
 
@@ -353,5 +356,16 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		this.labelColor = col;
 	}
 
+	@Override
+	public long getFlags() {
+		return flags;
+	}
+
+	@ODLColumnOrder(COL_FLAGS)
+	@ODLNullAllowed
+	@ODLDefaultLongValue(0)
+	public void setFlags(long f) {
+		this.flags = f;
+	}
 
 }

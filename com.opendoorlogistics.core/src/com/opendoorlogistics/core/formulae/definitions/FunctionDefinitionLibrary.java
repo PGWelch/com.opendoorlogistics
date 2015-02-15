@@ -26,6 +26,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmAcos;
 import com.opendoorlogistics.core.formulae.Functions.FmAnd;
 import com.opendoorlogistics.core.formulae.Functions.FmAsin;
 import com.opendoorlogistics.core.formulae.Functions.FmAtan;
+import com.opendoorlogistics.core.formulae.Functions.FmBitwiseOr;
 import com.opendoorlogistics.core.formulae.Functions.FmCeil;
 import com.opendoorlogistics.core.formulae.Functions.FmColour;
 import com.opendoorlogistics.core.formulae.Functions.FmColourImage;
@@ -88,6 +89,7 @@ import com.opendoorlogistics.core.geometry.functions.FmGeomBorder;
 import com.opendoorlogistics.core.geometry.functions.FmLatitude;
 import com.opendoorlogistics.core.geometry.functions.FmLongitude;
 import com.opendoorlogistics.core.geometry.functions.FmShapefileLookup;
+import com.opendoorlogistics.core.gis.map.data.UserRenderFlags;
 import com.opendoorlogistics.core.gis.postcodes.UKPostcodes.UKPostcodeLevel;
 import com.opendoorlogistics.core.scripts.TableReference;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
@@ -147,6 +149,7 @@ public final class FunctionDefinitionLibrary {
 				}
 			},  s,"Test if first value is not equal to second." );	
 		}
+		addStandardOperator(FmBitwiseOr.class, "|", "Bitwise or");
 		addStandardOperator(FmAnd.class, "&&", "Boolean and function.");
 		addStandardOperator(FmOr.class, "||", "Boolean or function.");
 		
@@ -366,11 +369,15 @@ public final class FunctionDefinitionLibrary {
 		add(dfn);
 		
 		// constants
-		addConstant("true", new FmConst(1L));
-		addConstant("false", new FmConst(0L));
-		addConstant("pi", new FmConst(Math.PI));
-		addConstant("e", new FmConst(Math.E));
-		addConstant("null", new FmConst((Object)null));
+		addConstant("true", new FmConst(1L), null);
+		addConstant("false", new FmConst(0L), null);
+		addConstant("pi", new FmConst(Math.PI), null);
+		addConstant("e", new FmConst(Math.E), null);
+		addConstant("null", new FmConst((Object)null), null);
+		
+		// map flag labels
+		addConstant("mfAlwaysShowLabel", new FmConst(UserRenderFlags.ALWAYS_SHOW_LABEL), "Flag which forces the map to always show a label even if it overlaps others.");
+		
 		return this;
 	}
 
@@ -481,9 +488,13 @@ public final class FunctionDefinitionLibrary {
 		return dfn;
 	}
 
-	private void addConstant(final String name, final FmConst val) {
+	private void addConstant(final String name, final FmConst val, final String description) {
 		FunctionDefinition dfn = new FunctionDefinition(FunctionType.CONSTANT, name);
-		dfn.setDescription("Constant value equal to " + val.toString());
+		if(description!=null){
+			dfn.setDescription(description);
+		}else{
+			dfn.setDescription("Constant value equal to " + val.toString());			
+		}
 		dfn.setFactory(new FunctionFactory() {
 
 			@Override

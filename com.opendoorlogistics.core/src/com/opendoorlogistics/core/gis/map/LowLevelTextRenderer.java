@@ -21,12 +21,14 @@ import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.io.DataOutput;
 import java.util.List;
 
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
+import com.opendoorlogistics.core.gis.map.data.UserRenderFlags;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
@@ -46,7 +48,8 @@ class LowLevelTextRenderer {
 
 	static final StandardisedStringTreeMap<LabelPositionOption> labelPosOptionMap = new StandardisedStringTreeMap<LabelPositionOption>();
 	
-	static final LabelPositionOption [] AUTOMATIC_POSITIONS = new LabelPositionOption[]{LabelPositionOption.TOP, LabelPositionOption.BOTTOM, LabelPositionOption.RIGHT, LabelPositionOption.LEFT};
+	static final LabelPositionOption [] AUTOMATIC_POSITIONS = new LabelPositionOption[]{LabelPositionOption.TOP, LabelPositionOption.BOTTOM, LabelPositionOption.RIGHT, LabelPositionOption.LEFT,
+		LabelPositionOption.TOP_LEFT, LabelPositionOption.TOP_RIGHT, LabelPositionOption.BOTTOM_LEFT, LabelPositionOption.BOTTOM_RIGHT};
 	
 	static{
 		for(LabelPositionOption lpo:LabelPositionOption.values()){
@@ -77,8 +80,12 @@ class LowLevelTextRenderer {
 		TOP("top", "t"),
 		BOTTOM("bottom" , "b"),
 		CENTRE("centre"),
-		NO_LABEL("no-label");
-		
+		NO_LABEL("no-label"),
+		TOP_LEFT("top-left", "tl"),
+		TOP_RIGHT("top-right", "tr"),
+		BOTTOM_LEFT("bottom-left", "bl"),
+		BOTTOM_RIGHT("bottom-right", "br"),
+		;
 		
 		private LabelPositionOption(String ...keywords) {
 			this.keywords = keywords;
@@ -105,28 +112,51 @@ class LowLevelTextRenderer {
 			
 			offset = Math.max(offset, (int) Math.ceil(0.5 * pnt.getPixelWidth()) + 1);
 			
+			double centreX = screenPos.getX() - halfWidth;
+			double rightX = screenPos.getX() + offset;
+			double leftX = screenPos.getX() - offset - textSize.x;
+			double topY = screenPos.getY() - 0.5*pnt.getPixelWidth() - 0.6* textSize.y;
+			double bottomY = screenPos.getY() + (0.5*pnt.getPixelWidth()+2) + 0.9*textSize.y;
+			double centreY = screenPos.getY();
 			switch(positionOption){
 			case TOP:
-				screenPos = new Point2D.Double(screenPos.getX() - halfWidth, screenPos.getY() - 0.5*pnt.getPixelWidth() - 0.6* textSize.y);					
+				screenPos = new Point2D.Double(centreX, topY);					
 				break;
 
+			case TOP_LEFT:
+				screenPos = new Point2D.Double(leftX, topY);					
+				break;
+
+			case TOP_RIGHT:
+				screenPos = new Point2D.Double(rightX, topY);					
+				break;
+
+		
 			case BOTTOM:
-				screenPos = new Point2D.Double(screenPos.getX() - halfWidth, screenPos.getY() + (0.5*pnt.getPixelWidth()+2) + 0.9*textSize.y);					
+				screenPos = new Point2D.Double(centreX, bottomY);					
+				break;
+				
+			case BOTTOM_LEFT:
+				screenPos = new Point2D.Double(leftX, bottomY);					
+				break;
+
+			case BOTTOM_RIGHT:
+				screenPos = new Point2D.Double(rightX, bottomY);					
 				break;
 				
 				
 			case CENTRE:
-				screenPos = new Point2D.Double(screenPos.getX() - halfWidth, screenPos.getY() );					
+				screenPos = new Point2D.Double(centreX,centreY );					
 				break;
 				
 			case RIGHT:
 				// get text screen positioning, offsetting by a fraction of the font size and at least the point's pixel half-width
-				screenPos = new Point2D.Double(screenPos.getX() + offset, screenPos.getY());				
+				screenPos = new Point2D.Double(rightX, centreY);				
 				break;
 				
 			case LEFT:
 				// get text screen positioning, offsetting by a fraction of the font size and at least the point's pixel half-width
-				screenPos = new Point2D.Double(screenPos.getX() - offset - textSize.x, screenPos.getY());				
+				screenPos = new Point2D.Double(leftX, centreY);				
 				break;				
 			
 				default:
@@ -232,22 +262,37 @@ class LowLevelTextRenderer {
 	 * @return
 	 */
 	private boolean approxQuadtreeCheck( LatLongToScreen converter,DrawableObject obj, Font font ,Quadtree textQuadtree, LabelPositionOption option){
+		Envelope envelope = getApproxQuadtreeCheckEnvelope(converter, obj, font, option);
+		if(envelope==null){
+			return false;
+		}
+		return isPositionFree(envelope, textQuadtree);
+	}
+
+	/**
+	 * Get the envelope used for our approximate quadtree check
+	 * @param converter
+	 * @param obj
+	 * @param font
+	 * @param option
+	 * @return
+	 */
+	private Envelope getApproxQuadtreeCheckEnvelope(LatLongToScreen converter, DrawableObject obj, Font font, LabelPositionOption option) {
 		// get rough size...
 		int approxWidth = font.getSize() * obj.getLabel().length();
 		int approxHeight = font.getSize();
 		approxWidth += NO_DRAW_BUFFER_AROUND_TEXT;
 		approxHeight += NO_DRAW_BUFFER_AROUND_TEXT;
 		
-		approxWidth = Math.max(approxHeight, MIN_FREE_SPACE_TO_ATTEMPT_TEXT_DRAW.width);
+		approxWidth = Math.max(approxWidth, MIN_FREE_SPACE_TO_ATTEMPT_TEXT_DRAW.width);
 		approxHeight = Math.max(approxHeight, MIN_FREE_SPACE_TO_ATTEMPT_TEXT_DRAW.height);
 		
 		Point2D screenPos = getScreenPos(converter, obj, font, new Point2D.Double(approxWidth,approxHeight),option);
 		if(screenPos==null){
-			return false;
+			return null;
 		}
 		Envelope envelope = new Envelope(screenPos.getX(),screenPos.getX() + approxWidth, screenPos.getY(),screenPos.getY() + approxHeight);
-		
-		return isPositionFree(envelope, textQuadtree);
+		return envelope;
 	}
 	
 	boolean renderDrawableText(Graphics2D g, LatLongToScreen converter, DrawableObject pnt, Quadtree textQuadtree) {
@@ -263,14 +308,44 @@ class LowLevelTextRenderer {
 			return false;
 		}
 		
+		boolean forceShowLabel = (pnt.getFlags() & UserRenderFlags.ALWAYS_SHOW_LABEL) == UserRenderFlags.ALWAYS_SHOW_LABEL;
+		
+		// choose the option automatically
 		if(option == null){
+	
+			double best = Double.POSITIVE_INFINITY;
 			for(LabelPositionOption test:AUTOMATIC_POSITIONS){
-				if(approxQuadtreeCheck(converter,pnt,font,textQuadtree, test)){
-					option = test;
-					break;
-				}				
+				
+				if(forceShowLabel){
+					// get the one with least overlap
+					Envelope envelope = getApproxQuadtreeCheckEnvelope(converter, pnt, font, test);
+					if(envelope!=null){
+						double measure = measureOverlap(envelope, textQuadtree);
+						if(measure < best){
+							option = test;
+							best = measure;
+						}
+					}
+					
+				}else{
+					// get the first with no overlap
+					if(approxQuadtreeCheck(converter,pnt,font,textQuadtree, test)){
+						option = test;
+						break;
+					}									
+				}
+			}
+	
+		}
+		else{
+			// check position ok
+			if(!forceShowLabel){
+				if(!approxQuadtreeCheck(converter,pnt,font,textQuadtree, option)){
+					return false;
+				}					
 			}
 		}
+		
 		if(option==null){
 			return false;
 		}
@@ -285,7 +360,7 @@ class LowLevelTextRenderer {
 			return false;
 		}
 
-		return drawTextLayout(font, screenPos, textLayout, textSize,pnt.getLabelColour(), g, textQuadtree);
+		return drawTextLayout(font, screenPos, textLayout, textSize,pnt.getLabelColour(), g,forceShowLabel, textQuadtree);
 	}
 
 	/**
@@ -302,7 +377,7 @@ class LowLevelTextRenderer {
 		
 		Rectangle bounds = g.getClipBounds();
 		Point2D screenPos = new Point2D.Double(bounds.getWidth() - size.x - 0, bounds.getHeight() - size.y - 0);
-		drawTextLayout(font, screenPos, textLayout, size, null,g, textQuadtree);
+		drawTextLayout(font, screenPos, textLayout, size, null,g, true, textQuadtree);
 	}
 	
 	private boolean isPositionFree(Envelope text,Quadtree textQuadtree){
@@ -318,6 +393,21 @@ class LowLevelTextRenderer {
 		return true;
 	}
 	
+	private double measureOverlap(Envelope text,Quadtree textQuadtree){
+		double ret = 0;
+		@SuppressWarnings("unchecked")
+		List<Envelope> found = textQuadtree.query(text);
+		if (found != null) {
+			for (Envelope other : found) {
+				if (other.intersects(text)) {
+					Envelope overlap = other.intersection(text);
+					ret +=Math.max(0, overlap.getArea());
+				}
+			}
+		}			
+		return ret;
+	}
+	
 	/**
 	 * @param font
 	 * @param screenPos
@@ -327,7 +417,7 @@ class LowLevelTextRenderer {
 	 * @param textQuadtree
 	 * @return
 	 */
-	private boolean drawTextLayout(Font font, Point2D screenPos, TextLayout textLayout, Point2D.Double size,Color col, Graphics2D g, Quadtree textQuadtree) {
+	private boolean drawTextLayout(Font font, Point2D screenPos, TextLayout textLayout, Point2D.Double size,Color col, Graphics2D g,boolean skipQuadtreeCheck, Quadtree textQuadtree) {
 		// get bounds by getting the shape and translating to screen position
 		AffineTransform affineTransform = new AffineTransform();
 		affineTransform.translate((int) screenPos.getX(), (int) screenPos.getY() + size.getY() / 2);
@@ -345,7 +435,7 @@ class LowLevelTextRenderer {
 		envelope.expandBy(NO_DRAW_BUFFER_AROUND_TEXT, NO_DRAW_BUFFER_AROUND_TEXT);
 
 		
-		boolean drawText = isPositionFree(envelope,textQuadtree);
+		boolean drawText =skipQuadtreeCheck? true: isPositionFree(envelope,textQuadtree);
 
 		if (drawText) {
 			// draw outline

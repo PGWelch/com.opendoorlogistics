@@ -761,7 +761,7 @@ public final class FormulaParser {
 		userFormulae.add("add2(a,b) = a + b");
 		userFormulae.add("ten() = 10");
 		FormulaParser loader = new FormulaParser(null, lib, userFormulae);
-		Function formula = loader.parse("add2(1,add2(ten(),ten()) + add2(1,ten())");
+		Function formula = loader.parse(" 2 | 5");
 		System.out.println(formula.execute(null));
 	}
 	

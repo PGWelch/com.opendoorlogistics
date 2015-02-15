@@ -115,5 +115,10 @@ public class DrawableObjectDecorator implements DrawableObject {
 		return decorated.getLabelColour();
 	}
 
+	@Override
+	public long getFlags() {
+		return decorated.getFlags();
+	}
+
 	
 }
