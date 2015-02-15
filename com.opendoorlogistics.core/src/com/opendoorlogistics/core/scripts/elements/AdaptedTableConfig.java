@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.scripts.elements;
 import gnu.trove.set.hash.TIntHashSet;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlAttribute;
@@ -49,6 +50,9 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	@XmlTransient
 	private int maxNbRows=1000;
 	
+	@XmlTransient
+	private List<String> userFormulae = new ArrayList<String>();
+	
 	public AdaptedTableConfig(){}
 
 	public AdapterColumnConfig addMappedFormulaColumn(String formula, String to, ODLColumnType toType, long toFlags){
@@ -78,6 +82,10 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 		ret.setTags(getTags());
 		ret.setLimitResults(isLimitResults());
 		ret.setMaxNumberRows(maxNbRows);
+		if(userFormulae!=null){
+			ret.userFormulae = new ArrayList<String>();
+			ret.userFormulae.addAll(userFormulae);
+		}
 		return ret;
 	}
 
@@ -253,5 +261,22 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 		throw new UnsupportedOperationException();
 	}
 	
+	/**
+	 * Used by JAXB
+	 * @param columns
+	 */
+	@XmlElement(name = "UserFormulae")	
+	public void setUserFormulae(List<String> userFormulae){
+		this.userFormulae = userFormulae;
+	}
+	
+	/**
+	 * Used by JAXB. Must return a list or jaxb
+	 * binding fails
+	 * @return
+	 */
+	public List<String> getUserFormulae(){
+		return userFormulae;
+	}
 	
 }

@@ -495,12 +495,12 @@ final public class AdapterBuilder {
 		Function buildFunction(ODLTableReadOnly sourceTable, AdapterColumnConfig col) {
 			Function formula;
 			String uncompiled = getSafeFormula(col); 
-			formula = buildFormulaWithTableVariables(sourceTable, uncompiled, sourceTableRef.dsIndex, null);
+			formula = buildFormulaWithTableVariables(sourceTable, uncompiled, sourceTableRef.dsIndex,adaptedTableConfig.getUserFormulae(), null);
 			return formula;
 		}
 	}
 
-	private boolean isAlwaysFalseFilterFormula(String filter){
+	private boolean isAlwaysFalseFilterFormula(String filter, List<String> userFormulae){
 
 		// built the function lib with the parameter function but nothing else, so row-level fields are not readable
 		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
@@ -510,7 +510,7 @@ final public class AdapterBuilder {
 			return false;
 		}
 		
-		Function f= buildFormula(filter, library, EMPTY_UVP, FormulaParser.UnidentifiedPolicy.CREATE_UNIDENTIFIED_PLACEHOLDER_FUNCTION);
+		Function f= buildFormula(filter, library, EMPTY_UVP,userFormulae, FormulaParser.UnidentifiedPolicy.CREATE_UNIDENTIFIED_PLACEHOLDER_FUNCTION);
 		
 		// test for unidentified
 		if(f!=null && !env.isFailed() && !FormulaParser.FmUnidentified.containsUnidentified(f)){
@@ -569,7 +569,7 @@ final public class AdapterBuilder {
 		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);
 		
 		// Check for case where we have a filter formula based only on a parameter that's false and hence we can skip recurse building
-		if(filterFormula!=null && filterFormula.trim().length() >0 && isAlwaysFalseFilterFormula(filterFormula)){
+		if(filterFormula!=null && filterFormula.trim().length() >0 && isAlwaysFalseFilterFormula(filterFormula, tableConfig.getUserFormulae())){
 			mapToNewEmptyTable(destTable.getImmutableId(), destTable);
 			return;
 		}
@@ -594,7 +594,7 @@ final public class AdapterBuilder {
 		// create a filter if needed - used when either filtering or sorting or both
 		if (filterFormula != null && filterFormula.trim().length() > 0) {
 			ODLTableReadOnly srcTable = table(tableRef);
-			Function formula = buildFormulaWithTableVariables(srcTable, filterFormula, tableRef.dsIndex, null);
+			Function formula = buildFormulaWithTableVariables(srcTable, filterFormula, tableRef.dsIndex,tableConfig.getUserFormulae(), null);
 			if (env.isFailed()) {
 				return;
 			}
@@ -702,7 +702,7 @@ final public class AdapterBuilder {
 		for (int destFieldIndx = 0; destFieldIndx < tableConfig.getColumnCount() && !env.isFailed(); destFieldIndx++) {
 			AdapterColumnConfig field = tableConfig.getColumn(destFieldIndx);
 			if (field.isUseFormula()) {
-				Function formula = buildFormulaWithTableVariables(srcTable, field.getFormula(), originalFromDsIndex, tableConfig);
+				Function formula = buildFormulaWithTableVariables(srcTable, field.getFormula(), originalFromDsIndex, tableConfig.getUserFormulae(),tableConfig);
 				if (formula != null) {
 					mapping.setFieldFormula(destTable.getImmutableId(), destFieldIndx, formula);
 				}
@@ -744,7 +744,7 @@ final public class AdapterBuilder {
 	}
 	
 	private void buildGroupedByTable(final InternalTableRef srcTableRef, int destTableIndex, int defaultDsIndex) {
-		AdaptedTableConfig rawTableConfig = processedConfig.getTable(destTableIndex);
+		final AdaptedTableConfig rawTableConfig = processedConfig.getTable(destTableIndex);
 
 		// parse all columns, splitting into group by and non group by and removing sort columns
 		List<Integer> groupByFields = new ArrayList<>();
@@ -788,7 +788,7 @@ final public class AdapterBuilder {
 			// build the formula, converting a field reference to a formula
 			AdapterColumnConfig field = nonSortCols.getColumn(gbf);
 			String formulaText = getSafeFormula(field);
-			nonSortFormulae[gbf] = buildFormulaWithTableVariables(srcTable, formulaText, defaultDsIndex, null);
+			nonSortFormulae[gbf] = buildFormulaWithTableVariables(srcTable, formulaText, defaultDsIndex,rawTableConfig.getUserFormulae(), null);
 			if (env.isFailed()) {
 				return;
 			}
@@ -913,7 +913,7 @@ final public class AdapterBuilder {
 				// We compile the formula against the source table as only source table fields are accessible
 				// (should only be via an aggregate method...)
 				String formulaText =getSafeFormula(field);
-				Function ret = buildFormula(formulaText, library, uvp,FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION);
+				Function ret = buildFormula(formulaText, library, uvp, rawTableConfig.getUserFormulae(),FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION);
 				if (ret == null) {
 					env.setFailed("Failed to build non-group formula or access field in group-by query: " + formulaText);
 				}
@@ -1037,7 +1037,7 @@ final public class AdapterBuilder {
 		return val;
 	}
 
-	private Function buildFormulaWithTableVariables(final ODLTableDefinition srcTable, String formulaText, final int defaultDsIndx, ODLTableDefinition targetTableDefinition) {
+	private Function buildFormulaWithTableVariables(final ODLTableDefinition srcTable, String formulaText, final int defaultDsIndx,List<String> userFormulae, ODLTableDefinition targetTableDefinition) {
 
 		// create variable provider for the formula parser. variables come from source table
 		UserVariableProvider uvp = new UserVariableProvider() {
@@ -1052,10 +1052,10 @@ final public class AdapterBuilder {
 		};
 
 		FunctionDefinitionLibrary library = buildFunctionLibrary(defaultDsIndx, targetTableDefinition);
-		return buildFormula(formulaText, library, uvp, FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION);
+		return buildFormula(formulaText, library, uvp,userFormulae, FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION);
 	}
 
-	private Function buildFormula(String formulaText, FunctionDefinitionLibrary library, UserVariableProvider uvp, FormulaParser.UnidentifiedPolicy unidentifiedPolicy) {
+	private Function buildFormula(String formulaText, FunctionDefinitionLibrary library, UserVariableProvider uvp,List<String> userFormulae, FormulaParser.UnidentifiedPolicy unidentifiedPolicy) {
 
 		try {
 
@@ -1064,7 +1064,7 @@ final public class AdapterBuilder {
 				formulaText = "null";
 			}
 
-			FormulaParser parser = new FormulaParser(uvp, library);
+			FormulaParser parser = new FormulaParser(uvp, library,userFormulae);
 			parser.setUnidentifiedPolicy(unidentifiedPolicy);
 			Function formula = parser.parse(formulaText);
 			if (formula == null) {

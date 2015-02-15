@@ -8,6 +8,7 @@ package com.opendoorlogistics.studio.scripts.editor.adapters;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
@@ -26,7 +27,9 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.ODLApi;
@@ -56,6 +59,7 @@ import com.opendoorlogistics.studio.scripts.editor.ScriptXMLTransferHandler;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdaptedTableControl.FormChangedListener;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
 import com.opendoorlogistics.utils.ui.Icons;
+import com.opendoorlogistics.utils.ui.ListPanel;
 import com.opendoorlogistics.utils.ui.ODLAction;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 
@@ -769,6 +773,88 @@ public class AdapterTablesTabControl extends JPanel {
 				setEnabled(getIndex() < config.getTableCount() - 1);
 			}
 		});
+		
+		ret.add(new TabPageAction("Edit user formulae", "Edit the adapted tables user formulae", "user-formula.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int index = getIndex();
+				final AdaptedTableConfig tableConfig = config.getTables().get(index);
+				
+				// get a copy of the current formulae
+				final ArrayList<String> formulaeCopy = new ArrayList<String>();
+				if(tableConfig.getUserFormulae()!=null){
+					formulaeCopy.addAll(tableConfig.getUserFormulae());
+				}
+				
+
+				// create the editor dialog
+				OkCancelDialog dlg = new OkCancelDialog(){
+					@Override
+					protected Component createMainComponent(boolean inWindowsBuilder) {
+						return new ListPanel<String>(formulaeCopy, "user formula") {
+
+							@Override
+							protected String createNewItem() {
+								return editItem("funcname() = X");
+							}
+
+							@Override
+							protected String editItem(final String item) {
+								final JTextArea textArea = new JTextArea(item);	
+								textArea.setEditable(true);
+								textArea.setLineWrap(true);
+								OkCancelDialog dlg = new OkCancelDialog(){
+									@Override
+									protected Component createMainComponent(boolean inWindowsBuilder) {
+										return new JScrollPane(textArea); 
+									}
+								};
+								dlg.setMinimumSize(new Dimension(400, 200));
+								dlg.setLocationRelativeTo(this);
+								dlg.setTitle("Enter formula text");
+								if(dlg.showModal() == OkCancelDialog.OK_OPTION){
+									return textArea.getText();
+								}
+								return item;
+							}
+						};
+//						return new TablePanel<String>(formulaeCopy, "user formula") {
+//
+//							@Override
+//							protected TableModel createTableModel() {
+//								// TODO Auto-generated method stub
+//								return null;
+//							}
+//
+//							@Override
+//							protected String createNewItem() {
+//								// TODO Auto-generated method stub
+//								return null;
+//							}
+//
+//							@Override
+//							protected String editItem(String item) {
+//								// TODO Auto-generated method stub
+//								return null;
+//							}
+//						};
+					}
+					
+				};
+				dlg.setTitle( "" + tableConfig.getName() + " user formulae");
+				dlg.setLocationRelativeTo(AdapterTablesTabControl.this);
+				dlg.setMinimumSize(new Dimension(400, 200));
+//				dlg.setMaximumSize(new Dimension(400, 800));
+				
+				// replace the formulae
+				if(dlg.showModal() == OkCancelDialog.OK_OPTION){
+					tableConfig.setUserFormulae(formulaeCopy);
+				}
+			}
+		});
+				
+		
 		return ret;
 	}
 
