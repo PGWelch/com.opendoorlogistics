@@ -43,6 +43,8 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	private static final int COL_NOPL_GROUP_KEY=COL_LABEL_GROUP_KEY+1;
 	private static final int COL_TOOLTIP= COL_NOPL_GROUP_KEY + 1;
 	private static final int COL_SELECTABLE= COL_TOOLTIP + 1;
+	private static final int COL_LPO= COL_SELECTABLE + 1;
+	private static final int COL_LABEL_COLOUR= COL_LPO + 1;
 
 	private static final BeanDatastoreMapping mapping;
 	private static final double DEFAULT_OPAQUE = 1.0;
@@ -70,6 +72,8 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	private String tooltip;
 	private String nonOverlappingPolygonLayerGroupKey;
 	private long selectable=1;
+	private String labelPositioningOption;
+	private Color labelColor;
 	
 	public DrawableObjectImpl(){}
 	
@@ -87,7 +91,9 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		this.geometry = copyThis.getGeometry();
 		this.imageFormula = copyThis.getImageFormulaKey();
 		this.label = copyThis.getLabel();
+		this.labelColor = copyThis.getLabelColour();
 		this.labelGroupKey = copyThis.getLabelGroupKey();
+		this.labelPositioningOption = copyThis.getLabelPositioningOption();
 		this.legend = copyThis.getLegendKey();
 		this.legendColour = copyThis.getLegendColour();
 		this.nonOverlappingPolygonLayerGroupKey = copyThis.getNonOverlappingPolygonLayerGroupKey();
@@ -239,8 +245,8 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 
 	@ODLNullAllowed
 	@ODLColumnOrder(COL_FONT_SIZE)
-	@ODLDefaultLongValue(0)	
-	@ODLColumnDescription("The font size for the name. A value of 0 takes the default size.")	
+	@ODLDefaultLongValue(12)	
+	@ODLColumnDescription("The font size for the name. A value of 0 takes the default size. Less than zero deactivates the label.")	
 	public void setFontSize(long fontSize) {
 		this.fontSize = fontSize;
 	}
@@ -325,6 +331,26 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	@ODLNullAllowed
 	public void setSelectable(long selectable) {
 		this.selectable = selectable;
+	}
+
+	public String getLabelPositioningOption() {
+		return labelPositioningOption;
+	}
+
+	@ODLColumnOrder(COL_LPO)
+	@ODLNullAllowed
+	public void setLabelPositioningOption(String lpo) {
+		this.labelPositioningOption = lpo;
+	}
+
+	public Color getLabelColour() {
+		return labelColor;
+	}
+
+	@ODLColumnOrder(COL_LABEL_COLOUR)
+	@ODLNullAllowed
+	public void setLabelColour(Color col) {
+		this.labelColor = col;
 	}
 
 

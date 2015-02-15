@@ -338,15 +338,15 @@ public final class FormulaParser {
 		return parseTokens(tokens);
 	}
 	
-	public Function parseTokens(List<StringToken> tokens) {
+	private Function parseTokens(List<StringToken> tokens) {
 
 		ReadFunctionToken[] tmp = new ReadFunctionToken[1];
 		int readTokens = readFunctionTokenTree(tokens, 0, tmp, null);
 		assert readTokens == tokens.size();
 
-
+		// TODO... if we have userformulae we replace them in the tree now.
+		
 		Function formula = generateFormula( tmp[0]);
-		// log("\t\t" + CollectionUtils.ToString(tokens, "")+" transformed into " + formula.toString());
 		return formula;
 	}
 

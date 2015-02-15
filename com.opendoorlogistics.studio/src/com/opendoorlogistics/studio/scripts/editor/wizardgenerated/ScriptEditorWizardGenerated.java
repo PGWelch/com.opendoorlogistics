@@ -1275,7 +1275,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 
 		public void updateAppearance() {
 			for (AdapterTablesTabControl tabs : adapterTabControls) {
-				tabs.updateAppearance();
+				tabs.updateAppearance(true);
 			}
 		}
 	}

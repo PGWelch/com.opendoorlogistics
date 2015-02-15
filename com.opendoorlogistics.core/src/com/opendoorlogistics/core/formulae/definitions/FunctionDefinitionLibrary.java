@@ -407,10 +407,13 @@ public final class FunctionDefinitionLibrary {
 	}
 	
 	public FunctionFactory identify(final String name, final FunctionType type) {
+		// Get the list of function definitions with this name
 		final List<FunctionDefinition> list = map.get(name);
 		if (list == null) {
 			return null;
 		}
+		
+		// If we have one or more functions then return a functionfactory which chooses the one with the correct number of parameters 
 		return new FunctionFactory() {
 
 			@Override

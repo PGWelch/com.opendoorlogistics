@@ -28,6 +28,7 @@ import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
+import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
@@ -36,23 +37,101 @@ class LowLevelTextRenderer {
 
 	static final private int NO_DRAW_BUFFER_AROUND_TEXT = 5;
 	static final private Dimension MIN_FREE_SPACE_TO_ATTEMPT_TEXT_DRAW = new Dimension(30, 20);
-	static final private double STRING_OFFSET_FRACTION = 0.5;
+	static final private double STRING_OFFSET_FRACTION = 0.4;
 	static final private BasicStroke SMALL_INNER_TEXT_STROKE = new BasicStroke(4, BasicStroke.CAP_ROUND, BasicStroke.CAP_ROUND, 0, null, 0);
 	static final private BasicStroke MEDIUM_INNER_TEXT_STROKE = new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.CAP_ROUND, 0, null, 0);
 	static final private BasicStroke LARGE_INNER_TEXT_STROKE = new BasicStroke(8, BasicStroke.CAP_ROUND, BasicStroke.CAP_ROUND, 0, null, 0);
 	static final private Font LABEL_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 12);
 	static final Color LABEL_FONT_COLOUR = new Color(0, 0, 100);
 
-	private Point2D getScreenPos(LatLongToScreen converter, DrawableObject pnt, Font font, Point2D.Double textSize) {
+	static final StandardisedStringTreeMap<LabelPositionOption> labelPosOptionMap = new StandardisedStringTreeMap<LabelPositionOption>();
+	
+	static final LabelPositionOption [] AUTOMATIC_POSITIONS = new LabelPositionOption[]{LabelPositionOption.TOP, LabelPositionOption.BOTTOM, LabelPositionOption.RIGHT, LabelPositionOption.LEFT};
+	
+	static{
+		for(LabelPositionOption lpo:LabelPositionOption.values()){
+			for(String k:lpo.getKeywords()){
+				labelPosOptionMap.put(k, lpo);				
+			}
+		}
+	}
+	
+	private static LabelPositionOption getLabelPositionOption(String l){
+		
+		if(l!=null){
+			LabelPositionOption ret = labelPosOptionMap.get(l);
+			if(ret!=null){
+				return ret;
+			}
+		}
+		
+		// default (the original option)
+	//	return LabelPositionOption.RIGHT;
+		
+		return null;
+	}
+	
+	public enum LabelPositionOption{
+		RIGHT("right", "r"),
+		LEFT("left", "l"),
+		TOP("top", "t"),
+		BOTTOM("bottom" , "b"),
+		CENTRE("centre"),
+		NO_LABEL("no-label");
+		
+		
+		private LabelPositionOption(String ...keywords) {
+			this.keywords = keywords;
+		}
+
+		private final String []keywords;
+		
+		public String []getKeywords(){
+			return keywords;
+		}
+	}
+	
+	private Point2D getScreenPos(LatLongToScreen converter, DrawableObject pnt, Font font, Point2D.Double textSize, LabelPositionOption positionOption) {
 		Point2D screenPos=null;
 		ODLGeomImpl geom = pnt.getGeometry();
 		if (geom == null) {
+			// point rendering
 			screenPos = converter.getOnScreenPixelPosition(pnt);
 
-			// get text screen positioning, offsetting by a fraction of the font size and at least the point's pixel half-width
 			int offset = (int) Math.round(STRING_OFFSET_FRACTION * font.getSize());
+			int halfWidth = (int)Math.round(textSize.x/ 2);
+			//int halfHeight = (int)Math.round(textSize.y/ 2);
+			//int heightSep = pnt.getPixelWidth()
+			
 			offset = Math.max(offset, (int) Math.ceil(0.5 * pnt.getPixelWidth()) + 1);
-			screenPos = new Point2D.Double(screenPos.getX() + offset, screenPos.getY());
+			
+			switch(positionOption){
+			case TOP:
+				screenPos = new Point2D.Double(screenPos.getX() - halfWidth, screenPos.getY() - 0.5*pnt.getPixelWidth() - 0.6* textSize.y);					
+				break;
+
+			case BOTTOM:
+				screenPos = new Point2D.Double(screenPos.getX() - halfWidth, screenPos.getY() + (0.5*pnt.getPixelWidth()+2) + 0.9*textSize.y);					
+				break;
+				
+				
+			case CENTRE:
+				screenPos = new Point2D.Double(screenPos.getX() - halfWidth, screenPos.getY() );					
+				break;
+				
+			case RIGHT:
+				// get text screen positioning, offsetting by a fraction of the font size and at least the point's pixel half-width
+				screenPos = new Point2D.Double(screenPos.getX() + offset, screenPos.getY());				
+				break;
+				
+			case LEFT:
+				// get text screen positioning, offsetting by a fraction of the font size and at least the point's pixel half-width
+				screenPos = new Point2D.Double(screenPos.getX() - offset - textSize.x, screenPos.getY());				
+				break;				
+			
+				default:
+					throw new UnsupportedOperationException();
+			}
 
 		} else {
 			
@@ -152,7 +231,7 @@ class LowLevelTextRenderer {
 	 * @param textQuadtree
 	 * @return
 	 */
-	private boolean approxQuadtreeCheck( LatLongToScreen converter,DrawableObject obj, Font font ,Quadtree textQuadtree){
+	private boolean approxQuadtreeCheck( LatLongToScreen converter,DrawableObject obj, Font font ,Quadtree textQuadtree, LabelPositionOption option){
 		// get rough size...
 		int approxWidth = font.getSize() * obj.getLabel().length();
 		int approxHeight = font.getSize();
@@ -162,7 +241,7 @@ class LowLevelTextRenderer {
 		approxWidth = Math.max(approxHeight, MIN_FREE_SPACE_TO_ATTEMPT_TEXT_DRAW.width);
 		approxHeight = Math.max(approxHeight, MIN_FREE_SPACE_TO_ATTEMPT_TEXT_DRAW.height);
 		
-		Point2D screenPos = getScreenPos(converter, obj, font, new Point2D.Double(approxWidth,approxHeight));
+		Point2D screenPos = getScreenPos(converter, obj, font, new Point2D.Double(approxWidth,approxHeight),option);
 		if(screenPos==null){
 			return false;
 		}
@@ -172,14 +251,27 @@ class LowLevelTextRenderer {
 	}
 	
 	boolean renderDrawableText(Graphics2D g, LatLongToScreen converter, DrawableObject pnt, Quadtree textQuadtree) {
-		if (Strings.isEmpty(pnt.getLabel())) {
+		if (Strings.isEmpty(pnt.getLabel()) || pnt.getFontSize() < 0) {
 			return false;
 		}
 
 		// do an initial rough quadtree check with an assumed bounds as calculating proper bounds is slow			
 		Font font = getFont((int)pnt.getFontSize());
 
-		if(!approxQuadtreeCheck(converter,pnt,font,textQuadtree)){
+		LabelPositionOption option = getLabelPositionOption(pnt.getLabelPositioningOption());
+		if(option == LabelPositionOption.NO_LABEL){
+			return false;
+		}
+		
+		if(option == null){
+			for(LabelPositionOption test:AUTOMATIC_POSITIONS){
+				if(approxQuadtreeCheck(converter,pnt,font,textQuadtree, test)){
+					option = test;
+					break;
+				}				
+			}
+		}
+		if(option==null){
 			return false;
 		}
 		
@@ -188,12 +280,12 @@ class LowLevelTextRenderer {
 		Point2D.Double textSize = getSize(textLayout);
 
 		// get screen position from the point or geometry
-		Point2D screenPos = getScreenPos(converter, pnt, font, textSize);
+		Point2D screenPos = getScreenPos(converter, pnt, font, textSize, option);
 		if (screenPos == null) {
 			return false;
 		}
 
-		return drawTextLayout(font, screenPos, textLayout, textSize, g, textQuadtree);
+		return drawTextLayout(font, screenPos, textLayout, textSize,pnt.getLabelColour(), g, textQuadtree);
 	}
 
 	/**
@@ -210,7 +302,7 @@ class LowLevelTextRenderer {
 		
 		Rectangle bounds = g.getClipBounds();
 		Point2D screenPos = new Point2D.Double(bounds.getWidth() - size.x - 0, bounds.getHeight() - size.y - 0);
-		drawTextLayout(font, screenPos, textLayout, size, g, textQuadtree);
+		drawTextLayout(font, screenPos, textLayout, size, null,g, textQuadtree);
 	}
 	
 	private boolean isPositionFree(Envelope text,Quadtree textQuadtree){
@@ -235,7 +327,7 @@ class LowLevelTextRenderer {
 	 * @param textQuadtree
 	 * @return
 	 */
-	private boolean drawTextLayout(Font font, Point2D screenPos, TextLayout textLayout, Point2D.Double size, Graphics2D g, Quadtree textQuadtree) {
+	private boolean drawTextLayout(Font font, Point2D screenPos, TextLayout textLayout, Point2D.Double size,Color col, Graphics2D g, Quadtree textQuadtree) {
 		// get bounds by getting the shape and translating to screen position
 		AffineTransform affineTransform = new AffineTransform();
 		affineTransform.translate((int) screenPos.getX(), (int) screenPos.getY() + size.getY() / 2);
@@ -269,7 +361,7 @@ class LowLevelTextRenderer {
 			g.draw(shape);
 
 			// draw inner
-			g.setColor(LABEL_FONT_COLOUR);
+			g.setColor(col!=null ? col : LABEL_FONT_COLOUR);
 			textLayout.draw(g, (int) screenPos.getX(), (int) (screenPos.getY() + size.getY() / 2));
 
 			textQuadtree.insert(envelope, envelope);

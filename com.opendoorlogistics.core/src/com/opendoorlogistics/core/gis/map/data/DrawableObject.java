@@ -47,6 +47,10 @@ public interface DrawableObject extends LatLong, HasGlobalRowId{
 	
 	String getNonOverlappingPolygonLayerGroupKey();
 	
+	String getLabelPositioningOption();
+	
+	Color getLabelColour();
+	
 	/**
 	 * Get the geometry. If this is null a point
 	 * is drawn at the long-lat instead. 

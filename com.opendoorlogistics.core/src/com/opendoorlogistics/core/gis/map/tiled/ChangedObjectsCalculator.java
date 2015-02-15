@@ -225,6 +225,15 @@ public class ChangedObjectsCalculator {
 			modified = !Strings.equals(oldObj.getLabel(), newObj.getLabel());
 		}
 
+		if(!modified){
+			modified = !Strings.equals(oldObj.getLabelPositioningOption(), newObj.getLabelPositioningOption());
+		}
+		
+		// check label colour
+		if (!modified) {
+			modified = Colours.compare(oldObj.getLabelColour(), newObj.getLabelColour()) != 0;
+		}
+		
 		// font size
 		if (!modified) {
 			modified = oldObj.getFontSize() != newObj.getFontSize();
