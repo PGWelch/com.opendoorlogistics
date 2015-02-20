@@ -15,7 +15,9 @@ import java.awt.image.ImageFilter;
 import java.awt.image.ImageProducer;
 import java.awt.image.RGBImageFilter;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -2278,4 +2280,18 @@ public class Functions {
 
 	}
 
+	public static class FmStringDateTimeStamp extends FunctionImpl{
+		private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss") ;
+
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Date date = new Date() ;
+			return dateFormat.format(date);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmStringDateTimeStamp();
+		}		
+	}
 }

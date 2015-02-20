@@ -15,6 +15,8 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import com.opendoorlogistics.api.ui.UIFactory.ItemChangedListener;
+
 final public class ComboEntryPanel<T> extends JPanel{
 	private final JLabel label = new JLabel();
 	private final JComboBox<T> comboBox;
@@ -53,9 +55,5 @@ final public class ComboEntryPanel<T> extends JPanel{
 		return comboBox;
 	}
 	
-
-	public static interface ItemChangedListener<T> {
-		void itemChanged(T item);
-	}
 	
 }

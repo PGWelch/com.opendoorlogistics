@@ -16,10 +16,10 @@ import org.apache.commons.io.FilenameUtils;
 
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
-import com.opendoorlogistics.core.utils.ui.FileBrowserPanel.FilenameChangeListener;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.ShowPanel;
 import com.opendoorlogistics.utils.image.CreateImageConfig.ImageType;
+import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 
 final public class ExportImagePanel extends CreateImagePanel {
 	private final ExportImageConfig config;

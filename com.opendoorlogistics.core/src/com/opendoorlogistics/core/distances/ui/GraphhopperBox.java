@@ -14,7 +14,7 @@ import com.opendoorlogistics.api.distances.GraphhopperConfiguration;
 import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel;
 import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel.DoubleChangedListener;
 import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
-import com.opendoorlogistics.core.utils.ui.FileBrowserPanel.FilenameChangeListener;
+import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 
 public class GraphhopperBox extends AbstractDistancesConfigBox{
 	

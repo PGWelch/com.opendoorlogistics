@@ -35,7 +35,7 @@ import com.opendoorlogistics.core.scripts.elements.ScriptEditorType;
 import com.opendoorlogistics.core.utils.io.WatchSingleDirectory;
 import com.opendoorlogistics.core.utils.io.WatchSingleDirectory.DirectoryChangedListener;
 import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
-import com.opendoorlogistics.core.utils.ui.FileBrowserPanel.FilenameChangeListener;
+import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 import com.opendoorlogistics.core.utils.ui.LayoutUtils;
 import com.opendoorlogistics.studio.PreferencesManager;
 import com.opendoorlogistics.studio.PreferencesManager.PrefKey;

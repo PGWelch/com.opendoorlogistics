@@ -14,12 +14,12 @@ import javax.swing.JCheckBox;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
-import com.opendoorlogistics.core.utils.ui.FileBrowserPanel.FilenameChangeListener;
 import com.opendoorlogistics.core.utils.ui.ShowPanel;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel.EntryType;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel.TextChangedListener;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
+import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 
 final class ReporterConfigPanel extends VerticalLayoutPanel {
 	final private ReporterConfig rc;

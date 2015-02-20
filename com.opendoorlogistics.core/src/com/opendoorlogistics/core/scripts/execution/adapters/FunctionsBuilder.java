@@ -207,8 +207,6 @@ final public class FunctionsBuilder {
 						}
 
 						// find the drawable table ...
-						// TO DO.. this can build the adapter; if so we need the function
-						// isSelected to be true for all rows selected in the image formula..
 						int dsIndx = datastores.getIndex(tableRef.getDatastoreName());
 						if (dsIndx == -1) {
 							result.setFailed("Error getting datastore " + tableRef.getDatastoreName() + " used in formula image.");
@@ -220,7 +218,7 @@ final public class FunctionsBuilder {
 							return null;
 						}
 
-						// do simple adaption of table to drawable datastore definition
+						// do simple adaption of table to drawable datastore definition to ensure table format is exact
 						BeanDatastoreMapping beanMap = DrawableObjectImpl.getBeanMapping();
 						ODLDatastore<? extends ODLTableDefinition> definition = beanMap.getDefinition();
 						AdapterConfig adapterConfig = AdapterConfig.createSameNameMapper(definition);

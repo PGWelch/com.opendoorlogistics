@@ -19,6 +19,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.commons.io.FilenameUtils;
 
+import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 import com.opendoorlogistics.core.utils.io.RelativeFiles;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
@@ -27,10 +28,6 @@ public class FileBrowserPanel extends JPanel {
 	final private JButton browseButton;
 	final private JLabel label;
 	
-	public interface FilenameChangeListener {
-		void filenameChanged(String newFilename);
-	}
-
 	public FileBrowserPanel(String initialFilename, final FilenameChangeListener filenameChangeListener, final boolean directoriesOnly,
 			final String browserApproveButtonText, final FileFilter... fileFilters) {
 		this(null, initialFilename, filenameChangeListener, directoriesOnly, browserApproveButtonText, fileFilters);

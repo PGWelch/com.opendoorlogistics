@@ -70,6 +70,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmRound;
 import com.opendoorlogistics.core.formulae.Functions.FmRound2Second;
 import com.opendoorlogistics.core.formulae.Functions.FmSin;
 import com.opendoorlogistics.core.formulae.Functions.FmSqrt;
+import com.opendoorlogistics.core.formulae.Functions.FmStringDateTimeStamp;
 import com.opendoorlogistics.core.formulae.Functions.FmStringFormat;
 import com.opendoorlogistics.core.formulae.Functions.FmSubtract;
 import com.opendoorlogistics.core.formulae.Functions.FmSum;
@@ -359,6 +360,7 @@ public final class FunctionDefinitionLibrary {
 			}
 		});
 		add(formatDfn);
+		addStandardFunction(FmStringDateTimeStamp.class, "Timestamp", "Creates a string timestamp suitable for use in filenames.");
 		
 		// decimal format
 		FunctionDefinition dfn = new FunctionDefinition(FunctionType.FUNCTION, "decimalformat");

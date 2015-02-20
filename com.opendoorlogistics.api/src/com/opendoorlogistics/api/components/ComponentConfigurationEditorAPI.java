@@ -28,7 +28,7 @@ public interface ComponentConfigurationEditorAPI extends HasApi {
 	JFrame getAncestorFrame();
 	
 	/**
-	 * Are we showing an instruction or a stand-alone component configuration
+	 * Are we showing an instruction or a stand-alone component configuration?
 	 * @return
 	 */
 	boolean isInstruction();

@@ -9,11 +9,11 @@ package com.opendoorlogistics.components.geocode.postcodes;
 import javax.swing.JLabel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCConstants;
 import com.opendoorlogistics.components.geocode.postcodes.impl.SummaryPanel;
 import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
-import com.opendoorlogistics.core.utils.ui.FileBrowserPanel.FilenameChangeListener;
 
 class PCGeocoderDatabaseSelectionPanel extends VerticalLayoutPanel{
 	final SummaryPanel summary;
