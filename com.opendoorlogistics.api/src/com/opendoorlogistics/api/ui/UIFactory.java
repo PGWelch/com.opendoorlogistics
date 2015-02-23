@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.api.ui;
 
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -34,7 +35,9 @@ public interface UIFactory {
 	 * @return
 	 */
 	public <T> JPanel createComboPanel(String labelText,T [] items, T selected, final ItemChangedListener<T> listener);
-	
+
+	public <T> JComponent[] createComboComponents(String labelText,T [] items, T selected, final ItemChangedListener<T> listener);
+
 	public static final long EDIT_OUTPUT_UNITS = 1<<0;
 	
 	public static final long EDIT_OUTPUT_TRAVEL_COST_TYPE = 1<<1;
@@ -57,7 +60,9 @@ public interface UIFactory {
 	 * @return
 	 */
 	public JPanel createSelectDirectoryPanel(String label, String initialDirectoryName, FilenameChangeListener directoryChangedListener);
-	
+
+	public JComponent[] createSelectDirectoryComponents(String label, String initialDirectoryName, FilenameChangeListener directoryChangedListener);
+
 	/**
 	 * A panel that lays components out vertically with left alignment and stretching horizontally
 	 */

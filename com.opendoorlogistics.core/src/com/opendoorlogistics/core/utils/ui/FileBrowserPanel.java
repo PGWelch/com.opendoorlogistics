@@ -10,6 +10,7 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.ArrayList;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -27,31 +28,81 @@ public class FileBrowserPanel extends JPanel {
 	final private JTextField textField;
 	final private JButton browseButton;
 	final private JLabel label;
-	
-	public FileBrowserPanel(String initialFilename, final FilenameChangeListener filenameChangeListener, final boolean directoriesOnly,
-			final String browserApproveButtonText, final FileFilter... fileFilters) {
-		this(null, initialFilename, filenameChangeListener, directoriesOnly, browserApproveButtonText, fileFilters);
+
+	public FileBrowserPanel(String initialFilename,
+			final FilenameChangeListener filenameChangeListener,
+			final boolean directoriesOnly,
+			final String browserApproveButtonText,
+			final FileFilter... fileFilters) {
+		this(null, initialFilename, filenameChangeListener, directoriesOnly,
+				browserApproveButtonText, fileFilters);
 	}
 
-	public FileBrowserPanel(String label, String initialFilename, final FilenameChangeListener filenameChangeListener, final boolean directoriesOnly,
-			final String browserApproveButtonText, final FileFilter... fileFilters) {
-		this(0, label, initialFilename, filenameChangeListener, directoriesOnly, browserApproveButtonText, fileFilters);
+	public FileBrowserPanel(String label, String initialFilename,
+			final FilenameChangeListener filenameChangeListener,
+			final boolean directoriesOnly,
+			final String browserApproveButtonText,
+			final FileFilter... fileFilters) {
+		this(0, label, initialFilename, filenameChangeListener,
+				directoriesOnly, browserApproveButtonText, fileFilters);
 	}
-	
+
 	@Override
-	public void setToolTipText(String text){
+	public void setToolTipText(String text) {
 		super.setToolTipText(text);
 		textField.setToolTipText(text);
 		browseButton.setToolTipText(text);
-		if(label!=null){
+		if (label != null) {
 			label.setToolTipText(text);
 		}
 	}
 
-	public FileBrowserPanel(int indentWidth,String label, String initialFilename, final FilenameChangeListener filenameChangeListener, final boolean directoriesOnly,
-			final String browserApproveButtonText, final FileFilter... fileFilters) {
+	public FileBrowserPanel(int indentWidth, String label,
+			String initialFilename,
+			final FilenameChangeListener filenameChangeListener,
+			final boolean directoriesOnly,
+			final String browserApproveButtonText,
+			final FileFilter... fileFilters) {
 
-		textField = new JTextField();
+		textField = createTextField(initialFilename, filenameChangeListener);
+
+		// add browser button
+		browseButton = createBrowseButton(directoriesOnly, browserApproveButtonText, textField, fileFilters);
+
+		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+		if (indentWidth > 0) {
+			add(Box.createRigidArea(new Dimension(indentWidth, 1)));
+		}
+		if (label != null) {
+			this.label = new JLabel(label);
+			add(this.label);
+		} else {
+			this.label = null;
+		}
+		add(textField);
+		add(browseButton);
+	}
+
+	public static JComponent [] createComponents( String label,
+			String initialFilename,
+			final FilenameChangeListener filenameChangeListener,
+			final boolean directoriesOnly,
+			final String browserApproveButtonText,
+			final FileFilter... fileFilters) {
+		ArrayList<JComponent> ret = new ArrayList<JComponent>();
+		if(label!=null){
+			ret.add(new JLabel(label));
+		}
+		JTextField textField = createTextField(initialFilename, filenameChangeListener);
+		ret.add(textField);
+		
+		ret.add( createBrowseButton(directoriesOnly, browserApproveButtonText, textField, fileFilters));
+		return ret.toArray(new JComponent[ret.size()]);
+	}
+			
+	private static JTextField createTextField(String initialFilename,
+			final FilenameChangeListener filenameChangeListener) {
+		JTextField textField = new JTextField();
 		if (initialFilename != null) {
 			textField.setText(initialFilename);
 		}
@@ -79,112 +130,18 @@ public class FileBrowserPanel extends JPanel {
 				}
 			});
 		}
-
-		// add browser button
-		browseButton = new JButton("...");
-		browseButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				JFileChooser chooser = new JFileChooser();
-
-				if (textField.getText() != null) {
-					File file = new File(textField.getText());
-					
-					// if the file doesn't exist but the directory does, get that
-					if (!file.exists() && file.getParentFile()!=null && file.getParentFile().exists()) {
-						file = file.getParentFile();
-					}
-					
-					if(!directoriesOnly && file.isFile()){
-						chooser.setSelectedFile(file);
-					}
-					
-					if(file.isDirectory() && file.exists()){
-						chooser.setCurrentDirectory(file);
-					}
-				}
-
-				if (directoriesOnly) {
-					chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-				}
-
-
-				// add filters and automatically select correct one
-				if (fileFilters.length == 1) {
-					chooser.setFileFilter(fileFilters[0]);
-				} else {
-					for (FileFilter filter : fileFilters) {
-						chooser.addChoosableFileFilter(filter);
-						if (filter instanceof FileNameExtensionFilter) {
-							if(matchesFilter((FileNameExtensionFilter)filter, textField.getText())){
-								chooser.setFileFilter(filter);
-							}
-						}
-					}
-				}
-
-				if (chooser.showDialog(textField, browserApproveButtonText) == JFileChooser.APPROVE_OPTION) {
-					File selected = processSelectedFile(chooser.getSelectedFile());
-					
-					String path = selected.getPath();
-					FileFilter filter = chooser.getFileFilter();
-					if (filter != null && filter instanceof FileNameExtensionFilter) {
-
-						boolean found = matchesFilter(((FileNameExtensionFilter) chooser.getFileFilter()), path);
-
-						if (!found) {
-							String[] exts = ((FileNameExtensionFilter) chooser.getFileFilter()).getExtensions();
-							if (exts.length > 0) {
-								path = FilenameUtils.removeExtension(path);
-								path += "." + exts[0];
-							}
-						}
-
-					}
-					setFilename(path);
-					
-//					String path = selected.getAbsolutePath();
-//					FileFilter filter = chooser.getFileFilter();
-//					if (filter != null && filter instanceof FileNameExtensionFilter) {
-//
-//						boolean found = matchesFilter(((FileNameExtensionFilter) chooser.getFileFilter()), path);
-//
-//						if (!found) {
-//							String[] exts = ((FileNameExtensionFilter) chooser.getFileFilter()).getExtensions();
-//							if (exts.length > 0) {
-//								path = FilenameUtils.removeExtension(path);
-//								path += "." + exts[0];
-//							}
-//						}
-//
-//					}
-//					setFilename(path);
-				}
-			}
-		});
-
-		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-		if(indentWidth>0){
-			add(Box.createRigidArea(new Dimension(indentWidth, 1)));
-		}
-		if(label!=null){
-			this.label = new JLabel(label);
-			add(this.label);
-		}else{
-			this.label  = null;
-		}
-		add(textField);
-		add(browseButton);
+		return textField;
 	}
 
-	protected File processSelectedFile(File selected){
+	protected static File processSelectedFile(File selected) {
 		String workingDir = System.getProperty("user.dir");
-		String relative = RelativeFiles.getFilenameToSaveInLink(selected, workingDir);
+		String relative = RelativeFiles.getFilenameToSaveInLink(selected,
+				workingDir);
 		return new File(relative);
 	}
-	
-	private boolean matchesFilter(FileNameExtensionFilter filter, String path) {
+
+	private static boolean matchesFilter(FileNameExtensionFilter filter,
+			String path) {
 		String[] exts = filter.getExtensions();
 		for (String ext : exts) { // check if it already has a valid extension
 			if (Strings.equalsStd(FilenameUtils.getExtension(path), ext)) {
@@ -199,7 +156,7 @@ public class FileBrowserPanel extends JPanel {
 		super.setEnabled(enabled);
 		browseButton.setEnabled(enabled);
 		textField.setEnabled(enabled);
-		if(label!=null){
+		if (label != null) {
 			label.setEnabled(enabled);
 		}
 	}
@@ -209,7 +166,7 @@ public class FileBrowserPanel extends JPanel {
 		super.setVisible(visible);
 		browseButton.setVisible(visible);
 		textField.setVisible(visible);
-		if(label!=null){
+		if (label != null) {
 			label.setVisible(visible);
 		}
 	}
@@ -218,8 +175,87 @@ public class FileBrowserPanel extends JPanel {
 		textField.setText(filename);
 		// textField.invalidate();
 	}
-	
-	public String getFilename(){
+
+	public String getFilename() {
 		return textField.getText();
+	}
+
+	private static JButton createBrowseButton(final boolean directoriesOnly,
+			final String browserApproveButtonText, final JTextField textField,
+			final FileFilter... fileFilters) {
+		JButton browseButton = new JButton("...");
+		browseButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser chooser = new JFileChooser();
+
+				if (textField.getText() != null) {
+					File file = new File(textField.getText());
+
+					// if the file doesn't exist but the directory does, get
+					// that
+					if (!file.exists() && file.getParentFile() != null
+							&& file.getParentFile().exists()) {
+						file = file.getParentFile();
+					}
+
+					if (!directoriesOnly && file.isFile()) {
+						chooser.setSelectedFile(file);
+					}
+
+					if (file.isDirectory() && file.exists()) {
+						chooser.setCurrentDirectory(file);
+					}
+				}
+
+				if (directoriesOnly) {
+					chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				}
+
+				// add filters and automatically select correct one
+				if (fileFilters.length == 1) {
+					chooser.setFileFilter(fileFilters[0]);
+				} else {
+					for (FileFilter filter : fileFilters) {
+						chooser.addChoosableFileFilter(filter);
+						if (filter instanceof FileNameExtensionFilter) {
+							if (matchesFilter((FileNameExtensionFilter) filter,
+									textField.getText())) {
+								chooser.setFileFilter(filter);
+							}
+						}
+					}
+				}
+
+				if (chooser.showDialog(textField, browserApproveButtonText) == JFileChooser.APPROVE_OPTION) {
+					File selected = processSelectedFile(chooser
+							.getSelectedFile());
+
+					String path = selected.getPath();
+					FileFilter filter = chooser.getFileFilter();
+					if (filter != null
+							&& filter instanceof FileNameExtensionFilter) {
+
+						boolean found = matchesFilter(
+								((FileNameExtensionFilter) chooser
+										.getFileFilter()), path);
+
+						if (!found) {
+							String[] exts = ((FileNameExtensionFilter) chooser
+									.getFileFilter()).getExtensions();
+							if (exts.length > 0) {
+								path = FilenameUtils.removeExtension(path);
+								path += "." + exts[0];
+							}
+						}
+
+					}
+					textField.setText(path);
+				}
+			}
+		});
+
+		return browseButton;
 	}
 }

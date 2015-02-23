@@ -34,10 +34,11 @@ import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.formulae.FmAggregate;
 import com.opendoorlogistics.core.scripts.formulae.FmAggregate.AggregateType;
 import com.opendoorlogistics.core.scripts.formulae.FmGroupWeightedCentroid;
-import com.opendoorlogistics.core.scripts.formulae.FmImage;
 import com.opendoorlogistics.core.scripts.formulae.FmIsSelectedInMap;
 import com.opendoorlogistics.core.scripts.formulae.FmLookup;
 import com.opendoorlogistics.core.scripts.formulae.FmLookup.LookupType;
+import com.opendoorlogistics.core.scripts.formulae.image.FmImage;
+import com.opendoorlogistics.core.scripts.formulae.image.ImageFormulaeCreator;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupGeomUnion;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupNearest;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupWeightedCentroid;
@@ -54,7 +55,7 @@ final public class FunctionsBuilder {
 	public static void buildNonAggregateFormulae(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTable> datastores,
 			final int defaultDatastoreIndex,final ODLTableDefinition targetTableDefinition, final ExecutionReport result) {
 		buildBasicLookups(library, datastores, defaultDatastoreIndex, result);
-		buildImage(library, datastores, result);
+		ImageFormulaeCreator.buildImageFormulae(library, datastores, result);
 		FmRuleLookup.buildRuleLookup(library, datastores,defaultDatastoreIndex, result);
 		for(FunctionDefinition dfn : FmLookupNearest.createDefinitions(datastores, defaultDatastoreIndex, result)){
 			library.add(dfn);
@@ -149,206 +150,7 @@ final public class FunctionsBuilder {
 	}
 
 	
-	
-	private static void buildImage(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTable> datastores,
-			final ExecutionReport result) {
 
-		for (final boolean printable : new boolean[] { false, true }) {
-			for (final boolean includeProperties : new boolean[] { false, true }) {
-				class ArgIndices {
-					int lookupVal;
-					int tableRef;
-					int mode;
-					int height;
-					int width;
-					int dpCM;
-					int renderProp = -1;
-				}
-
-				// construct the definition
-				final ArgIndices argIndices = new ArgIndices();
-				FunctionDefinition dfn = new FunctionDefinition(FunctionType.FUNCTION, printable ? "printableimage" : "image");
-				dfn.setDescription("Draw an image using the referenced drawable-table, filtering the objects based on the row in current table.");
-				argIndices.lookupVal = dfn.addArg("lookup_value",
-						"Filter objects in the drawable table whose image formula key field has this value.");
-				argIndices.tableRef = dfn.addArg("drawable-table-reference", ArgumentType.TABLE_REFERENCE_CONSTANT,
-						"Reference to the drawable table including the datastore name - e.g. \"external, drawabletable\".");
-
-				StringBuilder builder = new StringBuilder();
-				for(FmImage.Mode mode: FmImage.Mode.values()){
-					builder.append(" " + mode.getKeyword() + " = " + mode.getDescription());
-				}
-				argIndices.mode = dfn.addArg("Mode", ArgumentType.STRING_CONSTANT, "Create image mode." + builder.toString());
-				
-				if (printable) {
-					argIndices.width = dfn.addArg("width", "Image width in centimeters.");
-					argIndices.height = dfn.addArg("height", "Image height in centimeters.");
-					argIndices.dpCM = dfn.addArg("dots_per_cm", "Dots per centimeter");
-				} else {
-					argIndices.width = dfn.addArg("width", "Image width in pixels.");
-					argIndices.height = dfn.addArg("height", "Image height in pixels.");
-				}
-
-				if (includeProperties) {
-					argIndices.renderProp = dfn.addArg("render-properties", ArgumentType.STRING_CONSTANT,
-							"A string containing key value pairs, for example \"legend=topleft\".");
-				}
-
-				dfn.setFactory(new FunctionFactory() {
-
-					@Override
-					public Function createFunction(Function... children) {
-						// parse the table reference.. (format is already validated)
-						String sTableRef = FunctionUtils.getConstantString(children[argIndices.tableRef]);
-						TableReference tableRef = TableReference.create(sTableRef, result);
-						if (tableRef == null) {
-							result.setFailed("Error reading table reference in formula image.");
-							return null;
-						}
-
-						// find the drawable table ...
-						int dsIndx = datastores.getIndex(tableRef.getDatastoreName());
-						if (dsIndx == -1) {
-							result.setFailed("Error getting datastore " + tableRef.getDatastoreName() + " used in formula image.");
-							return null;
-						}
-						ODLDatastore<? extends ODLTable> ds = datastores.getDatastore(dsIndx);
-						if (ds == null || result.isFailed()) {
-							result.setFailed("Error getting datastore " + tableRef + " used in formula image.");
-							return null;
-						}
-
-						// do simple adaption of table to drawable datastore definition to ensure table format is exact
-						BeanDatastoreMapping beanMap = DrawableObjectImpl.getBeanMapping();
-						ODLDatastore<? extends ODLTableDefinition> definition = beanMap.getDefinition();
-						AdapterConfig adapterConfig = AdapterConfig.createSameNameMapper(definition);
-						adapterConfig.getTables().get(0).setFromTable(tableRef.getTableName());
-						ODLDatastore<ODLTable> simpleAdapted = AdapterBuilderUtils.createSimpleAdapter(ds, adapterConfig, result);
-						if (simpleAdapted == null || result.isFailed()) {
-							result.setFailed("Error matching table " + tableRef + " used in formula image to the table expected by the map renderer.");
-							return null;
-						}
-						ODLTableReadOnly pointsTable = simpleAdapted.getTableAt(0);
-
-						// find the group key field
-						int groupKeyColumnIndex = beanMap.getTableMapping(0).indexOfAnnotation(ImageFormulaKey.class);
-						if (groupKeyColumnIndex == -1) {
-							throw new RuntimeException("Could not find group key field in drawable lat long table, used in image formula.");
-						}
-
-						// get the mode
-						FmImage.Mode mode=null;
-						String sMode = FunctionUtils.getConstantString(children[argIndices.mode]);
-						for(FmImage.Mode m : FmImage.Mode.values()){
-							if(Strings.equalsStd(m.getKeyword(), sMode)){
-								mode = m;
-							}
-						}
-						if(mode==null){
-							throw new RuntimeException("Unknown image function mode: " + sMode);
-						}
-						
-						// get flags
-						RenderProperties properties = new RenderProperties();
-						if (includeProperties) {
-							String s = FunctionUtils.getConstantString(children[argIndices.renderProp]);
-							properties = new RenderProperties(s);
-						}
-						// add default flags
-						properties.addFlags(RenderProperties.SHOW_ALL);
-
-						if (printable) {
-							return FmImage.createFixedPhysicalSize(children[argIndices.lookupVal], pointsTable, groupKeyColumnIndex,mode,
-									children[argIndices.width], children[argIndices.height], children[argIndices.dpCM], properties);
-						} else {
-							return FmImage.createFixedPixelSize(children[argIndices.lookupVal], pointsTable, groupKeyColumnIndex,mode,
-									children[argIndices.width], children[argIndices.height], properties);
-						}
-					}
-				});
-				library.add(dfn);
-
-			}
-		}
-
-		// ArrayList<FunctionDefinition> ret = new ArrayList<>();
-		// for (int i = 0; i < 2; i++) {
-		// FunctionDefinition def = new FunctionDefinition("image");
-		// def.addArg("lookupvalue");
-		// def.addArg("tablereference", ArgumentType.TABLE_REFERENCE_CONSTANT);
-		// def.addArg("width");
-		// def.addArg("height");
-		// if (i == 1) {
-		// def.addArg("properties", ArgumentType.STRING_CONSTANT);
-		// }
-		// ret.add(def);
-		// }
-
-		// return new FunctionFactory() {
-		//
-		// @Override
-		// public Function createFunction(Function... children) {
-		//
-		// ValidatedArguments validated = ValidatedArguments.matchAndValidate(arguments(), result, children);
-		// if (validated == null) {
-		// result.setFailed("Could not build formula image.");
-		// return null;
-		// }
-		//
-		// // parse the table reference.. must be a string
-		// String sTableRef = validated.getConstantString("tablereference");
-		// TableReference tableRef = TableReference.create(sTableRef, result);
-		// if (tableRef == null) {
-		// result.setFailed("Error reading table reference in formula image.");
-		// return null;
-		// }
-		//
-		// // find table ...
-		// int dsIndx = datastores.getIndex(tableRef.getDatastoreName());
-		// if(dsIndx==-1){
-		// result.setFailed("Error getting datastore " + tableRef.getDatastoreName() + " used in formula image.");
-		// return null;
-		// }
-		// ODLDatastore<? extends ODLTable> ds = datastores.getDatastore(dsIndx);
-		// if (ds == null || result.isFailed()) {
-		// result.setFailed("Error getting datastore " + tableRef + " used in formula image.");
-		// return null;
-		// }
-		//
-		// // do simple adaption of table to drawable datastore definition
-		// BeanDatastoreMapping beanMap = DrawableLatLongImpl.getBeanMapping();
-		// ODLDatastore<? extends ODLTableDefinition> definition = beanMap.getDefinition();
-		// AdapterConfig adapterConfig = AdapterConfig.createSameNameMapper(definition);
-		// adapterConfig.getTables().get(0).setFromTable(tableRef.getTableName());
-		// ODLDatastore<ODLTable> simpleAdapted = AdapterBuilderUtils.createSimpleAdapter(ds, adapterConfig, result);
-		// if (simpleAdapted == null || result.isFailed()) {
-		// result.setFailed("Error matching table " + tableRef + " used in formula image to the table expected by the map renderer.");
-		// return null;
-		// }
-		//
-		// // get the adapted table
-		// ODLTableReadOnly pointsTable = simpleAdapted.getTableAt(0);
-		//
-		// // find the group key field
-		// int groupKeyColumnIndex = beanMap.getTableMapping(0).indexOfAnnotation(ImageFormulaKey.class);
-		// if (groupKeyColumnIndex == -1) {
-		// throw new RuntimeException("Could not find group key field in drawable lat long table.");
-		// }
-		//
-		// // get flags
-		// RenderFlags flags = new RenderFlags();
-		// if(validated.hasArgument("properties")){
-		// String s = validated.getConstantString("properties");
-		// flags = new RenderFlags(s);
-		// }
-		// flags.addFlags(RenderFlags.SHOW_ALL);
-		//
-		// // if (validated.get("lookupvalue") != null) {
-		// return new FmImage(validated.get("lookupvalue"), pointsTable, groupKeyColumnIndex, validated.get("width"), validated.get("height"),flags);
-		//
-		// }
-		// };
-	}
 
 	public static class ProcessedLookupReferences {
 		public int datastoreIndx;

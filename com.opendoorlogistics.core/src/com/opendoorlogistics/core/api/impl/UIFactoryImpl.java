@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -58,6 +59,20 @@ public class UIFactoryImpl implements UIFactory{
 	@Override
 	public JPanel createVerticalLayoutPanel() {
 		return new VerticalLayoutPanel();
+	}
+
+	@Override
+	public <T> JComponent[] createComboComponents(String labelText, T[] items,
+			T selected, ItemChangedListener<T> listener) {
+		return ComboEntryPanel.createComponents(labelText, items, selected, listener);
+
+	}
+
+	@Override
+	public JComponent[] createSelectDirectoryComponents(String label,
+			String initialDirectoryName,
+			FilenameChangeListener directoryChangedListener) {
+		return FileBrowserPanel.createComponents(label,initialDirectoryName,directoryChangedListener, true, "OK");
 	}
 
 }

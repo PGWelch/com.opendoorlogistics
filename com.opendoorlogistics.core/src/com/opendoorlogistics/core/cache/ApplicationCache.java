@@ -37,6 +37,7 @@ public class ApplicationCache {
 	public static final String SYNCHRONOUS_RETRIEVED_TILE_CACHE = "synchronous-retrieved-tile-cache";
 	public static final String LOOKUP_NEAREST_TRANSFORMED_GEOMS = "lookup-nearest-transformed-geoms";
 	public static final String IMAGE_FORMULAE_CACHE = "image-formulae-cache";
+	public static final String IMAGE_WITH_VIEW_FORMULAE_CACHE = "image-with-view-formulae-cache";
 	
 	public static ApplicationCache singleton(){
 		return singleton;
@@ -60,6 +61,7 @@ public class ApplicationCache {
 		create(SYNCHRONOUS_RETRIEVED_TILE_CACHE, 32 * MB);
 		create(LOOKUP_NEAREST_TRANSFORMED_GEOMS, 256 * MB);
 		create(IMAGE_FORMULAE_CACHE, 64 * MB);
+		create(IMAGE_WITH_VIEW_FORMULAE_CACHE, 64 * MB);
 		
 				
 	}
