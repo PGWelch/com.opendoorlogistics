@@ -44,6 +44,7 @@ import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.elements.ScriptElementType;
+import com.opendoorlogistics.core.scripts.elements.UserFormula;
 import com.opendoorlogistics.core.scripts.io.XMLConversionHandler;
 import com.opendoorlogistics.core.scripts.io.XMLConversionHandlerImpl;
 import com.opendoorlogistics.core.scripts.utils.AdapterDestinationProvider;
@@ -782,9 +783,11 @@ public class AdapterTablesTabControl extends JPanel {
 				final AdaptedTableConfig tableConfig = config.getTables().get(index);
 				
 				// get a copy of the current formulae
-				final ArrayList<String> formulaeCopy = new ArrayList<String>();
+				final ArrayList<UserFormula> formulaeCopy = new ArrayList<UserFormula>();
 				if(tableConfig.getUserFormulae()!=null){
-					formulaeCopy.addAll(tableConfig.getUserFormulae());
+					for(UserFormula uf: tableConfig.getUserFormulae()){
+						formulaeCopy.add(new UserFormula(uf));
+					}
 				}
 				
 
@@ -792,16 +795,16 @@ public class AdapterTablesTabControl extends JPanel {
 				OkCancelDialog dlg = new OkCancelDialog(){
 					@Override
 					protected Component createMainComponent(boolean inWindowsBuilder) {
-						return new ListPanel<String>(formulaeCopy, "user formula") {
+						return new ListPanel<UserFormula>(formulaeCopy, "user formula") {
 
 							@Override
-							protected String createNewItem() {
-								return editItem("funcname() = X");
+							protected UserFormula createNewItem() {
+								return editItem(new UserFormula("funcname() = X"));
 							}
 
 							@Override
-							protected String editItem(final String item) {
-								final JTextArea textArea = new JTextArea(item);	
+							protected UserFormula editItem(final UserFormula item) {
+								final JTextArea textArea = new JTextArea(item.getValue());	
 								textArea.setEditable(true);
 								textArea.setLineWrap(true);
 								OkCancelDialog dlg = new OkCancelDialog(){
@@ -814,7 +817,7 @@ public class AdapterTablesTabControl extends JPanel {
 								dlg.setLocationRelativeTo(this);
 								dlg.setTitle("Enter formula text");
 								if(dlg.showModal() == OkCancelDialog.OK_OPTION){
-									return textArea.getText();
+									item.setValue(textArea.getText());
 								}
 								return item;
 							}

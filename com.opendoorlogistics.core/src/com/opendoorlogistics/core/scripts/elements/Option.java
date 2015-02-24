@@ -20,7 +20,7 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 
 @XmlType(propOrder = { "componentConfigs",  "adapters", "instructions" , "outputs", "options"})
 @XmlRootElement(name="Option")
-public class Option extends ScriptBaseElement{
+public class Option extends ScriptBaseElementImpl{
 	protected List<AdapterConfig> adapters = new ArrayList<>();
 	protected List<InstructionConfig> instructions = new ArrayList<>();
 	protected List<OutputConfig> outputs = new ArrayList<>();

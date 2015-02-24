@@ -51,7 +51,7 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	private int maxNbRows=1000;
 	
 	@XmlTransient
-	private List<String> userFormulae = new ArrayList<String>();
+	private List<UserFormula> userFormulae = new ArrayList<UserFormula>();
 	
 	public AdaptedTableConfig(){}
 
@@ -83,8 +83,10 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 		ret.setLimitResults(isLimitResults());
 		ret.setMaxNumberRows(maxNbRows);
 		if(userFormulae!=null){
-			ret.userFormulae = new ArrayList<String>();
-			ret.userFormulae.addAll(userFormulae);
+			ret.userFormulae = new ArrayList<UserFormula>();
+			for(UserFormula uf : userFormulae){
+				ret.userFormulae.add(new UserFormula(uf));
+			}
 		}
 		return ret;
 	}
@@ -266,7 +268,7 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	 * @param columns
 	 */
 	@XmlElement(name = "UserFormulae")	
-	public void setUserFormulae(List<String> userFormulae){
+	public void setUserFormulae(List<UserFormula> userFormulae){
 		this.userFormulae = userFormulae;
 	}
 	
@@ -275,7 +277,7 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	 * binding fails
 	 * @return
 	 */
-	public List<String> getUserFormulae(){
+	public List<UserFormula> getUserFormulae(){
 		return userFormulae;
 	}
 	

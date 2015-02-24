@@ -43,6 +43,7 @@ import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig.SortField;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
+import com.opendoorlogistics.core.scripts.elements.UserFormula;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard;
 import com.opendoorlogistics.core.scripts.formulae.FmLocalElement;
 import com.opendoorlogistics.core.scripts.formulae.TableParameters;
@@ -500,7 +501,7 @@ final public class AdapterBuilder {
 		}
 	}
 
-	private boolean isAlwaysFalseFilterFormula(String filter, List<String> userFormulae){
+	private boolean isAlwaysFalseFilterFormula(String filter, List<UserFormula> userFormulae){
 
 		// built the function lib with the parameter function but nothing else, so row-level fields are not readable
 		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
@@ -1037,7 +1038,7 @@ final public class AdapterBuilder {
 		return val;
 	}
 
-	private Function buildFormulaWithTableVariables(final ODLTableDefinition srcTable, String formulaText, final int defaultDsIndx,List<String> userFormulae, ODLTableDefinition targetTableDefinition) {
+	private Function buildFormulaWithTableVariables(final ODLTableDefinition srcTable, String formulaText, final int defaultDsIndx,List<UserFormula> userFormulae, ODLTableDefinition targetTableDefinition) {
 
 		// create variable provider for the formula parser. variables come from source table
 		UserVariableProvider uvp = new UserVariableProvider() {
@@ -1055,7 +1056,7 @@ final public class AdapterBuilder {
 		return buildFormula(formulaText, library, uvp,userFormulae, FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION);
 	}
 
-	private Function buildFormula(String formulaText, FunctionDefinitionLibrary library, UserVariableProvider uvp,List<String> userFormulae, FormulaParser.UnidentifiedPolicy unidentifiedPolicy) {
+	private Function buildFormula(String formulaText, FunctionDefinitionLibrary library, UserVariableProvider uvp,List<UserFormula> userFormulae, FormulaParser.UnidentifiedPolicy unidentifiedPolicy) {
 
 		try {
 

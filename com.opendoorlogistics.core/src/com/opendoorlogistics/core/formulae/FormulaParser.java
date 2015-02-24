@@ -16,6 +16,7 @@ import com.opendoorlogistics.core.formulae.StringTokeniser.StringToken;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.FunctionType;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary;
+import com.opendoorlogistics.core.scripts.elements.UserFormula;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.strings.Strings.ToString;
@@ -97,9 +98,9 @@ public final class FormulaParser {
 	 *
 	 */
 	private class UserFormulaPlaceholder implements FunctionFactory{
-		private final List<UserFormula> ufs;
+		private final List<UserFormulaInternal> ufs;
 
-		UserFormulaPlaceholder(List<UserFormula> ufs) {
+		UserFormulaPlaceholder(List<UserFormulaInternal> ufs) {
 			this.ufs = ufs;
 		}
 
@@ -110,13 +111,13 @@ public final class FormulaParser {
 		
 	}
 	
-	private class UserFormula{
+	private class UserFormulaInternal{
 		private final String name;
 		private final List<String> parameters = new ArrayList<String>();
 		private final List<StringToken> definition;
 		private StandardisedStringTreeMap<Integer> parameterNumbers = new StandardisedStringTreeMap<Integer>();
 		
-		UserFormula(String formula){
+		UserFormulaInternal(String formula){
 			List<StringToken> tokens = StringTokeniser.tokenise(formula);
 			
 //			if (okVariableOrMethodName.matcher(token).find() == false) {
@@ -229,27 +230,27 @@ public final class FormulaParser {
 
 	final private FunctionDefinitionLibrary library;
 	
-	final private StandardisedStringTreeMap<ArrayList<UserFormula>> userFormulae = new StandardisedStringTreeMap<ArrayList<UserFormula>>();
+	final private StandardisedStringTreeMap<ArrayList<UserFormulaInternal>> userFormulae = new StandardisedStringTreeMap<ArrayList<UserFormulaInternal>>();
 
 //	public FormulaParser( UserVariableProvider userVariableProvider, FunctionDefinitionLibrary lib) {
 //		this(userVariableProvider, lib, new ArrayList<String>());
 //	}
 	
-	public FormulaParser( UserVariableProvider userVariableProvider, FunctionDefinitionLibrary lib,List<String> userformulaeDfns  ) {
+	public FormulaParser( UserVariableProvider userVariableProvider, FunctionDefinitionLibrary lib,List<UserFormula> userformulaeDfns  ) {
 		this.userVariableProvider = userVariableProvider;
 		this.library =lib;
 		
 		if(userformulaeDfns!=null){
-			for(String s : userformulaeDfns){
-				UserFormula uf = new UserFormula(s);
-				ArrayList<UserFormula> list = userFormulae.get(uf.name);
+			for(UserFormula s : userformulaeDfns){
+				UserFormulaInternal uf = new UserFormulaInternal(s.getValue());
+				ArrayList<UserFormulaInternal> list = userFormulae.get(uf.name);
 				if(list==null){
-					list = new ArrayList<UserFormula>();
+					list = new ArrayList<UserFormulaInternal>();
 					
 					userFormulae.put(uf.name, list);
 				}else{
 					// check don't have 2 with same number of parameters
-					for(UserFormula other:list){
+					for(UserFormulaInternal other:list){
 						if(other.parameters.size()==uf.parameters.size()){
 							throw new RuntimeException("Found two or more user formulae with the same name and number of parameters: " + uf.name);
 						}
@@ -514,9 +515,9 @@ public final class FormulaParser {
 		if(rft.identified!=null && UserFormulaPlaceholder.class.isInstance(rft.identified)){
 			// Use the number of children to identify the correct overload
 			int nc = rft.children!=null ? rft.children.size():0;
-			List<UserFormula> ufs = ((UserFormulaPlaceholder)rft.identified).ufs;
-			UserFormula found = null;
-			for(UserFormula uf:ufs){
+			List<UserFormulaInternal> ufs = ((UserFormulaPlaceholder)rft.identified).ufs;
+			UserFormulaInternal found = null;
+			for(UserFormulaInternal uf:ufs){
 				if(uf.parameters.size() == nc){
 					found = uf;
 				}
@@ -658,7 +659,7 @@ public final class FormulaParser {
 					}
 
 					// try userformula first so scripts are never broken if a new formula is introduced with same name
-					List<UserFormula> ufs = userFormulae.get(rft.token);
+					List<UserFormulaInternal> ufs = userFormulae.get(rft.token);
 					if(ufs!=null){
 						rft.identified = new UserFormulaPlaceholder(ufs);
 					}
@@ -757,9 +758,9 @@ public final class FormulaParser {
 		FunctionDefinitionLibrary lib = new FunctionDefinitionLibrary();
 		lib.build();
 		
-		List<String> userFormulae = new ArrayList<String>();
-		userFormulae.add("add2(a,b) = a + b");
-		userFormulae.add("ten() = 10");
+		List<UserFormula> userFormulae = new ArrayList<UserFormula>();
+		userFormulae.add(new UserFormula("add2(a,b) = a + b"));
+		userFormulae.add(new UserFormula("ten() = 10"));
 		FormulaParser loader = new FormulaParser(null, lib, userFormulae);
 		Function formula = loader.parse(" 2 | 5");
 		System.out.println(formula.execute(null));

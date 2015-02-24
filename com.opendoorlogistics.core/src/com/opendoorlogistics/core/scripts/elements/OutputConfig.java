@@ -15,7 +15,7 @@ import com.opendoorlogistics.api.scripts.ScriptOption.OutputType;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 @XmlRootElement(name = "Output")
-final public class OutputConfig extends ScriptBaseElement implements Serializable{
+final public class OutputConfig extends ScriptBaseElementImpl implements Serializable{
 	private String inputDatastore;
 	private String inputTable;	
 	private OutputType type = OutputType.REPLACE_CONTENTS_OF_EXISTING_TABLE;

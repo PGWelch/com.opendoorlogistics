@@ -32,7 +32,7 @@ import com.opendoorlogistics.core.utils.strings.HasStringId;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 @XmlRootElement(name = "Adapter")
-final public class AdapterConfig extends ScriptBaseElement implements HasStringId, Serializable, Iterable<AdaptedTableConfig>, HasFlags{
+final public class AdapterConfig extends ScriptBaseElementImpl implements HasStringId, Serializable, Iterable<AdaptedTableConfig>, HasFlags{
 	private String id;
 	private List<AdaptedTableConfig> tables = new ArrayList<>();
 	private long flags;

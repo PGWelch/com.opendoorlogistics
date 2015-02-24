@@ -19,7 +19,7 @@ import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLHasTables;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
-import com.opendoorlogistics.core.scripts.elements.ScriptBaseElement;
+import com.opendoorlogistics.core.scripts.elements.ScriptBaseElementImpl;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.memory.ODLTableDefinitionImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
@@ -27,7 +27,7 @@ import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.HasStringId;
 
 @XmlRootElement(name = "Tables")
-final public class DatastoreConfig extends ScriptBaseElement implements Serializable, ODLHasTables<ODLTableDefinition>{
+final public class DatastoreConfig extends ScriptBaseElementImpl implements Serializable, ODLHasTables<ODLTableDefinition>{
 //	private String id;
 	private List<ODLTableDefinitionImpl> tables = new ArrayList<>();
 	
