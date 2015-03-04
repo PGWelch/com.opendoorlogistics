@@ -316,7 +316,7 @@ public class ColumnValueProcessor {
 				}
 				
 				try {
-			
+
 					// Test if we have a . in the number and if so, use java's parsedouble which always uses .
 					double number=0;
 					if(sOther.indexOf(".")!=-1){
@@ -328,6 +328,7 @@ public class ColumnValueProcessor {
 						return number;	
 					}
 					
+
 					return number;
 				} catch (Throwable e) {
 					return null;
