@@ -11,6 +11,8 @@ import java.util.List;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
+import com.opendoorlogistics.core.tables.ODLRow;
+import com.opendoorlogistics.core.tables.ODLRowReadOnly;
 
 final public class TableParameters implements FunctionParameters {
 	private final List<?> datastores;
@@ -18,6 +20,7 @@ final public class TableParameters implements FunctionParameters {
 	private final int tableId;
 	private final long rowId;
 	private final int rowNbIfKnown;
+	private final ODLRowReadOnly thisRow;
 	
 	/**
 	 * @param datastores
@@ -27,12 +30,13 @@ final public class TableParameters implements FunctionParameters {
 	 * @param rowNbIfKnown Set to -1 if row number is unknown and it will be calculated
 	 * from the default table.
 	 */
-	public TableParameters(List<?> datastores, int dsIndx, int tableId, long rowId, int rowNbIfKnown) {
+	public TableParameters(List<?> datastores, int dsIndx, int tableId, long rowId, int rowNbIfKnown, ODLRowReadOnly thisRow) {
 		this.datastores = datastores;
 		this.dsIndx = dsIndx;
 		this.tableId = tableId;
 		this.rowId = rowId;
 		this.rowNbIfKnown = rowNbIfKnown;
+		this.thisRow = thisRow;
 	}
 
 	public int getDatasourceIndx() {
@@ -52,7 +56,7 @@ final public class TableParameters implements FunctionParameters {
 	}
 
 	public ODLTableReadOnly getTableById(int datastoreIndx, int tableId) {
-		if (datastoreIndx < datastores.size() && dsIndx >= 0) {
+		if (datastoreIndx < datastores.size() && datastoreIndx >= 0) {
 			ODLDatastore<?> ds = (ODLDatastore<?>) datastores.get(datastoreIndx);
 			return (ODLTableReadOnly) ds.getTableByImmutableId(tableId);
 		}
@@ -78,5 +82,9 @@ final public class TableParameters implements FunctionParameters {
 		}
 		
 		throw new RuntimeException("Row number is not available.");
+	}
+	
+	public ODLRowReadOnly getThisRow(){
+		return thisRow;
 	}
 }

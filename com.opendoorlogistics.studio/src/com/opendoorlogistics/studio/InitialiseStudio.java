@@ -216,7 +216,7 @@ final public class InitialiseStudio {
 					com.opendoorlogistics.core.scripts.execution.adapters.FunctionsBuilder.ProcessedLookupReferences.class,
 					com.opendoorlogistics.core.scripts.execution.adapters.FunctionsBuilder.ToProcessLookupReferences.class,
 					com.opendoorlogistics.core.scripts.formulae.FmAbstractLookup.class,
-					com.opendoorlogistics.core.scripts.formulae.FmImage.Mode.class,
+					com.opendoorlogistics.core.scripts.formulae.image.FmImage.Mode.class,
 					com.opendoorlogistics.core.scripts.formulae.FmIsSelectedInMap.class,
 					com.opendoorlogistics.core.scripts.formulae.FmLocalElement.class,
 					com.opendoorlogistics.core.scripts.formulae.FmLookup.class,

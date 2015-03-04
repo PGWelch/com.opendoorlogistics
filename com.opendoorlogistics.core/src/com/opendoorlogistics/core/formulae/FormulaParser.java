@@ -16,11 +16,28 @@ import com.opendoorlogistics.core.formulae.StringTokeniser.StringToken;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.FunctionType;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary;
+import com.opendoorlogistics.core.scripts.elements.UserFormula;
+import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.strings.Strings.ToString;
 
 public final class FormulaParser {
+	private UnidentifiedPolicy unidentifiedPolicy = UnidentifiedPolicy.THROW_EXCEPTION;
+	
+	
+	public UnidentifiedPolicy getUnidentifiedPolicy() {
+		return unidentifiedPolicy;
+	}
 
+	public void setUnidentifiedPolicy(UnidentifiedPolicy unidentifiedPolicy) {
+		this.unidentifiedPolicy = unidentifiedPolicy;
+	}
+
+	public enum UnidentifiedPolicy{
+		THROW_EXCEPTION,
+		CREATE_UNIDENTIFIED_PLACEHOLDER_FUNCTION
+	}
+	
 	private class ReadFunctionToken {
 		String token;
 		ArrayList<ReadFunctionToken> children = new ArrayList<>();
@@ -75,6 +92,130 @@ public final class FormulaParser {
 		}
 	}
 
+	/**
+	 * Dummy placeholder used when processing user formulae
+	 * @author Phil
+	 *
+	 */
+	private class UserFormulaPlaceholder implements FunctionFactory{
+		private final List<UserFormulaInternal> ufs;
+
+		UserFormulaPlaceholder(List<UserFormulaInternal> ufs) {
+			this.ufs = ufs;
+		}
+
+		@Override
+		public Function createFunction(Function... children) {
+			throw new RuntimeException();
+		}
+		
+	}
+	
+	private class UserFormulaInternal{
+		private final String name;
+		private final List<String> parameters = new ArrayList<String>();
+		private final List<StringToken> definition;
+		private StandardisedStringTreeMap<Integer> parameterNumbers = new StandardisedStringTreeMap<Integer>();
+		
+		UserFormulaInternal(String formula){
+			List<StringToken> tokens = StringTokeniser.tokenise(formula);
+			
+//			if (okVariableOrMethodName.matcher(token).find() == false) {
+//				throwException(tokens);
+//			}
+			
+			int iToken = 0;
+			int nt = tokens.size();
+			boolean ok = true;
+			
+			String errorMessage=null;
+			if(iToken< nt){
+				name = tokens.get(iToken++).getLowerCase();
+				if (!isOkVariableOrMethodName(name)) {
+					ok = false;
+					errorMessage = "Invalid function name: " + name;
+				}		
+			}else{
+				ok = false;
+				errorMessage = "Missing function name";
+				name = null;
+			}
+			
+			if(iToken>=nt || !tokens.get(iToken++).getLowerCase().equals("(")){
+				ok = false;
+				errorMessage = "Missing left bracket ( at start of user formula";
+			}
+			
+			// get parameters
+			boolean nextIsParam=true;
+			while(ok){
+				
+				// check we still have a token
+				if(iToken>=nt){
+					ok = false;
+					errorMessage = "Incorrect function format.";
+					break;
+				}
+				
+				StringToken token = tokens.get(iToken++);
+				
+				// check for end of parameters
+				String sToken = token.getLowerCase();
+				if(sToken.equals(")")){
+					break;
+				}
+				
+				if(nextIsParam){
+					if(!isOkVariableOrMethodName(sToken)){
+						ok = false;
+						errorMessage = "Invalid parameter name: " + sToken;
+						break;
+					}
+					
+					// check parameter name is unique
+					if(parameterNumbers.get(sToken)!=null){
+						ok = false;
+						errorMessage = "Parameter name used twice or more times: " + sToken;
+						break;	
+					}
+					
+					parameterNumbers.put(sToken, parameters.size());
+					parameters.add(sToken);
+					nextIsParam = false;
+					
+				}else{
+					if(!sToken.equals(",")){
+						ok = false;
+						errorMessage = "Comma is missing from list of parameters.";
+					}
+					nextIsParam = true;
+				}
+			}
+			
+			// check for equals
+			if(ok){
+				if(iToken >=nt || !tokens.get(iToken++).getLowerCase().equals("=")){
+					ok = false;
+					errorMessage = "Equals sign = missing after parameter names.";										
+				}
+			}
+			
+			// check for non-empty
+			if(ok && iToken>=nt){
+				ok = false;
+				errorMessage = "Empty user function definition.";														
+			}
+			
+			if(ok){
+				definition = tokens.subList(iToken, tokens.size());
+			}
+			else{
+				definition =null;
+				throw new RuntimeException("Error parsing user formula: " + formula + (errorMessage!=null ? System.lineSeparator() + errorMessage : ""));
+			}
+		}
+	}
+	
 	private enum TokenType {
 		operator, function, number, comma, nestedExpression, variable, string
 	}
@@ -88,17 +229,49 @@ public final class FormulaParser {
 	final private static Pattern okVariableOrMethodName = Pattern.compile("^[a-z][\\w]*$", Pattern.CASE_INSENSITIVE);
 
 	final private FunctionDefinitionLibrary library;
+	
+	final private StandardisedStringTreeMap<ArrayList<UserFormulaInternal>> userFormulae = new StandardisedStringTreeMap<ArrayList<UserFormulaInternal>>();
 
-	public FormulaParser( UserVariableProvider userVariableProvider, FunctionDefinitionLibrary lib) {
+//	public FormulaParser( UserVariableProvider userVariableProvider, FunctionDefinitionLibrary lib) {
+//		this(userVariableProvider, lib, new ArrayList<String>());
+//	}
+	
+	public FormulaParser( UserVariableProvider userVariableProvider, FunctionDefinitionLibrary lib,List<UserFormula> userformulaeDfns  ) {
 		this.userVariableProvider = userVariableProvider;
 		this.library =lib;
+		
+		if(userformulaeDfns!=null){
+			for(UserFormula s : userformulaeDfns){
+				UserFormulaInternal uf = new UserFormulaInternal(s.getValue());
+				ArrayList<UserFormulaInternal> list = userFormulae.get(uf.name);
+				if(list==null){
+					list = new ArrayList<UserFormulaInternal>();
+					
+					userFormulae.put(uf.name, list);
+				}else{
+					// check don't have 2 with same number of parameters
+					for(UserFormulaInternal other:list){
+						if(other.parameters.size()==uf.parameters.size()){
+							throw new RuntimeException("Found two or more user formulae with the same name and number of parameters: " + uf.name);
+						}
+					}					
+				}
+				list.add(uf);
+				
+			}
+		}
 	}
 
-	public FormulaParser(final UserVariableProvider userVariableProvider) {
-		this.userVariableProvider = userVariableProvider;
-		this.library = new FunctionDefinitionLibrary();
-		library.build();
+	
+	private static boolean isOkVariableOrMethodName(String name){
+		return okVariableOrMethodName.matcher(name).find() ;
 	}
+	
+//	public FormulaParser(final UserVariableProvider userVariableProvider) {
+//		this.userVariableProvider = userVariableProvider;
+//		this.library = new FunctionDefinitionLibrary();
+//		library.build();
+//	}
 
 	private Function compileNestedExpression( ReadFunctionToken token) {
 		ArrayList<SourceFormula> tmp = new ArrayList<>();
@@ -294,7 +467,11 @@ public final class FormulaParser {
 			}
 			
 			if(ret==null){
-				throw new RuntimeException("Unidentified variable: " + token.token);
+				if(unidentifiedPolicy == UnidentifiedPolicy.THROW_EXCEPTION){
+					throw new RuntimeException("Unidentified variable: " + token.token);					
+				}else{
+					ret = FmUnidentified.FACTORY.createFunction();
+				}
 			}
 			break;
 
@@ -319,20 +496,62 @@ public final class FormulaParser {
 		return parseTokens(tokens);
 	}
 	
-	public Function parseTokens(List<StringToken> tokens) {
+	private Function parseTokens(List<StringToken> tokens) {
 
+		// Do first parse to build the top-level tree
 		ReadFunctionToken[] tmp = new ReadFunctionToken[1];
-		int readTokens = readFunctionTokenTree(tokens, 0, tmp, null);
+		int readTokens = readFunctionTokenTree(tokens, 0,null, tmp);
 		assert readTokens == tokens.size();
 
-
+		// Then parse for user formula and replace them in the tree
+		tmp[0] = recurseProcessUserFormulae(tmp[0]);
+		
 		Function formula = generateFormula( tmp[0]);
-		// log("\t\t" + CollectionUtils.ToString(tokens, "")+" transformed into " + formula.toString());
 		return formula;
 	}
 
-
-	private int readFunctionTokenTree(List<StringToken> tokens, int level, ReadFunctionToken[] out, String[] lastTokenRead) {
+	private ReadFunctionToken recurseProcessUserFormulae(ReadFunctionToken rft){
+		
+		if(rft.identified!=null && UserFormulaPlaceholder.class.isInstance(rft.identified)){
+			// Use the number of children to identify the correct overload
+			int nc = rft.children!=null ? rft.children.size():0;
+			List<UserFormulaInternal> ufs = ((UserFormulaPlaceholder)rft.identified).ufs;
+			UserFormulaInternal found = null;
+			for(UserFormulaInternal uf:ufs){
+				if(uf.parameters.size() == nc){
+					found = uf;
+				}
+			}
+			
+			if(found==null){
+				throw new RuntimeException("Cannot find a definition of user formula " + ufs.get(0).name + " taking " + nc + " parameters.");
+			}
+			
+			// Create a string map of parameter name to ReadFunctionToken tree
+			StandardisedStringTreeMap<ReadFunctionToken> parameters = new StandardisedStringTreeMap<FormulaParser.ReadFunctionToken>();
+			for(int i =0 ; i<nc ; i++){
+				parameters.put(found.parameters.get(i), rft.children.get(i));
+			}
+			
+			// We now need to create the ReadFunctionToken tree for the user formula, copying the parameters into it
+			ReadFunctionToken[] tmp = new ReadFunctionToken[1];			
+			readFunctionTokenTree(found.definition, 0, parameters, tmp);
+			
+			// And replace this node in the tree with the user formula
+			rft = tmp[0];
+		}
+		
+		// parse children
+		int nc = rft.children!=null ? rft.children.size():0;		
+		for(int i =0 ; i < nc ; i++){
+			ReadFunctionToken child = rft.children.get(i);
+			child = recurseProcessUserFormulae(child);
+			rft.children.set(i, child);
+		}
+		return rft;
+	}
+	
+	private int readFunctionTokenTree(List<StringToken> tokens, int level,StandardisedStringTreeMap<ReadFunctionToken> userFormulaeParameters, ReadFunctionToken[] out) {
 		ReadFunctionToken ret = new ReadFunctionToken();
 		ret.tokenType = TokenType.nestedExpression;
 		out[0] = ret;
@@ -341,9 +560,7 @@ public final class FormulaParser {
 		int i = 0;
 		while (i < n) {
 			String token = tokens.get(i).getLowerCase();
-			if (lastTokenRead != null) {
-				lastTokenRead[0] = token;
-			}
+			
 			if (token.equals(")")) {
 				// stop reading function
 				i++;
@@ -361,7 +578,7 @@ public final class FormulaParser {
 				// recurse
 				ReadFunctionToken[] tmp = new ReadFunctionToken[1];
 				i++;
-				i += readFunctionTokenTree(tokens.subList(i, tokens.size()), level + 1, tmp, null);
+				i += readFunctionTokenTree(tokens.subList(i, tokens.size()), level + 1,userFormulaeParameters, tmp);
 				if (function != null) {
 					List<List<ReadFunctionToken>> parameters = split(tmp[0].children, ",");
 
@@ -414,7 +631,7 @@ public final class FormulaParser {
 			} else {
 
 				// create token and identify type
-				final ReadFunctionToken rft = new ReadFunctionToken();
+				ReadFunctionToken rft = new ReadFunctionToken();
 				rft.token = token;
 				boolean okVariableName = okVariableOrMethodName.matcher(token).find();
 
@@ -424,20 +641,6 @@ public final class FormulaParser {
 					rft.tokenType = TokenType.operator;
 					rft.precendence = opDfn.getOperatorPrecendence();
 				}
-				
-//				else{
-//					// try identifying an operator; operators are ordered by precedence
-//					for (int precedence = 0; precedence < operators.size(); precedence++) {
-//						MathsOperator op = operators.get(precedence);
-//						if (op.matchesName(token)) {
-//							rft.identified = op;
-//							rft.tokenType = TokenType.operator;
-//							rft.precendence = precedence;
-//							break;
-//						}
-//					}			
-//				}
-
 
 				// try identifying number
 				if (rft.tokenType == null && anyNumberExactStringMatcher.matcher(token).find()) {
@@ -454,11 +657,24 @@ public final class FormulaParser {
 					if (!okVariableName) {
 						throwException(token);
 					}
-					
-					rft.identified = library.identify(rft.token, FunctionType.FUNCTION);
 
+					// try userformula first so scripts are never broken if a new formula is introduced with same name
+					List<UserFormulaInternal> ufs = userFormulae.get(rft.token);
+					if(ufs!=null){
+						rft.identified = new UserFormulaPlaceholder(ufs);
+					}
+
+					// then try built in-function
+					if(rft.identified == null){
+						rft.identified = library.identify(rft.token, FunctionType.FUNCTION);						
+					}
+					
 					if (rft.identified == null) {
-						throw new RuntimeException("Unknown function \"" + rft.token + "\"");
+						if(unidentifiedPolicy == UnidentifiedPolicy.THROW_EXCEPTION){
+							throw new RuntimeException("Unknown function \"" + rft.token + "\"");							
+						}else{
+							rft.identified = FmUnidentified.FACTORY;
+						}
 					}
 					rft.tokenType = TokenType.function;
 				}
@@ -468,14 +684,25 @@ public final class FormulaParser {
 					rft.tokenType = TokenType.string;
 					rft.token = tokens.get(i).getOriginal();
 				}
+	
+				// check for parameter before checking for variables
+				if (rft.tokenType == null && userFormulaeParameters!=null && userFormulaeParameters.containsKey(rft.token)) {
+					if (!okVariableName) {
+						throwException(token);
+					}
+					
+					// replace with the parameter
+					rft = userFormulaeParameters.get(rft.token);
+				}
 				
-				// must be a variable...
+				// must be a variable
 				if (rft.tokenType == null) {
 					if (!okVariableName) {
 						throwException(token);
 					}
 					rft.tokenType = TokenType.variable;
 				}
+				
 				i++;
 
 				// break if we're reading a comma in the top-level
@@ -489,7 +716,6 @@ public final class FormulaParser {
 		}
 		return i;
 	}
-
 
 	private List<List<ReadFunctionToken>> split(List<ReadFunctionToken> tokens, String deliminator) {
 		List<List<ReadFunctionToken>> ret = new ArrayList<>();
@@ -528,10 +754,15 @@ public final class FormulaParser {
 	}
 
 	public static void main(String[] args) throws Exception {
+
 		FunctionDefinitionLibrary lib = new FunctionDefinitionLibrary();
 		lib.build();
-		FormulaParser loader = new FormulaParser(null, lib);
-		Function formula = loader.parse("postcodeukdistrict(\"gl51 8bg\")");
+		
+		List<UserFormula> userFormulae = new ArrayList<UserFormula>();
+		userFormulae.add(new UserFormula("add2(a,b) = a + b"));
+		userFormulae.add(new UserFormula("ten() = 10"));
+		FormulaParser loader = new FormulaParser(null, lib, userFormulae);
+		Function formula = loader.parse(" 2 | 5");
 		System.out.println(formula.execute(null));
 	}
 	
@@ -539,4 +770,50 @@ public final class FormulaParser {
 	public String toString(){
 		return library.toString();
 	}
+	
+	/**
+	 * Placeholder formula to mark anything that couldn't be identified
+	 * @author Phil
+	 *
+	 */
+	public static class FmUnidentified extends FunctionImpl{
+		public FmUnidentified(Function ... children) {
+			super(children);
+		}
+		
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			return Functions.EXECUTION_ERROR;
+		}
+
+		@Override
+		public Function deepCopy() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		
+		public static final FunctionFactory FACTORY = new FunctionFactory() {
+			
+			@Override
+			public Function createFunction(Function... children) {
+				return new FmUnidentified(children);
+			}
+		};
+		
+		public static boolean containsUnidentified(Function f){
+			if(f!=null ){
+				if(FmUnidentified.class.isInstance(f)){
+					return true;
+				}
+				int n = f.nbChildren();
+				for(int i =0 ; i < n ; i++){
+					if(containsUnidentified(f.child(i))){
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+	}
+	
 }

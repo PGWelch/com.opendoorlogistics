@@ -33,6 +33,7 @@ import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.SynchronousRenderer;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
+import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.utils.image.ExportImageConfig;
 import com.opendoorlogistics.utils.image.ExportImagePanel;
 import com.opendoorlogistics.utils.image.ProcessCreateImage;
@@ -110,7 +111,7 @@ public class ReadOnlyMapPanel extends JPanel implements Disposable {
 	
 	
 	protected JToolBar createToolbar() {
-		JToolBar toolBar = new JToolBar();
+		JToolBar toolBar = new ODLScrollableToolbar().getToolBar();
 		toolBar.setFloatable(false);
 
 		for(Action action : actions){

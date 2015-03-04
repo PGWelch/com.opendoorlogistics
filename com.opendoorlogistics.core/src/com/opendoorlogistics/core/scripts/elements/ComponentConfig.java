@@ -15,7 +15,7 @@ import javax.xml.bind.annotation.XmlTransient;
 import com.opendoorlogistics.api.components.ODLComponent;
 
 @XmlRootElement(name = "ComponentConfig")
-public class ComponentConfig extends ScriptBaseElement {
+public class ComponentConfig extends ScriptBaseElementImpl {
 	private String configId;
 	private String component;
 	private Serializable componentConfig;

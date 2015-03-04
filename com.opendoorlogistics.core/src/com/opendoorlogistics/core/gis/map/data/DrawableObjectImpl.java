@@ -43,6 +43,9 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	private static final int COL_NOPL_GROUP_KEY=COL_LABEL_GROUP_KEY+1;
 	private static final int COL_TOOLTIP= COL_NOPL_GROUP_KEY + 1;
 	private static final int COL_SELECTABLE= COL_TOOLTIP + 1;
+	private static final int COL_LPO= COL_SELECTABLE + 1;
+	private static final int COL_LABEL_COLOUR= COL_LPO + 1;
+	private static final int COL_FLAGS= COL_LABEL_COLOUR + 1;
 
 	private static final BeanDatastoreMapping mapping;
 	private static final double DEFAULT_OPAQUE = 1.0;
@@ -70,6 +73,9 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	private String tooltip;
 	private String nonOverlappingPolygonLayerGroupKey;
 	private long selectable=1;
+	private String labelPositioningOption;
+	private Color labelColor;
+	private long flags;
 	
 	public DrawableObjectImpl(){}
 	
@@ -83,13 +89,22 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		this.Colour = copyThis.getColour();
 		this.colourKey = copyThis.getColourKey();
 		this.drawOutline = copyThis.getDrawOutline();
-		this.imageFormula = copyThis.getImageFormulaKey();
-		this.legend = copyThis.getLegendKey();
-		this.label = copyThis.getLabel();
 		this.fontSize = copyThis.getFontSize();
 		this.geometry = copyThis.getGeometry();
-		this.pixelWidth = copyThis.getPixelWidth();
+		this.imageFormula = copyThis.getImageFormulaKey();
+		this.label = copyThis.getLabel();
+		this.labelColor = copyThis.getLabelColour();
+		this.labelGroupKey = copyThis.getLabelGroupKey();
+		this.labelPositioningOption = copyThis.getLabelPositioningOption();
+		this.legend = copyThis.getLegendKey();
+		this.legendColour = copyThis.getLegendColour();
+		this.nonOverlappingPolygonLayerGroupKey = copyThis.getNonOverlappingPolygonLayerGroupKey();
 		this.opaque =copyThis.getOpaque();
+		this.pixelWidth = copyThis.getPixelWidth();
+		this.selectable = copyThis.getSelectable();
+		this.symbol  = copyThis.getSymbol();
+		this.tooltip = copyThis.getTooltip();
+		this.flags = copyThis.getFlags();
 	}
 	
 
@@ -210,7 +225,10 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	
 	@ODLNullAllowed
 	@ODLColumnOrder(COL_SYMBOL)
-	@ODLColumnDescription("Name of the symbol used when drawing a point. If this is null a circle is used.")		
+	@ODLColumnDescription("<html>Name of the symbol used when drawing a point."
+			+ "<br>If this is null a circle is used. "
+			+ "<br>Available symbols are \"triangle\",\"inverted-triangle\",\"diamond\",\"square\",\"pentagon\",\"star\",\"fat-star\",\"hexagon\",\"circle\"."
+			+ "</html>")		
 	public void setSymbol(String symbol){
 		this.symbol = symbol;
 	}
@@ -230,8 +248,8 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 
 	@ODLNullAllowed
 	@ODLColumnOrder(COL_FONT_SIZE)
-	@ODLDefaultLongValue(0)	
-	@ODLColumnDescription("The font size for the name. A value of 0 takes the default size.")	
+	@ODLDefaultLongValue(12)	
+	@ODLColumnDescription("The font size for the name. A value of 0 takes the default size. Less than zero deactivates the label.")	
 	public void setFontSize(long fontSize) {
 		this.fontSize = fontSize;
 	}
@@ -318,5 +336,36 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		this.selectable = selectable;
 	}
 
+	public String getLabelPositioningOption() {
+		return labelPositioningOption;
+	}
+
+	@ODLColumnOrder(COL_LPO)
+	@ODLNullAllowed
+	public void setLabelPositioningOption(String lpo) {
+		this.labelPositioningOption = lpo;
+	}
+
+	public Color getLabelColour() {
+		return labelColor;
+	}
+
+	@ODLColumnOrder(COL_LABEL_COLOUR)
+	@ODLNullAllowed
+	public void setLabelColour(Color col) {
+		this.labelColor = col;
+	}
+
+	@Override
+	public long getFlags() {
+		return flags;
+	}
+
+	@ODLColumnOrder(COL_FLAGS)
+	@ODLNullAllowed
+	@ODLDefaultLongValue(0)
+	public void setFlags(long f) {
+		this.flags = f;
+	}
 
 }

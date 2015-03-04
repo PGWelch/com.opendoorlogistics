@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.api.ui;
 
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -21,6 +22,22 @@ public interface UIFactory {
 	
 	JPanel createIntegerEntryPane(String label, int initialValue, String tooltip,final IntChangedListener intChangedListener);
 	
+	public static interface ItemChangedListener<T> {
+		void itemChanged(T item);
+	}
+	
+	/**
+	 * Create a combo box with label for the different items.
+	 * @param labelText
+	 * @param items
+	 * @param selected
+	 * @param listener
+	 * @return
+	 */
+	public <T> JPanel createComboPanel(String labelText,T [] items, T selected, final ItemChangedListener<T> listener);
+
+	public <T> JComponent[] createComboComponents(String labelText,T [] items, T selected, final ItemChangedListener<T> listener);
+
 	public static final long EDIT_OUTPUT_UNITS = 1<<0;
 	
 	public static final long EDIT_OUTPUT_TRAVEL_COST_TYPE = 1<<1;
@@ -30,4 +47,24 @@ public interface UIFactory {
 	ExecutionReport createExecutionReport();
 	
 	JDialog createExecutionReportDialog(JFrame parent, String title, ExecutionReport report, boolean showSuccessFailureMessage);
+	
+	public interface FilenameChangeListener {
+		void filenameChanged(String newFilename);
+	};
+
+	/**
+	 * Create a panel used for selecting a directory
+	 * @param label
+	 * @param initialFilename
+	 * @param filenameChangeListener
+	 * @return
+	 */
+	public JPanel createSelectDirectoryPanel(String label, String initialDirectoryName, FilenameChangeListener directoryChangedListener);
+
+	public JComponent[] createSelectDirectoryComponents(String label, String initialDirectoryName, FilenameChangeListener directoryChangedListener);
+
+	/**
+	 * A panel that lays components out vertically with left alignment and stretching horizontally
+	 */
+	public JPanel createVerticalLayoutPanel();
 }

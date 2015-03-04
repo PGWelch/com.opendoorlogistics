@@ -142,13 +142,15 @@ final public class OutputPanel extends VerticalLayoutPanel {
 			datastore.setEnabled(type != OutputType.DO_NOT_OUTPUT);
 		}
 		
+		boolean singleTable = type != OutputType.COPY_ALL_TABLES && type !=OutputType.APPEND_ALL_TO_EXISTING_TABLES && type != OutputType.DO_NOT_OUTPUT;
+		
 		if (inputTable != null) {
-			inputTable.setEnabled(type != OutputType.COPY_ALL_TABLES && type != OutputType.DO_NOT_OUTPUT);
-			inputTableLabel.setEnabled(type != OutputType.COPY_ALL_TABLES && type != OutputType.DO_NOT_OUTPUT);
+			inputTable.setEnabled(singleTable);
+			inputTableLabel.setEnabled(singleTable);
 		}
 		
-		destinationTable.setEnabled(type != OutputType.COPY_ALL_TABLES && type != OutputType.DO_NOT_OUTPUT);
-		destinationTableLabel.setEnabled(type != OutputType.COPY_ALL_TABLES && type != OutputType.DO_NOT_OUTPUT);
+		destinationTable.setEnabled(singleTable);
+		destinationTableLabel.setEnabled(singleTable);
 
 	}
 }

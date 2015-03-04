@@ -7,8 +7,9 @@
 package com.opendoorlogistics.studio.scripts.editor.adapters;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.event.ActionEvent;
@@ -18,7 +19,6 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -27,7 +27,9 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.ODLApi;
@@ -36,17 +38,17 @@ import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.TableFlags;
-import com.opendoorlogistics.components.reports.ReportConstants;
+import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.TargetIODsInterpreter;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.elements.ScriptElementType;
+import com.opendoorlogistics.core.scripts.elements.UserFormula;
 import com.opendoorlogistics.core.scripts.io.XMLConversionHandler;
 import com.opendoorlogistics.core.scripts.io.XMLConversionHandlerImpl;
 import com.opendoorlogistics.core.scripts.utils.AdapterDestinationProvider;
 import com.opendoorlogistics.core.scripts.wizard.TableLinkerWizard;
-import com.opendoorlogistics.core.scripts.wizard.ScriptGenerator;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.ODLDatastoreDefinitionProvider;
@@ -55,8 +57,10 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.studio.scripts.editor.ScriptXMLTransferHandler;
+import com.opendoorlogistics.studio.scripts.editor.adapters.AdaptedTableControl.FormChangedListener;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
 import com.opendoorlogistics.utils.ui.Icons;
+import com.opendoorlogistics.utils.ui.ListPanel;
 import com.opendoorlogistics.utils.ui.ODLAction;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 
@@ -108,7 +112,7 @@ public class AdapterTablesTabControl extends JPanel {
 			addTabCtrl(table, tabs.getTabCount());
 		}
 
-		updateAppearance();
+		updateAppearance(true);
 	}
 
 	private void addTabCtrl(final AdaptedTableConfig table, int index) {
@@ -120,10 +124,20 @@ public class AdapterTablesTabControl extends JPanel {
 				ret.add(null); // null is a separator
 				ret.addAll(createTabPageActions(table));
 				return ret;
-			}
+			}				
 		};
 
 		ctrl.setTargetDatastoreDefinitionProvider(targetDatastore);
+		
+		ctrl.setFormChangedListener(new FormChangedListener() {
+			
+			@Override
+			public void formChanged(AdaptedTableControl form) {
+				// Update the tables control but we don't need to updated the individual
+				// tab contents as this has only changed for the input form and already been updated.
+				updateAppearance(false);
+			}
+		});
 
 		// String panelName = "Table \"" + table.getName() + "\""; // adapterConfig.getId();
 		tabs.add(ctrl, index);
@@ -188,12 +202,91 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 		}
 		
-		return "Table \"" + config.getTable(configIndex).getName() + "\"";
+		// Get the from datastore part of the title
+		AdaptedTableConfig table = config.getTable(configIndex);
+		String fromDs=null;
+		boolean isExternal = Strings.equalsStd(table.getFromDatastore(), ScriptConstants.EXTERNAL_DS_NAME);
+		if(!Strings.isEmpty(table.getFromDatastore()) && !isExternal){
+			fromDs = table.getFromDatastore();
+		}		
+		
+		// Get the from table part but don't show if from datastore is empty and from and to table are same name
+		String fromTable = table.getFromTable();
+		if(fromDs==null && Strings.equalsStd(table.getName(), fromTable)){
+			fromTable = null;
+		}
+		
+		// Try checking if the datastore only has one table in which case just write the datastore name
+		if(fromTable!=null && !isExternal && availableOptionsQuery!=null && !Strings.isEmpty(table.getFromDatastore())){
+			ODLDatastore<? extends ODLTableDefinition> ds = availableOptionsQuery.getDatastoreDefinition(table.getFromDatastore());
+			if(ds!=null && ds.getTableCount()==1 && Strings.equalsStd(ds.getTableAt(0).getName(), fromTable)){
+				fromTable = null;
+			}
+		}
+		
+		// Build source string
+		StringBuilder src = new StringBuilder();
+		if(fromDs!=null){
+			src.append(fromDs);
+			if(fromTable!=null){
+				src.append(",");
+			}
+		}
+		if(fromTable!=null){
+			src.append(fromTable);
+		}
+		
+		// Get total available chars
+		int maxChars = 75;
+		int available =  maxChars - (table.getName()!=null ? table.getName().length() : 0) - 3;
+		
+		// Get the source string and truncate if needed
+		String srcStr = src.toString();
+		boolean isTruncated=false;
+		if(srcStr.length() > available){
+			srcStr = srcStr.substring(0, Math.max(available,0));
+			isTruncated =true;		
+		}
+		
+		// Build the title
+		StringBuilder title = new StringBuilder();
+		title.append(table.getName());
+		if((isTruncated && srcStr.length()>3) || srcStr.length()>0){
+			title.append(" (");
+			title.append(srcStr);
+			if(isTruncated){
+				title.append("...");
+			}
+			title.append(")");
+		}
+		
+		return title.toString();
+		
+	//	if(!isTruncated || )
+	//	String fromTable
+//		AdaptedTableConfig table = config.getTable(configIndex);
+//		StringBuilder builder = new StringBuilder();
+//		builder.append("<html>" + table.getName());
+//		builder.append("<br>(");
+//		if(!Strings.isEmpty(table.getFromDatastore()) && !Strings.equalsStd(table.getFromDatastore(), ScriptConstants.EXTERNAL_DS_NAME)){
+//			builder.append(table.getFromDatastore());
+//			builder.append(",");
+//		}
+//		
+//		if(!Strings.isEmpty(table.getFromTable())){
+//			builder.append(table.getFromTable());			
+//		}
+//		builder.append(")</html>");
+//		return builder.toString();
+	
+		//return "Table \"" + config.getTable(configIndex).getName() + "\"";
 		
 	
 	}
 
-	public void updateAppearance() {
+	private final Font tabTitleFont = new Font("SansSerif", Font.PLAIN, 11);
+	
+	public void updateAppearance(boolean updateTabContents) {
 		for (int i = 0; i < tabs.getTabCount(); i++) {
 			if (i < config.getTableCount()) {
 				AdaptedTableControl ctrl = (AdaptedTableControl) tabs.getComponentAt(i);
@@ -201,6 +294,7 @@ public class AdapterTablesTabControl extends JPanel {
 
 				// set tab title with a right-click menu
 				JLabel titleLabel = new JLabel(getTabTitle(i, config));
+				titleLabel.setFont(tabTitleFont);
 				tabs.setTabComponentAt(i, titleLabel);
 				final int tabIndex = i;
 				titleLabel.addMouseListener(new MouseAdapter() {
@@ -242,7 +336,11 @@ public class AdapterTablesTabControl extends JPanel {
 //					ctrl.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 //					tabs.setToolTipTextAt(i, null);
 //				}
-				ctrl.updateAppearance();
+				
+				if(updateTabContents){
+					ctrl.updateAppearance();	
+				}
+				
 			} else {
 				// dummy page...
 				if (config.getTableCount() > 0) {
@@ -423,7 +521,7 @@ public class AdapterTablesTabControl extends JPanel {
 	void addNewAdaptedTable(AdaptedTableConfig newTable, int index) {
 		config.getTables().add(index, newTable);
 		addTabCtrl(newTable, index);
-		AdapterTablesTabControl.this.updateAppearance();
+		AdapterTablesTabControl.this.updateAppearance(true);
 	}
 
 	private void updateTable(int index) {
@@ -483,7 +581,7 @@ public class AdapterTablesTabControl extends JPanel {
 		// remove and re-add control (so all child controls up-to-date)
 		tabs.remove(index);
 		addTabCtrl(table, index);
-		updateAppearance();
+		updateAppearance(true);
 	}
 
 	protected List<ODLAction> createTabPageActions(final AdaptedTableConfig table) {
@@ -516,7 +614,7 @@ public class AdapterTablesTabControl extends JPanel {
 				// tabs.setTitleAt(index, title);
 				config.getTables().add(index, table);
 				tabs.setSelectedIndex(index);
-				AdapterTablesTabControl.this.updateAppearance();
+				AdapterTablesTabControl.this.updateAppearance(true);
 			}
 
 		}
@@ -542,7 +640,7 @@ public class AdapterTablesTabControl extends JPanel {
 				if (result != null && result.destinationTable != null) {
 					table.setName(result.destinationTable);
 					// tabs.setTitleAt(getIndex(), "Table \"" + result.destinationTable+ "\"");
-					AdapterTablesTabControl.this.updateAppearance();
+					AdapterTablesTabControl.this.updateAppearance(true);
 				}
 			}
 
@@ -634,7 +732,7 @@ public class AdapterTablesTabControl extends JPanel {
 
 					// need to disable deletion of tables if we only have one
 					// (otherwise controls will be unavailable!)
-					AdapterTablesTabControl.this.updateAppearance();
+					AdapterTablesTabControl.this.updateAppearance(true);
 				}
 			}
 
@@ -676,6 +774,90 @@ public class AdapterTablesTabControl extends JPanel {
 				setEnabled(getIndex() < config.getTableCount() - 1);
 			}
 		});
+		
+		ret.add(new TabPageAction("Edit user formulae", "Edit the adapted tables user formulae", "user-formula.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int index = getIndex();
+				final AdaptedTableConfig tableConfig = config.getTables().get(index);
+				
+				// get a copy of the current formulae
+				final ArrayList<UserFormula> formulaeCopy = new ArrayList<UserFormula>();
+				if(tableConfig.getUserFormulae()!=null){
+					for(UserFormula uf: tableConfig.getUserFormulae()){
+						formulaeCopy.add(new UserFormula(uf));
+					}
+				}
+				
+
+				// create the editor dialog
+				OkCancelDialog dlg = new OkCancelDialog(){
+					@Override
+					protected Component createMainComponent(boolean inWindowsBuilder) {
+						return new ListPanel<UserFormula>(formulaeCopy, "user formula") {
+
+							@Override
+							protected UserFormula createNewItem() {
+								return editItem(new UserFormula("funcname() = X"));
+							}
+
+							@Override
+							protected UserFormula editItem(final UserFormula item) {
+								final JTextArea textArea = new JTextArea(item.getValue());	
+								textArea.setEditable(true);
+								textArea.setLineWrap(true);
+								OkCancelDialog dlg = new OkCancelDialog(){
+									@Override
+									protected Component createMainComponent(boolean inWindowsBuilder) {
+										return new JScrollPane(textArea); 
+									}
+								};
+								dlg.setMinimumSize(new Dimension(400, 200));
+								dlg.setLocationRelativeTo(this);
+								dlg.setTitle("Enter formula text");
+								if(dlg.showModal() == OkCancelDialog.OK_OPTION){
+									item.setValue(textArea.getText());
+								}
+								return item;
+							}
+						};
+//						return new TablePanel<String>(formulaeCopy, "user formula") {
+//
+//							@Override
+//							protected TableModel createTableModel() {
+//								// TODO Auto-generated method stub
+//								return null;
+//							}
+//
+//							@Override
+//							protected String createNewItem() {
+//								// TODO Auto-generated method stub
+//								return null;
+//							}
+//
+//							@Override
+//							protected String editItem(String item) {
+//								// TODO Auto-generated method stub
+//								return null;
+//							}
+//						};
+					}
+					
+				};
+				dlg.setTitle( "" + tableConfig.getName() + " user formulae");
+				dlg.setLocationRelativeTo(AdapterTablesTabControl.this);
+				dlg.setMinimumSize(new Dimension(400, 200));
+//				dlg.setMaximumSize(new Dimension(400, 800));
+				
+				// replace the formulae
+				if(dlg.showModal() == OkCancelDialog.OK_OPTION){
+					tableConfig.setUserFormulae(formulaeCopy);
+				}
+			}
+		});
+				
+		
 		return ret;
 	}
 

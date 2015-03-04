@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.scripts.execution.dependencyinjection;
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStatusObservable;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
@@ -58,8 +59,8 @@ public class DependencyInjectorDecorator extends ProcessingApiDecorator implemen
 
 
 	@Override
-	public void submitControlLauncher(String instructionId,ControlLauncherCallback cb){
-		((DependencyInjector)decorated).submitControlLauncher(instructionId,cb);
+	public void submitControlLauncher(String instructionId,ODLComponent component, ControlLauncherCallback cb){
+		((DependencyInjector)decorated).submitControlLauncher(instructionId,component,cb);
 	}
 
 	@Override

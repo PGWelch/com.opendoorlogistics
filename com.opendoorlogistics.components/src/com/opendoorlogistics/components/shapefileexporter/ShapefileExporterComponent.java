@@ -62,7 +62,7 @@ import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
-import com.opendoorlogistics.core.utils.ui.FileBrowserPanel.FilenameChangeListener;
+import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 import com.opendoorlogistics.core.utils.ui.IntegerEntryPanel;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel.CheckChangedListener;

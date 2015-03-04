@@ -13,15 +13,10 @@ import java.io.Serializable;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.opendoorlogistics.components.geocode.postcodes.PCImporterComponent.PCImporterConfig;
-import com.opendoorlogistics.components.geocode.postcodes.impl.PCConstants;
-import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
-import com.opendoorlogistics.core.utils.ui.FileBrowserPanel.FilenameChangeListener;
 
 @XmlRootElement
 final public class KMeansConfig implements Serializable{

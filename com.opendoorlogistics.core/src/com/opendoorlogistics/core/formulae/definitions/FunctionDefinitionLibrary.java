@@ -8,6 +8,7 @@ package com.opendoorlogistics.core.formulae.definitions;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -25,6 +26,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmAcos;
 import com.opendoorlogistics.core.formulae.Functions.FmAnd;
 import com.opendoorlogistics.core.formulae.Functions.FmAsin;
 import com.opendoorlogistics.core.formulae.Functions.FmAtan;
+import com.opendoorlogistics.core.formulae.Functions.FmBitwiseOr;
 import com.opendoorlogistics.core.formulae.Functions.FmCeil;
 import com.opendoorlogistics.core.formulae.Functions.FmColour;
 import com.opendoorlogistics.core.formulae.Functions.FmColourImage;
@@ -34,6 +36,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmConst;
 import com.opendoorlogistics.core.formulae.Functions.FmContains;
 import com.opendoorlogistics.core.formulae.Functions.FmCos;
 import com.opendoorlogistics.core.formulae.Functions.FmDecimalFormat;
+import com.opendoorlogistics.core.formulae.Functions.FmDecimalHours;
 import com.opendoorlogistics.core.formulae.Functions.FmDivide;
 import com.opendoorlogistics.core.formulae.Functions.FmEquals;
 import com.opendoorlogistics.core.formulae.Functions.FmFadeImage;
@@ -41,7 +44,6 @@ import com.opendoorlogistics.core.formulae.Functions.FmFirstNonNull;
 import com.opendoorlogistics.core.formulae.Functions.FmFloor;
 import com.opendoorlogistics.core.formulae.Functions.FmGreaterThan;
 import com.opendoorlogistics.core.formulae.Functions.FmGreaterThanEqualTo;
-import com.opendoorlogistics.core.formulae.Functions.FmDecimalHours;
 import com.opendoorlogistics.core.formulae.Functions.FmIfThenElse;
 import com.opendoorlogistics.core.formulae.Functions.FmIndexOf;
 import com.opendoorlogistics.core.formulae.Functions.FmLeft;
@@ -60,14 +62,16 @@ import com.opendoorlogistics.core.formulae.Functions.FmOr;
 import com.opendoorlogistics.core.formulae.Functions.FmPostcodeUk;
 import com.opendoorlogistics.core.formulae.Functions.FmRand;
 import com.opendoorlogistics.core.formulae.Functions.FmRandColour;
-import com.opendoorlogistics.core.formulae.Functions.FmRandData.RandDataType;
 import com.opendoorlogistics.core.formulae.Functions.FmRandData;
+import com.opendoorlogistics.core.formulae.Functions.FmRandData.RandDataType;
 import com.opendoorlogistics.core.formulae.Functions.FmRandomSymbol;
 import com.opendoorlogistics.core.formulae.Functions.FmReplace;
 import com.opendoorlogistics.core.formulae.Functions.FmRound;
 import com.opendoorlogistics.core.formulae.Functions.FmRound2Second;
 import com.opendoorlogistics.core.formulae.Functions.FmSin;
 import com.opendoorlogistics.core.formulae.Functions.FmSqrt;
+import com.opendoorlogistics.core.formulae.Functions.FmStringDateTimeStamp;
+import com.opendoorlogistics.core.formulae.Functions.FmStringFormat;
 import com.opendoorlogistics.core.formulae.Functions.FmSubtract;
 import com.opendoorlogistics.core.formulae.Functions.FmSum;
 import com.opendoorlogistics.core.formulae.Functions.FmSwitch;
@@ -86,6 +90,7 @@ import com.opendoorlogistics.core.geometry.functions.FmGeomBorder;
 import com.opendoorlogistics.core.geometry.functions.FmLatitude;
 import com.opendoorlogistics.core.geometry.functions.FmLongitude;
 import com.opendoorlogistics.core.geometry.functions.FmShapefileLookup;
+import com.opendoorlogistics.core.gis.map.data.UserRenderFlags;
 import com.opendoorlogistics.core.gis.postcodes.UKPostcodes.UKPostcodeLevel;
 import com.opendoorlogistics.core.scripts.TableReference;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
@@ -145,6 +150,7 @@ public final class FunctionDefinitionLibrary {
 				}
 			},  s,"Test if first value is not equal to second." );	
 		}
+		addStandardOperator(FmBitwiseOr.class, "|", "Bitwise or");
 		addStandardOperator(FmAnd.class, "&&", "Boolean and function.");
 		addStandardOperator(FmOr.class, "||", "Boolean or function.");
 		
@@ -165,7 +171,10 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmCeil.class, "ceil","", "value");
 		addStandardFunction(FmFloor.class, "floor","Return the integer part of the number, e.g. 2.3 returns 2.", "value");
 		addStandardFunction(FmRound.class, "round","Round to the nearest integer value.", "value");
-		addStandardFunction(FmConst.class, "const","Create a constant string value from the input value. This is used to distinguish between string constants and source columns. For example, if your data adapter's source table has a column called \"name\" and you want to create a string constant also containing \"name\", you should use const(\"name\") as \"name\" on its own will automatically be converted to a source column reference.", "value");		
+		for(String constName : new String[]{"const", "c"}){
+			addStandardFunction(FmConst.class, constName,"Create a constant string value from the input value. This is used to distinguish between string constants and source columns. For example, if your data adapter's source table has a column called \"name\" and you want to create a string constant also containing \"name\", you should use const(\"name\") as \"name\" on its own will automatically be converted to a source column reference.", "value");					
+		}
+		
 		for(String spelling : new String[]{"colour", "color"}){
 			addStandardFunction(FmColour.class, spelling,"Create a colour object from red, green and blue values in the range 0 to 1.", "red", "green", "blue");			
 			addStandardFunction(FmColour.class, spelling,"Create a colour object from red, green, blue and alpha (transparency) values in the range 0 to 1.", "red", "green", "blue", "alpha");			
@@ -339,7 +348,20 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmContains.class, "contains","", "find_string", "find_within_string");
 		addStandardFunction(FmIndexOf.class, "indexof","", "find_string", "find_within_string");
 		addStandardFunction(FmReplace.class, "replace","", "find_within_string", "old_string", "new_string");
-
+		FunctionDefinition formatDfn = new FunctionDefinition(FunctionType.FUNCTION, "stringformat");
+		formatDfn.addArg("FormatString");
+		formatDfn.addVarArgs("Args", ArgumentType.GENERAL, "Format arguments");
+		formatDfn.setDescription("String formatter equivalent to Java's String.Format.");
+		formatDfn.setFactory(new FunctionFactory() {
+			
+			@Override
+			public Function createFunction(Function... children) {
+				return new FmStringFormat(children[0], Arrays.copyOfRange(children, 1, children.length));
+			}
+		});
+		add(formatDfn);
+		addStandardFunction(FmStringDateTimeStamp.class, "Timestamp", "Creates a string timestamp suitable for use in filenames.");
+		
 		// decimal format
 		FunctionDefinition dfn = new FunctionDefinition(FunctionType.FUNCTION, "decimalformat");
 		dfn.setDescription("Format a double number using the input formatting pattern, which is the same as Java's DecimalFormat class");
@@ -349,11 +371,15 @@ public final class FunctionDefinitionLibrary {
 		add(dfn);
 		
 		// constants
-		addConstant("true", new FmConst(1L));
-		addConstant("false", new FmConst(0L));
-		addConstant("pi", new FmConst(Math.PI));
-		addConstant("e", new FmConst(Math.E));
-		addConstant("null", new FmConst((Object)null));
+		addConstant("true", new FmConst(1L), null);
+		addConstant("false", new FmConst(0L), null);
+		addConstant("pi", new FmConst(Math.PI), null);
+		addConstant("e", new FmConst(Math.E), null);
+		addConstant("null", new FmConst((Object)null), null);
+		
+		// map flag labels
+		addConstant("mfAlwaysShowLabel", new FmConst(UserRenderFlags.ALWAYS_SHOW_LABEL), "Flag which forces the map to always show a label even if it overlaps others.");
+		
 		return this;
 	}
 
@@ -390,10 +416,13 @@ public final class FunctionDefinitionLibrary {
 	}
 	
 	public FunctionFactory identify(final String name, final FunctionType type) {
+		// Get the list of function definitions with this name
 		final List<FunctionDefinition> list = map.get(name);
 		if (list == null) {
 			return null;
 		}
+		
+		// If we have one or more functions then return a functionfactory which chooses the one with the correct number of parameters 
 		return new FunctionFactory() {
 
 			@Override
@@ -461,9 +490,13 @@ public final class FunctionDefinitionLibrary {
 		return dfn;
 	}
 
-	private void addConstant(final String name, final FmConst val) {
+	private void addConstant(final String name, final FmConst val, final String description) {
 		FunctionDefinition dfn = new FunctionDefinition(FunctionType.CONSTANT, name);
-		dfn.setDescription("Constant value equal to " + val.toString());
+		if(description!=null){
+			dfn.setDescription(description);
+		}else{
+			dfn.setDescription("Constant value equal to " + val.toString());			
+		}
 		dfn.setFactory(new FunctionFactory() {
 
 			@Override

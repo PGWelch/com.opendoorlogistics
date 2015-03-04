@@ -66,7 +66,17 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 	private final AdapterTableDefinitionGrid fieldGrid;
 	private final ODLApi api;
 	private final long visibleTableFlags;
+	private FormChangedListener formChangedListener;
+
+	public static interface FormChangedListener{
+		void formChanged(AdaptedTableControl form);
+	}
 	
+	
+	public void setFormChangedListener(FormChangedListener formChangedListener) {
+		this.formChangedListener = formChangedListener;
+	}
+
 	private abstract class AutocorrectCombo extends DynamicComboBox<String> {
 
 		public AutocorrectCombo(String initialValue) {
@@ -240,7 +250,7 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 		component.setMaximumSize(new Dimension(component.getMaximumSize().width, height));
 	}
 
-	private void readFromForm() {
+	protected void readFromForm() {
 		if (outputTableName != null) {
 			config.setName(outputTableName.getText());
 		}
@@ -263,8 +273,11 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 			config.setFilterFormula(customFormulaControls.text.getText());
 		}
 
-		// System.out.println(config.getFilterFormula());
 		updateAppearance();
+		
+		if(formChangedListener!=null){
+			formChangedListener.formChanged(this);
+		}
 	}
 
 	@SuppressWarnings("incomplete-switch")

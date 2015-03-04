@@ -143,7 +143,7 @@ public final class BackgroundTileFactorySingleton {
 		if (type == BackgroundType.MAPSFORGE) {
 			Pair<File, MapDatabase> result = openMapsforgeDb(config.getMapsforgeFilename());
 			if (result != null) {
-				return new MapsforgeTileFactory(info, result.getFirst(), result.getSecond(), config.getFade());
+				return new MapsforgeTileFactory(info, result.getFirst(), config.getMapsforgeXMLRenderTheme(),result.getSecond(), config.getFade());
 			}
 			type = BackgroundType.EMPTY;
 		}

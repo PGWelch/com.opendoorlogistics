@@ -13,6 +13,7 @@ import java.util.Iterator;
 
 import org.apache.commons.collections.iterators.IteratorChain;
 
+import com.opendoorlogistics.codefromweb.IteratorChainApacheCollections440;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 
 public class LayeredDrawables implements Iterable<DrawableObject>{
@@ -50,24 +51,8 @@ public class LayeredDrawables implements Iterable<DrawableObject>{
 		if(inactiveForeground!=null){
 			its.add(inactiveForeground.iterator());
 		}
-		final IteratorChain chain = new IteratorChain(its);
-		return new Iterator<DrawableObject>() {
 
-			@Override
-			public boolean hasNext() {
-				return chain.hasNext();
-			}
-
-			@Override
-			public DrawableObject next() {
-				return (DrawableObject) chain.next();
-			}
-
-			@Override
-			public void remove() {
-				chain.remove();	
-			}
-		};
+		return new IteratorChainApacheCollections440<DrawableObject>(its);
 
 	}
 	

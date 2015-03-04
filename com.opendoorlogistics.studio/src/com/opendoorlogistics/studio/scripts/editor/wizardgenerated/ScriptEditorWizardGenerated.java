@@ -69,6 +69,7 @@ import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.OutputConfig;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.elements.ScriptBaseElement;
+import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.AdapterDestinationProvider;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser.SourcedDatastore;
@@ -82,6 +83,7 @@ import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel.TextChangedListener;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
+import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.scripts.componentwizard.SetupComponentWizard;
 import com.opendoorlogistics.studio.scripts.editor.OutputPanel;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
@@ -103,6 +105,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 	private ArrayList<ODLAction> treeActions = new ArrayList<>();
 	private JTree tree;
 	private JSplitPane splitPane;
+	private static AdapterConfig dataAdapterClipboard;
 
 	static {
 		iconsByType = new HashMap<>();
@@ -1154,7 +1157,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 	}
 
 	private JToolBar createTreeToolBar() {
-		JToolBar ret = new JToolBar();
+		JToolBar ret = new ODLScrollableToolbar().getToolBar();
 		for (ODLAction action : treeActions) {
 			ret.add(action);
 		}
@@ -1272,7 +1275,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 
 		public void updateAppearance() {
 			for (AdapterTablesTabControl tabs : adapterTabControls) {
-				tabs.updateAppearance();
+				tabs.updateAppearance(true);
 			}
 		}
 	}
@@ -1416,6 +1419,88 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 
 		});
 
+		treeActions.add(new EditOption("Add data adapter", "Add a data adapter", "script-element-data-adapter.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(hasOption()){
+					Option parent = option();
+					String name = JOptionPane.showInputDialog(ScriptEditorWizardGenerated.this, "Enter new data adapter name", "adapter");
+					if(name!=null){
+						name = ScriptUtils.createUniqueDatastoreId(script, name);
+						parent.getAdapters().add(new AdapterConfig(name));
+						reinitTree(parent.getOptionId());											
+					}
+				}
+			}
+
+
+			@Override
+			public void updateEnabled() {
+				boolean enabled =  currentPane != null && currentPane.displayNode!=null && 
+						(currentPane.displayNode.type == DisplayNodeType.OPTION);
+				setEnabled(enabled);
+			}
+						
+		});
+		
+		treeActions.add(new EditOption("Copy data adapter", "Copy the selected data adapter to the data adapter clipboard.", "copy-data-adapter.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(currentPane!=null && currentPane.displayNode!=null && currentPane.displayNode.adapter!=null)	{
+					// take a deep copy of the script
+					Script scriptCopy = new ScriptIO().deepCopy(script);
+					
+					// save the deep copied adapter to the global data adapter
+					dataAdapterClipboard = ScriptUtils.getAdapterById(scriptCopy, currentPane.displayNode.adapter.getId(), true);			
+				}
+			}
+
+			@Override
+			public void updateEnabled() {
+				boolean enabled =  currentPane != null && currentPane.displayNode!=null && 
+						( currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER);
+				setEnabled(enabled);
+			}
+			
+		});
+		
+		treeActions.add(new EditOption("Paste data adapter", "Paste the data adapter from the data adapter clipboard into the option.", "paste-data-adapter.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(currentPane!=null && currentPane.displayNode!=null && currentPane.displayNode.type == DisplayNodeType.OPTION && dataAdapterClipboard!=null)	{
+					Option parent = currentPane.displayNode.option;
+					
+					// create a dummy script with just the data adapter
+					Script tmp = new Script();
+					tmp.getAdapters().add(dataAdapterClipboard);
+					
+					// deep copy it to get a fresh copy of the data adapter
+					tmp =  new ScriptIO().deepCopy(tmp);
+					AdapterConfig conf = tmp.getAdapters().get(0);
+					
+					// ensure id is unique
+					String id = ScriptUtils.createUniqueDatastoreId(script, conf.getId());
+					conf.setId(id);
+					
+					// add it to the parent option and reinit the display tree
+					parent.getAdapters().add(conf);
+					reinitTree(parent.getOptionId());	
+				}
+			}
+
+			@Override
+			public void updateEnabled() {
+				boolean enabled =  currentPane != null && currentPane.displayNode!=null && 
+						( currentPane.displayNode.type == DisplayNodeType.OPTION && dataAdapterClipboard!=null);
+				setEnabled(enabled);
+			}
+			
+		});
+		
+
 		treeActions.add(new EditOption("Rename", "Rename the selected item.", "script-rename.png") {
 
 			@Override
@@ -1433,7 +1518,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 						current = node.adapter.getId();
 					}
 					
-					String newValue = JOptionPane.showInputDialog(ScriptEditorWizardGenerated.this, "Enter new name name", current);
+					String newValue = JOptionPane.showInputDialog(ScriptEditorWizardGenerated.this, "Enter new name", current);
 					if(newValue!=null){
 						if(node.type == DisplayNodeType.OPTION){
 							option.setName(newValue);
@@ -1471,28 +1556,64 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 		});
 		
 
-		treeActions.add(new EditOption("Move option up", "Move the selected option up.", "script-option-up.png") {
+		treeActions.add(new EditOption("Move up", "Move the selected item up.", "script-option-up.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Option option = option();
-				int index = optionIndex();
-				if(option!=null && index>=1){
-					Option parent = currentPane.displayNode.parent.option;
-					parent.getOptions().remove(index);
-					parent.getOptions().add(index-1, option);
-					reinitTree(option.getOptionId());			
+				if(calcEnabled()){
+					Option option = option();
+					if(currentPane.displayNode.type == DisplayNodeType.OPTION){
+						int index = optionIndex();
+						if(option!=null && index>=1){
+							moveUpList(currentPane.displayNode.parent.option.getOptions(), index);
+						}
+					}else{
+						// must be adapter
+						option =currentPane.displayNode.option;						
+						int index = option.getAdapters().indexOf(currentPane.displayNode.adapter);
+						moveUpList(option.getAdapters(), index);
+					}
+					reinitTree(option.getOptionId());								
+				}
+//				Option option = option();
+//				int index = optionIndex();
+//				if(option!=null && index>=1){
+//					Option parent = currentPane.displayNode.parent.option;
+//					parent.getOptions().remove(index);
+//					parent.getOptions().add(index-1, option);		
+//				}
+			}
+			
+			private <T> void moveUpList(List<T> list, int index){
+				if(index>=1){
+					T item = list.get(index);
+					list.remove(index);
+					list.add(index-1, item);					
 				}
 			}
 
 			@Override
 			public void updateEnabled() {
-				setEnabled(optionIndex()>=1);
+				setEnabled(calcEnabled());
+			}
+
+			private boolean calcEnabled() {
+				boolean enabled =  currentPane != null && currentPane.displayNode!=null;
+				if(enabled && currentPane.displayNode.type == DisplayNodeType.OPTION){
+					enabled = optionIndex()>=1;
+				}
+				else if(enabled && currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER && currentPane.displayNode.adapter!=null){
+					enabled = currentPane.displayNode.option.getAdapters().indexOf(currentPane.displayNode.adapter)>=1;
+				}				
+				else{
+					enabled = false;
+				}
+				return enabled;
 			}
 			
 		});
 		
-		treeActions.add(new EditOption("Move option down", "Move the selected option down.", "script-option-down.png") {
+		treeActions.add(new EditOption("Move down", "Move the selected item down.", "script-option-down.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -1501,13 +1622,20 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 				}
 				
 				Option option = option();
-				int index = optionIndex();
-				if(option!=null){
+				if(currentPane.displayNode.type == DisplayNodeType.OPTION){
+					int index = optionIndex();
 					Option parent = currentPane.displayNode.parent.option;
 					parent.getOptions().remove(index);
 					parent.getOptions().add(index+1, option);
-					reinitTree(option.getOptionId());			
+				}else{
+					// must be adapter
+					option =currentPane.displayNode.option;
+					List<AdapterConfig> adapters= option.getAdapters();
+					int index = adapters.indexOf(currentPane.displayNode.adapter);
+					adapters.remove(index);
+					adapters.add(index+1, currentPane.displayNode.adapter);	
 				}
+				reinitTree(option.getOptionId());						
 			}
 
 			@Override
@@ -1519,13 +1647,30 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			 * @return
 			 */
 			protected boolean isAllowed() {
-				boolean enabled=false;
-				int index = optionIndex();
-				if(index!=-1 && currentPane.displayNode.parent!=null){
-					Option parent = currentPane.displayNode.parent.option;
-					enabled = parent!=null && index < (parent.getOptions().size()-1);
+				boolean enabled =  currentPane != null && currentPane.displayNode!=null;
+				if(enabled && currentPane.displayNode.type == DisplayNodeType.OPTION){
+					int index = optionIndex();
+					if(index!=-1 && currentPane.displayNode.parent!=null){
+						Option parent = currentPane.displayNode.parent.option;
+						enabled = parent!=null && index < (parent.getOptions().size()-1);
+					}
+				}
+				else if(enabled && currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER && currentPane.displayNode.adapter!=null){
+					enabled = currentPane.displayNode.option.getAdapters().indexOf(currentPane.displayNode.adapter) <
+							 currentPane.displayNode.option.getAdapters().size()-1;
+				}				
+				else{
+					enabled = false;
 				}
 				return enabled;
+				
+//				boolean enabled=false;
+//				int index = optionIndex();
+//				if(index!=-1 && currentPane.displayNode.parent!=null){
+//					Option parent = currentPane.displayNode.parent.option;
+//					enabled = parent!=null && index < (parent.getOptions().size()-1);
+//				}
+//				return enabled;
 			}
 			
 		});
