@@ -105,5 +105,20 @@ public class DrawableObjectDecorator implements DrawableObject {
 		return decorated.getSelectable();
 	}
 
+	@Override
+	public String getLabelPositioningOption() {
+		return decorated.getLabelPositioningOption();
+	}
+
+	@Override
+	public Color getLabelColour() {
+		return decorated.getLabelColour();
+	}
+
+	@Override
+	public long getFlags() {
+		return decorated.getFlags();
+	}
+
 	
 }

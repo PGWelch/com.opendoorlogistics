@@ -243,6 +243,14 @@ final public class Strings {
 
 		return sbSource.toString();
 	}
+	
+	public static String repeat(String s, int nTimes){
+		StringBuilder b = new StringBuilder();
+		for(int i =0 ; i < nTimes ; i++){
+			b.append(s);
+		}
+		return b.toString();
+	}
 
 	/**
 	 * Find the index of the string in the array or return -1 if not found. An exact match is favoured over a standardised match.
@@ -288,6 +296,10 @@ final public class Strings {
 	}
 
 	public static boolean equalsStd(String a, String b) {
+		return equalsStd(a, b, null);
+	}
+	
+	public static boolean equalsStd(String a, String b, StandardisedCache standardisedCache) {
 		if (isEmpty(a) && isEmpty(b)) {
 			return true;
 		}
@@ -295,7 +307,12 @@ final public class Strings {
 		if (a == null || b == null) {
 			return false;
 		}
-		return std(a).equals(std(b));
+		
+		if(standardisedCache!=null){
+			return standardisedCache.std(a).equals(standardisedCache.std(b));
+		}else{
+			return std(a).equals(std(b));			
+		}
 	}
 
 	private static class StdStringComparer {

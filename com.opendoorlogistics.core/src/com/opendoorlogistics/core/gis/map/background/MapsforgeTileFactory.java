@@ -11,7 +11,6 @@ package com.opendoorlogistics.core.gis.map.background;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.Closeable;
 import java.io.File;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -32,16 +31,20 @@ import org.mapsforge.map.layer.renderer.DatabaseRenderer;
 import org.mapsforge.map.layer.renderer.RendererJob;
 import org.mapsforge.map.model.DisplayModel;
 import org.mapsforge.map.reader.MapDatabase;
+import org.mapsforge.map.rendertheme.ExternalRenderTheme;
 import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.mapsforge.map.rendertheme.XmlRenderTheme;
 
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.Tile;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactory;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
+import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
+import com.opendoorlogistics.core.utils.io.RelativeFiles;
+import com.opendoorlogistics.core.utils.strings.Strings;
 
 class MapsforgeTileFactory extends TileFactory {
 	private static final int TILE_SIZE = 256;
@@ -56,13 +59,28 @@ class MapsforgeTileFactory extends TileFactory {
 	private final Color fadeColour;
 	private ExecutorService service;
 
-	MapsforgeTileFactory(TileFactoryInfo info, File mapFile, MapDatabase mapDatabase, Color fadeColour) {
+	private static XmlRenderTheme getRenderTheme(String xmlRenderThemeFilename){
+		if(Strings.isEmpty(xmlRenderThemeFilename)==false){
+			File renderThemeFile = RelativeFiles.validateRelativeFiles(xmlRenderThemeFilename, AppConstants.ODL_CONFIG_DIR);
+			if (renderThemeFile != null) {
+				try {
+					return new ExternalRenderTheme(renderThemeFile.getAbsoluteFile());					
+				} catch (Exception e) {
+					// just return the default theme
+				}
+			}			
+		}		
+		return InternalRenderTheme.OSMARENDER;
+	}
+	
+	MapsforgeTileFactory(TileFactoryInfo info, File mapFile, String xmlRenderThemeFilename,MapDatabase mapDatabase, Color fadeColour) {
 		super(info);
 		this.fadeColour =fadeColour;
 		this.mapDatabase = mapDatabase;
 
 		databaseRenderer = new DatabaseRenderer(mapDatabase, AwtGraphicFactory.INSTANCE,createTileCache());
-		renderTheme = InternalRenderTheme.OSMARENDER;
+		renderTheme =getRenderTheme(xmlRenderThemeFilename);
+
 		model = new DisplayModel();
 		model.setFixedTileSize(TILE_SIZE);
 		model.setBackgroundColor(Color.BLUE.getRGB());
@@ -81,6 +99,7 @@ class MapsforgeTileFactory extends TileFactory {
 			}
 		});
 	}
+
 
 //	private XmlRenderTheme changeBackgroundInRenderTheme(final XmlRenderTheme theme) {
 //
@@ -283,6 +302,8 @@ class MapsforgeTileFactory extends TileFactory {
 			if (mapsforgeZoom == 255) {
 				throw new RuntimeException("Cannot match zoom levels between mapforge and jxmapviewer2.");
 			}
+			
+		//	System.out.println("Mapsforge zoom = " + mapsforgeZoom);
 
 			// render the mapsforge tile
 			org.mapsforge.core.model.Tile mtile = new org.mapsforge.core.model.Tile(tile.getX(), tile.getY(), mapsforgeZoom, TILE_SIZE);

@@ -25,16 +25,20 @@ import com.opendoorlogistics.core.scripts.execution.adapters.IndexedDatastores;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 
 public class FmLookupWeightedCentroid extends FmAbstractLookup {
-	public static FunctionDefinition createDefinition(final IndexedDatastores<? extends ODLTableReadOnly> datastores, final int defaultDatastoreIndex, final ExecutionReport result) {
+	public static FunctionDefinition createDefinition(final IndexedDatastores<? extends ODLTableReadOnly> datastores, final int defaultDatastoreIndex,final boolean isWeighted, final ExecutionReport result) {
 
-		final String keyword = "lookupWeightedCentroid";
+		final String keyword = "lookup" + (isWeighted? "Weighted" : "") + "Centroid";
 		final FunctionDefinition dfn = new FunctionDefinition(keyword);
 		dfn.setDescription("Get the weighted centroid of the geometries in the foreign table.");
 		dfn.addArg("search_value", ArgumentType.GENERAL, "Key value to search for in the other table.");
 		dfn.addArg("foreign_table", ArgumentType.TABLE_REFERENCE_CONSTANT, "Reference to the foreign table to search in.");
 		dfn.addArg("search_field", ArgumentType.STRING_CONSTANT, "Name of the foreign table's field to search for the value in.");
 		dfn.addArg("geometry_field_name", ArgumentType.STRING_CONSTANT, "Name of the geometry field in the foreign table.");
-		dfn.addArg("weight_field_name", ArgumentType.STRING_CONSTANT, "Weight of the geometry value in the foreign table.");
+		
+		if(isWeighted){
+			dfn.addArg("weight_field_name", ArgumentType.STRING_CONSTANT, "Weight of the geometry value in the foreign table.");			
+		}
+		
 		dfn.addArg("ESPG_SRID", ArgumentType.GENERAL, "Spatial Reference System Identifier (SRID) from the ESPG SRID database.");
 
 		// only build the factory if we have actual datastore to build against
@@ -43,14 +47,19 @@ public class FmLookupWeightedCentroid extends FmAbstractLookup {
 
 				@Override
 				public Function createFunction(Function... children) {
-
 					ToProcessLookupReferences toProcess = new ToProcessLookupReferences();
 					toProcess.tableReferenceFunction = children[1];
-					toProcess.fieldnameFunctions = new Function[] { children[2], children[3] , children[4]};
+					if(isWeighted){
+						toProcess.fieldnameFunctions = new Function[] { children[2], children[3] , children[4]};
 
-					ProcessedLookupReferences processed = FunctionsBuilder.processLookupReferenceNames(keyword, datastores, defaultDatastoreIndex, toProcess, result);
-
-					return new FmLookupWeightedCentroid(processed.datastoreIndx, processed.tableId, processed.columnIndices[0], processed.columnIndices[1],processed.columnIndices[2], children[0], children[5]);
+						ProcessedLookupReferences processed = FunctionsBuilder.processLookupReferenceNames(keyword, datastores, defaultDatastoreIndex, toProcess, result);
+						return new FmLookupWeightedCentroid(processed.datastoreIndx, processed.tableId, processed.columnIndices[0], processed.columnIndices[1],processed.columnIndices[2], children[0], children[5]);						
+					}
+					else{
+						toProcess.fieldnameFunctions = new Function[] { children[2], children[3]};	
+						ProcessedLookupReferences processed = FunctionsBuilder.processLookupReferenceNames(keyword, datastores, defaultDatastoreIndex, toProcess, result);
+						return new FmLookupWeightedCentroid(processed.datastoreIndx, processed.tableId, processed.columnIndices[0], processed.columnIndices[1],-1, children[0], children[4]);												
+					}
 				}
 
 			});

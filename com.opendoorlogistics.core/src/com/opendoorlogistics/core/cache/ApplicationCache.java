@@ -36,6 +36,8 @@ public class ApplicationCache {
 	public static final String TEXT_LAYOUT_CACHE = "text-layout-cache";
 	public static final String SYNCHRONOUS_RETRIEVED_TILE_CACHE = "synchronous-retrieved-tile-cache";
 	public static final String LOOKUP_NEAREST_TRANSFORMED_GEOMS = "lookup-nearest-transformed-geoms";
+	public static final String IMAGE_FORMULAE_CACHE = "image-formulae-cache";
+	public static final String IMAGE_WITH_VIEW_FORMULAE_CACHE = "image-with-view-formulae-cache";
 	
 	public static ApplicationCache singleton(){
 		return singleton;
@@ -58,6 +60,9 @@ public class ApplicationCache {
 		create(TEXT_LAYOUT_CACHE, 32 * MB);
 		create(SYNCHRONOUS_RETRIEVED_TILE_CACHE, 32 * MB);
 		create(LOOKUP_NEAREST_TRANSFORMED_GEOMS, 256 * MB);
+		create(IMAGE_FORMULAE_CACHE, 64 * MB);
+		create(IMAGE_WITH_VIEW_FORMULAE_CACHE, 64 * MB);
+		
 				
 	}
 	
@@ -65,7 +70,7 @@ public class ApplicationCache {
 		return caches.get(cacheId);
 	}
 	
-	public RecentlyUsedCache create(String cacheId, long maxSizeInBytes){
+	private RecentlyUsedCache create(String cacheId, long maxSizeInBytes){
 		if(get(cacheId)!=null){
 			throw new RuntimeException("Cache already exists with id: " + cacheId);
 		}

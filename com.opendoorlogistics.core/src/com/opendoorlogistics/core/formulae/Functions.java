@@ -15,6 +15,9 @@ import java.awt.image.ImageFilter;
 import java.awt.image.ImageProducer;
 import java.awt.image.RGBImageFilter;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,6 +33,7 @@ import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
+import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Geometry;
 
 public class Functions {
@@ -1028,6 +1032,37 @@ public class Functions {
 		}
 	}
 
+	public static final class FmStringFormat extends FunctionImpl{
+
+		
+		public FmStringFormat(Function format, Function ...args){
+			super(FunctionUtils.toSingleArray(format, args));
+		}
+		
+		private FmStringFormat(Function ...fncs){
+			super(fncs);
+		}
+		
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object [] chdl = executeChildFormulae(parameters, false);
+			if(chdl==null || chdl[0] == null){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			String s = ColumnValueProcessor.convertToMe(ODLColumnType.STRING, chdl[0]).toString();
+			Object [] args = Arrays.copyOfRange(chdl, 1, chdl.length);
+			String ret = String.format(s, args);
+			return ret;
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmStringFormat(deepCopy(children));
+		}
+		
+	}
+	
 	/**
 	 * Base class for all comparisons.
 	 * 
@@ -1900,6 +1935,38 @@ public class Functions {
 
 	}
 
+	public static final class FmBitwiseOr extends FunctionImpl {
+
+		public FmBitwiseOr(Function a, Function b) {
+			super(a, b);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmBitwiseOr(child(0).deepCopy(), child(1).deepCopy());
+		}
+
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object [] childVals = executeChildFormulae(parameters, false);
+			if(childVals==null){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			Long l1 = Numbers.toLong(childVals[0]);
+			Long l2 = Numbers.toLong(childVals[1]);
+			l1 = l1!=null ? l1:0L;
+			l2 = l2!=null ? l2:0L;
+			return l1 | l2;
+		}
+
+		@Override
+		public String toString() {
+			return toStringWithChildOp("|");
+		}
+
+	}
+	
 	public static final class FmSubtract extends Fm2ParamBase {
 
 		public FmSubtract(Function a, Function b) {
@@ -2213,4 +2280,18 @@ public class Functions {
 
 	}
 
+	public static class FmStringDateTimeStamp extends FunctionImpl{
+		private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss") ;
+
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Date date = new Date() ;
+			return dateFormat.format(date);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmStringDateTimeStamp();
+		}		
+	}
 }

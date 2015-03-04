@@ -7,8 +7,8 @@
 package com.opendoorlogistics.utils.image;
 
 import com.opendoorlogistics.api.ui.UIFactory.IntChangedListener;
+import com.opendoorlogistics.api.ui.UIFactory.ItemChangedListener;
 import com.opendoorlogistics.core.utils.ui.ComboEntryPanel;
-import com.opendoorlogistics.core.utils.ui.ComboEntryPanel.ItemChangedListener;
 import com.opendoorlogistics.core.utils.ui.IntegerEntryPanel;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.utils.image.CreateImageConfig.ImageType;

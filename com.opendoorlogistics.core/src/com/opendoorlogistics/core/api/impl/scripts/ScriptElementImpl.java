@@ -17,6 +17,7 @@ import com.opendoorlogistics.core.scripts.elements.InstructionConfig;
 import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.OutputConfig;
 import com.opendoorlogistics.core.scripts.elements.ScriptBaseElement;
+import com.opendoorlogistics.core.scripts.elements.ScriptBaseElementImpl;
 
 public class ScriptElementImpl implements ScriptElement {
 	protected final ScriptOptionImpl owner;
@@ -47,7 +48,7 @@ public class ScriptElementImpl implements ScriptElement {
 
 	@Override
 	public int getIndex() {
-		List<? extends ScriptBaseElement> list = null;
+		List<? extends ScriptBaseElementImpl> list = null;
 		if (owner != null) {
 
 			if (OutputConfig.class.isInstance(element)) {

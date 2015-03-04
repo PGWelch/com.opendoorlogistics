@@ -19,7 +19,7 @@ public final class StringTokeniser {
 	final public static String intNumber = "\\d+";
 	final public static String[] tokensInLine = new String[] {
 		"(\"[ \\t#-~!]*\")",
-		"(<=)", "&&","&", "\\|\\|" ,"==", ">=", "!=", "<>", "=", "<", ">", "/", "\\++", "\\(", "\\)", 
+		"(<=)", "&&","&", "\\|\\|","\\|" ,"==", ">=", "!=", "<>", "=", "<", ">", "/", "\\++", "\\(", "\\)", 
 		"\\–", "\\-", "\\.", "%", "\\*", ",", "\\}", "\\{", ":" ,"#",
 		"\\[", "\\]"
 		}; 
@@ -102,7 +102,7 @@ public final class StringTokeniser {
 //		System.out.println(l);
 //		System.out.println(r);
 		Print print = new Print();
-		print.print(" “hello world\" ");
+		print.print("||||");
 	}
 	
 	public static List<StringToken> tokenise(String s) {

@@ -20,6 +20,7 @@ import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 
+import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
@@ -31,12 +32,13 @@ import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager.GlobalSelection
 import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
 import com.opendoorlogistics.utils.ui.Icons;
 
-final class ReporterFrame<T extends JPanel & Disposable> extends ODLInternalFrame implements  GlobalSelectionChangedCB{
+final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInternalFrame implements  GlobalSelectionChangedCB{
 	private final GlobalMapSelectedRowsManager gsm;
 	private final ReporterFrameIdentifier id;
 	private final Border defaultBorder;
 	private final Border outOfDateBorder = BorderFactory.createLineBorder(Color.RED, 2);
 	private final RefreshMode refreshMode;
+	private final ODLComponent callingComponent;
 	//private JCheckBox autorefreshBox;
 	private JButton manualRefreshButton;
 	private JLabel refreshLabel;
@@ -55,7 +57,7 @@ final class ReporterFrame<T extends JPanel & Disposable> extends ODLInternalFram
 		NEVER
 	}
 	
-	public ReporterFrame(T userPanel, ReporterFrameIdentifier id, String title, RefreshMode refreshMode, GlobalMapSelectedRowsManager gmsrm) {
+	public ReporterFrame(T userPanel, ReporterFrameIdentifier id, String title,ODLComponent component, RefreshMode refreshMode, GlobalMapSelectedRowsManager gmsrm) {
 		super(id.getCombinedId());
 		this.id = id;
 		this.userPanel = userPanel;
@@ -63,6 +65,7 @@ final class ReporterFrame<T extends JPanel & Disposable> extends ODLInternalFram
 		this.defaultBorder = getBorder();
 		this.refreshMode = refreshMode;
 		this.gsm = gmsrm;
+		this.callingComponent = component;
 		
 		gsm.registerListener(this);
 		
@@ -81,6 +84,10 @@ final class ReporterFrame<T extends JPanel & Disposable> extends ODLInternalFram
 		updateAppearance();
 	}
 
+	public ODLComponent getComponent(){
+		return callingComponent;
+	}
+	
 	private void createRefreshToolbar() {
 		// instantiate and configure the toolbar obejct
 		JToolBar refreshBar = new JToolBar();

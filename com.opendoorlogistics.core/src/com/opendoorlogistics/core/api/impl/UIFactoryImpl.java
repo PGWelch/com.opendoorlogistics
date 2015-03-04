@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -13,10 +14,14 @@ import javax.swing.JPanel;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.ui.UIFactory;
+import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 import com.opendoorlogistics.core.distances.ui.DistancesPanel;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
+import com.opendoorlogistics.core.utils.ui.ComboEntryPanel;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
+import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
 import com.opendoorlogistics.core.utils.ui.IntegerEntryPanel;
+import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 
 public class UIFactoryImpl implements UIFactory{
 
@@ -38,6 +43,36 @@ public class UIFactoryImpl implements UIFactory{
 	@Override
 	public JDialog createExecutionReportDialog(JFrame parent, String title, ExecutionReport report, boolean showSuccessFailureMessage) {
 		return new ExecutionReportDialog(parent, title, report, showSuccessFailureMessage);
+	}
+
+	@Override
+	public <T> JPanel createComboPanel(String labelText, T[] items, T selected, ItemChangedListener<T> listener) {
+		return new ComboEntryPanel<T>(labelText, items, selected, listener);
+	}
+
+	@Override
+	public JPanel createSelectDirectoryPanel(String label, String initialFilename, FilenameChangeListener filenameChangeListener) {
+		return new FileBrowserPanel(label,initialFilename,filenameChangeListener, true, "OK");
+		
+	}
+
+	@Override
+	public JPanel createVerticalLayoutPanel() {
+		return new VerticalLayoutPanel();
+	}
+
+	@Override
+	public <T> JComponent[] createComboComponents(String labelText, T[] items,
+			T selected, ItemChangedListener<T> listener) {
+		return ComboEntryPanel.createComponents(labelText, items, selected, listener);
+
+	}
+
+	@Override
+	public JComponent[] createSelectDirectoryComponents(String label,
+			String initialDirectoryName,
+			FilenameChangeListener directoryChangedListener) {
+		return FileBrowserPanel.createComponents(label,initialDirectoryName,directoryChangedListener, true, "OK");
 	}
 
 }

@@ -36,7 +36,7 @@ public abstract class FmAbstractGroupAggregate extends FunctionImpl{
 	 */
 	protected Object executeFunctionOnSourceTable(FunctionParameters parameters, long srcRowId, Function childFunction) {
 		TableParameters p = (TableParameters) parameters;			
-		TableParameters unaggregateParams = new TableParameters( p.getDatastores(), srcDsIndex, srcTableId,srcRowId,-1);
+		TableParameters unaggregateParams = new TableParameters( p.getDatastores(), srcDsIndex, srcTableId,srcRowId,-1, null);
 		Object val = childFunction.execute(unaggregateParams);
 		return val;
 	}

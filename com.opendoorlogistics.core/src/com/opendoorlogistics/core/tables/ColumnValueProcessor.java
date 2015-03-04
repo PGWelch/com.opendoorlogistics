@@ -23,6 +23,7 @@ import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.NullComparer;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
+import com.opendoorlogistics.core.utils.strings.StandardisedCache;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.WKTReader;
@@ -307,6 +308,7 @@ public class ColumnValueProcessor {
 				return ((Number) other).doubleValue();
 
 			case STRING:
+				// Always trim whitespace
 				String sOther = ((String) other).trim();
 
 				if(onlyConvertStringIfFormatMatches && startsWith0AndOtherDigit((String)other)){
@@ -314,7 +316,7 @@ public class ColumnValueProcessor {
 				}
 				
 				try {
-					
+
 					// Test if we have a . in the number and if so, use java's parsedouble which always uses .
 					double number=0;
 					if(sOther.indexOf(".")!=-1){
@@ -326,6 +328,7 @@ public class ColumnValueProcessor {
 						return number;	
 					}
 					
+
 					return number;
 				} catch (Throwable e) {
 					return null;
@@ -494,6 +497,10 @@ public class ColumnValueProcessor {
 	}
 
 	public static boolean isEqual(Object a, Object b) {
+		return isEqual(a, b, null);
+	}
+	
+	public static boolean isEqual(Object a, Object b, StandardisedCache stdCache) {
 		boolean equals = false;
 		if (a == null && b == null) {
 			// both null are equal
@@ -522,7 +529,7 @@ public class ColumnValueProcessor {
 
 		} else {
 			// test the string-representation values
-			equals = Strings.equalsStd(a.toString(), b.toString());
+			equals = Strings.equalsStd(a.toString(), b.toString(), stdCache);
 		}
 
 		return equals;

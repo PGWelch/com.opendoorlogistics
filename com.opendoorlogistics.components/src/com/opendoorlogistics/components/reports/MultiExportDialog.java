@@ -23,8 +23,8 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
 
 import com.opendoorlogistics.core.utils.ui.*;
-import com.opendoorlogistics.core.utils.ui.FileBrowserPanel.FilenameChangeListener;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel.TextChangedListener;
+import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 
 final public class MultiExportDialog extends OkCancelDialog{
 	private VerticalLayoutPanel panel;

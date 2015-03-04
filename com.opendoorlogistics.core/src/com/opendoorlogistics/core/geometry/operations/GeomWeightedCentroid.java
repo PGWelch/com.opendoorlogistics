@@ -71,6 +71,15 @@ public class GeomWeightedCentroid {
 
 	}
 
+	/**
+	 * Calculate weighted centre using the input table and row ids.
+	 * @param table
+	 * @param rowIds
+	 * @param geomColIndx
+	 * @param weightColIndx Can be -1 if not using a column (each weight is 1)
+	 * @param ESPGCode
+	 * @return
+	 */
 	public ODLGeom calculate(ODLTableReadOnly table, long[] rowIds, int geomColIndx, int weightColIndx, String ESPGCode) {
 		if (rowIds == null || rowIds.length == 0) {
 			return null;
@@ -90,13 +99,15 @@ public class GeomWeightedCentroid {
 			}
 
 			// get weight
-			Object weightVal = table.getValueById(id, weightColIndx);
 			Double d = 1.0;
-			if (weightVal != null) {
-				d = (Double) ColumnValueProcessor.convertToMe(ODLColumnType.DOUBLE, weightVal);
-				if (d == null) {
-					return null;
-				}
+			if(weightColIndx>=0){
+				Object weightVal = table.getValueById(id, weightColIndx);
+				if (weightVal != null) {
+					d = (Double) ColumnValueProcessor.convertToMe(ODLColumnType.DOUBLE, weightVal);
+					if (d == null) {
+						return null;
+					}
+				}				
 			}
 
 			geoms.add(new Pair<ODLGeom, Double>(geom, d));

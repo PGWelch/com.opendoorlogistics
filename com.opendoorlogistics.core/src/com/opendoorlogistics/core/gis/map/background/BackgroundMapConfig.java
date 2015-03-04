@@ -20,6 +20,7 @@ class BackgroundMapConfig {
 	private String tileserverUrl;
 	private BackgroundType type;
 	private String mapsforgeFilename;
+	private String mapsforgeXMLRenderTheme;
 
 	public BackgroundMapConfig() {
 		fade = new Color(255, 255, 255, 100);
@@ -44,6 +45,13 @@ class BackgroundMapConfig {
 			}
 			mapsforgeFilename = tmp;
 
+			// and for the render theme
+			tmp = getStr(map, "mapsforge.xmlrendertheme", mapsforgeXMLRenderTheme);
+			if(tmp!=null){
+				tmp=tmp.replaceAll("\"", "");	
+			}
+			mapsforgeXMLRenderTheme = tmp;
+			
 			String typeString = getStr(map, "type", type.name());
 			for (BackgroundType t : BackgroundType.values()) {
 				if (Strings.equalsStd(t.name(), typeString)) {
@@ -105,4 +113,13 @@ class BackgroundMapConfig {
 		this.fade = fade;
 	}
 
+	public String getMapsforgeXMLRenderTheme() {
+		return mapsforgeXMLRenderTheme;
+	}
+
+	public void setMapsforgeXMLRenderTheme(String mapsforgeXMLRenderTheme) {
+		this.mapsforgeXMLRenderTheme = mapsforgeXMLRenderTheme;
+	}
+
+	
 }

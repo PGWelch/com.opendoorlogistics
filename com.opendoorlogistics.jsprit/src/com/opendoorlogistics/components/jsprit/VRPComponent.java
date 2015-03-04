@@ -469,7 +469,7 @@ public class VRPComponent implements ODLComponent {
 
 	@Override
 	public Icon getIcon(ODLApi api, int mode) {
-		// Use own class loader to prevent problems when jar loaded by reflection
+		// Use own class loader to prevent problems if jar loaded by reflection
 		return new ImageIcon(VRPComponent.class.getResource("/resources/icons/vrp.png"));
 	}
 

@@ -426,7 +426,7 @@ class ScriptExecutionTask {
 //						}
 //						frameTitle += title;
 //					}
-					frame = new ReporterFrame<T>(panel, id, frameTitle, refreshMode, runner.getAppFrame().getLoaded());
+					frame = new ReporterFrame<T>(panel, id, frameTitle,cb.getComponent(), refreshMode, runner.getAppFrame().getLoaded());
 					frames.add(frame);
 					runner.getAppFrame().addInternalFrame(frame, FramePlacement.AUTOMATIC);
 				}
