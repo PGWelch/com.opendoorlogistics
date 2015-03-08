@@ -4,9 +4,10 @@
  * are made available under the terms of the GNU Lesser Public License v3
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
-package com.opendoorlogistics.utils.image;
+package com.opendoorlogistics.studio.components.map.snapshot;
 
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Window;
 
 import javax.swing.SwingUtilities;
@@ -18,19 +19,19 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.ShowPanel;
-import com.opendoorlogistics.utils.image.CreateImageConfig.ImageType;
+import com.opendoorlogistics.studio.components.map.snapshot.CreateImageConfig.ImageType;
 import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 
 final public class ExportImagePanel extends CreateImagePanel {
 	private final ExportImageConfig config;
 	private final FileBrowserPanel fileBrowser;
 
-	public ExportImagePanel() {
-		this(new ExportImageConfig());
+	private ExportImagePanel(Dimension defaultSize) {
+		this(new ExportImageConfig(), defaultSize);
 	}
 
-	public ExportImagePanel(ExportImageConfig inputConfig) {
-		super(inputConfig);
+	private ExportImagePanel(ExportImageConfig inputConfig, Dimension defaultSize) {
+		super(inputConfig, defaultSize);
 		this.config = inputConfig;
 		
 		addCheckBox("Save to clipboard", config.isToClipboard(), new CheckChangedListener() {		
@@ -80,7 +81,7 @@ final public class ExportImagePanel extends CreateImagePanel {
 	
 	
 	public static void main(String [] args){
-		ShowPanel.showPanel(new ExportImagePanel());
+		ShowPanel.showPanel(new ExportImagePanel(new Dimension(200, 400) ));
 	}
 
 	@Override
@@ -105,9 +106,9 @@ final public class ExportImagePanel extends CreateImagePanel {
 
 	}
 	
-	private static ExportImageConfig showModal(Window ancestor ,Component directParent, ExportImageConfig inputConfig){
+	private static ExportImageConfig showModal(Window ancestor ,Component directParent, ExportImageConfig inputConfig, Dimension defaultSize){
 
-		final ExportImagePanel panel = new ExportImagePanel(inputConfig!=null?inputConfig.deepCopy():new ExportImageConfig());
+		final ExportImagePanel panel = new ExportImagePanel(inputConfig!=null?inputConfig.deepCopy():new ExportImageConfig(), defaultSize);
 		OkCancelDialog dlg = new OkCancelDialog(ancestor){
 			@Override
 			protected Component createMainComponent(boolean inWindowsBuilder){
@@ -129,12 +130,12 @@ final public class ExportImagePanel extends CreateImagePanel {
 		return null;
 	}
 	
-	public static CreateImageConfig showModal(Window parent , ExportImageConfig inputConfig){
-		return showModal(parent, null, inputConfig);
-	}
+//	public static CreateImageConfig showModal(Window parent , ExportImageConfig inputConfig){
+//		return showModal(parent, null, inputConfig);
+//	}
 	
-	public static ExportImageConfig showModal(Component parent , ExportImageConfig inputConfig){
-		return showModal(parent!=null ? SwingUtilities.getWindowAncestor(parent):null, parent, inputConfig);
+	public static ExportImageConfig showModal(Component parent , ExportImageConfig inputConfig, Dimension defaultSize){
+		return showModal(parent!=null ? SwingUtilities.getWindowAncestor(parent):null, parent, inputConfig, defaultSize);
 	}
 	
 }

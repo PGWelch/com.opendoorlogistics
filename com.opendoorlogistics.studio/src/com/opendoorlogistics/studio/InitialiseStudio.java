@@ -245,8 +245,8 @@ final public class InitialiseStudio {
 					com.opendoorlogistics.studio.GlobalMapSelectedRowsManager.GlobalSelectionChangedCB.class,
 					com.opendoorlogistics.studio.internalframes.ProgressFrame.class,
 					com.opendoorlogistics.studio.scripts.execution.ScriptsRunner.class,
-					com.opendoorlogistics.utils.image.CreateImageConfig.class,
-					com.opendoorlogistics.utils.image.ExportImageConfig.class,
+					com.opendoorlogistics.studio.components.map.snapshot.CreateImageConfig.class,
+					com.opendoorlogistics.studio.components.map.snapshot.ExportImageConfig.class,
 					
 					}
 					){
