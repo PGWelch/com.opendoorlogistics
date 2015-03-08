@@ -46,7 +46,22 @@ final public class ExampleData {
 
 	private static String[] getExampleForenames() {
 		return new String[] { "Amelia", "Jacob", "Olivia", "Thomas", "Jessica", "Alfie", "Emily", "James", "Lily", "William", "Ava", "Charlie", "Isla",
-				"Harry", "Sophie", "Oliver", "Mia", "Jack", "Isabella", "Riley" };
+				"Harry", "Sophie", "Oliver", "Mia", "Jack", "Isabella", "Riley","Nathan","Lucas","Enzo","Léo","Louis","Hugo","Gabriel","Ethan","Mathis","Jules","Raphaël",
+				"Emma","Léa","Chloé","Manon","Inès","Lola","Jade","Camille","Sarah","Louise","Zoé","Lilou","Lena","Maëlys","Clara","Eva"
+				,"Alexander","Andreas","Benjamin","Bernd","Christian","Daniel","David","Dennis","Dieter","Dirk","Dominik","Eric, Erik","Felix","Florian","Frank","Jan","Jens","Jonas","Jörg","Jürgen","Kevin","Klaus","Kristian","Leon","Lukas","Marcel","Marco","Mario","Markus","Martin","Mathias","Max","Maximilian","Michael","Mike, Maik","Niklas","Patrick","Paul","Peter","Ralf","René","Robert","Sebastian","Stefan","Steffen","Sven, Swen",
+				"Thomas","Thorsten","Tim","Tobias","Tom","Ulrich","Uwe","Wolfgang",
+				"Andrea","Angelika","Anja","Anke","Anna","Annett","Antje","Barbara","Birgit","Brigitte","Christin","Christina",
+				"Claudia","Daniela","Diana","Doreen","Franziska","Gabriele","Heike","Ines","Jana","Janina","Jennifer","Jessica",
+				"Julia","Juliane","Karin","Karolin","Katharina","Kathrin","Katja","Kerstin","Klaudia","Kristin","Laura","Lea",
+				"Lena","Lisa","Mandy","Manuela","Maria","Marie","Marina","Martina","Melanie","Monika","Nadine","Nicole","Petra",
+				"Sabine","Sabrina","Sandra","Sara","Silke","Simone","Sophia","Stefanie","Susanne","Tanja","Ulrike","Ursula",
+				"Vanessa","Yvonne",
+				"Aarav","Vivaan","Aditya","Vihaan","Arjun","Reyansh","Sai","Arnav","Ayaan","Krishna","Ishaan",
+				"Shaurya","Atharv","Advik","Pranav","Advaith","Aryan","Dhruv","Kabir","Ritvik","Aarush","Kayaan",
+				"Darsh","Veer","Saanvi","Aanya","Aadhya","Aaradhya","Ananya","Pari","Anika","Navya","Angel",
+				"Diya","Avani","Myra","Sara","Ira","Aahana","Anvi","Prisha","Riya","Aarohi","Anaya","Akshara",
+				"EvaLati","Shanaya","Kyra","Siya",
+};
 	}
 	
 	private static String[] getExampleSurnames(){
@@ -56,7 +71,17 @@ final public class ExampleData {
 				"Evans","Walker","White","Roberts","Green","Hall",
 				"Wood","Jackson","Clarke", "Robertson","White", "Black","Kennedy","Wells",
 				"Knight","Butler","Mason","Powell","Holmes","Adams","Phillips","Patel",
-				"Campbell", "LLoyd", "Dixon","Cole","Harvey","King","Lee","James","Murphy","Fox","Shaw","Ali"};
+				"Campbell", "LLoyd", "Dixon","Cole","Harvey","King","Lee","James","Murphy","Fox","Shaw","Ali",
+				"Martin","Bernard","Dubois","Thomas","Robert","Richard","Petit","Durand","Leroy",
+				"Moreau","Simon","Laurent","Lefebvre","Michel","Garcia","David","Bertrand","Roux","Vincent",
+				"Fournier","Morel","Girard","André","Lefèvre","Mercier",
+				"Dupont","Lambert","Bonnet","François","Martinez",
+				"Müller","Schmidt","Schneider","Fischer","Meyer","Weber","Schulz","Wagner","Becker","Hoffmann",
+				"Kumar","Lal","Sharma","Shan","Jai","Pal","Aggarwal","Raje","Chande","Chander",
+				"Nara","Rai","Nath","Goel","Bhat","Raji","Anand","Suri","Kapoor","Chandra","Patel",
+				"Verma","Malhotra","Sai","Engineer","Arun","Madan","Srini","Prasad","Sara","Rana",
+				"Raman","Subram","Mehta","Subramani","Sethi","Vijaya","Malik","Narayan","Mittal","Nita",
+				"Kishore","Roy"};
 	}
 
 	private static String[] getExampleBusinessTypes(){

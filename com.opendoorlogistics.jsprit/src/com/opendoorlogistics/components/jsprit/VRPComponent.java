@@ -6,6 +6,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.jsprit;
 
+import java.awt.Component;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.Serializable;
@@ -23,6 +25,8 @@ import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
@@ -62,7 +66,9 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.UIFactory.IntChangedListener;
+import com.opendoorlogistics.api.ui.UIFactory.ItemChangedListener;
 import com.opendoorlogistics.components.jsprit.VRPBuilder.BuiltStopRec;
+import com.opendoorlogistics.components.jsprit.demo.DemoAddresses;
 import com.opendoorlogistics.components.jsprit.demo.DemoBuilder;
 import com.opendoorlogistics.components.jsprit.demo.DemoConfig;
 import com.opendoorlogistics.components.jsprit.solution.RouteDetail;
@@ -121,6 +127,25 @@ public class VRPComponent implements ODLComponent {
 				final JPanel panel = new JPanel();
 				panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 				panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+				
+				// add country
+				String [] values = DemoAddresses.DEMO_ADDRESSES.keySet().toArray(
+						new String[DemoAddresses.DEMO_ADDRESSES.keySet().size()]);
+				JPanel countryPanel = new JPanel();
+				demoConfig.country = "United Kingdom";
+				countryPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
+				countryPanel.setAlignmentX(Component.LEFT_ALIGNMENT);				
+				for(JComponent comp : api.getApi().uiFactory().createComboComponents("Country ", values, demoConfig.country, new ItemChangedListener<String>(){
+
+					@Override
+					public void itemChanged(String item) {
+						demoConfig.country = item;
+					}
+					
+				})){
+					countryPanel.add(comp);
+				}
+				panel.add(countryPanel);
 				
 				// add number of stops
 				panel.add(api.getApi().uiFactory().createIntegerEntryPane("Number of stops  ",demoConfig.nbStops, "", new IntChangedListener() {

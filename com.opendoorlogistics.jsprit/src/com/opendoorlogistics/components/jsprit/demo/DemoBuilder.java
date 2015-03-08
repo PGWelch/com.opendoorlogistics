@@ -43,7 +43,7 @@ public class DemoBuilder {
 		
 		dfn = new InputTablesDfn(api, config);
 
-		addresses = DemoAddresses.UK;
+		addresses =DemoAddresses.DEMO_ADDRESSES.get(demoConfig.country);
 
 		for(int i =0;  i< addresses.size() ; i++){
 			freelocs.add(i);

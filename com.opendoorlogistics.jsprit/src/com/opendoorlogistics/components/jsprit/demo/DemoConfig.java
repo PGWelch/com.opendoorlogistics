@@ -9,4 +9,5 @@ public class DemoConfig {
 	public boolean includeSkills;
 	public boolean includeUnlinkedPickups;
 	public boolean includePDs;
+	public String country;
 }
