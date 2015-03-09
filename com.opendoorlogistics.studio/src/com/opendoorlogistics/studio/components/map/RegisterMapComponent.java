@@ -111,8 +111,8 @@ final public class RegisterMapComponent {
 		private final AppFrame appFrame;
 		private final ODLDatastore<? extends ODLTable> adaptedDsView;
 
-		public GlobalDSConnectedMapPanel(MapConfig config,MapModePermissions permissions, LayeredDrawables pnts, ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm, AppFrame appFrame, ODLDatastore<? extends ODLTable> adaptedDsView) {
-			super(config,permissions, pnts, globalDs, gsm);
+		public GlobalDSConnectedMapPanel(MapConfig config,MapModePermissions permissions, LayeredDrawables pnts, ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm, AppFrame appFrame, ODLDatastore<? extends ODLTable> adaptedDsView, ComponentControlLauncherApi controlLauncher) {
+			super(config,permissions, pnts, globalDs, gsm, controlLauncher);
 			this.appFrame = appFrame;
 			this.adaptedDsView = adaptedDsView;
 
@@ -285,7 +285,7 @@ final public class RegisterMapComponent {
 
 						if (p == null) {
 							if (permissions.isSelectObjects()) {
-								GlobalDSConnectedMapPanel imp = new GlobalDSConnectedMapPanel(((MapConfig) configuration), permissions,pnts, appFrame.getLoaded().getDs(), appFrame.getLoaded(), appFrame, adaptedDsView);
+								GlobalDSConnectedMapPanel imp = new GlobalDSConnectedMapPanel(((MapConfig) configuration), permissions,pnts, appFrame.getLoaded().getDs(), appFrame.getLoaded(), appFrame, adaptedDsView, launcherApi);
 
 								if (appFrame.getLoaded() != null) {
 									appFrame.getLoaded().registerMapSelectionList(imp);
@@ -293,7 +293,7 @@ final public class RegisterMapComponent {
 								p = new WrapperPanel(imp, isEDT);
 
 							} else {
-								p = new WrapperPanel(new ReadOnlyMapPanel((MapConfig) configuration,permissions, pnts), isEDT);
+								p = new WrapperPanel(new ReadOnlyMapPanel((MapConfig) configuration,permissions, pnts, launcherApi), isEDT);
 								p.mapPanel.getMapControl().setGetToolTipCB(new BasicTooltipCB());
 							}
 

@@ -77,7 +77,7 @@ final public class NominatimGeocoderComponent implements ODLComponent {
 
 				if (selDB.getTableAt(0).getRowCount() > 0) {
 
-					InteractiveGeocoderPanel panel = new InteractiveGeocoderPanel((NominatimConfig) configuration, selDB);
+					InteractiveGeocoderPanel panel = new InteractiveGeocoderPanel((NominatimConfig) configuration, selDB, launcherApi);
 					try {
 						gui.showModalPanel(panel, "Nominatim geocoder");
 					} catch (Throwable e) {

@@ -17,6 +17,7 @@ import com.opendoorlogistics.core.utils.Serialization;
 public class ExportImageConfig extends CreateImageConfig implements Serializable {
 	private boolean toClipboard = true;
 	private boolean toFile = true;
+	private boolean toViewer=false;
 	private String filename = "";
 
 	
@@ -54,4 +55,14 @@ public class ExportImageConfig extends CreateImageConfig implements Serializable
 		this.filename = filename;
 	}
 
+	public boolean isToViewer() {
+		return toViewer;
+	}
+
+	@XmlAttribute
+	public void setToViewer(boolean toViewer) {
+		this.toViewer = toViewer;
+	}
+
+	
 }

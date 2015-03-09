@@ -6,6 +6,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.studio.components.map.snapshot;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
@@ -14,11 +16,20 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.UUID;
 
 import javax.imageio.ImageIO;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+
+import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
+import com.opendoorlogistics.api.tables.ODLTime;
+import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.utils.images.ImageUtils;
+import com.opendoorlogistics.core.utils.strings.Strings;
 
 final public class ProcessCreateImage {
-	public static void process(BufferedImage image, ExportImageConfig config) {
+	public static void process(BufferedImage image, ExportImageConfig config, ComponentControlLauncherApi controlLauncher) {
 
 		if (config.isToClipboard()) {
 			class ImageTransferable implements Transferable {
@@ -50,13 +61,32 @@ final public class ProcessCreateImage {
 
 		}
 		
-		if (config.isToFile()) {
+		if (config.isToFile() && Strings.isEmptyWhenStandardised(config.getFilename())==false) {
 			File outputfile = new File(config.getFilename());
 			try {
 				ImageIO.write(image, config.getImageType().name().toLowerCase(), outputfile);
 			} catch (IOException e1) {
 				throw new RuntimeException(e1);
 			}
+		}
+		
+		if(config.isToViewer() && controlLauncher!=null){
+			String title = "Snapshot " + new ODLTime().toString();
+			JPanel imgPanel = ImageUtils.createImagePanel(image, Color.WHITE);
+			
+			class MyPanel extends JPanel implements Disposable{
+
+				@Override
+				public void dispose() {
+					// TODO Auto-generated method stub
+					
+				}
+				
+			}
+			MyPanel panel = new MyPanel();
+			panel.setLayout(new BorderLayout());
+			panel.add(new JScrollPane(imgPanel), BorderLayout.CENTER);
+			controlLauncher.registerPanel(UUID.randomUUID().toString(), title,panel , false);
 		}
 
 	}

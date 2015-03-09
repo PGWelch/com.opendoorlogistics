@@ -29,6 +29,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 
+import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -142,8 +143,8 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 		fieldSelectorPanel.setVisible(interactive.getMouseMode() == MouseMode.FILL);
 	}
 
-	public InteractiveMapPanel(MapConfig config, MapModePermissions permissions, LayeredDrawables pnts, final ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm) {
-		super(new InteractiveMapControl(config,permissions, new SelectionPanel(globalDs), gsm), false);
+	public InteractiveMapPanel(MapConfig config, MapModePermissions permissions, LayeredDrawables pnts, final ODLDatastoreUndoable<ODLTableAlterable> globalDs, GlobalMapSelectedRowsManager gsm, ComponentControlLauncherApi controlLauncher) {
+		super(new InteractiveMapControl(config,permissions, new SelectionPanel(globalDs), gsm), false, controlLauncher);
 
 		this.globalDs = globalDs;
 		interactive = (InteractiveMapControl) map;

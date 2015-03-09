@@ -32,6 +32,7 @@ import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
+import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
@@ -55,6 +56,7 @@ import com.opendoorlogistics.studio.components.map.snapshot.CreateImageConfig.Ca
 import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog.OnFinishedSwingThreadCB;
+import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
 import com.opendoorlogistics.studio.panels.ProgressPanel;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 
@@ -67,6 +69,7 @@ public class ReadOnlyMapPanel extends JPanel implements Disposable {
 	private static ExportImageConfig lastCreateImageConfig;
 	protected final ReadOnlyMapControl map;
 	protected final List<Action> actions;
+	protected final ComponentControlLauncherApi hasInternalFrames;
 
 	public void setDrawables(LayeredDrawables pnts) {
 		map.setDrawables(pnts);
@@ -76,8 +79,9 @@ public class ReadOnlyMapPanel extends JPanel implements Disposable {
 		map.zoomBestFit();
 	}
 
-	public ReadOnlyMapPanel(MapConfig config, MapModePermissions permissions, LayeredDrawables pnts) {
+	public ReadOnlyMapPanel(MapConfig config, MapModePermissions permissions, LayeredDrawables pnts, ComponentControlLauncherApi hasInternalFrames) {
 		this.map = new ReadOnlyMapControl(config, permissions);
+		this.hasInternalFrames = hasInternalFrames;
 		map.setDrawables(pnts);
 		actions = createActions();
 		initLayout();
@@ -121,8 +125,9 @@ public class ReadOnlyMapPanel extends JPanel implements Disposable {
 	// setPreferredSize(new Dimension(600, 600));
 	// }
 
-	public ReadOnlyMapPanel(ReadOnlyMapControl map, boolean initLayout) {
+	public ReadOnlyMapPanel(ReadOnlyMapControl map, boolean initLayout, ComponentControlLauncherApi hasInternalFrames) {
 		this.map = map;
+		this.hasInternalFrames = hasInternalFrames;
 		actions = createActions();
 		if (initLayout) {
 			initLayout();
@@ -246,7 +251,7 @@ public class ReadOnlyMapPanel extends JPanel implements Disposable {
 						@Override
 						public void onFinished(BufferedImage result, boolean userCancelled, boolean userFinishedNow) {
 							try {
-								ProcessCreateImage.process(result, config);
+								ProcessCreateImage.process(result, config, hasInternalFrames);
 							} catch (Exception e2) {
 								JOptionPane.showMessageDialog(ReadOnlyMapPanel.this, "An error occurred when creating or saving the image");
 							}

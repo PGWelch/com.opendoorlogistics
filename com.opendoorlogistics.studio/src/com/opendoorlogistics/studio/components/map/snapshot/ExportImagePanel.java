@@ -49,6 +49,14 @@ final public class ExportImagePanel extends CreateImagePanel {
 			}
 		});
 		
+
+		addCheckBox("Show viewer", config.isToViewer(), new CheckChangedListener() {		
+			@Override
+			public void checkChanged(boolean isChecked) {
+				ExportImagePanel.this.config.setToViewer(isChecked);
+			//	updateAppearance();
+			}
+		});
 		
 		FileNameExtensionFilter [] filters = new FileNameExtensionFilter[ImageType.values().length];
 		for(int i =0 ; i<filters.length ; i++){
