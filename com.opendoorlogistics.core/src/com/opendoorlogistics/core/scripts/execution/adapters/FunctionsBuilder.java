@@ -48,6 +48,7 @@ import com.opendoorlogistics.core.scripts.formulae.FmRowId;
 import com.opendoorlogistics.core.scripts.formulae.FmRuleLookup;
 import com.opendoorlogistics.core.scripts.formulae.FmThis;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
+import com.opendoorlogistics.core.tables.utils.ParametersTable;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
@@ -338,10 +339,10 @@ final public class FunctionsBuilder {
 					int index = datastores.getIndex(ScriptConstants.EXTERNAL_DS_NAME);
 					ODLDatastore<? extends ODLTableDefinition> ds = datastores.getDatastore(index);
 					if(ds!=null){
-						ODLTableDefinition table = TableUtils.findTable(ds, "Parameters", true);
+						ODLTableDefinition table = TableUtils.findTable(ds, ParametersTable.NAME, true);
 						if(table!=null){
-							int key = TableUtils.findColumnIndx(table, "Key");
-							int value = TableUtils.findColumnIndx(table, "Value");
+							int key = TableUtils.findColumnIndx(table, ParametersTable.KEY);
+							int value = TableUtils.findColumnIndx(table, ParametersTable.VALUE);
 							if(key!=-1 && value!=-1){
 								return new FmParameter(children[0], index, table.getImmutableId(), key, value);
 							}

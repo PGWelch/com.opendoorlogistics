@@ -541,7 +541,7 @@ public class SetupComponentWizard extends JDialog {
 	}
 
 	public static void main(String[] args) {
-		InitialiseStudio.initialise();
+		InitialiseStudio.initialise(false);
 		
 		final ODLDatastore<? extends ODLTableDefinition> ds = ExampleData.createTerritoriesExample(4);
 		QueryAvailableTables queryAvailableTables = new QueryAvailableTables() {

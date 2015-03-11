@@ -36,7 +36,7 @@ public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Dis
 	private File lastFile;
 	private final ScriptsRunner runner;
 
-	protected LoadedDatastore(ODLDatastoreAlterable<ODLTableAlterable> newDs, File file, AppFrame appFrame) {
+	protected LoadedDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> newDs, File file, AppFrame appFrame) {
 		this.appFrame = appFrame;
 		
 		

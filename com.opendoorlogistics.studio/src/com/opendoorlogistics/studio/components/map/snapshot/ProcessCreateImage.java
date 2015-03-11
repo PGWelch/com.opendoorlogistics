@@ -8,6 +8,7 @@ package com.opendoorlogistics.studio.components.map.snapshot;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
@@ -86,6 +87,12 @@ final public class ProcessCreateImage {
 			MyPanel panel = new MyPanel();
 			panel.setLayout(new BorderLayout());
 			panel.add(new JScrollPane(imgPanel), BorderLayout.CENTER);
+			
+			// don't make the panel too big if the image is huge
+			int buffer =10;
+			int maxSize = 400 + buffer;
+			Dimension prefSize = new Dimension(Math.min(image.getWidth() + buffer, maxSize), Math.min(image.getHeight()+ buffer,maxSize));
+			panel.setPreferredSize(prefSize);
 			controlLauncher.registerPanel(UUID.randomUUID().toString(), title,panel , false);
 		}
 

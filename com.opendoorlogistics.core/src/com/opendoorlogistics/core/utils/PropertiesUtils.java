@@ -11,10 +11,14 @@ package com.opendoorlogistics.core.utils;
 import java.io.File;
 import java.io.StringReader;
 import java.util.Properties;
+import java.util.logging.Logger;
 
+import com.opendoorlogistics.core.AppProperties;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 public class PropertiesUtils {
+	private static final Logger logger = Logger.getLogger(PropertiesUtils.class.getName());
+	
 	public static Properties loadFromFile( File file){
 		Properties p = new Properties();
 		loadFromFile(file, p);
@@ -28,7 +32,7 @@ public class PropertiesUtils {
 			String propertyFileContents = Strings.readFile(file.getAbsolutePath());
 			try {
 				addTo.load(new StringReader(propertyFileContents.replace("\\","\\\\")));				
-				System.out.println("Loaded properties file: " + file.getAbsolutePath());				
+				logger.info("Loaded properties file: " + file.getAbsolutePath());				
 			} catch (Exception e) {
 			}
 

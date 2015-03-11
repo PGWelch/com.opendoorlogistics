@@ -94,7 +94,7 @@ public class ODLInternalFrame extends JInternalFrame {
 		SwingUtils.invokeLaterOnEDT(new Runnable() {
 			public void run() {
 				try {
-					InitialiseStudio.initialise();
+					InitialiseStudio.initialise(false);
 					JFrame outer = new JFrame();
 					outer.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 					JDesktopPane pane = new JDesktopPane();

@@ -27,6 +27,7 @@ import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.tables.HasFlags;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
@@ -1001,5 +1002,6 @@ final public class TableUtils {
 	public static long getGlobalId(int tableId, int rowId) {
 		return Long2Ints.get(tableId, rowId);
 	}
+
 
 }

@@ -94,7 +94,7 @@ final public class ScriptExecutor {
 	 * @param externalDS
 	 * @return
 	 */
-	public ExecutionReport execute(Script script, ODLDatastoreAlterable<ODLTableAlterable> externalDS) {
+	public ExecutionReport execute(Script script, ODLDatastoreAlterable<? extends ODLTableAlterable> externalDS) {
 		ScriptExecutionBlackboard bb = new ScriptExecutionBlackboard(compileOnly);
 
 		internalExecutionApi.postStatusMessage("Starting script execution...");
@@ -316,7 +316,7 @@ final public class ScriptExecutor {
 		return ret;
 	}
 
-	private void buildDatastores(ODLDatastoreAlterable<ODLTableAlterable> externalDS, Option script, ScriptExecutionBlackboard result) {
+	private void buildDatastores(ODLDatastoreAlterable<? extends ODLTableAlterable> externalDS, Option script, ScriptExecutionBlackboard result) {
 
 		// save external datastore wrapped in a data dependencies recorder
 		result.addDatastore(ScriptConstants.EXTERNAL_DS_NAME, null, new DataDependenciesRecorder<>(ODLTableAlterable.class, externalDS));

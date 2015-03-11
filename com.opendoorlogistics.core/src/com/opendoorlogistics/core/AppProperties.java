@@ -12,7 +12,9 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Logger;
 
+import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.PropertiesUtils;
 
@@ -22,6 +24,8 @@ import com.opendoorlogistics.core.utils.PropertiesUtils;
  *
  */
 public class AppProperties {
+	private static final Logger logger = Logger.getLogger(AppProperties.class.getName());
+	
 	private static Properties applicationProperties;
 	
 	static{
@@ -29,7 +33,7 @@ public class AppProperties {
 		loadEmbedded(applicationProperties);
 		PropertiesUtils.loadFromFile(new File(AppConstants.ODL_EXTERNAL_PROPERTIES_FILE),applicationProperties);
 		for(Map.Entry<Object,Object> entry:applicationProperties.entrySet()){
-			System.out.println("\t" + entry.getKey() + "=" + entry.getValue());
+			logger.info("\t" + entry.getKey() + "=" + entry.getValue());
 		}		
 	}
 
@@ -79,7 +83,7 @@ public class AppProperties {
 			// Use own class loader to prevent problems when jar loaded by reflection
 			stream = AppProperties.class.getResourceAsStream(AppConstants.ODL_EMBEDED_PROPERTIES_FILE);
 			addTo.load(stream);
-			System.out.println("Loaded embedded properties.");
+			logger.info("Loaded embedded properties.");
 		} catch (Exception e) {
 		}finally{
 			if(stream!=null){

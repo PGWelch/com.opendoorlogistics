@@ -95,6 +95,7 @@ public class FileBrowserPanel extends JPanel {
 		}
 		JTextField textField = createTextField(initialFilename, filenameChangeListener);
 		ret.add(textField);
+		textField.setPreferredSize(new Dimension(200, 28));
 		
 		ret.add( createBrowseButton(directoriesOnly, browserApproveButtonText, textField, fileFilters));
 		return ret.toArray(new JComponent[ret.size()]);

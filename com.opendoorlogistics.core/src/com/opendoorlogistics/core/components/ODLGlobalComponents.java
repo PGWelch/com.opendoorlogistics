@@ -7,6 +7,7 @@
 package com.opendoorlogistics.core.components;
 
 import java.io.File;
+import java.util.logging.Logger;
 
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.components.ODLComponentProvider;
@@ -25,7 +26,7 @@ import net.xeoh.plugins.base.util.PluginManagerUtil;
  */
 public final class ODLGlobalComponents {
 	private static final ODLComponentsList GLOBAL;
-
+	private static final Logger logger = Logger.getLogger(ODLGlobalComponents.class.getName());
 	static{
 		// create global list
 		GLOBAL = new ODLComponentsList();
@@ -47,9 +48,11 @@ public final class ODLGlobalComponents {
 	
 	public static synchronized void register(ODLComponent component){
 		if(GLOBAL.register(component)){
-			System.out.println("Registered component " + component.getId());
+			logger.info("Registered component " + component.getId());
+			//System.out.println("Registered component " + component.getId());
 		}else{
-			System.out.println("Failed to register component " + component.getId() + "; id is already registered");			
+			logger.severe("Failed to register component " + component.getId() + "; id is already registered");
+			//System.out.println("Failed to register component " + component.getId() + "; id is already registered");			
 		}
 	}
 	

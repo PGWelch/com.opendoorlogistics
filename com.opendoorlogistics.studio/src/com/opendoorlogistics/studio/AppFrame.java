@@ -185,7 +185,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	 * @param components
 	 */
 	public static void startWithComponents(ODLComponent... components) {
-		InitialiseStudio.initialise();
+		InitialiseStudio.initialise(true);
 		for (ODLComponent c : components) {
 			ODLGlobalComponents.register(c);
 		}
@@ -193,7 +193,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	}
 
 	public static void main(String[] args) {
-		InitialiseStudio.initialise();
+		InitialiseStudio.initialise(true);
 	//	loadComponentFromEclipseProject("C:\\Users\\Phil\\Dropbox\\Business\\DevelopmentSpace\\Github\\com.opendoorlogistics\\com.opendoorlogistics.jsprit", "com.opendoorlogistics.components.jsprit.VRPComponent");
 		new AppFrame();
 	}
@@ -247,7 +247,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 		initWindowPosition();
 
-		registerAppFrameDependentComponents();
+		registerAppFrameDependentComponents(this);
 
 		// then create other objects which might use the components
 		tables = new DatastoreTablesPanel(this);
@@ -370,10 +370,10 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	/**
 	 * 
 	 */
-	private void registerAppFrameDependentComponents() {
+	public static void registerAppFrameDependentComponents(AppFrame appFrame) {
 		// register custom components that need the appframe
-		RegisterMapComponent.register(this);
-		ODLGlobalComponents.register(new EditableTableComponent(this));
+		RegisterMapComponent.register(appFrame);
+		ODLGlobalComponents.register(new EditableTableComponent(appFrame));
 	}
 
 	private void initToolbar(Container con) {
@@ -997,7 +997,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 	}
 
-	private void onOpenedDatastore(ODLDatastoreAlterable<ODLTableAlterable> newDs, File file) {
+	public void onOpenedDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> newDs, File file) {
 		if (loaded != null) {
 			closeDatastore();
 		}

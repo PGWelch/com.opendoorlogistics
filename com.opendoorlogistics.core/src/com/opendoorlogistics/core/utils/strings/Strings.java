@@ -733,6 +733,15 @@ final public class Strings {
 		return ret;
 	}
 
+	public static String getExceptionMessagesAsSingleStr(Throwable e) {
+		StringBuilder b = new StringBuilder();
+		for(String s : getExceptionMessages(e)){
+			b.append(s);
+			b.append(System.lineSeparator());
+		}
+		return b.toString();
+	}
+	
 	/**
 	 * Gets the list of all messages from the exception and and the ancestor exception(s) that caused it. The list is returned in chronological order.
 	 * 

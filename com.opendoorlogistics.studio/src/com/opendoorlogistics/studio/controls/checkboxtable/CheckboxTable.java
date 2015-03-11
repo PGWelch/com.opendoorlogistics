@@ -339,7 +339,7 @@ public class CheckboxTable  extends JScrollPane{
 	
 	
 	public static void main(String[]args){
-		InitialiseStudio.initialise();
+		InitialiseStudio.initialise(false);
 		
 	//	for(boolean showImage : new boolean[]{true,false}){
 		JPanel panel = new JPanel();

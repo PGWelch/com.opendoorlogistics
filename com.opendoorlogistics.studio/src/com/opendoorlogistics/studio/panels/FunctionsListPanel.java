@@ -140,7 +140,7 @@ final public class FunctionsListPanel extends JPanel {
 	}
 
 	public static void main(String[] args) {
-		InitialiseStudio.initialise();
+		InitialiseStudio.initialise(false);
 		ShowPanel.showPanel(new FunctionsListPanel());
 	}
 	

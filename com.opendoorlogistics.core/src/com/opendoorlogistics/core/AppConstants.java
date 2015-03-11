@@ -36,9 +36,13 @@ final public class AppConstants {
 
 	public static final String ODL_CONFIG_DIR = "config" + File.separator;
 
+	public static final String SCRIPTS_DIRECTORY = "scripts" + File.separator;
+
 	public static final String ODL_EXTERNAL_PROPERTIES_FILE =ODL_CONFIG_DIR +  "odl.properties";
 
 	public static final String ODL_BACKGROUND_MAP_PROPERTIES_FILE =ODL_CONFIG_DIR + "backgroundmap.properties";
+
+	public static final String ODL_LOGGING_CONFIG =ODL_CONFIG_DIR + "logging.properties";
 
 	public static final Version getAppVersion(){
 		return new Version(APP_VERSION_MAJOR,APP_VERSION_MINOR,APP_VERSION_REVISION);

@@ -430,4 +430,80 @@ final public class DatastoreCopier {
 	private static RuntimeException unequalStructureException() {
 		return new RuntimeException("Copy from and copy to databases have different structure");
 	}
+	
+	/**
+	 * Modify the datastore if needed to create the input tables and fields
+	 * @param schema
+	 * @param ds
+	 */
+	public static void enforceSchema(ODLDatastore<? extends ODLTableDefinition> schema, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds, boolean changeFieldTypes){
+		// check for table
+		int nt = schema.getTableCount();
+		for(int i =0 ; i < nt ; i++){
+			ODLTableDefinition src = schema.getTableAt(i);
+			ODLTableDefinitionAlterable dest = TableUtils.findTable(ds, src.getName());
+			if(dest==null){
+				copyTableDefinition(src, ds);
+			}else{
+				enforceSchema(src, dest, changeFieldTypes);
+			}
+		}
+	}
+	
+	public static void enforceSchema(ODLTableDefinition schema,ODLTableDefinitionAlterable target, boolean changeFieldTypes){
+		int nf = schema.getColumnCount();
+		for(int srcCol =0 ; srcCol < nf ; srcCol++){
+			String name = schema.getColumnName(srcCol);
+			int targetCol = TableUtils.findColumnIndx(target, name);
+			if(targetCol==-1){
+				copyColumnDefinition(schema, target, srcCol, false);
+			}
+			else if(changeFieldTypes && schema.getColumnType(srcCol)!=target.getColumnType(targetCol)){
+				modifyColumnWithoutTransaction(targetCol, targetCol, target.getColumnName(targetCol), schema.getColumnType(srcCol), target.getColumnFlags(targetCol), target);
+			}
+		}
+	}
+
+	
+	/**
+	 * Merge the source datastore into the destination.
+	 * Fields and tables are added as needed.
+	 * @param source
+	 * @param destination
+	 */
+	public static void mergeAll(ODLDatastore<? extends ODLTableReadOnly> source, ODLDatastoreAlterable<? extends ODLTableAlterable> destination){
+		
+		// ensure all tables and fields exist
+		enforceSchema(source, destination, false);
+		
+		// loop over all source tables
+		int nt = source.getTableCount();
+		for(int srcTableIndex =0 ; srcTableIndex < nt ; srcTableIndex++){
+			
+			// get the destination table
+			ODLTableReadOnly srcTable = source.getTableAt(srcTableIndex);
+			ODLTable destTable = TableUtils.findTable(destination, srcTable.getName());
+
+			// get the destination column indices
+			int nc = srcTable.getColumnCount();
+			int [] destCols = new int[nc];
+			for(int srcCol=0; srcCol < nc ; srcCol++){
+				destCols[srcCol] = TableUtils.findColumnIndx(destTable, srcTable.getColumnName(srcCol));				
+			}
+			
+			// loop over all source rows
+			int nr = srcTable.getRowCount();
+			for(int srcRow = 0 ; srcRow <nr ; srcRow++){
+				
+				// create destination row
+				int destRow = destTable.createEmptyRow(-1);
+				
+				// copy column values
+				for(int srcCol=0; srcCol < nc ; srcCol++){
+					copyCell(srcTable, srcRow, srcCol, destTable, destRow, destCols[srcCol]);
+				}
+				
+			}
+		}
+	}
 }
