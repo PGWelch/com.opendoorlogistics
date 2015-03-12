@@ -35,6 +35,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmConcatenate;
 import com.opendoorlogistics.core.formulae.Functions.FmConst;
 import com.opendoorlogistics.core.formulae.Functions.FmContains;
 import com.opendoorlogistics.core.formulae.Functions.FmCos;
+import com.opendoorlogistics.core.formulae.Functions.FmCreateUUID;
 import com.opendoorlogistics.core.formulae.Functions.FmDecimalFormat;
 import com.opendoorlogistics.core.formulae.Functions.FmDecimalHours;
 import com.opendoorlogistics.core.formulae.Functions.FmDivide;
@@ -343,6 +344,7 @@ public final class FunctionDefinitionLibrary {
 		// string functions
 		addStandardFunction(FmUpper.class, "upper", "Convert string to upper case.", "string_value");
 		addStandardFunction(FmLower.class, "lower",  "Convert string to lower case.","string_value");
+		addStandardFunction(FmCreateUUID.class, "createUUID",  "Create a type 3 (name based) UUID using the input string.","string_value");
 		addStandardFunction(FmLen.class, "len", "Get length of the string or 0 if string is null.","string_value");
 		addStandardFunction(FmLeft.class, "left","", "text", "number_of_chars");
 		addStandardFunction(FmContains.class, "contains","", "find_string", "find_within_string");

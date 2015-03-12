@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
@@ -86,6 +87,7 @@ final public class AdapterBuilder {
 	private ODLDatastore<? extends ODLTableDefinition> destination;
 	private AdapterMapping mapping;
 	private AdapterConfig processedConfig;
+	private UUID adapterUUID = UUID.randomUUID();
 
 	private AdapterBuilder(AdapterConfig adapterConfig, String id, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env,ProcessingApi continueCb, BuiltAdapters result) {
 		this.inputConfig = adapterConfig;
@@ -1084,7 +1086,7 @@ final public class AdapterBuilder {
 	protected FunctionDefinitionLibrary buildFunctionLibrary(final int defaultDsIndx,ODLTableDefinition targetTableDefinition) {
 		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
 		library.build();
-		FunctionsBuilder.buildNonAggregateFormulae(library, createIndexDatastoresWrapper(), defaultDsIndx,targetTableDefinition, env);
+		FunctionsBuilder.buildNonAggregateFormulae(library, createIndexDatastoresWrapper(), defaultDsIndx,targetTableDefinition,adapterUUID, env);
 		return library;
 	}
 

@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.api;
 
+import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTable;
@@ -57,4 +58,12 @@ public interface Tables {
 	int findColumnIndex(ODLTableDefinition table,String name);
 	
 	<T extends ODLTableDefinition> T findTable(ODLDatastore<T> ds,String tableName);
+	
+	/**
+	 * Get the column type corresponding to the java class, or null
+	 * if the class is not supported.
+	 * @param externalType
+	 * @return
+	 */
+	ODLColumnType getColumnType(Class<?> externalType);
 }

@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -892,6 +893,28 @@ public class Functions {
 		}
 	}
 
+	public static final class FmCreateUUID extends FunctionImpl{
+		public FmCreateUUID(Function text) {
+			super(text);
+		}
+		
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object val = child(0).execute(parameters);
+			if(val == Functions.EXECUTION_ERROR || val==null){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			return UUID.nameUUIDFromBytes(ColumnValueProcessor.convertToMe(ODLColumnType.STRING , val).toString().getBytes());
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmCreateUUID(child(0).deepCopy());
+		}
+		
+	}
+	
 	public static final class FmLeft extends FunctionImpl {
 		public FmLeft(Function text, Function number_of_characters) {
 			super(text, number_of_characters);

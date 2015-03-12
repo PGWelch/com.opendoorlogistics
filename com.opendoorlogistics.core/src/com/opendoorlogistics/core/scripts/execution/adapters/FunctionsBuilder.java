@@ -11,6 +11,7 @@ import gnu.trove.map.hash.TLongObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.UUID;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -54,7 +55,7 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 
 final public class FunctionsBuilder {
 	public static void buildNonAggregateFormulae(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTable> datastores,
-			final int defaultDatastoreIndex,final ODLTableDefinition targetTableDefinition, final ExecutionReport result) {
+			final int defaultDatastoreIndex,final ODLTableDefinition targetTableDefinition,final UUID adapterUUID,final ExecutionReport result) {
 		buildBasicLookups(library, datastores, defaultDatastoreIndex, result);
 		ImageFormulaeCreator.buildImageFormulae(library, datastores, result);
 		FmRuleLookup.buildRuleLookup(library, datastores,defaultDatastoreIndex, result);
@@ -96,6 +97,19 @@ final public class FunctionsBuilder {
 			}
 		});
 		library.add(thisDfn);
+		
+		// add the adapter uuid
+		FunctionDefinition adptUUIDDfn = new FunctionDefinition("adapterUUID");
+		adptUUIDDfn.setDescription("A UUID (universally unique identifier) that is constant throughout a single execution of a data adapter");
+		adptUUIDDfn.setFactory(new FunctionFactory() {
+			
+			@Override
+			public Function createFunction(Function... children) {
+				return new FmConst(adapterUUID!=null? adapterUUID.toString() : "");
+			}
+		});
+		library.add(adptUUIDDfn);
+		
 	}
 
 	public static void buildGroupAggregates(FunctionDefinitionLibrary library, final TLongObjectHashMap<TLongArrayList> groupRowIdToSourceRowIds,
@@ -362,7 +376,7 @@ final public class FunctionsBuilder {
 
 		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
 		library.build();
-		buildNonAggregateFormulae(library, null, -1, null,null);
+		buildNonAggregateFormulae(library, null, -1, null,null,null);
 		buildGroupAggregates(library, null, -1, -1);
 		return library;
 	}

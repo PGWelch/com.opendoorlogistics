@@ -7,6 +7,7 @@
 package com.opendoorlogistics.core.api.impl;
 
 import com.opendoorlogistics.api.Tables;
+import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTable;
@@ -16,6 +17,7 @@ import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.tables.ODLFactory;
+import com.opendoorlogistics.core.tables.beans.BeanTypeConversion;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 
@@ -100,6 +102,11 @@ public class TablesImpl implements Tables {
 	@Override
 	public <T extends ODLTableDefinition> T findTable(ODLDatastore<T> ds, String tableName) {
 		return TableUtils.findTable(ds, tableName, true);
+	}
+
+	@Override
+	public ODLColumnType getColumnType(Class<?> externalType) {
+		return BeanTypeConversion.getInternalType(externalType);
 	}
 
 }
