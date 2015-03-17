@@ -293,7 +293,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 				rowId = ((ODLTableReadOnly) src).getRowId(rowIndex);
 			}
 			
-			// create the 'this row' object
+			// create the 'this row' object so formula can reference other formula in the same table adapter
 			ODLRowReadOnly thisRow = new ODLRowReadOnly() {
 				
 				@Override
@@ -319,9 +319,9 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	
 			};
 
-			ArrayList<ODLDatastore<? extends ODLTableDefinition>> tmpList = new ArrayList<>(sources.size());
-			tmpList.addAll(sources);
-			FunctionParameters parameters = new TableParameters(tmpList, mapping.getSourceDatasourceIndx(tableId), mapping.getSourceTableId(tableId), rowId, rowIndex, thisRow);
+		//	ArrayList<ODLDatastore<? extends ODLTableDefinition>> tmpList = new ArrayList<>(sources.size());
+		//	tmpList.addAll(sources);
+			FunctionParameters parameters = new TableParameters(sources, mapping.getSourceDatasourceIndx(tableId), mapping.getSourceTableId(tableId), rowId, rowIndex, thisRow);
 			ret = formula.execute(parameters);
 			if (ret == Functions.EXECUTION_ERROR) {
 				ret = null;

@@ -16,6 +16,9 @@ import com.opendoorlogistics.api.tables.ODLColumnType;
 public interface Values {
 	Object convertValue(Object value,ODLColumnType from, ODLColumnType to );
 	Object convertValue(Object value,ODLColumnType to );
+	String canonicalStringRepresentation(Object value);
+//	return (String)ColumnValueProcessor.convertToMe(ODLColumnType.STRING,table.getValueAt(row, col),table.getColumnType(col));
+	
 	boolean equalsStandardised(String a, String b);
 	String standardise(String s);
 }

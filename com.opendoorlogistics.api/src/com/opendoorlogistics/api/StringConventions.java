@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.api;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -78,5 +79,7 @@ public interface StringConventions {
 	 * @return
 	 */
 	Set<String> createStandardisedSet();
+	
+	List<String> tokenise(String s);
 }
 

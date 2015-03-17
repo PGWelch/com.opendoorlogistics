@@ -6,10 +6,14 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.opendoorlogistics.api.StringConventions;
+import com.opendoorlogistics.core.formulae.StringTokeniser;
+import com.opendoorlogistics.core.formulae.StringTokeniser.StringToken;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
@@ -115,6 +119,17 @@ public class StringConventionsImpl implements StringConventions{
 		}
 		
 		return null;
+	}
+
+	@Override
+	public List<String> tokenise(String s) {
+		ArrayList<String> ret = new ArrayList<String>();
+		if(s!=null){
+			for(StringToken token : StringTokeniser.tokenise(s)){
+				ret.add(token.getOriginal());
+			}
+		}
+		return ret;
 	}
 	
 	

@@ -109,4 +109,9 @@ public class TablesImpl implements Tables {
 		return BeanTypeConversion.getInternalType(externalType);
 	}
 
+	@Override
+	public int findTableIndex(ODLDatastore<? extends ODLTableDefinition> ds, String table) {
+		return TableUtils.findTableIndex(ds, table, true);
+	}
+
 }

@@ -33,4 +33,9 @@ public class ValuesImpl implements Values{
 		return Strings.std(s);
 	}
 
+	@Override
+	public String canonicalStringRepresentation(Object value) {
+		return (String)ColumnValueProcessor.convertToMe(ODLColumnType.STRING, value);
+	}
+
 }

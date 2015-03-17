@@ -8,6 +8,7 @@ package com.opendoorlogistics.api.components;
 
 import javax.swing.JPanel;
 
+import com.opendoorlogistics.api.Func;
 import com.opendoorlogistics.api.HasApi;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
 import com.opendoorlogistics.api.distances.DistancesConfiguration;
@@ -68,4 +69,6 @@ public interface ComponentExecutionApi extends ProcessingApi, HasApi{
 	ODLGeom calculateRouteGeom(DistancesConfiguration request, LatLong from, LatLong to);
 
 	void submitControlLauncher(ControlLauncherCallback cb);
+	
+	Func compileFunction(String formulaText,String sourceTableName);
 }

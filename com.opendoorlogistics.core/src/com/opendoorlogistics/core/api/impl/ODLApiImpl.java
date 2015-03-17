@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
+import com.opendoorlogistics.api.Functions;
 import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.StandardComponents;
@@ -14,8 +15,11 @@ import com.opendoorlogistics.api.Values;
 import com.opendoorlogistics.api.components.ODLComponentProvider;
 import com.opendoorlogistics.api.geometry.Geometry;
 import com.opendoorlogistics.api.standardcomponents.Maps;
+import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.ui.UIFactory;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
+import com.opendoorlogistics.core.tables.utils.TableUtils;
 
 public class ODLApiImpl implements ODLApi{
 	private StringConventions conventions;
@@ -24,7 +28,7 @@ public class ODLApiImpl implements ODLApi{
 	private Tables tables;
 	private Geometry geometry;
 	private UIFactory uiFactory;
-
+	private Functions functions;
 
 	@Override
 	public Values values() {
@@ -78,6 +82,22 @@ public class ODLApiImpl implements ODLApi{
 	public ODLComponentProvider registeredComponents() {
 		return ODLGlobalComponents.getProvider();
 	}
+
+	@Override
+	public Functions functions() {
+		if(functions==null){
+			functions = new Functions() {
+				
+				@Override
+				public boolean isFunctionError(Object functionReturnValue) {
+					return functionReturnValue == com.opendoorlogistics.core.formulae.Functions.EXECUTION_ERROR;
+				}
+			};
+		}
+		
+		return functions;
+	}
+
 
 	
 }

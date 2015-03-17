@@ -66,4 +66,13 @@ public interface Tables {
 	 * @return
 	 */
 	ODLColumnType getColumnType(Class<?> externalType);
+	
+	/**
+	 * Find the table index using a standardised string compare
+	 * @param ds
+	 * @param tableName
+	 * @return Table index or -1 if not found
+	 */
+	int findTableIndex(ODLDatastore<? extends ODLTableDefinition> ds, String tableName);
+
 }

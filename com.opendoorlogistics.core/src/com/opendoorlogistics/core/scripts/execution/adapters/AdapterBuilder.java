@@ -1040,12 +1040,26 @@ final public class AdapterBuilder {
 		return val;
 	}
 
-	private Function buildFormulaWithTableVariables(final ODLTableDefinition srcTable, String formulaText, final int defaultDsIndx,List<UserFormula> userFormulae, ODLTableDefinition targetTableDefinition) {
+	/**
+	 * Build formula
+	 * @param srcTable The source table the formula is operating on
+	 * @param formulaText The text of the formula
+	 * @param defaultDsIndx The default datastore index
+	 * @param userFormulae User formulae from the adapter table
+	 * @param targetTableDefinition The table definition (of the adapter table)
+	 * @return
+	 */
+	public Function buildFormulaWithTableVariables(final ODLTableDefinition srcTable, String formulaText, 
+			final int defaultDsIndx,List<UserFormula> userFormulae, ODLTableDefinition targetTableDefinition) {
 
 		// create variable provider for the formula parser. variables come from source table
 		UserVariableProvider uvp = new UserVariableProvider() {
 			@Override
 			public Function getVariable(String name) {
+				if(srcTable==null){
+					return null;
+				}
+				
 				int colIndx = TableUtils.findColumnIndx(srcTable, name, true);
 				if (colIndx == -1) {
 					return null;
@@ -1118,10 +1132,25 @@ final public class AdapterBuilder {
 			}
 
 			selectedDsIndx = datasources.size();
-			datasourceMap.put(dsId, datasources.size());
-			datasources.add(selectedSrc);
+			addDatasource(dsId, selectedSrc);
 		}
 		return selectedDsIndx;
+	}
+
+
+	/**
+	 * Add the datasource to our list of datasources and return its index
+	 * @param dsId (can be null)
+	 * @param datasource
+	 * @return
+	 */
+	public int addDatasource(String dsId, ODLDatastore<? extends ODLTable> datasource) {
+		int index = datasources.size();
+		if(dsId!=null){
+			datasourceMap.put(dsId, index);			
+		}
+		datasources.add(datasource);
+		return index;
 	}
 
 	// private static void throwIncorrectNbParams(Class<?> cls) {
@@ -1186,4 +1215,8 @@ final public class AdapterBuilder {
 		};
 
 	}
+	
+	 public List<ODLDatastore<? extends ODLTable>> getDatasources(){
+		 return datasources;
+	 }
 }

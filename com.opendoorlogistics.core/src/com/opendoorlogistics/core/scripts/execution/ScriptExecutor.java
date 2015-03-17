@@ -15,6 +15,7 @@ import java.util.TreeSet;
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.Func;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
@@ -37,6 +38,8 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.components.UpdateQueryComponent;
+import com.opendoorlogistics.core.formulae.Function;
+import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.TargetIODsInterpreter;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
@@ -53,8 +56,10 @@ import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilderUtils
 import com.opendoorlogistics.core.scripts.execution.adapters.BuiltAdapters;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.AbstractDependencyInjector;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.DependencyInjector;
+import com.opendoorlogistics.core.scripts.formulae.TableParameters;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
+import com.opendoorlogistics.core.tables.ODLRowReadOnly;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator.AdapterMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
@@ -501,7 +506,7 @@ final public class ScriptExecutor {
 	 * @param batchKey
 	 * @param result
 	 */
-	private void executeSingleInstruction(Option root,final InstructionConfig instruction, ODLDatastore<? extends ODLTable> availableIODS, final String batchKey, final ScriptExecutionBlackboard result) {
+	private void executeSingleInstruction(Option root,final InstructionConfig instruction, final ODLDatastore<? extends ODLTable> availableIODS, final String batchKey, final ScriptExecutionBlackboard result) {
 
 		// get the component
 		final ODLComponent component = getComponent(instruction, result);
@@ -511,15 +516,17 @@ final public class ScriptExecutor {
 
 		// get the component's expected datastore
 		Serializable config = ScriptUtils.getComponentConfig(root, instruction);
-		ODLDatastore<? extends ODLTableDefinition> expectedIODS = component.getIODsDefinition(api, config);
+		final ODLDatastore<? extends ODLTableDefinition> expectedIODS = component.getIODsDefinition(api, config);
 
 		// adapt the available io datastore to the component's expected input or take all available tables
 		// if the expected iods has zero table count
-		ODLDatastore<? extends ODLTable> ioDS = null;
+		final ODLDatastore<? extends ODLTable> ioDS;
 		if (availableIODS != null && expectedIODS != null) {
 			ioDS = new TargetIODsInterpreter(api).buildScriptExecutionAdapter(availableIODS, expectedIODS, result);
 		} else if (availableIODS == null && expectedIODS != null) {
 			throw new RuntimeException("No input datastore provided.");
+		}else{
+			ioDS = null;
 		}
 
 		// go from the internal api to the external one
@@ -583,6 +590,11 @@ final public class ScriptExecutor {
 			@Override
 			public ODLGeom calculateRouteGeom(DistancesConfiguration request, LatLong from, LatLong to) {
 				return internalExecutionApi.calculateRouteGeom(request, from, to);
+			}
+
+			@Override
+			public Func compileFunction(String formulaText,String sourceTableName) {
+				return executeFunctionCompilationFromComponent(formulaText, sourceTableName, availableIODS, result);
 			}
 		};
 		
@@ -807,6 +819,57 @@ final public class ScriptExecutor {
 
 		env.setFailed("Could not find adapter or datastore with id " + id);
 		return null;
+	}
+
+	/**
+	 * Execute the compilation of a function which is called by a component
+	 * @param formulaText
+	 * @param sourceTableName Must be a source table in the component's input datastore
+	 * @param availableIODS The unadapted (i.e. raw) adapter for the component
+	 * @param result
+	 * @return
+	 */
+	private Func executeFunctionCompilationFromComponent(String formulaText, String sourceTableName, final ODLDatastore<? extends ODLTable> availableIODS, final ScriptExecutionBlackboard result) {
+		// find source table if set. use the availableiods?
+		final ODLTableReadOnly sourceTable ;
+		if(!Strings.isEmpty(sourceTableName)){
+			sourceTable = TableUtils.findTable(availableIODS, sourceTableName);
+			if(sourceTable==null){
+				throw new RuntimeException("Cannot find source table "+ sourceTableName + " in function: " + formulaText);
+			}
+		}else{
+			sourceTable = null;
+		}
+		
+		final AdapterBuilder builder = new AdapterBuilder((AdapterConfig)null,  new StandardisedStringSet(), result, internalExecutionApi, new BuiltAdapters());
+		
+		// ensure we have the input datastore
+		final int dsIndx;
+		if(availableIODS!=null){
+			dsIndx = builder.addDatasource(null, availableIODS);					
+		}else{
+			dsIndx =-1;
+		}
+		
+		final Function function = builder.buildFormulaWithTableVariables(sourceTable, formulaText, -1, null, null);
+		
+		final int sourceTableId = sourceTable!=null ? sourceTable.getImmutableId() : -1;
+		return new Func() {
+			
+			@Override
+			public Object execute(int rowIndex) {
+				long rowId=-1;
+				if (sourceTable!=null && rowIndex!=-1){
+					rowId = sourceTable.getRowId(rowIndex);
+				}
+				
+				// don't need the 'this row'
+				ODLRowReadOnly thisRow =null;
+				
+				FunctionParameters parameters = new TableParameters(builder.getDatasources(), dsIndx, sourceTableId, rowId, rowIndex, thisRow);
+				return function.execute(parameters);
+			}
+		};
 	}
 
 }

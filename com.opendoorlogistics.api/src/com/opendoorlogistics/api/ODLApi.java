@@ -19,4 +19,6 @@ public interface ODLApi {
 	Tables tables();
 	Values values();
 	UIFactory uiFactory();
+	Functions functions();
+	
 }
