@@ -9,6 +9,7 @@ package com.opendoorlogistics.components.geocode.postcodes;
 import javax.swing.JLabel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCConstants;
 import com.opendoorlogistics.components.geocode.postcodes.impl.SummaryPanel;
@@ -18,9 +19,9 @@ import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 class PCGeocoderDatabaseSelectionPanel extends VerticalLayoutPanel{
 	final SummaryPanel summary;
 	
-	PCGeocoderDatabaseSelectionPanel(final PCDatabaseSelectionConfig pcConfig){
+	PCGeocoderDatabaseSelectionPanel(final ODLApi api, final PCDatabaseSelectionConfig pcConfig){
 		summary = new SummaryPanel();
-		summary.setFile(pcConfig.getGeocoderDbFilename());
+		summary.setFile(api,pcConfig.getGeocoderDbFilename());
 
 		add(new JLabel("Postcode geocode database file:"));
 		add(new FileBrowserPanel(pcConfig.getGeocoderDbFilename(), new FilenameChangeListener() {
@@ -28,7 +29,7 @@ class PCGeocoderDatabaseSelectionPanel extends VerticalLayoutPanel{
 			@Override
 			public void filenameChanged(String newFilename) {
 				pcConfig.setGeocoderDbFilename(newFilename);
-				summary.setFile(newFilename);
+				summary.setFile(api,newFilename);
 			}
 		}, false, "OK", new FileNameExtensionFilter("Spreadsheet file (" + PCConstants.DBFILE_EXTENSION + ")"  , PCConstants.DBFILE_EXTENSION)));
 		addWhitespace();

@@ -14,10 +14,12 @@ import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.JCheckBox;
 
+import com.opendoorlogistics.api.ODLApi;
+
 final public class PCGeocoderConfigPanel extends PCGeocoderDatabaseSelectionPanel{
 
-	PCGeocoderConfigPanel(final PCGeocoderConfig pcConfig) {
-		super(pcConfig);
+	PCGeocoderConfigPanel(ODLApi api, final PCGeocoderConfig pcConfig) {
+		super(api,pcConfig);
 		JCheckBox skipBox=new JCheckBox(new AbstractAction("Skip already geocoded rows?") {
 			
 			@Override

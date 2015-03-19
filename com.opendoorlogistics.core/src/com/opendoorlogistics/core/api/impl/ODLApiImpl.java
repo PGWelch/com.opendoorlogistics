@@ -6,7 +6,10 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
+import java.io.File;
+
 import com.opendoorlogistics.api.Functions;
+import com.opendoorlogistics.api.IO;
 import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.StandardComponents;
@@ -18,6 +21,7 @@ import com.opendoorlogistics.api.standardcomponents.Maps;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.ui.UIFactory;
+import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 
@@ -29,6 +33,7 @@ public class ODLApiImpl implements ODLApi{
 	private Geometry geometry;
 	private UIFactory uiFactory;
 	private Functions functions;
+	private IO io;
 
 	@Override
 	public Values values() {
@@ -96,6 +101,23 @@ public class ODLApiImpl implements ODLApi{
 		}
 		
 		return functions;
+	}
+
+	@Override
+	public IO io() {
+		if(io == null){
+			io = new IO() {
+				
+				@Override
+				public File getStandardDataDirectory() {
+					File ret = new File(AppConstants.DATA_DIRECTORY);
+					ret = ret.getAbsoluteFile();
+					return ret;
+				}
+			};
+		}
+		
+		return io;
 	}
 
 

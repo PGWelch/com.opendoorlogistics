@@ -21,12 +21,14 @@ final public class AppConstants {
 	public static final int APP_VERSION_MINOR = 3;
 
 	public static final int APP_VERSION_REVISION = 2;
-	
-	public static final String SHAPEFILES_DIRECTORY = "data" + File.separator + "shapefiles" + File.separator;
 
-	public static final String GRAPHHOPPER_DIRECTORY = "data" + File.separator + "graphhopper" + File.separator;
+	public static final String DATA_DIRECTORY = "data" + File.separator;
+			
+	public static final String SHAPEFILES_DIRECTORY = DATA_DIRECTORY + "shapefiles" + File.separator;
 
-	public static final String MAPSFORGE_DIRECTORY = "data" + File.separator + "mapsforge" + File.separator;
+	public static final String GRAPHHOPPER_DIRECTORY = DATA_DIRECTORY + "graphhopper" + File.separator;
+
+	public static final String MAPSFORGE_DIRECTORY = DATA_DIRECTORY + "mapsforge" + File.separator;
 
 	public static final String OSM_COPYRIGHT = "© OpenStreetMap contributors";
 	

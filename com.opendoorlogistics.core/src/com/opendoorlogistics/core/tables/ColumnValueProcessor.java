@@ -35,6 +35,8 @@ import com.vividsolutions.jts.io.WKTReader;
  *
  */
 public class ColumnValueProcessor {
+	private static final Pattern STRICT_DOUBLE_TESTER= Pattern.compile(".*[a-zA-Z_].*");
+	
 	private ColumnValueProcessor() {
 	}
 
@@ -311,7 +313,7 @@ public class ColumnValueProcessor {
 				// Always trim whitespace
 				String sOther = ((String) other).trim();
 
-				if(onlyConvertStringIfFormatMatches && startsWith0AndOtherDigit((String)other)){
+				if(onlyConvertStringIfFormatMatches && (startsWith0AndOtherDigit((String)other) || STRICT_DOUBLE_TESTER.matcher(sOther).matches())){
 					return null;
 				}
 				

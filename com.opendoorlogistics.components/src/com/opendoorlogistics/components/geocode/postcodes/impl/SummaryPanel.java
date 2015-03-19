@@ -18,6 +18,8 @@ import javax.swing.SwingWorker;
 
 import org.apache.commons.io.FilenameUtils;
 
+import com.opendoorlogistics.api.ODLApi;
+
 final public class SummaryPanel extends JPanel  {
 	private final JTextArea text = new JTextArea();
 	
@@ -36,9 +38,9 @@ final public class SummaryPanel extends JPanel  {
 	
 	}
 	
-	public void setFile(String filename){
+	public void setFile(ODLApi api,String filename){
 		if(filename!=null){
-			File file = new File(filename);
+			File file = PCConstants.resolvePostcodeFile(api, new File(filename));
 			if(file.exists()){
 				if(file.isFile() && FilenameUtils.getExtension(filename).toLowerCase().equals(PCConstants.DBFILE_EXTENSION)){
 					text.setText("Currently parsing: " +  System.lineSeparator() + filename);	

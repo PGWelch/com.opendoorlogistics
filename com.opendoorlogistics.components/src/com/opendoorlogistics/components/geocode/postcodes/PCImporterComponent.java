@@ -32,12 +32,14 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
+import com.opendoorlogistics.components.geocode.postcodes.impl.PCConstants;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCGeocodeFile;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCRecord;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCRecord.StrField;
 import com.opendoorlogistics.core.components.ODLWizardTemplateConfig;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
+import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.utils.ui.Icons;
 
 final public class PCImporterComponent implements ODLComponent {
@@ -67,12 +69,12 @@ final public class PCImporterComponent implements ODLComponent {
 	}
 
 	@Override
-	public JPanel createConfigEditorPanel(ComponentConfigurationEditorAPI factory,int mode,Serializable config, boolean isFixedIO) {
+	public JPanel createConfigEditorPanel(final ComponentConfigurationEditorAPI factory,int mode,Serializable config, boolean isFixedIO) {
 
 		class MyPanel extends PCGeocoderDatabaseSelectionPanel {
 
 			MyPanel(final PCImporterConfig pcConfig) {
-				super(pcConfig);
+				super(factory.getApi(),pcConfig);
 				addWhitespace();
 				add(new JLabel("Import postcodes from level:"));
 
@@ -130,13 +132,19 @@ final public class PCImporterComponent implements ODLComponent {
 	@Override
 	public void execute(ComponentExecutionApi reporter,int mode,Object configuration, ODLDatastore<? extends ODLTable> input, ODLDatastoreAlterable<? extends ODLTableAlterable> output) {
 		PCImporterConfig pic = (PCImporterConfig) configuration;
-		if (pic.getGeocoderDbFilename() == null || new File(pic.getGeocoderDbFilename()).exists() == false) {
+		if(reporter.getApi().stringConventions().isEmptyString(pic.getGeocoderDbFilename())){
+			throw new RuntimeException("Postcode database file does not exist");			
+		}
+		
+		File file = PCConstants.resolvePostcodeFile(reporter.getApi(), new File(pic.getGeocoderDbFilename()));
+		if (file.exists() == false) {
 			throw new RuntimeException("Postcode database file does not exist");
 		}
 
+		
 		reporter.postStatusMessage("Started postcode import.");
 
-		PCGeocodeFile pc = new PCGeocodeFile(new File(pic.getGeocoderDbFilename()));
+		PCGeocodeFile pc = new PCGeocodeFile(file);
 		ODLTable table = output.getTableAt(0);
 		long nbImported = 0;
 		for (PCRecord record : pc.getPostcodes(pic.getLevel(), reporter)) {

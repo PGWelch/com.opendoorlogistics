@@ -17,7 +17,7 @@ public class PCDatabaseSelectionConfig implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = 5223751199023472034L;
-	String geocoderDbFilename;
+	String geocoderDbFilename="";
 
 	public PCDatabaseSelectionConfig(String geocoderDbFilename) {
 		this.geocoderDbFilename = geocoderDbFilename;

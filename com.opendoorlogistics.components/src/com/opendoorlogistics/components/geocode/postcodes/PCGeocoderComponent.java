@@ -35,6 +35,7 @@ import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.components.geocode.Countries.Country;
+import com.opendoorlogistics.components.geocode.postcodes.impl.PCConstants;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCGeocodeFile;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCGeocodeFile.PCFindResult;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCRecord;
@@ -88,7 +89,11 @@ public class PCGeocoderComponent implements ODLComponent {
 	@Override
 	public void execute(ComponentExecutionApi api,int mode,Object configuration, ODLDatastore<? extends ODLTable> input, ODLDatastoreAlterable<? extends  ODLTableAlterable> output) {
 		final PCGeocoderConfig pgc = (PCGeocoderConfig)configuration;
-		PCGeocodeFile pc = new PCGeocodeFile(new File(pgc.geocoderDbFilename));
+		
+		// get the file, if its not absolute then assume its in the installation directory
+		File file = PCConstants.resolvePostcodeFile(api.getApi(), new File(pgc.geocoderDbFilename));
+
+		PCGeocodeFile pc = new PCGeocodeFile(file);
 		
 		class Counter{
 			int nbMatched=0;
@@ -229,7 +234,7 @@ public class PCGeocoderComponent implements ODLComponent {
 	
 	@Override
 	public JPanel createConfigEditorPanel(ComponentConfigurationEditorAPI factory,int mode,Serializable config, boolean isFixedIO) {
-		return new PCGeocoderConfigPanel((PCGeocoderConfig)config);
+		return new PCGeocoderConfigPanel(factory.getApi(),(PCGeocoderConfig)config);
 	}
 
 	@Override

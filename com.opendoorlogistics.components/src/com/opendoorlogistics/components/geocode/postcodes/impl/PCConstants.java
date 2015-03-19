@@ -6,6 +6,9 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.geocode.postcodes.impl;
 
+import java.io.File;
+
+import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.core.utils.Version;
 
 final public class PCConstants {
@@ -30,4 +33,18 @@ final public class PCConstants {
 
 	static final String GEOCODED_COUNT = "Number of rows geocoded"; 
 	static final String NOT_GEOCODED_COUNT = "Number of rows not geocoded"; 
+	
+	/**
+	 * If the file is not absolute then assume its in the installation directory
+	 * @param api
+	 * @param file
+	 * @return
+	 */
+	public static File resolvePostcodeFile(ODLApi api,File file){
+		if(!file.isAbsolute()){
+			String defaultDir = api.io().getStandardDataDirectory().getPath() + File.separator + "postcodegeocoder";
+			file = new File(defaultDir, file.getPath());
+		}
+		return file.getAbsoluteFile();
+	}
 }
