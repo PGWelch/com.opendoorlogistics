@@ -75,7 +75,7 @@ final public class BarchartComponent extends BaseComponent {
 
 	@Override
 	public void registerScriptTemplates(ScriptTemplatesBuilder templatesApi) {
-		for (int i = 1; i <= 3; i++) {
+		for (int i = 1; i <= 4; i++) {
 			String name = "Barchart with " + i + " series";
 			BarchartConfig barchartConfig = new BarchartConfig();
 			ArrayList<String> names = new ArrayList<>();

@@ -19,6 +19,7 @@ public final class StringTokeniser {
 	final public static String intNumber = "\\d+";
 	final public static String[] tokensInLine = new String[] {
 		"(\"[ \\t#-~!]*\")",
+		"('[ \\t#-~!]*')",
 		"(<=)", "&&","&", "\\|\\|","\\|" ,"==", ">=", "!=", "<>", "=", "<", ">", "/", "\\++", "\\(", "\\)", 
 		"\\–", "\\-", "\\.", "%", "\\*", ",", "\\}", "\\{", ":" ,"#",
 		"\\[", "\\]"

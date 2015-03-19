@@ -19,6 +19,7 @@ import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.beans.BeanTypeConversion;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
+import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 
 public class TablesImpl implements Tables {
@@ -112,6 +113,11 @@ public class TablesImpl implements Tables {
 	@Override
 	public int findTableIndex(ODLDatastore<? extends ODLTableDefinition> ds, String table) {
 		return TableUtils.findTableIndex(ds, table, true);
+	}
+
+	@Override
+	public ODLDatastore<? extends ODLTable> createExampleDs() {
+		return ExampleData.createTerritoriesExample(3);
 	}
 
 }

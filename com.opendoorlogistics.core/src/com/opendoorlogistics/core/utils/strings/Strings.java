@@ -382,6 +382,17 @@ final public class Strings {
 		}
 	}
 
+	public static String[] addArrays(String[] arr1, String ...arr2) {
+		String [] ret = new String[arr1.length + arr2.length];
+		for(int i = 0 ; i < arr1.length ; i++){
+			ret[i] = arr1[i];
+		}
+		for(int i = 0 ; i < arr2.length ;i++){
+			ret[i + arr1.length] = arr2[i];
+		}
+		return ret;
+	}
+	
 	public static String[] addToArray(String[] arr, String s) {
 		String[] ret = new String[arr.length + 1];
 		System.arraycopy(arr, 0, ret, 0, arr.length);
@@ -389,6 +400,14 @@ final public class Strings {
 		return ret;
 	}
 
+	public static String[] addArrayToStr(String s,String[] arr) {
+		String[] ret = new String[arr.length + 1];
+		ret[0]=s;
+		System.arraycopy(arr, 0, ret, 1, arr.length);
+		ret[arr.length] = s;
+		return ret;
+	}
+	
 	/**
 	 * Standardised comparison of two strings. The comparison compares the standardised version of the two strings. It also handles the situation
 	 * where you have a word followed by a number, e.g. "vehicle 9", "vehicle 11", and applies numeric sorting to the number part.

@@ -33,6 +33,8 @@ public interface Tables {
 	
 	ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> createDefinitionDs();
 	ODLDatastoreAlterable<? extends ODLTableAlterable> createAlterableDs();
+	ODLDatastore<? extends ODLTable> createExampleDs();
+	
 	ODLTableAlterable createAlterableTable(String name);
 	
 	void setColumnIsOptional(ODLTableDefinitionAlterable table, int col, boolean optional);

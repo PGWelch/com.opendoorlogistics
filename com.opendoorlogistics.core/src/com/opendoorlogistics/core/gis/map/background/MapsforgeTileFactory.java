@@ -8,12 +8,17 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.gis.map.background;
 
+import gnu.trove.map.hash.TByteIntHashMap;
+import gnu.trove.map.hash.TIntByteHashMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -27,6 +32,7 @@ import org.mapsforge.map.layer.cache.FileSystemTileCache;
 import org.mapsforge.map.layer.cache.InMemoryTileCache;
 import org.mapsforge.map.layer.cache.TileCache;
 import org.mapsforge.map.layer.cache.TwoLevelTileCache;
+import org.mapsforge.map.layer.queue.Job;
 import org.mapsforge.map.layer.renderer.DatabaseRenderer;
 import org.mapsforge.map.layer.renderer.RendererJob;
 import org.mapsforge.map.model.DisplayModel;
@@ -43,12 +49,13 @@ import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
+import com.opendoorlogistics.core.utils.images.ImageUtils;
 import com.opendoorlogistics.core.utils.io.RelativeFiles;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 class MapsforgeTileFactory extends TileFactory {
 	private static final int TILE_SIZE = 256;
-	private static final float TEXT_SCALE = 0.5f;
+	private static final float TEXT_SCALE = 1.0f;
 
 	private final MapDatabase mapDatabase;
 	private final LinkedList<Tile> toCreate = new LinkedList<>();
@@ -57,6 +64,7 @@ class MapsforgeTileFactory extends TileFactory {
 	private final DisplayModel model;
 	private final File mapFile;
 	private final Color fadeColour;
+	private final ZoomLevelConverter zoomLevelConverter;
 	private ExecutorService service;
 
 	private static XmlRenderTheme getRenderTheme(String xmlRenderThemeFilename){
@@ -78,12 +86,13 @@ class MapsforgeTileFactory extends TileFactory {
 		this.fadeColour =fadeColour;
 		this.mapDatabase = mapDatabase;
 
-		databaseRenderer = new DatabaseRenderer(mapDatabase, AwtGraphicFactory.INSTANCE,createTileCache());
+		zoomLevelConverter = new ZoomLevelConverter(info);
+		databaseRenderer = new DatabaseRenderer(mapDatabase, AwtGraphicFactory.INSTANCE,createDummyTileCacheForMapsforgeLabelPlacementAlgorithm());
 		renderTheme =getRenderTheme(xmlRenderThemeFilename);
 
 		model = new DisplayModel();
 		model.setFixedTileSize(TILE_SIZE);
-		model.setBackgroundColor(Color.BLUE.getRGB());
+		model.setBackgroundColor(backgroundMapColour().getRGB());
 		this.mapFile = mapFile;
 
 		// use single thread at the moment as DatabaseRenderer is probably single threaded
@@ -98,6 +107,10 @@ class MapsforgeTileFactory extends TileFactory {
 				return t;
 			}
 		});
+	}
+
+	private static Color backgroundMapColour() {
+		return Color.BLUE;
 	}
 
 
@@ -290,21 +303,8 @@ class MapsforgeTileFactory extends TileFactory {
 		@Override
 		public BufferedImage call()  {
 			// get mapsforge zoom from jxmapviewer2 zoom (they use different conventions)
-			byte mapsforgeZoom;
-			long nbTiles = getInfo().getMapWidthInTilesAtZoom(tile.getZoom());
-			for (mapsforgeZoom = 0; mapsforgeZoom < 255; mapsforgeZoom++) {
-				long maxMapsforgeTileNb = org.mapsforge.core.model.Tile.getMaxTileNumber(mapsforgeZoom);
-				if (maxMapsforgeTileNb == nbTiles - 1) {
-					break;
-				}
-			}
-
-			if (mapsforgeZoom == 255) {
-				throw new RuntimeException("Cannot match zoom levels between mapforge and jxmapviewer2.");
-			}
+			byte mapsforgeZoom = zoomLevelConverter.getMapsforge(tile.getZoom());
 			
-		//	System.out.println("Mapsforge zoom = " + mapsforgeZoom);
-
 			// render the mapsforge tile
 			org.mapsforge.core.model.Tile mtile = new org.mapsforge.core.model.Tile(tile.getX(), tile.getY(), mapsforgeZoom, TILE_SIZE);
 			RendererJob job = new RendererJob(mtile, mapFile, renderTheme, model, TEXT_SCALE, true, false);
@@ -314,11 +314,16 @@ class MapsforgeTileFactory extends TileFactory {
 			BufferedImage image = new BufferedImage(TILE_SIZE, TILE_SIZE, BufferedImage.TYPE_INT_ARGB);
 			Graphics2D g = (Graphics2D)image.getGraphics();
 			g.setClip(0, 0, TILE_SIZE, TILE_SIZE);
+			g.setColor(Color.WHITE);
+			g.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
 			Canvas canvas = (Canvas) AwtGraphicFactory.createGraphicContext(g);
 			canvas.drawBitmap(bitmap, 0, 0);
 			BackgroundMapUtils.renderFade(g,fadeColour);
 			
 			g.dispose();
+			
+			// TEST save to file
+		//	ImageUtils.toPNGFile(image, new File("C:\\temp\\MapsforgeOutput\\" + System.currentTimeMillis() + ".png"));
 			
 			// add to cache
 			CompressedImage compressed = new CompressedImage(image, CompressedType.LZ4);
@@ -388,12 +393,113 @@ class MapsforgeTileFactory extends TileFactory {
 		// cache.put(getTileId(x,y,zoom), compressed);
 	}
 
-	private TileCache createTileCache() {
-		TileCache firstLevelTileCache = new InMemoryTileCache(128);
-		File cacheDirectory = new File(System.getProperty("java.io.tmpdir"), "mapsforge");
-		TileCache secondLevelTileCache = new FileSystemTileCache(1024, cacheDirectory,  AwtGraphicFactory.INSTANCE);
-		return new TwoLevelTileCache(firstLevelTileCache, secondLevelTileCache);
+	/**
+	 * The mapsforge label placement algorithm needs to know what tiles are cached.
+	 * We create a dummy tile cache object which links to our real cache, so we can test this.
+	 * @return
+	 */
+	private TileCache createDummyTileCacheForMapsforgeLabelPlacementAlgorithm() {
+
+		TileCache dummyCache = new TileCache() {
+			
+			@Override
+			public void setWorkingSet(Set<Job> workingSet) {
+				throw new UnsupportedOperationException();
+			}
+			
+			@Override
+			public void put(Job key, TileBitmap bitmap) {
+				throw new UnsupportedOperationException();
+			}
+			
+			@Override
+			public TileBitmap getImmediately(Job key) {
+				throw new UnsupportedOperationException();
+			}
+			
+			@Override
+			public int getCapacityFirstLevel() {
+				throw new UnsupportedOperationException();
+			}
+			
+			@Override
+			public int getCapacity() {
+				throw new UnsupportedOperationException();
+			}
+			
+			@Override
+			public TileBitmap get(Job key) {
+				throw new UnsupportedOperationException();
+			}
+			
+			@Override
+			public void destroy() {
+				throw new UnsupportedOperationException();
+			}
+			
+			@Override
+			public boolean containsKey(Job key) {
+				int odlZoom = zoomLevelConverter.getODL(key.tile.zoomLevel);
+				return getCachedTileImage(key.tile.tileX, key.tile.tileY, odlZoom)!=null;
+			}
+		};
+		
+		return dummyCache;
 	}
 
+//	private byte getMapsforgeInternalZoomLevel(int ODLZoomLevel) {
+//		byte mapsforgeZoom;
+//		long nbTiles = getInfo().getMapWidthInTilesAtZoom(ODLZoomLevel);
+//		for (mapsforgeZoom = 0; mapsforgeZoom < 255; mapsforgeZoom++) {
+//			long maxMapsforgeTileNb = org.mapsforge.core.model.Tile.getMaxTileNumber(mapsforgeZoom);
+//			if (maxMapsforgeTileNb == nbTiles - 1) {
+//				break;
+//			}
+//		}
+//
+//		if (mapsforgeZoom == 255) {
+//			throw new RuntimeException("Cannot match zoom levels between mapforge and jxmapviewer2.");
+//		}
+//		return mapsforgeZoom;
+//	}
 
+//	private int getODLZoomLevel(int mapsforgeInternalZoomLevel){
+//		TileFactoryInfo info = getInfo();
+//		for(int i =info.getMinimumZoomLevel() ; i < info.getMaximumZoomLevel() ; i++){
+//			
+//		}
+//	}
+
+	private static class ZoomLevelConverter{
+		TIntByteHashMap odlToMapsforge = new TIntByteHashMap();
+		TByteIntHashMap mapsforgeToODL = new TByteIntHashMap();
+		
+		ZoomLevelConverter(TileFactoryInfo info){
+			for(int i =info.getMinimumZoomLevel() ; i <= info.getMaximumZoomLevel() ; i++){
+				byte mapsforgeZoom;
+				long nbTiles = info.getMapWidthInTilesAtZoom(i);
+				for (mapsforgeZoom = 0; mapsforgeZoom < 255; mapsforgeZoom++) {
+					long maxMapsforgeTileNb = org.mapsforge.core.model.Tile.getMaxTileNumber(mapsforgeZoom);
+					if (maxMapsforgeTileNb == nbTiles - 1) {
+						break;
+					}
+				}
+
+				if (mapsforgeZoom == 255) {
+					throw new RuntimeException("Cannot match zoom levels between mapforge and jxmapviewer2.");
+				}
+				
+				odlToMapsforge.put(i, mapsforgeZoom);
+				mapsforgeToODL.put(mapsforgeZoom, i);
+			}	
+		}
+		
+		byte getMapsforge(int odl){
+			return odlToMapsforge.get(odl);
+		}
+		
+		int getODL(byte mapsforge){
+			return mapsforgeToODL.get(mapsforge);
+		}
+	}
 }
