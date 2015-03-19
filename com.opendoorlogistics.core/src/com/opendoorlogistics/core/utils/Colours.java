@@ -10,6 +10,7 @@ import java.awt.Color;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
@@ -22,6 +23,8 @@ final public class Colours {
 
 	private final static HashMap<String, Color> colourMap;
 
+	private final static List<Color> predefinedList;
+	
 	public static String toHexString(Color c) {
 		StringBuilder builder = new StringBuilder("#");
 
@@ -54,6 +57,8 @@ final public class Colours {
 				}
 			}
 		}
+		
+		predefinedList = new ArrayList<Color>();
 
 		String[][] predefined = new String[][] { new String[] { "AliceBlue", "#F0F8FF" }, new String[] { "AntiqueWhite", "#FAEBD7" }, new String[] { "Aqua", "#00FFFF" }, new String[] { "Aquamarine", "#7FFFD4" }, new String[] { "Azure", "#F0FFFF" },
 				new String[] { "Beige", "#F5F5DC" }, new String[] { "Bisque", "#FFE4C4" }, new String[] { "Black", "#000000" }, new String[] { "BlanchedAlmond", "#FFEBCD" }, new String[] { "Blue", "#0000FF" },
@@ -86,7 +91,9 @@ final public class Colours {
 		};
 
 		for (String[] pair : predefined) {
-			colourMap.put(standardise(pair[0]), Color.decode(pair[1]));
+			Color col =  Color.decode(pair[1]);
+			colourMap.put(standardise(pair[0]), col);
+			predefinedList.add(col);
 		}
 	}
 
@@ -266,6 +273,11 @@ final public class Colours {
 		// }
 	}
 
+	public static Color getRandomColorFromPredefinedPallet(Random r){
+		int i = r.nextInt(predefinedList.size());
+		return predefinedList.get(i);
+	}
+	
 	public static int compare(Color col1, Color col2) {
 		int diff = NullComparer.compare(col1, col2);
 

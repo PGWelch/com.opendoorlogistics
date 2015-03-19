@@ -135,11 +135,16 @@ final public class BeanMapping {
 		}
 
 	}
+	
+	public static interface ReadObjectFilter{
+		boolean acceptObject(Object obj, ODLTableReadOnly inputTable,int row, long rowId, BeanTableMapping btm);
+	}
 
 	public static class BeanTableMapping {
 		private final List<BeanColumnMapping> columns;
 		private final ODLTableDefinition table;
 		private final Class<? extends BeanMappedRow> objectType;
+		private ReadObjectFilter rowfilter;
 
 		public BeanTableMapping(Class<? extends BeanMappedRow> type, List<BeanColumnMapping> columns, ODLTableDefinition table) {
 			this.objectType = type;
@@ -185,6 +190,15 @@ final public class BeanMapping {
 			return readObjectFromTable(inputTable, row, -1);
 		}
 		
+			
+		public ReadObjectFilter getRowfilter() {
+			return rowfilter;
+		}
+
+		public void setRowfilter(ReadObjectFilter rowfilter) {
+			this.rowfilter = rowfilter;
+		}
+
 		/**
 		 * Read the object using the row if available, otherwise read by globalid
 		 * @param inputTable
@@ -202,12 +216,8 @@ final public class BeanMapping {
 			try {
 				ret = (T)objectType.newInstance();
 				for (BeanColumnMapping bcm : columns) {
-					Object val = null;
-					if(row!=-1){
-						val = inputTable.getValueAt(row, bcm.getTableColumnIndex());						
-					}else{
-						val = inputTable.getValueById(rowId, bcm.getTableColumnIndex());						
-					}
+					int col = bcm.getTableColumnIndex();
+					Object val = getValue(inputTable, row, rowId, col);
 
 					Class<?> fieldType = bcm.getDescriptor().getPropertyType();
 					val =BeanTypeConversion.getExternalValue(fieldType, val);
@@ -237,7 +247,22 @@ final public class BeanMapping {
 				throw new RuntimeException(e);
 			}
 
+			if(ret!=null && rowfilter!=null){
+				if(!rowfilter.acceptObject(ret, inputTable, row, rowId, this)){
+					ret = null;
+				}
+			}
 			return ret;
+		}
+
+		public Object getValue(ODLTableReadOnly inputTable, int row, long rowId, int col) {
+			Object val;
+			if(row!=-1){
+				val = inputTable.getValueAt(row, col);						
+			}else{
+				val = inputTable.getValueById(rowId, col);						
+			}
+			return val;
 		}
 
 		public <T extends BeanMappedRow> List<T> readObjectsFromTable(ODLTableReadOnly inputTable) {

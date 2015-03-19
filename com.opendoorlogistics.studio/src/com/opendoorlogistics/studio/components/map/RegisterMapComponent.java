@@ -234,13 +234,14 @@ final public class RegisterMapComponent {
 						// read the point from the table using the bean mapping
 						BeanTableMapping btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
 						DrawableObjectImpl pnt = btm.readObjectFromTableById(table, globalId);
+						if(pnt!=null){
+							// set the latitude and longitude of the point
+							pnt.setLatitude(newPosition.getLatitude());
+							pnt.setLongitude(newPosition.getLongitude());
 
-						// set the latitude and longitude of the point
-						pnt.setLatitude(newPosition.getLatitude());
-						pnt.setLongitude(newPosition.getLongitude());
-
-						// write back to the table
-						btm.updateTableRow(pnt, table, globalId);
+							// write back to the table
+							btm.updateTableRow(pnt, table, globalId);							
+						}
 						return true;
 					}
 					return false;

@@ -1918,6 +1918,21 @@ public class Functions {
 		}
 	}
 
+	public static final class FmRandPalletColour extends FunctionImpl{
+		private final Random r = new Random();
+		
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			return Colours.getRandomColorFromPredefinedPallet(r);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmRandPalletColour();
+		}
+		
+	}
+	
 	public static final class FmOr extends FunctionImpl {
 
 		public FmOr(Function a, Function b) {

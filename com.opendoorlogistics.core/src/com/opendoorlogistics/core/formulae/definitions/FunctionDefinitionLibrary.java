@@ -65,6 +65,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmRand;
 import com.opendoorlogistics.core.formulae.Functions.FmRandColour;
 import com.opendoorlogistics.core.formulae.Functions.FmRandData;
 import com.opendoorlogistics.core.formulae.Functions.FmRandData.RandDataType;
+import com.opendoorlogistics.core.formulae.Functions.FmRandPalletColour;
 import com.opendoorlogistics.core.formulae.Functions.FmRandomSymbol;
 import com.opendoorlogistics.core.formulae.Functions.FmReplace;
 import com.opendoorlogistics.core.formulae.Functions.FmRound;
@@ -186,6 +187,8 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmRandColour.class, "randcolour", "Create a random colour based on the input value.","seed_value");
 		addStandardFunction(FmColourMultiply.class, "colourmultiply", "Multiply the input colour by the factor, making it lighter or darker.","colour", "factor");
 		addStandardFunction(FmColourMultiply.class, "colormultiply", "Multiply the input color by the factor, making it lighter or darker.","color", "factor");
+		addStandardFunction(FmRandPalletColour.class, "randPalletColour", "Choose a random colour from ODL's internal pallet.");
+		addStandardFunction(FmRandPalletColour.class, "randPalletColor", "Choose a random color from ODL's internal pallet.");
 		addStandardFunction(FmLerp.class, "lerp", "Linearly interpolate between value a and value b based on value c (which is in the range 0 to 1).", "a","b","c");
 		addStandardFunction(FmTemperatureColours.class, "cold2hot", "Return a colour from cold (blue) to hot (red) based on the input number, which should be in the range 0 to 1.", "fraction");
 		

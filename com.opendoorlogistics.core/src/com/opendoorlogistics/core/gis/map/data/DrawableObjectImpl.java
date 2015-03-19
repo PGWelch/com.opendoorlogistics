@@ -9,11 +9,14 @@ package com.opendoorlogistics.core.gis.map.data;
 import java.awt.Color;
 
 import com.opendoorlogistics.api.components.PredefinedTags;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.map.annotations.ImageFormulaKey;
 import com.opendoorlogistics.core.tables.beans.BeanMapping;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.ReadObjectFilter;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnDescription;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultDoubleValue;
@@ -52,6 +55,26 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	
 	static{
 		mapping = BeanMapping.buildDatastore(DrawableObjectImpl.class);
+		
+		ReadObjectFilter rowfilter = new ReadObjectFilter() {
+			
+			@Override
+			public boolean acceptObject(Object obj, ODLTableReadOnly inputTable, int row, long rowId, BeanTableMapping btm) {
+				DrawableObject o = (DrawableObject)obj;
+				if(o.getGeometry()!=null || o.getLatitude()!=0 || o.getLongitude()!=0){
+					return true;
+				}
+				
+				// Check for null latitude and longitude... if so the object really isn't drawable and should be filtered
+				if(btm.getValue(inputTable, row, rowId, COL_LATITUDE)==null && btm.getValue(inputTable, row, rowId, COL_LONGITUDE)==null){
+					return false;
+				}
+				
+				return true;
+			}
+		};
+		
+		mapping.getTableMapping(0).setRowfilter(rowfilter);
 	}
 	
 	public static BeanDatastoreMapping getBeanMapping(){
