@@ -25,6 +25,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -204,83 +205,69 @@ public class AdapterTablesTabControl extends JPanel {
 		
 		// Get the from datastore part of the title
 		AdaptedTableConfig table = config.getTable(configIndex);
-		String fromDs=null;
-		boolean isExternal = Strings.equalsStd(table.getFromDatastore(), ScriptConstants.EXTERNAL_DS_NAME);
-		if(!Strings.isEmpty(table.getFromDatastore()) && !isExternal){
-			fromDs = table.getFromDatastore();
-		}		
-		
-		// Get the from table part but don't show if from datastore is empty and from and to table are same name
-		String fromTable = table.getFromTable();
-		if(fromDs==null && Strings.equalsStd(table.getName(), fromTable)){
-			fromTable = null;
-		}
-		
-		// Try checking if the datastore only has one table in which case just write the datastore name
-		if(fromTable!=null && !isExternal && availableOptionsQuery!=null && !Strings.isEmpty(table.getFromDatastore())){
-			ODLDatastore<? extends ODLTableDefinition> ds = availableOptionsQuery.getDatastoreDefinition(table.getFromDatastore());
-			if(ds!=null && ds.getTableCount()==1 && Strings.equalsStd(ds.getTableAt(0).getName(), fromTable)){
-				fromTable = null;
-			}
-		}
-		
-		// Build source string
-		StringBuilder src = new StringBuilder();
-		if(fromDs!=null){
-			src.append(fromDs);
-			if(fromTable!=null){
-				src.append(",");
-			}
-		}
-		if(fromTable!=null){
-			src.append(fromTable);
-		}
-		
-		// Get total available chars
-		int maxChars = 75;
-		int available =  maxChars - (table.getName()!=null ? table.getName().length() : 0) - 3;
-		
-		// Get the source string and truncate if needed
-		String srcStr = src.toString();
-		boolean isTruncated=false;
-		if(srcStr.length() > available){
-			srcStr = srcStr.substring(0, Math.max(available,0));
-			isTruncated =true;		
-		}
+//		String fromDs=null;
+//		boolean isExternal = Strings.equalsStd(table.getFromDatastore(), ScriptConstants.EXTERNAL_DS_NAME);
+//		if(!Strings.isEmpty(table.getFromDatastore()) && !isExternal){
+//			fromDs = table.getFromDatastore();
+//		}		
+//		
+//		// Get the from table part but don't show if from datastore is empty and from and to table are same name
+//		String fromTable = table.getFromTable();
+//		if(fromDs==null && Strings.equalsStd(table.getName(), fromTable)){
+//			fromTable = null;
+//		}
+//		
+//		// Try checking if the datastore only has one table in which case just write the datastore name
+//		if(fromTable!=null && !isExternal && availableOptionsQuery!=null && !Strings.isEmpty(table.getFromDatastore())){
+//			ODLDatastore<? extends ODLTableDefinition> ds = availableOptionsQuery.getDatastoreDefinition(table.getFromDatastore());
+//			if(ds!=null && ds.getTableCount()==1 && Strings.equalsStd(ds.getTableAt(0).getName(), fromTable)){
+//				fromTable = null;
+//			}
+//		}
+//		
+//		// Build source string
+//		StringBuilder src = new StringBuilder();
+//		if(fromDs!=null){
+//			src.append(fromDs);
+//			if(fromTable!=null){
+//				src.append(",");
+//			}
+//		}
+//		if(fromTable!=null){
+//			src.append(fromTable);
+//		}
+//		
+//		// Get total available chars
+//		int maxChars = 75;
+//		int available =  maxChars - (table.getName()!=null ? table.getName().length() : 0) - 3;
+//		
+//		// Get the source string and truncate if needed
+//		String srcStr = src.toString();
+//		boolean isTruncated=false;
+//		if(srcStr.length() > available){
+//			srcStr = srcStr.substring(0, Math.max(available,0));
+//			isTruncated =true;		
+//		}
 		
 		// Build the title
 		StringBuilder title = new StringBuilder();
 		title.append(table.getName());
-		if((isTruncated && srcStr.length()>3) || srcStr.length()>0){
-			title.append(" (");
-			title.append(srcStr);
-			if(isTruncated){
-				title.append("...");
-			}
-			title.append(")");
+//		if((isTruncated && srcStr.length()>3) || srcStr.length()>0){
+//			title.append(" (");
+//			title.append(srcStr);
+//			if(isTruncated){
+//				title.append("...");
+//			}
+//			title.append(")");
+//		}
+//		
+		if(Strings.isEmpty(table.getShortEditorUINote())==false){
+			title.append(" (" + table.getShortEditorUINote() + ")");
 		}
 		
 		return title.toString();
 		
-	//	if(!isTruncated || )
-	//	String fromTable
-//		AdaptedTableConfig table = config.getTable(configIndex);
-//		StringBuilder builder = new StringBuilder();
-//		builder.append("<html>" + table.getName());
-//		builder.append("<br>(");
-//		if(!Strings.isEmpty(table.getFromDatastore()) && !Strings.equalsStd(table.getFromDatastore(), ScriptConstants.EXTERNAL_DS_NAME)){
-//			builder.append(table.getFromDatastore());
-//			builder.append(",");
-//		}
-//		
-//		if(!Strings.isEmpty(table.getFromTable())){
-//			builder.append(table.getFromTable());			
-//		}
-//		builder.append(")</html>");
-//		return builder.toString();
-	
-		//return "Table \"" + config.getTable(configIndex).getName() + "\"";
-		
+
 	
 	}
 
@@ -646,6 +633,30 @@ public class AdapterTablesTabControl extends JPanel {
 
 		});
 
+		ret.add(new TabPageAction("Edit table label", "Change the label shown in brackets after the table name in the tab control.", "adapted-table-short-ui-note.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String current = table.getShortEditorUINote();
+				if(current==null){
+					current = "";
+				}
+				
+				current = JOptionPane.showInputDialog(AdapterTablesTabControl.this, "Enter the label for table " + table.getName(), current);
+				if(current!=null){
+					table.setShortEditorUINote(current);
+					AdapterTablesTabControl.this.updateAppearance(true);
+				}
+//				PromptNewTableResult result = promptNewAdaptedTable(false, true, table.getName());
+//				if (result != null && result.destinationTable != null) {
+//					table.setName(result.destinationTable);
+//					// tabs.setTitleAt(getIndex(), "Table \"" + result.destinationTable+ "\"");
+//					AdapterTablesTabControl.this.updateAppearance(true);
+//				}
+			}
+
+		});
+		
 		ret.add(new TabPageAction("Copy table", "Copy the current table to the clipboard", "table-copy.png") {
 
 			@Override

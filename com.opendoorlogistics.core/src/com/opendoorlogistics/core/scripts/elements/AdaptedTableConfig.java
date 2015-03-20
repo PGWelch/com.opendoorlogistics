@@ -53,6 +53,9 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	@XmlTransient
 	private List<UserFormula> userFormulae = new ArrayList<UserFormula>();
 	
+	@XmlTransient
+	private String shortEditorUINote;
+	
 	public AdaptedTableConfig(){}
 
 	public AdapterColumnConfig addMappedFormulaColumn(String formula, String to, ODLColumnType toType, long toFlags){
@@ -280,5 +283,15 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	public List<UserFormula> getUserFormulae(){
 		return userFormulae;
 	}
+
+	public String getShortEditorUINote() {
+		return shortEditorUINote;
+	}
+
+	@XmlAttribute(name ="ShortEditorUINote")
+	public void setShortEditorUINote(String shortEditorUINote) {
+		this.shortEditorUINote = shortEditorUINote;
+	}
+
 	
 }
