@@ -69,6 +69,7 @@ public interface Tables {
 	 */
 	ODLColumnType getColumnType(Class<?> externalType);
 	
+
 	/**
 	 * Find the table index using a standardised string compare
 	 * @param ds

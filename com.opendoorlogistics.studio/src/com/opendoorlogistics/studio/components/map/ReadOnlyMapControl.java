@@ -345,7 +345,7 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		// update viewport before rendering
 		viewport = getViewportBounds();
 
-		// draw to an image first. The image can be reused to allow the selection box to redrawn but not anything else
+		// draw to an image first. The image can be reused to allow the selection box to redrawn but not anything else (e.g. no text redraw)
 		if (mapImage == null || mapImage.getWidth() != getWidth() || mapImage.getHeight() != getHeight() || reuseImageOnNextPaint == false) {
 			mapImage = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
 			Graphics2D g2 = mapImage.createGraphics();
