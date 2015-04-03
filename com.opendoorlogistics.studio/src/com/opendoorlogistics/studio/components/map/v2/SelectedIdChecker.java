@@ -4,8 +4,8 @@
  * are made available under the terms of the GNU Lesser Public License v3
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
-package com.opendoorlogistics.studio.components.map;
+package com.opendoorlogistics.studio.components.map.v2;
 
-public interface MapSelectionList {
-	boolean isSelectedInMap(long rowId);
+public interface SelectedIdChecker {
+	boolean isSelectedId(long rowId);
 }

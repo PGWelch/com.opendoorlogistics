@@ -30,6 +30,7 @@ import com.opendoorlogistics.codefromweb.jxmapviewer2.DesktopPaneMapViewer;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.painter.CompoundPainter;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.painter.Painter;
+import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
 import com.opendoorlogistics.core.gis.map.MapUtils;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
@@ -410,9 +411,9 @@ public class ReadOnlyMapControl extends DesktopPaneMapViewer {
 		return null;
 	}
 
-	public GetToolTipCB getGetToolTipCB() {
-		return getToolTipCB;
-	}
+//	public GetToolTipCB getGetToolTipCB() {
+//		return getToolTipCB;
+//	}
 
 	public void setGetToolTipCB(GetToolTipCB getToolTipCB) {
 		this.getToolTipCB = getToolTipCB;

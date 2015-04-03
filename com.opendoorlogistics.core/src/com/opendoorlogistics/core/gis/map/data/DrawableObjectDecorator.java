@@ -19,70 +19,87 @@ public class DrawableObjectDecorator implements DrawableObject {
 		this.decorated = decorated;
 	}
 	
+	@Override	
 	public double getLatitude() {
 		return decorated.getLatitude();
 	}
 
+	@Override	
 	public long getGlobalRowId() {
 		return decorated.getGlobalRowId();
 	}
 
+	@Override
 	public double getLongitude() {
 		return decorated.getLongitude();
 	}
 
+	@Override
 	public Color getColour() {
 		return decorated.getColour();
 	}
 
+	@Override
 	public String getColourKey() {
 		return decorated.getColourKey();
 	}
 
+	@Override
 	public long getDrawOutline() {
 		return decorated.getDrawOutline();
 	}
 
+	@Override
 	public String getImageFormulaKey() {
 		return decorated.getImageFormulaKey();
 	}
 
+	@Override
 	public String getLegendKey() {
 		return decorated.getLegendKey();
 	}
 
+	@Override
 	public Color getLegendColour() {
 		return decorated.getLegendColour();
 	}
 
+	@Override
 	public String getLabel() {
 		return decorated.getLabel();
 	}
 
+	@Override
 	public String getLabelGroupKey() {
 		return decorated.getLabelGroupKey();
 	}
 
+	@Override
 	public String getSymbol() {
 		return decorated.getSymbol();
 	}
 
+	@Override
 	public long getFontSize() {
 		return decorated.getFontSize();
 	}
 
+	@Override
 	public long getPixelWidth() {
 		return decorated.getPixelWidth();
 	}
 
+	@Override
 	public double getOpaque() {
 		return decorated.getOpaque();
 	}
 
+	@Override
 	public ODLGeomImpl getGeometry() {
 		return decorated.getGeometry();
 	}
 
+	@Override
 	public String getTooltip() {
 		return decorated.getTooltip();
 	}

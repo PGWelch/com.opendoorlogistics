@@ -56,11 +56,12 @@ import com.opendoorlogistics.studio.components.map.InteractiveMapControl.OnClick
 import com.opendoorlogistics.studio.components.map.InteractiveMapControl.OnFillListener;
 import com.opendoorlogistics.studio.components.map.ModalMouseListener.MouseMode;
 import com.opendoorlogistics.studio.components.map.SelectionPanel.SelectionChangedListener;
+import com.opendoorlogistics.studio.components.map.v2.SelectedIdChecker;
 import com.opendoorlogistics.studio.controls.DynamicComboBox;
 import com.opendoorlogistics.studio.panels.FieldSelectorPanel;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 
-public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectionList {
+public class InteractiveMapPanel extends ReadOnlyMapPanel implements SelectedIdChecker {
 	private final InteractiveMapControl interactive;
 	private final HideableSplitPanel fillSplitPanel;
 	private final FillFieldPanel fieldSelectorPanel;
@@ -468,8 +469,8 @@ public class InteractiveMapPanel extends ReadOnlyMapPanel implements MapSelectio
 	}
 
 	@Override
-	public boolean isSelectedInMap(long rowId) {
-		return interactive.isSelectedInMap(rowId);
+	public boolean isSelectedId(long rowId) {
+		return interactive.isSelectedId(rowId);
 	}
 
 	private void updateSelListSplitter() {

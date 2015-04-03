@@ -27,7 +27,7 @@ public class SuggestedFillValuesManager {
 	private HashMap<Pair<String,String>, StandardisedStringTreeMap<Long>> maps = new HashMap<>();
 	private long fillNb;
 	
-	void addFill(String table, String field, String value){
+	public void addFill(String table, String field, String value){
 		if(Strings.isEmptyWhenStandardised(value)){
 			return;
 		}
@@ -47,7 +47,7 @@ public class SuggestedFillValuesManager {
 		return fldMap;
 	}
 	
-	List<String> getSuggestions( ODLTableReadOnly table, int col, Iterable<? extends DrawableObject> drawables){
+	public List<String> getSuggestions( ODLTableReadOnly table, int col, Iterable<? extends DrawableObject> drawables){
 		
 		// get all possible values...
 		StandardisedStringTreeMap<String> canonical = new StandardisedStringTreeMap<>();

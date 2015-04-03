@@ -496,7 +496,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 						else if (onScreenBounds.intersects(selRectOnScreen)) {
 							
 							// need to do geometry testing
-							OnscreenGeometry cachedGeometry = getCachedGeometry(pnt.getGeometry(), converter, true);
+							OnscreenGeometry cachedGeometry = getCachedGeometry((ODLGeomImpl)pnt.getGeometry(), converter, true);
 							if(cachedGeometry!=null){
 
 								if (cachedGeometry.isDrawFilledBounds()) {
@@ -867,7 +867,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 	}
 	
 	private static boolean hasPoint(DrawableObject o){
-		return o.getGeometry()==null || ((ODLGeomImpl)o.getGeometry()).getAtomicGeomCount(AtomicGeomType.POINT)>0;
+		return o.getGeometry()==null || o.getGeometry().getAtomicGeomCount(AtomicGeomType.POINT)>0;
 	}
 	
 	private boolean renderGeometry(Graphics2D g, final LatLongToScreen converter, DrawableObject pnt, boolean isSelected, long renderFlags) {

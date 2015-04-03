@@ -23,6 +23,16 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 public interface Tables {
 	ODLTableDefinitionAlterable copyTableDefinition(ODLTableDefinition copyThis, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> copyTo);
 
+	ODLTableAlterable createTable(ODLTableDefinition tableDefinition);
+	
+	/**
+	 * Copy a row between identical tables
+	 * @param from
+	 * @param rowIndex
+	 * @param to
+	 */
+	void copyRow(ODLTableReadOnly from, int rowIndex, ODLTable to);
+	
 	/**
 	 * Add a row to the table with the input values
 	 * @param table

@@ -61,17 +61,17 @@ final public class ODLGridTable extends GridTable {
 	 */
 	private static final long serialVersionUID = 4204113069098514992L;
 	private final HasInternalFrames owner;
-	private final ODLDatastoreUndoable<ODLTableAlterable> globalDs;
+	private final ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs;
 	private final PreferredColumnWidths preferredColumnWidths;
 
 	public ODLGridTable(ODLDatastore<? extends ODLTableReadOnly> ds, int tableId, boolean enableListeners,
-			RowStyler rowStyler, ODLDatastoreUndoable<ODLTableAlterable> globalDs, GridEditPermissions permissions, HasInternalFrames owner) {
+			RowStyler rowStyler, ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs, GridEditPermissions permissions, HasInternalFrames owner) {
 		this(ds, tableId, enableListeners, rowStyler,globalDs, permissions, owner, null);
 	}
 
 	public ODLGridTable(ODLDatastore<? extends ODLTableReadOnly> ds, int tableId, boolean enableListeners,
 			RowStyler rowStyler,
-			ODLDatastoreUndoable<ODLTableAlterable> globalDs, GridEditPermissions permissions, HasInternalFrames owner, PreferredColumnWidths pcw) {
+			ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs, GridEditPermissions permissions, HasInternalFrames owner, PreferredColumnWidths pcw) {
 		super(new SwingAdapter(ds, tableId, enableListeners, permissions.get(Permission.setValues) == false,rowStyler), permissions);
 		this.preferredColumnWidths = pcw;
 		this.globalDs = globalDs;

@@ -12,6 +12,7 @@ import java.util.Random;
 
 
 
+
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -20,6 +21,7 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
@@ -120,10 +122,14 @@ final public class MapUtils {
 	public static List<DrawableObjectImpl> createExampleObjects(int n){
 		ArrayList<DrawableObjectImpl> ret = new ArrayList<>(n);
 		String [] names = ExampleData.getExampleNouns();
+		String [] legendItems = new String[]{"Group A", "Group B" , "Group C"};
 		Random random = new Random();
 		for(int i =0 ; i < n ; i++){
 			String name = names[i%names.length];
-			ret.add(new DrawableObjectImpl( 52 + 2.0*random.nextDouble(),-1 + 2.0*random.nextDouble(),Colours.getRandomColour(name),name));
+			DrawableObjectImpl obj = new DrawableObjectImpl( 52 + 2.0*random.nextDouble(),-1 + 2.0*random.nextDouble(),Colours.getRandomColour(name),name);
+			obj.setPixelWidth(10);
+			obj.setLegendKey(legendItems[i%legendItems.length]);
+			ret.add(obj);
 		}
 		return ret;
 	}
