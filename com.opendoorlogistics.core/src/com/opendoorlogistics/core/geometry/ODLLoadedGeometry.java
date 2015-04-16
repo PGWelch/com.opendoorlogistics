@@ -9,9 +9,9 @@
 package com.opendoorlogistics.core.geometry;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.OnscreenGeometry;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;

@@ -8,7 +8,6 @@ package com.opendoorlogistics.studio.components.map;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -34,30 +33,19 @@ import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.geometry.LatLong;
-import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
-import com.opendoorlogistics.api.tables.ODLTableAlterable;
-import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.SynchronousRenderer;
-import com.opendoorlogistics.core.gis.map.data.DrawableObject;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
-import com.opendoorlogistics.core.tables.io.TableIOUtils;
-import com.opendoorlogistics.core.tables.utils.TableUtils;
-import com.opendoorlogistics.core.utils.strings.Strings;
-import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
-import com.opendoorlogistics.studio.AppFrame;
+import com.opendoorlogistics.studio.components.map.snapshot.CreateImageConfig.CaptureMode;
 import com.opendoorlogistics.studio.components.map.snapshot.ExportImageConfig;
 import com.opendoorlogistics.studio.components.map.snapshot.ExportImagePanel;
 import com.opendoorlogistics.studio.components.map.snapshot.ProcessCreateImage;
-import com.opendoorlogistics.studio.components.map.snapshot.CreateImageConfig.CaptureMode;
 import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog.OnFinishedSwingThreadCB;
-import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
-import com.opendoorlogistics.studio.panels.ProgressPanel;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 
 public class ReadOnlyMapPanel extends JPanel implements Disposable {

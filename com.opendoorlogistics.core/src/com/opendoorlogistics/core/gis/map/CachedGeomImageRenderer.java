@@ -16,13 +16,12 @@ import java.awt.image.FilteredImageSource;
 import java.awt.image.ImageProducer;
 import java.awt.image.RGBImageFilter;
 
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl.AtomicGeomType;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
-import com.vividsolutions.jts.geom.Geometry;
 
 public class CachedGeomImageRenderer implements ObjectRenderer{
 	private final RecentImageCache geomCache = new RecentImageCache(RecentImageCache.ZipType.LZ4, 64*1024*1024);

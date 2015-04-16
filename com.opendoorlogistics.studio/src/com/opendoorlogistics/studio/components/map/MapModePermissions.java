@@ -29,7 +29,7 @@ public class MapModePermissions {
 		selectObjects = hasSet;
 		
 		// deleting objects is done through the global ds, so providing we can select them we can delete them
-		deleteSelectObjects = hasSet;
+		deleteSelectObjects = TableFlagUtils.hasFlag(tableFlags, TableFlags.UI_DELETE_ALLOWED);
 		
 		// similarly fill fields is also done through global ds
 		fillFields = hasSet;

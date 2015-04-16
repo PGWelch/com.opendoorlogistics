@@ -4,18 +4,20 @@ import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 
-import javax.swing.JPopupMenu;
-import javax.swing.JToolBar;
 import javax.swing.event.MouseInputListener;
 
+import com.opendoorlogistics.api.standardcomponents.map.MapApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners;
+import com.opendoorlogistics.api.standardcomponents.map.MapMode;
+import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.utils.Pair;
-import com.opendoorlogistics.studio.components.map.LayeredDrawables;
 
 public class MapApiListenersImpl implements MapApiListeners, MouseInputListener, KeyListener{
 
@@ -72,8 +74,9 @@ public class MapApiListenersImpl implements MapApiListeners, MouseInputListener,
 	private final Listeners<OnChangeListener> selectionChangedListener = new Listeners<MapApiListeners.OnChangeListener>();
 	private final Listeners<OnDisposedListener> disposedListeners = new Listeners<MapApiListeners.OnDisposedListener>();
 	private final Listeners<KeyListener> keyListeners = new Listeners<KeyListener>();
-	private final Listeners<FilterVisibleObjects> filters = new Listeners<FilterVisibleObjects>();
-	
+	private final Listeners<FilterVisibleObjects> filters = new Listeners<FilterVisibleObjects>();	
+	private final Listeners<OnToolTipListener> tooltipListeners = new Listeners<OnToolTipListener>();
+	private final Listeners<ModifyImageListener> modifyImageListeners = new Listeners<ModifyImageListener>();
 	
 	//private final Listeners<MouseInputListener> mouseInputListeners = new Listeners<MouseInputListener>();
 	
@@ -190,7 +193,7 @@ public class MapApiListenersImpl implements MapApiListeners, MouseInputListener,
 		}
 	}
 	
-	public void fireBuildContextMenuListeners(MapApi api,MapPopupMenu menu){
+	public void fireBuildContextMenuListeners(MapApi api,MapPopupMenuImpl menu){
 		for(OnBuildContextMenu l : buildContextMenuListeners){
 			l.onBuildContextMenu(api,menu);
 		}
@@ -208,7 +211,11 @@ public class MapApiListenersImpl implements MapApiListeners, MouseInputListener,
 		}
 	}
 	
-
+	public void fireTooltipListeners(MapApi api,MouseEvent evt,long [] objectIdsUnderMouse,StringBuilder currentTip){
+		for(OnToolTipListener l : tooltipListeners){
+			l.onToolTip(api, evt, objectIdsUnderMouse, currentTip);
+		}
+	}
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
@@ -338,4 +345,32 @@ public class MapApiListenersImpl implements MapApiListeners, MouseInputListener,
 	public void removeFilterVisibleObjectsListener(FilterVisibleObjects listener) {
 		filters.remove(listener);
 	}
+
+	@Override
+	public void registerOnTooltipListener(OnToolTipListener listener, int priority) {
+		tooltipListeners.register(listener, priority);
+	}
+
+	@Override
+	public void removeOnToolTipListener(OnToolTipListener listener) {
+		tooltipListeners.remove(listener);
+	}
+
+	@Override
+	public void registerModifyMapImage(ModifyImageListener listener, int priority) {
+		modifyImageListeners.register(listener, priority);
+	}
+
+	@Override
+	public void removeModifyMapImage(ModifyImageListener listener) {
+		modifyImageListeners.remove(listener);
+	}
+	
+	public BufferedImage fireModifyMapImageListeners(MapApi api,BufferedImage mapImage){
+		for(ModifyImageListener l : modifyImageListeners){
+			mapImage = l.modifyMapImage(api,mapImage);
+		}
+		return mapImage;
+	}
+	
 }

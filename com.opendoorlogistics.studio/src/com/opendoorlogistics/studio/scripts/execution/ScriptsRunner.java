@@ -20,12 +20,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.AppFrame;

@@ -20,11 +20,11 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
 
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.core.tables.decorators.datastores.RowFilterDecorator;
 import com.opendoorlogistics.studio.tables.grid.GridEditPermissions;
 import com.opendoorlogistics.studio.tables.grid.ODLGridTable;

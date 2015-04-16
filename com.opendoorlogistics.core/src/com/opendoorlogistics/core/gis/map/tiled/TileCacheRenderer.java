@@ -8,7 +8,6 @@ package com.opendoorlogistics.core.gis.map.tiled;
 
 import gnu.trove.set.hash.TLongHashSet;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
@@ -25,25 +24,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.media.jai.ImageSequence;
-
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.codefromweb.BlockingLifoQueue;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
-import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.CachedGeomImageRenderer;
-import com.opendoorlogistics.core.gis.map.OnscreenGeometry;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
 import com.opendoorlogistics.core.gis.map.ObjectRenderer;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.tiled.DrawableObjectLayer.LayerType;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
-import com.opendoorlogistics.core.utils.images.ImageUtils;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.Polygon;

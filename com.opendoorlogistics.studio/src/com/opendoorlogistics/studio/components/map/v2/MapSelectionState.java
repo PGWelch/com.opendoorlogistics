@@ -1,7 +1,5 @@
 package com.opendoorlogistics.studio.components.map.v2;
 
-import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
-
 import gnu.trove.set.hash.TLongHashSet;
 
 public class MapSelectionState {
@@ -16,7 +14,7 @@ public class MapSelectionState {
 	}
 	
 	public void clear(){
-		selectedGlobalRowIds.clear();
+		set(null);
 	}
 	
 	public void add(long id){
@@ -25,7 +23,9 @@ public class MapSelectionState {
 	
 	public void set(long [] ids){
 		selectedGlobalRowIds.clear();
-		selectedGlobalRowIds.addAll(ids);
+		if(ids!=null){
+			selectedGlobalRowIds.addAll(ids);			
+		}
 	}
 	
 	public boolean contains(long id){

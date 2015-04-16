@@ -1,4 +1,4 @@
-package com.opendoorlogistics.studio.components.map.v2;
+package com.opendoorlogistics.api.standardcomponents.map;
 
 import java.awt.Cursor;
 import java.awt.Graphics2D;
@@ -6,7 +6,9 @@ import java.awt.event.KeyListener;
 
 import javax.swing.event.MouseInputListener;
 
-public interface MapMode extends MouseInputListener, KeyListener{
+import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnObjectsChanged;
+
+public interface MapMode extends MouseInputListener, KeyListener, OnObjectsChanged{
 
 	Cursor getCursor();
 	

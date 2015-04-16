@@ -5,32 +5,25 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.concurrent.Callable;
 
 import javax.swing.Action;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
-import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
+import com.opendoorlogistics.api.standardcomponents.map.MapApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
+import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.core.gis.map.SynchronousRenderer;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
-import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
-import com.opendoorlogistics.core.tables.beans.BeanMappedRow;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
 import com.opendoorlogistics.studio.components.map.snapshot.CreateImageConfig.CaptureMode;
 import com.opendoorlogistics.studio.components.map.snapshot.ExportImageConfig;
 import com.opendoorlogistics.studio.components.map.snapshot.ExportImagePanel;
 import com.opendoorlogistics.studio.components.map.snapshot.ProcessCreateImage;
-import com.opendoorlogistics.studio.components.map.v2.MapApi;
-import com.opendoorlogistics.studio.components.map.v2.MapApiListeners.OnBuildContextMenu;
-import com.opendoorlogistics.studio.components.map.v2.MapApiListeners.OnBuildToolbarListener;
-import com.opendoorlogistics.studio.components.map.v2.MapPlugin;
 import com.opendoorlogistics.studio.components.map.v2.plugins.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog.OnFinishedSwingThreadCB;
@@ -46,16 +39,22 @@ public class SnapshotPlugin implements MapPlugin {
 			public Action create(MapApi api) {
 				return createAction(api);
 			}
-		}, StandardOrdering.SNAPSHOT,"snapshot");
+		}, StandardMapMenuOrdering.SNAPSHOT,"snapshot");
 	}
 
+	@Override
+	public String getId(){
+		return "com.opendoorlogistics.studio.components.map.plugins.SnapshotPlugin";
+	}
+
+	
 	private static Action createAction(final MapApi api) {
 		return new SimpleAction("Take picture", "Take picture", "camera.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Component mapComponent = api.getMapUIComponent();
-				Dimension mapSize = api.getMapUIComponent().getSize();
+				Component mapComponent = api.getMapWindowComponent();
+				Dimension mapSize = api.getMapWindowComponent().getSize();
 				ExportImageConfig config = ExportImagePanel.showModal(mapComponent, lastCreateImageConfig, mapSize);
 				if (config != null) {
 

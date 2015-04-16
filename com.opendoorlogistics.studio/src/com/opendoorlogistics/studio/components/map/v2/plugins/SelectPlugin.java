@@ -15,46 +15,122 @@ import java.awt.event.MouseEvent;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JCheckBox;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JToolBar;
+import javax.swing.SwingUtilities;
 import javax.swing.event.TableModelEvent;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
 
+import com.opendoorlogistics.api.standardcomponents.map.MapApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapApi.PanelPosition;
+import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnBuildToolbarListener;
+import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnChangeListener;
+import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnObjectsChanged;
+import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
+import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
+import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.ui.Disposable;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.core.tables.decorators.datastores.RowFilterDecorator;
+import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.studio.components.map.v2.AbstractMapMode;
-import com.opendoorlogistics.studio.components.map.v2.MapApi;
-import com.opendoorlogistics.studio.components.map.v2.MapApi.PanelPosition;
-import com.opendoorlogistics.studio.components.map.v2.MapApiListeners.OnBuildToolbarListener;
-import com.opendoorlogistics.studio.components.map.v2.MapApiListeners.OnChangeListener;
-import com.opendoorlogistics.studio.components.map.v2.MapPlugin;
-import com.opendoorlogistics.studio.components.map.v2.MapToolbar;
 import com.opendoorlogistics.studio.components.map.v2.plugins.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.tables.grid.GridEditPermissions;
 import com.opendoorlogistics.studio.tables.grid.ODLGridTable;
 import com.opendoorlogistics.studio.tables.grid.PreferredColumnWidths;
 
 public class SelectPlugin implements MapPlugin {
+	private final static long NEEDS_FLAGS = TableFlags.UI_SET_ALLOWED;
+
+	@Override
+	public String getId(){
+		return "com.opendoorlogistics.studio.components.map.plugins.SelectPlugin";
+	}
 
 	@Override
 	public void initMap(final MapApi api) {
+		String groupId = "selectmode";
+		
+		// selection mode
 		PluginUtils.registerActionFactory(api, new ActionFactory() {
 
 			@Override
 			public Action create(MapApi api) {
 				return createAction(api);
 			}
-		}, StandardOrdering.SELECT_MODE, "mapmode");
+		}, StandardMapMenuOrdering.SELECT_MODE, groupId, NEEDS_FLAGS);
 
+		// zoom to selection
+		PluginUtils.registerActionFactory(api, new ActionFactory() {
+			
+			@Override
+			public Action create(MapApi api) {
+				AbstractAction action = new AbstractAction() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						zoomOnSelection(api);
+					}
+				};
+
+				PluginUtils.initAction("Zoom to selection", "Zoom to selected objects.", "zoom-selected.png", action);
+				return action;
+			}
+		}, StandardMapMenuOrdering.SELECT_MODE, groupId, NEEDS_FLAGS);
+		
+		// delete selection
+		PluginUtils.registerActionFactory(api, new ActionFactory() {
+			
+			@Override
+			public Action create(MapApi api) {
+				AbstractAction action = new AbstractAction()
+				{
+					
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						long [] ids = api.getSelectedIds();
+						
+						if (ids == null || ids.length == 0) {
+							JOptionPane.showMessageDialog(api.getMapWindowComponent(), "No objects are selected");
+							return;
+						}
+
+						TableUtils.deleteByGlobalId(api.getMapDataApi().getGlobalDatastore(), true, ids);
+					}
+				};
+				
+				PluginUtils.initAction("Delete selected objects", "Delete selected objects", "edit-delete-6.png", action);
+				return action;
+			}
+		}, StandardMapMenuOrdering.SELECT_MODE, groupId, TableFlags.UI_DELETE_ALLOWED | TableFlags.UI_SET_ALLOWED);
+		
 		final SelectionHandler handler = new SelectionHandler(api);
 		api.registerSelectionChanged(handler, 0);
+		api.registerObjectsChangedListener(new OnObjectsChanged() {
+			
+			@Override
+			public void onObjectsChanged(MapApi api) {
+				if(!PluginUtils.getIsEnabled(api, NEEDS_FLAGS)){
+					SwingUtilities.invokeLater(new Runnable() {
+						
+						@Override
+						public void run() {
+							api.clearSelection();
+						}
+					});
+				}
+			}
+		}, 0);
+		
+
 	}
 
 	private Action createAction(final MapApi api) {
@@ -71,6 +147,14 @@ public class SelectPlugin implements MapPlugin {
 		return action;
 	}
 
+	private static void zoomOnSelection(MapApi api) {
+		ODLTableReadOnly table = api.getMapDataApi().getActiveTableSelectedOnly();
+		if(table!=null && table.getRowCount()>0){
+			api.setViewToBestFit(table);
+		}
+
+	}
+
 	private static class SelectMode extends AbstractMapMode {
 		private final MapApi api;
 
@@ -83,6 +167,11 @@ public class SelectPlugin implements MapPlugin {
 			return PluginUtils.createCursor("cursor-crosshair-small.png", 11, 11);
 		}
 
+		@Override
+		public void onObjectsChanged(MapApi api) {
+			PluginUtils.exitModeIfNeeded(api, SelectMode.class, NEEDS_FLAGS,true);
+		}
+		
 		@Override
 		public void paint(MapApi api, Graphics2D g) {
 			Rectangle rectangle = getDragRectangle();
@@ -100,6 +189,10 @@ public class SelectPlugin implements MapPlugin {
 
 		@Override
 		public void mouseReleased(MouseEvent e) {
+			if(!SwingUtilities.isLeftMouseButton(e)){
+				return;
+			}
+			
 			Rectangle rectangle = getDragRectangle();
 			super.mouseReleased(e);
 			TLongHashSet set = new TLongHashSet();
@@ -144,7 +237,7 @@ public class SelectPlugin implements MapPlugin {
 					toolBar.add(box, "mapmode");
 				}
 
-			}, StandardOrdering.SHOW_SELECTED);
+			}, StandardMapMenuOrdering.SHOW_SELECTED);
 		}
 
 		@Override

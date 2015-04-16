@@ -1,8 +1,10 @@
-package com.opendoorlogistics.studio.components.map.v2;
+package com.opendoorlogistics.api.standardcomponents.map;
 
 
 import java.awt.Graphics2D;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 
 import javax.swing.event.MouseInputListener;
 
@@ -37,8 +39,16 @@ public interface MapApiListeners {
 		void onDispose(MapApi api);
 	}
 	
+	interface ModifyImageListener{
+		BufferedImage modifyMapImage(MapApi api,BufferedImage img);
+	}
+	
 	interface FilterVisibleObjects{
 		boolean acceptObject(ODLTableReadOnly table, int row);
+	}
+	
+	interface OnToolTipListener{
+		void onToolTip(MapApi api,MouseEvent evt,long [] objectIdsUnderMouse,StringBuilder currentTip);
 	}
 	
 	void registerObjectsChangedListener(OnObjectsChanged listener, int priority);
@@ -64,6 +74,10 @@ public interface MapApiListeners {
 	void registerDisposedListener(OnDisposedListener listener, int priority);
 	
 	void registerKeyListener(KeyListener listener, int priority);
+	
+	void registerOnTooltipListener(OnToolTipListener listener, int priority);
+
+	void registerModifyMapImage(ModifyImageListener listener, int priority);
 
 	void removeObjectsChangedListener(OnObjectsChanged listener);
 	
@@ -88,4 +102,9 @@ public interface MapApiListeners {
 	void removeKeyListener(KeyListener listener);
 	
 	void removeFilterVisibleObjectsListener(FilterVisibleObjects listener);
+	
+	void removeOnToolTipListener(OnToolTipListener listener);
+	
+	void removeModifyMapImage(ModifyImageListener listener);
+
 }

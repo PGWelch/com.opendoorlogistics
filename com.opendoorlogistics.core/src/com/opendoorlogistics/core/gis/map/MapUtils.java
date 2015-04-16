@@ -129,6 +129,7 @@ final public class MapUtils {
 			DrawableObjectImpl obj = new DrawableObjectImpl( 52 + 2.0*random.nextDouble(),-1 + 2.0*random.nextDouble(),Colours.getRandomColour(name),name);
 			obj.setPixelWidth(10);
 			obj.setLegendKey(legendItems[i%legendItems.length]);
+			obj.setTooltip("My name is " + name);
 			ret.add(obj);
 		}
 		return ret;

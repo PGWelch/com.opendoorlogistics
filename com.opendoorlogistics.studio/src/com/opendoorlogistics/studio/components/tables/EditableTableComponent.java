@@ -6,8 +6,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.studio.components.tables;
 
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.studio.AppFrame;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
 

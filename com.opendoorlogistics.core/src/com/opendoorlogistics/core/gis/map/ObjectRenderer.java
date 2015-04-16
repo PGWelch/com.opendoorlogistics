@@ -10,8 +10,8 @@ package com.opendoorlogistics.core.gis.map;
 
 import java.awt.Graphics2D;
 
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 
 public interface ObjectRenderer {
 	boolean renderObject(Graphics2D g, LatLongToScreen converter, DrawableObject obj, boolean isSelected, long renderFlags);

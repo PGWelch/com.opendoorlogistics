@@ -20,24 +20,20 @@ import gnu.trove.set.hash.TLongHashSet;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.Stroke;
-import java.awt.Toolkit;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.FilteredImageSource;
-import java.awt.image.ImageProducer;
-import java.awt.image.RGBImageFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
@@ -49,7 +45,6 @@ import com.opendoorlogistics.core.gis.map.OnscreenGeometry.CachedGeomKey;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.IntUtils;
 import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
@@ -430,6 +425,9 @@ public class DatastoreRenderer implements ObjectRenderer{
 	public static List<DrawableObject> getObjectsWithinRectangle(Iterable<? extends DrawableObject> pnts, LatLongToScreen converter, Rectangle selRectOnScreen, boolean filterUnselectable) {
 
 		List<DrawableObject> ret = new ArrayList<>();
+		if(pnts == null){
+			return ret;
+		}
 
 		// create blank image with the bounds that we're testing to give us a valid graphics object
 		int w = Math.max(selRectOnScreen.width, 1);

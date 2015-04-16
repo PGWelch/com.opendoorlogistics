@@ -26,11 +26,11 @@ import javax.swing.Timer;
 import javax.swing.event.MouseInputListener;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.DesktopPaneMapViewer;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.painter.CompoundPainter;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.painter.Painter;
-import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
 import com.opendoorlogistics.core.gis.map.MapUtils;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
@@ -39,7 +39,6 @@ import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
 

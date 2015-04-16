@@ -16,28 +16,22 @@ import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
-import javax.swing.JToolBar;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.Tables;
+import com.opendoorlogistics.api.standardcomponents.map.MapApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapApi.PanelPosition;
+import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners;
+import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
+import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.gis.map.Legend;
-import com.opendoorlogistics.core.tables.ColumnValueProcessor;
-import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
-import com.opendoorlogistics.studio.components.map.v2.MapApi;
-import com.opendoorlogistics.studio.components.map.v2.MapApiListeners;
-import com.opendoorlogistics.studio.components.map.v2.MapDataApi;
-import com.opendoorlogistics.studio.components.map.v2.MapApi.PanelPosition;
-import com.opendoorlogistics.studio.components.map.v2.MapApiListeners.OnBuildContextMenu;
-import com.opendoorlogistics.studio.components.map.v2.MapApiListeners.OnBuildToolbarListener;
 import com.opendoorlogistics.studio.components.map.v2.plugins.PluginUtils.ActionFactory;
-import com.opendoorlogistics.studio.components.map.v2.MapPlugin;
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckBoxItem;
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckBoxItemImpl;
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckboxTable;
@@ -49,6 +43,11 @@ import com.opendoorlogistics.utils.ui.SimpleAction;
 public class LegendPlugin implements MapPlugin {
 
 	@Override
+	public String getId(){
+		return "com.opendoorlogistics.studio.components.map.plugins.LegendPlugin";
+	}
+	
+	@Override
 	public void initMap(final MapApi api) {
 		final LegendHandler handler = new LegendHandler();
 
@@ -58,7 +57,7 @@ public class LegendPlugin implements MapPlugin {
 			public Action create(MapApi api) {
 				return handler.createAction(api);
 			}
-		}, StandardOrdering.LEGEND, "legend");
+		}, StandardMapMenuOrdering.LEGEND, "legend");
 	}
 
 	private static class LegendHandler{

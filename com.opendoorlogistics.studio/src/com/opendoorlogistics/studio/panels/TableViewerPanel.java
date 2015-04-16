@@ -8,10 +8,10 @@ package com.opendoorlogistics.studio.panels;
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
 import com.opendoorlogistics.studio.tables.grid.GridEditPermissions;
 import com.opendoorlogistics.studio.tables.grid.GridTable;

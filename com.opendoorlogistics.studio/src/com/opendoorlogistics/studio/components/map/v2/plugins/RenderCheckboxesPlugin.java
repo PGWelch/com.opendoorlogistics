@@ -6,16 +6,24 @@ import java.awt.event.ActionListener;
 
 import javax.swing.Box;
 import javax.swing.JCheckBox;
-import javax.swing.JToolBar;
 
+import com.opendoorlogistics.api.standardcomponents.map.MapApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnBuildToolbarListener;
+import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
+import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
+import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
-import com.opendoorlogistics.studio.components.map.v2.MapApi;
-import com.opendoorlogistics.studio.components.map.v2.MapPlugin;
-import com.opendoorlogistics.studio.components.map.v2.MapApiListeners.OnBuildToolbarListener;
-import com.opendoorlogistics.studio.components.map.v2.MapToolbar;
 
 public class RenderCheckboxesPlugin implements MapPlugin{
 
+	
+
+	@Override
+	public String getId(){
+		return "com.opendoorlogistics.studio.components.map.plugins.RenderCheckboxesPlugin";
+	}
+
+	
 	@Override
 	public void initMap(final MapApi api) {
 		final JCheckBox text= new JCheckBox("Text",true);
@@ -33,7 +41,7 @@ public class RenderCheckboxesPlugin implements MapPlugin{
 				toolBar.add(map, "renderoption");
 			}
 
-		}, StandardOrdering.RENDER_OPTIONS);
+		}, StandardMapMenuOrdering.RENDER_OPTIONS);
 	}
 
 	private void addActionListener(JCheckBox checkBox, final MapApi api, final long flag){

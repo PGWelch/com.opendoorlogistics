@@ -1,25 +1,20 @@
-package com.opendoorlogistics.studio.components.map.v2;
+package com.opendoorlogistics.api.standardcomponents.map;
 
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Panel;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.Point2D;
-import java.util.concurrent.Callable;
 
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.geometry.LatLong;
-import com.opendoorlogistics.api.geometry.ODLGeom;
-import com.opendoorlogistics.api.tables.ODLTable;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
-import com.opendoorlogistics.core.gis.map.data.DrawableObject;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 
 
 /**
@@ -27,7 +22,7 @@ import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
  * @author Phil
  *
  */
-public interface MapApi extends MapApiListeners, SelectedIdChecker{
+public interface MapApi extends MapApiListeners{
 
 	enum PanelPosition{
 		//TOP,
@@ -44,20 +39,26 @@ public interface MapApi extends MapApiListeners, SelectedIdChecker{
 	LatLongToScreen createImmutableConverter();
 	ComponentControlLauncherApi getControlLauncherApi();
 	MapDataApi getMapDataApi();
-	Component getMapUIComponent();
+	Component getMapWindowComponent();
 	int getMaxZoom();
 	int getMinZoom();
+	MapMode getMapMode();
+	MapMode getDefaultMapMode();
+	ODLApi getApi();
 	long getRenderFlags();
 	long [] getSelectableIdsWithinPixelRectangle(Rectangle screenCoordinatesRectangle);
 	long [] getSelectedIds();
+	boolean isSelectedId(long rowId);	
 	Point2D getWorldBitmapMapCentre();
 	Dimension getWorldBitmapMapSize(int zoom);
 	Point getWorldBitmapPosition(LatLong ll, int zoom);
 	Rectangle getWorldBitmapViewport();
+	MapToolbar getMapToolbar();
 	int getZoom();
 	void repaint(boolean repaintPluginOverlapOnly);
 	void setCursor(Cursor cursor);
 	void setMapMode(MapMode mapMode);
+	void setDefaultMapMode(MapMode mode);
 	void setRenderFlags(long flags);
 	void setSelectedIds(long... ids);
 	<T extends JPanel & Disposable> void setSidePanel(T panel, PanelPosition pos);

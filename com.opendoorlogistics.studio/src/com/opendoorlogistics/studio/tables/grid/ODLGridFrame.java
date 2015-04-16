@@ -6,9 +6,9 @@
  ******************************************************************************/
 package com.opendoorlogistics.studio.tables.grid;
 
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
 import com.opendoorlogistics.studio.tables.grid.adapter.RowStyler;
 

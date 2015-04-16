@@ -146,7 +146,6 @@ final public class InitialiseStudio {
 						com.opendoorlogistics.core.gis.map.RecentImageCache.ZipType.class, com.opendoorlogistics.core.gis.map.RenderProperties.class, com.opendoorlogistics.core.gis.map.Symbols.class,
 						com.opendoorlogistics.core.gis.map.Symbols.SymbolType.class, com.opendoorlogistics.core.gis.map.tiled.ChangedObjectsCalculator.class,
 						com.opendoorlogistics.core.gis.map.tiled.NOPLManager.class, com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.class,
-						com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener.class, com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen.class,
 						com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl.class, com.opendoorlogistics.core.gis.postcodes.UKPostcodes.UKPostcodeLevel.class,
 						com.opendoorlogistics.core.scripts.execution.adapters.FunctionsBuilder.ProcessedLookupReferences.class,
 						com.opendoorlogistics.core.scripts.execution.adapters.FunctionsBuilder.ToProcessLookupReferences.class, com.opendoorlogistics.core.scripts.formulae.FmAbstractLookup.class,

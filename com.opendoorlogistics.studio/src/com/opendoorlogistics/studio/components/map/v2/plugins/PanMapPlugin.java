@@ -11,16 +11,15 @@ import java.util.ArrayList;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
-import javax.swing.JPopupMenu;
-import javax.swing.JToolBar;
 
+import com.opendoorlogistics.api.standardcomponents.map.MapApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners;
+import com.opendoorlogistics.api.standardcomponents.map.MapMode;
+import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
+import com.opendoorlogistics.api.standardcomponents.map.MapPopupMenu;
+import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
+import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.studio.components.map.v2.AbstractMapMode;
-import com.opendoorlogistics.studio.components.map.v2.MapApi;
-import com.opendoorlogistics.studio.components.map.v2.MapApiListeners;
-import com.opendoorlogistics.studio.components.map.v2.MapMode;
-import com.opendoorlogistics.studio.components.map.v2.MapPlugin;
-import com.opendoorlogistics.studio.components.map.v2.MapPopupMenu;
-import com.opendoorlogistics.studio.components.map.v2.MapToolbar;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 
@@ -29,11 +28,19 @@ public class PanMapPlugin implements MapPlugin{
 	@Override
 	public void initMap(MapApi api) {
 		PanMapState ret = new PanMapState(api);
-		api.registerOnBuildToolbarListener(ret, StandardOrdering.NAVIGATE);
+		api.registerOnBuildToolbarListener(ret, StandardMapMenuOrdering.NAVIGATE);
 		api.registerOnBuildContextMenuListener(ret, 0);
 		api.registerKeyListener(ret, 0);
-		api.setMapMode(ret);;
+		api.setMapMode(ret);
+		api.setDefaultMapMode(ret);
 	}
+	
+
+	@Override
+	public String getId(){
+		return "com.opendoorlogistics.studio.components.map.plugins.PanMapPlugin";
+	}
+
 
 	private static class PanMapState extends AbstractMapMode implements MapApiListeners.OnBuildToolbarListener,MapApiListeners.OnBuildContextMenu, MapMode{
 		private final MapApi api;

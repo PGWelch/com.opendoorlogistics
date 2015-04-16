@@ -13,15 +13,13 @@ import java.io.DataInputStream;
 import java.io.File;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
-import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.ODLLoadableGeometry;
-import com.opendoorlogistics.core.geometry.ShapefileLink;
 import com.opendoorlogistics.core.geometry.Spatial;
 import com.opendoorlogistics.core.gis.map.OnscreenGeometry;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;

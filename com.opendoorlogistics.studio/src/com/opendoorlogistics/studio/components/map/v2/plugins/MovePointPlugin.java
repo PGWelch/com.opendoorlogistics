@@ -8,26 +8,29 @@ import java.util.concurrent.Callable;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.standardcomponents.map.MapApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapDataApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
+import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.api.tables.ODLTable;
-import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
+import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.studio.components.map.v2.AbstractMapMode;
-import com.opendoorlogistics.studio.components.map.v2.MapApi;
-import com.opendoorlogistics.studio.components.map.v2.MapDataApi;
-import com.opendoorlogistics.studio.components.map.v2.MapPlugin;
 import com.opendoorlogistics.studio.components.map.v2.plugins.PluginUtils.ActionFactory;
 
 public class MovePointPlugin implements MapPlugin, ActionFactory{
+	private static final long NEEDS_FLAGS = TableFlags.UI_SET_ALLOWED;
 
 	@Override
 	public void initMap(MapApi api) {
-		PluginUtils.registerActionFactory(api, this, StandardOrdering.MOVE_MODE, "mapmode");
+		PluginUtils.registerActionFactory(api, this, StandardMapMenuOrdering.MOVE_MODE, "mapmode",NEEDS_FLAGS);
 	}
 
-	
+	@Override
+	public String getId(){
+		return "com.opendoorlogistics.studio.components.map.plugins.MovePointPlugin";
+	}
 
 	@Override
 	public Action create(final MapApi api) {
@@ -36,7 +39,9 @@ public class MovePointPlugin implements MapPlugin, ActionFactory{
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				api.setMapMode(new MovePointMode(api));
+				if(!PluginUtils.exitIfInMode(api, MovePointMode.class)){
+					api.setMapMode(new MovePointMode(api));					
+				}
 			}
 		};
 		
@@ -56,16 +61,22 @@ public class MovePointPlugin implements MapPlugin, ActionFactory{
 			return PluginUtils.createCursor("tool-move.png", 17, 15);
 		}
 		
+
+		@Override
+		public void onObjectsChanged(MapApi api) {
+			PluginUtils.exitModeIfNeeded(api, MovePointMode.class, NEEDS_FLAGS,false);
+		}
+		
 		@Override
 		public void mouseDragged(MouseEvent evt) {
 			super.mouseDragged(evt);
 			if(isDragging()){
 				final long [] selectedIds = api.getSelectedIds();
 				if(selectedIds == null || selectedIds.length == 0 ){
-					JOptionPane.showMessageDialog(api.getMapUIComponent(), "No point selected to move");
+					JOptionPane.showMessageDialog(api.getMapWindowComponent(), "No point selected to move");
 				}
 				else if (selectedIds.length>1){
-					JOptionPane.showMessageDialog(api.getMapUIComponent(), "Cannot move more than one point at a time.");					
+					JOptionPane.showMessageDialog(api.getMapWindowComponent(), "Cannot move more than one point at a time.");					
 				}
 				else{
 					final MapDataApi mdapi = api.getMapDataApi();

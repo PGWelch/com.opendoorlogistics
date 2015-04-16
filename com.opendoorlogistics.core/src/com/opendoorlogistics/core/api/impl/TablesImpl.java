@@ -132,4 +132,9 @@ public class TablesImpl implements Tables {
 		return ds.getTableAt(0);
 	}
 
+	@Override
+	public void copyRowById(ODLTableReadOnly from, long rowId, ODLTable to) {
+		DatastoreCopier.copyRowById(from, rowId, to);
+	}
+
 }

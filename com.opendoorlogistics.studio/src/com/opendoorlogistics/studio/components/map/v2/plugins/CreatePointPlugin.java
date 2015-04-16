@@ -7,24 +7,30 @@ import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.standardcomponents.map.MapApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapDataApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
+import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.api.tables.ODLTable;
+import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.studio.components.map.v2.AbstractMapMode;
-import com.opendoorlogistics.studio.components.map.v2.MapApi;
-import com.opendoorlogistics.studio.components.map.v2.MapDataApi;
-import com.opendoorlogistics.studio.components.map.v2.MapPlugin;
 import com.opendoorlogistics.studio.components.map.v2.plugins.PluginUtils.ActionFactory;
 
 public class CreatePointPlugin implements MapPlugin, ActionFactory{
+	
+	private final static long NEEDS_FLAGS = TableFlags.UI_INSERT_ALLOWED | TableFlags.UI_SET_ALLOWED;
 
 	@Override
-	public void initMap(MapApi api) {
-		PluginUtils.registerActionFactory(api, this, StandardOrdering.ADD_MODE, "mapmode");
+	public String getId(){
+		return "com.opendoorlogistics.studio.components.map.plugins.CreatePointPlugin";
 	}
-
 	
+	@Override
+	public void initMap(MapApi api) {
+		PluginUtils.registerActionFactory(api, this, StandardMapMenuOrdering.ADD_MODE, "mapmode",NEEDS_FLAGS);
+	}
 
 	@Override
 	public Action create(final MapApi api) {
@@ -33,7 +39,9 @@ public class CreatePointPlugin implements MapPlugin, ActionFactory{
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				api.setMapMode(new AddMode(api));
+				if(!PluginUtils.exitIfInMode(api, AddMode.class)){
+					api.setMapMode(new AddMode(api));					
+				}
 			}
 		};
 		
@@ -78,6 +86,9 @@ public class CreatePointPlugin implements MapPlugin, ActionFactory{
 
 		}
 
-
+		@Override
+		public void onObjectsChanged(MapApi api) {
+			PluginUtils.exitModeIfNeeded(api, AddMode.class, NEEDS_FLAGS,false);
+		}
 	}
 }

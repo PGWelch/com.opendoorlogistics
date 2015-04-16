@@ -1,32 +1,23 @@
 package com.opendoorlogistics.studio.components.map.v2;
 
-import java.awt.Component;
-
 import javax.swing.Action;
-import javax.swing.JToolBar;
+import javax.swing.JPopupMenu;
 
+import com.opendoorlogistics.api.standardcomponents.map.MapPopupMenu;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
-public class MapToolbar extends JToolBar {
+public class MapPopupMenuImpl extends MapPopupMenu{
 	private String lastGroup;
 	
 	public void add(Action action, String group){
-		processSeparator(group);
-		super.add(action);
-	}
-	
-	public void add(Component component, String group){
-		processSeparator(group);
-		super.add(component);
-	}
-	
-	private void processSeparator(String group){
 		if(getComponentCount()>0 && !Strings.equalsStd(group, lastGroup)){
 			addSeparator();
 		}
 		
 		lastGroup = group;
+		super.add(action);
 	}
+
 	
 	@Override
 	public void removeAll(){

@@ -32,7 +32,9 @@ public interface Tables {
 	 * @param to
 	 */
 	void copyRow(ODLTableReadOnly from, int rowIndex, ODLTable to);
-	
+
+	void copyRowById(ODLTableReadOnly from, long rowId, ODLTable to);
+
 	/**
 	 * Add a row to the table with the input values
 	 * @param table

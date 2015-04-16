@@ -11,11 +11,11 @@ import java.util.HashSet;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.core.tables.commands.Command;
 import com.opendoorlogistics.core.tables.commands.CreateTable;
 import com.opendoorlogistics.core.tables.commands.DeleteEmptyCol;
@@ -485,14 +485,14 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 
 
 	@Override
-	public void addUndoStateListener(com.opendoorlogistics.core.tables.ODLDatastoreUndoable.UndoStateChangedListener<T> listener) {
+	public void addUndoStateListener(ODLDatastoreUndoable.UndoStateChangedListener<T> listener) {
 		undoStateListeners.add(listener);
 	}
 
 
 
 	@Override
-	public void removeUndoStateListener(com.opendoorlogistics.core.tables.ODLDatastoreUndoable.UndoStateChangedListener<T> listener) {
+	public void removeUndoStateListener(ODLDatastoreUndoable.UndoStateChangedListener<T> listener) {
 		undoStateListeners.remove(listener);
 	}
 	

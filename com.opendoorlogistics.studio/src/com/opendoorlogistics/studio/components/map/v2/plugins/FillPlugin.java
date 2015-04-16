@@ -1,6 +1,5 @@
 package com.opendoorlogistics.studio.components.map.v2.plugins;
 
-import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.hash.TIntHashSet;
 
 import java.awt.BorderLayout;
@@ -20,29 +19,33 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
-import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.standardcomponents.map.MapApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapApi.PanelPosition;
+import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
+import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
-import com.opendoorlogistics.api.tables.ODLTableAlterable;
-import com.opendoorlogistics.api.tables.ODLListener.ODLListenerType;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.ui.Disposable;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
-import com.opendoorlogistics.studio.components.map.InteractiveMapPanel;
 import com.opendoorlogistics.studio.components.map.SuggestedFillValuesManager;
 import com.opendoorlogistics.studio.components.map.v2.AbstractMapMode;
-import com.opendoorlogistics.studio.components.map.v2.MapApi;
-import com.opendoorlogistics.studio.components.map.v2.MapApi.PanelPosition;
-import com.opendoorlogistics.studio.components.map.v2.MapPlugin;
 import com.opendoorlogistics.studio.components.map.v2.plugins.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.controls.DynamicComboBox;
 import com.opendoorlogistics.studio.panels.FieldSelectorPanel;
 
 public class FillPlugin implements MapPlugin {
-
+	private static final long NEEDS_FLAGS = TableFlags.UI_SET_ALLOWED;
+	
+	@Override
+	public String getId(){
+		return "com.opendoorlogistics.studio.components.map.plugins.FillPlugin";
+	}
+	
+	
 	@Override
 	public void initMap(final MapApi api) {
 
@@ -54,7 +57,7 @@ public class FillPlugin implements MapPlugin {
 			public Action create(MapApi api) {
 				return createAction(api, fillSuggestedValues);
 			}
-		}, StandardOrdering.FILL_MODE, "mapmode");
+		}, StandardMapMenuOrdering.FILL_MODE, "mapmode",NEEDS_FLAGS );
 
 	}
 
@@ -64,7 +67,9 @@ public class FillPlugin implements MapPlugin {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				api.setMapMode(new FillMode(api, fillSuggestedValues));
+				if(!PluginUtils.exitIfInMode(api, FillMode.class)){
+					api.setMapMode(new FillMode(api, fillSuggestedValues));					
+				}
 			}
 		};
 
@@ -86,6 +91,11 @@ public class FillPlugin implements MapPlugin {
 			return PluginUtils.createCursor("tool-bucket-fill-32x32.png", 22, 15);
 		}
 
+		@Override
+		public void onObjectsChanged(MapApi api) {
+			PluginUtils.exitModeIfNeeded(api, FillMode.class, NEEDS_FLAGS,false);
+		}
+		
 		@Override
 		public void paint(MapApi api, Graphics2D g) {
 			Rectangle rectangle = getDragRectangle();
@@ -149,7 +159,7 @@ public class FillPlugin implements MapPlugin {
 			final Pair<ODLTable, Integer> pair = getSelectedFillTableColumn(panel);
 
 			if (pair == null) {
-				JOptionPane.showMessageDialog(api.getMapUIComponent(), "No fill column selected.");
+				JOptionPane.showMessageDialog(api.getMapWindowComponent(), "No fill column selected.");
 				return;
 			}
 
@@ -174,7 +184,7 @@ public class FillPlugin implements MapPlugin {
 			}
 
 			if (nbProcessed > 0 && nbSet == 0) {
-				JOptionPane.showMessageDialog(api.getMapUIComponent(), "No values were set as none of the selected objects were from the selected table.");
+				JOptionPane.showMessageDialog(api.getMapWindowComponent(), "No values were set as none of the selected objects were from the selected table.");
 			}
 		}
 

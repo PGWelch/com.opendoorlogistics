@@ -18,6 +18,8 @@ import java.awt.image.BufferedImage;
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
+import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.Tile;
@@ -26,10 +28,7 @@ import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.Tile
 import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.background.BackgroundTileFactorySingleton;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
-import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
-import com.opendoorlogistics.core.utils.ui.SwingUtils;
 
 public class MapViewPanel extends JPanel implements Disposable, TileListener{
 
@@ -42,7 +41,9 @@ public class MapViewPanel extends JPanel implements Disposable, TileListener{
 	
 	private boolean repaintPluginOverlapOnly;
 	
-	private boolean nextFrameBlank;
+	private boolean disablePaint;
+	
+	//private boolean skipMapDraw;
 	
 //	private final MapObjectsRenderer renderer;
 	
@@ -149,8 +150,7 @@ public class MapViewPanel extends JPanel implements Disposable, TileListener{
     public void paint(Graphics g) {
 		super.paint(g);
 		
-		if(nextFrameBlank){
-			nextFrameBlank = false;
+		if(isDisablePaint()){
 			return;
 		}
 		
@@ -180,7 +180,8 @@ public class MapViewPanel extends JPanel implements Disposable, TileListener{
 		}
 		repaintPluginOverlapOnly = false;
 
-		g.drawImage(mapImage, 0, 0, getWidth(), getHeight(), null, null);
+		BufferedImage modifiedImage = ((MapApiImpl)mapi).fireModifyMapImageListeners(mapi, mapImage);
+		g.drawImage(modifiedImage, 0, 0, getWidth(), getHeight(), null, null);
 		
 		paintPluginOverlay((Graphics2D)g);
 	}
@@ -312,9 +313,15 @@ public class MapViewPanel extends JPanel implements Disposable, TileListener{
 	}
 
 
-	public void setNextFrameBlank(boolean nextFrameBlank) {
-		this.nextFrameBlank = nextFrameBlank;
+	public boolean isDisablePaint() {
+		return disablePaint;
 	}
-	
+
+
+	public void setDisablePaint(boolean disablePaint) {
+		this.disablePaint = disablePaint;
+	}
+
+
 	
 }

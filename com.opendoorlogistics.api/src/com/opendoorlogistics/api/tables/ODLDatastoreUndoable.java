@@ -4,7 +4,7 @@
  * are made available under the terms of the GNU Lesser Public License v3
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
-package com.opendoorlogistics.core.tables;
+package com.opendoorlogistics.api.tables;
 
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;

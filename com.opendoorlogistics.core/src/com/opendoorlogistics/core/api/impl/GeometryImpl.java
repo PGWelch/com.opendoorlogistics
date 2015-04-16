@@ -16,6 +16,8 @@ import com.opendoorlogistics.core.geometry.Spatial;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LinearRing;
+import com.vividsolutions.jts.geom.Polygon;
 
 public class GeometryImpl implements Geometry {
 	private final GeometryFactory geomfactory = new GeometryFactory();
@@ -43,4 +45,40 @@ public class GeometryImpl implements Geometry {
 	public double calculateGreatCircleDistance(LatLong from, LatLong to) {
 		return GreateCircle.greatCircleApprox(from, to);
 	}
+
+	@Override
+	public ODLGeom createPolygon(LatLong [] outer, LatLong [][]holes) {
+		LinearRing outerRing = geomfactory.createLinearRing(toCoords(outer));
+		int nholes = holes!=null ? holes.length : 0;
+		LinearRing [] innerRings = new LinearRing[nholes];
+		for(int i =0 ; i < nholes ; i++){
+			innerRings[i] = geomfactory.createLinearRing(toCoords(holes[i]));
+		}
+		
+		com.vividsolutions.jts.geom.Geometry g = geomfactory.createPolygon(outerRing, innerRings);
+		return new ODLLoadedGeometry(g);
+	}
+	
+	private Coordinate toCoordinate(LatLong ll){
+		return new Coordinate(ll.getLongitude(), ll.getLatitude());
+	}
+	
+	private Coordinate [] toCoords(LatLong [] lls){
+		Coordinate []ret = new Coordinate[lls.length];
+		for(int i =0 ; i < lls.length ; i++){
+			ret[i] = toCoordinate(lls[i]);
+		}
+		return ret;
+	}
+
+	@Override
+	public ODLGeom createMultipolygon(ODLGeom[] polygons) {
+		Polygon [] polys = new Polygon[polygons.length];
+		for(int i =0 ; i < polys.length ; i++){
+			polys[i] = (Polygon)((ODLGeomImpl)polygons[i]).getJTSGeometry();
+		}
+		
+		return new ODLLoadedGeometry(geomfactory.createMultiPolygon(polys));
+	}
+	
 }

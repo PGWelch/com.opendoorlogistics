@@ -16,11 +16,11 @@ import java.awt.Rectangle;
 import java.util.HashSet;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.painter.Painter;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
 import com.opendoorlogistics.studio.components.map.ModalMouseListener.MouseMode;
 import com.opendoorlogistics.studio.components.map.ModalMouseListener.OnActionableListener;

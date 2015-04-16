@@ -16,13 +16,13 @@ import java.util.Map;
 
 import javax.swing.SwingUtilities;
 
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.gis.map.Legend;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckBoxItem;
 
 public abstract class FilteredDrawablesContainer implements Disposable {

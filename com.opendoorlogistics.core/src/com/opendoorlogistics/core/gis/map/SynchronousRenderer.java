@@ -17,14 +17,13 @@ import java.awt.image.BufferedImage;
 import java.util.HashSet;
 
 import com.opendoorlogistics.api.geometry.LatLong;
-import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.OSMTileFactoryInfo;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.util.GeoUtil;
 import com.opendoorlogistics.core.gis.map.background.BackgroundTileFactorySingleton;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
 import com.opendoorlogistics.core.gis.map.transforms.UpscalerLatLongToPixelPosition;
 import com.opendoorlogistics.core.utils.Pair;
