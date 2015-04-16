@@ -70,7 +70,7 @@ public class CreatePointPlugin implements MapPlugin, ActionFactory{
 				
 				@Override
 				public Boolean call() throws Exception {
-					ODLTable table = mdapi.getUnfilteredDrawableTable();
+					ODLTable table = mdapi.getUnfilteredActiveTable();
 					if(table!=null){
 						int rowIndx = table.createEmptyRow(-1);
 						if(rowIndx==-1){

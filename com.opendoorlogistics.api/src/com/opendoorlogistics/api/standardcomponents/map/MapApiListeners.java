@@ -8,6 +8,8 @@ import java.awt.image.BufferedImage;
 
 import javax.swing.event.MouseInputListener;
 
+import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 
 public interface MapApiListeners {
@@ -23,6 +25,15 @@ public interface MapApiListeners {
 		void onBuildToolbar(MapApi api,MapToolbar toolBar);
 	}
 
+	/**
+	 * Callback called just prior to the map objects changing
+	 * @author Phil
+	 *
+	 */
+	interface OnPreObjectsChanged{
+		void onPreObjectsChanged(MapApi api,ODLDatastore<? extends ODLTable> newMapDatastore);
+	}
+	
 	interface OnBuildContextMenu{
 		void onBuildContextMenu(MapApi api,MapPopupMenu menu);
 	}
@@ -79,6 +90,8 @@ public interface MapApiListeners {
 
 	void registerModifyMapImage(ModifyImageListener listener, int priority);
 
+	void registerPreObjectsChangedListener(OnPreObjectsChanged listener, int priority);
+
 	void removeObjectsChangedListener(OnObjectsChanged listener);
 	
 	void removeOnBuildToolbarListener(OnBuildToolbarListener listener);
@@ -106,5 +119,7 @@ public interface MapApiListeners {
 	void removeOnToolTipListener(OnToolTipListener listener);
 	
 	void removeModifyMapImage(ModifyImageListener listener);
+
+	void removePreObjectsChangedListener(OnPreObjectsChanged listener);
 
 }

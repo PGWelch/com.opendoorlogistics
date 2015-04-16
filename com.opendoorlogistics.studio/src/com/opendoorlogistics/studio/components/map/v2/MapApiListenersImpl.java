@@ -16,6 +16,8 @@ import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners;
 import com.opendoorlogistics.api.standardcomponents.map.MapMode;
 import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
+import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.utils.Pair;
 
@@ -77,6 +79,9 @@ public class MapApiListenersImpl implements MapApiListeners, MouseInputListener,
 	private final Listeners<FilterVisibleObjects> filters = new Listeners<FilterVisibleObjects>();	
 	private final Listeners<OnToolTipListener> tooltipListeners = new Listeners<OnToolTipListener>();
 	private final Listeners<ModifyImageListener> modifyImageListeners = new Listeners<ModifyImageListener>();
+	private final Listeners<OnPreObjectsChanged> preObjectsChanged = new Listeners<OnPreObjectsChanged>();
+	
+	
 	
 	//private final Listeners<MouseInputListener> mouseInputListeners = new Listeners<MouseInputListener>();
 	
@@ -372,5 +377,20 @@ public class MapApiListenersImpl implements MapApiListeners, MouseInputListener,
 		}
 		return mapImage;
 	}
+
+	@Override
+	public void registerPreObjectsChangedListener(OnPreObjectsChanged listener, int priority) {
+		preObjectsChanged.register(listener, priority);
+	}
+
+	@Override
+	public void removePreObjectsChangedListener(OnPreObjectsChanged listener) {
+		preObjectsChanged.remove(listener);
+	}
 	
+	public void firePreObjectsChangedListener(MapApi api, ODLDatastore<? extends ODLTable> newMapDatastore){
+		for(OnPreObjectsChanged l : preObjectsChanged){
+			l.onPreObjectsChanged(api, newMapDatastore);
+		}
+	}
 }

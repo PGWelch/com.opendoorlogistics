@@ -202,7 +202,7 @@ public class PluginUtils {
 	}
 
 	static boolean getIsEnabled(final MapApi api, final long needsFlags) {
-		ODLTable table = api.getMapDataApi().getUnfilteredDrawableTable();
+		ODLTable table = api.getMapDataApi().getUnfilteredActiveTable();
 		boolean enabled = false;
 		if(table!=null){
 			enabled = (table.getFlags() & needsFlags) ==needsFlags;

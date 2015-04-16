@@ -85,7 +85,7 @@ public class MovePointPlugin implements MapPlugin, ActionFactory{
 						@Override
 						public Boolean call() throws Exception {
 							LatLong ll = api.createImmutableConverter().getLongLat(evt.getX(), evt.getY());
-							ODLTable drawables = mdapi.getUnfilteredDrawableTable();
+							ODLTable drawables = mdapi.getUnfilteredActiveTable();
 							if(drawables!=null){
 								long id = selectedIds[0];
 								drawables.setValueById(ll.getLatitude(), id, mdapi.getLatitudeColumn());

@@ -25,7 +25,7 @@ public class CustomTooltipPlugin implements MapPlugin{
 			public void onToolTip(MapApi api, MouseEvent evt, long[] objectIdsUnderMouse, StringBuilder currentTip) {
 				ArrayList<String> nonEmpties = new ArrayList<>();
 				MapDataApi data = api.getMapDataApi();
-				ODLTableReadOnly active = data.getUnfilteredDrawableTable();
+				ODLTableReadOnly active = data.getUnfilteredActiveTable();
 				for (long id : objectIdsUnderMouse) {
 					
 					String s = null;

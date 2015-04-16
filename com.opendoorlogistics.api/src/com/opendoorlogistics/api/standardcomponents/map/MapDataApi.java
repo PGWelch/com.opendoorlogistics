@@ -2,6 +2,7 @@ package com.opendoorlogistics.api.standardcomponents.map;
 
 import java.util.concurrent.Callable;
 
+import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
@@ -16,10 +17,12 @@ public interface MapDataApi {
 	int getGeomColumn();
 	int getLegendKeyColumn();
 	int getTooltipColumn();
-	ODLTable getUnfilteredDrawableTable();
+	ODLTable getUnfilteredActiveTable();
 	ODLTable getUnfilteredInactiveForegroundTable();
 	ODLTable getUnfilteredInactiveBackgroundTable();
 	ODLTableReadOnly getActiveTableSelectedOnly();
 	ODLTableReadOnly getFilteredAllLayersTable();
 	ODLTableReadOnly getUnfilteredAllLayersTable();
+	Iterable<ODLTable> getDrawableTables(ODLDatastore<? extends ODLTable> mapDatastore);
+	ODLDatastore<? extends ODLTable> getMapDatastore();
 }

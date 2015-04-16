@@ -318,6 +318,8 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	}
 
 	public void setObjects(ODLDatastore<? extends ODLTable> mapDatastore) {
+		firePreObjectsChangedListener(this, mapDatastore);
+		
 		this.mapDatastore = mapDatastore;
 		
 		updateObjectFiltering();
@@ -347,11 +349,12 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		return containerLevel1Panel;
 	}
 	
-	private class FetchInputTables extends ArrayList<ODLTable>{
+	private static class FetchInputTables extends ArrayList<ODLTable>{
 		final ODLTable background ;
 		final ODLTable activeTable ;
 		final ODLTable foreground ;
-		FetchInputTables(){
+		
+		FetchInputTables(ODLDatastore<? extends ODLTable> mapDatastore){
 			background = TableUtils.findTable(mapDatastore, MapViewerComponent.INACTIVE_BACKGROUND);
 			if(background!=null){
 				add(background);
@@ -371,7 +374,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 
 	private class FilteredTables {
-		final FetchInputTables unfilteredTables= new FetchInputTables();
+		final FetchInputTables unfilteredTables= new FetchInputTables(mapDatastore);
 		final Iterable<? extends DrawableObject> activeUnfiltered;
 		final Iterable<? extends DrawableObject> activeFiltered;
 		final LayeredDrawables allFiltered;
@@ -424,6 +427,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	@Override
 	public void updateObjectFiltering() {
 
+		// do filtering
 		filtered = new FilteredTables(true);
 
 		renderer.setObjects(filtered.allFiltered);
@@ -1075,7 +1079,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			}
 
 			@Override
-			public ODLTable getUnfilteredDrawableTable() {
+			public ODLTable getUnfilteredActiveTable() {
 				return TableUtils.findTable(mapDatastore, PredefinedTags.DRAWABLES);
 			}
 
@@ -1117,7 +1121,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			@Override
 			public ODLTableReadOnly getActiveTableSelectedOnly() {
 				long [] sel = (MapApiImpl.this).getSelectedIds();
-				ODLTable active = getUnfilteredDrawableTable();
+				ODLTable active = getUnfilteredActiveTable();
 				if(sel!=null && sel.length>0 && active!=null){
 					ODLApi odlApi = (MapApiImpl.this).getApi();
 					ODLDatastoreAlterable<? extends ODLTableAlterable> ds = odlApi.tables().createAlterableDs();
@@ -1132,6 +1136,16 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 					return filtered;
 				}
 				return null;
+			}
+
+			@Override
+			public Iterable<ODLTable> getDrawableTables(ODLDatastore<? extends ODLTable> mapDatastore) {
+				return new FetchInputTables(mapDatastore);
+			}
+
+			@Override
+			public ODLDatastore<? extends ODLTable> getMapDatastore() {
+				return mapDatastore;
 			}
 
 

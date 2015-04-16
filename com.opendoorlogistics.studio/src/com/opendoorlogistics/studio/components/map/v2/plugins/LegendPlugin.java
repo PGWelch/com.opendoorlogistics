@@ -1,5 +1,7 @@
 package com.opendoorlogistics.studio.components.map.v2.plugins;
 
+import gnu.trove.set.hash.TLongHashSet;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -23,13 +25,16 @@ import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi.PanelPosition;
 import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners;
+import com.opendoorlogistics.api.standardcomponents.map.MapDataApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
 import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.api.tables.ODLColumnType;
+import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.gis.map.Legend;
+import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.components.map.v2.plugins.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckBoxItem;
@@ -91,7 +96,7 @@ public class LegendPlugin implements MapPlugin {
 		}
 	}
 	
-	private static class LegendPanel extends JPanel implements Disposable , CheckChangedListener, ButtonClickedListener, MapApiListeners.OnObjectsChanged, MapApiListeners.FilterVisibleObjects{
+	private static class LegendPanel extends JPanel implements Disposable , CheckChangedListener, ButtonClickedListener, MapApiListeners.OnPreObjectsChanged, MapApiListeners.FilterVisibleObjects{
 		private static final Color LEGEND_BACKGROUND_COLOUR = new Color(240, 240, 240);
 		private final CheckboxTable legendFilterTable;
 		private final MapApi api;
@@ -101,7 +106,8 @@ public class LegendPlugin implements MapPlugin {
 			setLayout(new BorderLayout());
 
 			// init table
-			legendFilterTable = new CheckboxTable(new Icon[]{Icons.loadFromStandardPath("legend-zoom-best.png")},new Dimension(20, 20), new ArrayList<CheckBoxItem>());
+			legendFilterTable = new CheckboxTable(new Icon[]{Icons.loadFromStandardPath("legend-zoom-best.png"),
+					Icons.loadFromStandardPath("select.png")},new Dimension(20, 20), new ArrayList<CheckBoxItem>());
 			legendFilterTable.addCheckChangedListener(this);
 			legendFilterTable.addButtonClickedListener(this);
 			add(legendFilterTable, BorderLayout.CENTER);
@@ -131,9 +137,9 @@ public class LegendPlugin implements MapPlugin {
 			}));
 			add(showHidePanel , BorderLayout.SOUTH);	
 			
-			updateLegend();
+			updateLegend(api.getMapDataApi().getMapDatastore());
 			
-			api.registerObjectsChangedListener(this, 0);
+			api.registerPreObjectsChangedListener(this, 0);
 			api.registerFilterVisibleObjectsListener(this, 0);
 			api.updateObjectFiltering();
 		}
@@ -141,25 +147,55 @@ public class LegendPlugin implements MapPlugin {
 		
 		@Override
 		public void dispose() {
-			api.removeObjectsChangedListener(this);
+			api.removePreObjectsChangedListener(this);
 			api.removeFilterVisibleObjectsListener(this);
+			api.updateObjectFiltering();
 		}
 
 
 		@Override
 		public void buttonClicked(CheckBoxItem item, int buttonColumn) {
 			
-			Tables tablesApi = api.getControlLauncherApi().getApi().tables();
-			ODLTableReadOnly all = api.getMapDataApi().getUnfilteredAllLayersTable();
-			ODLTable copy = tablesApi.createTable(all);
-			int n = all.getRowCount();
-			for(int i =0 ; i < n ; i++){
-				String key = getLegendKey(all, i);
-				if(api.getControlLauncherApi().getApi().stringConventions().equalStandardised(key, item.getText())){
-					tablesApi.copyRow(all, i, copy);
+			abstract class ParseLegendItems{
+				void parse(boolean activeTableOnly){
+					MapDataApi mdApi = api.getMapDataApi();
+					ODLTableReadOnly all = activeTableOnly? mdApi.getUnfilteredActiveTable() :mdApi.getUnfilteredAllLayersTable();
+					int n = all!=null ? all.getRowCount() : 0;
+					for(int i =0 ; i < n ; i++){
+						String key = getLegendKey(all, i);
+						if(api.getControlLauncherApi().getApi().stringConventions().equalStandardised(key, item.getText())){
+							parseItem(all, i);
+						}
+					}	
 				}
+				
+				abstract void parseItem(ODLTableReadOnly table, int row);
 			}
-			api.setViewToBestFit(copy);
+			
+			if(buttonColumn==0){
+				Tables tablesApi = api.getControlLauncherApi().getApi().tables();
+				final ODLTable copy = tablesApi.createTable(api.getMapDataApi().getUnfilteredAllLayersTable());
+				new ParseLegendItems() {
+					
+					@Override
+					void parseItem(ODLTableReadOnly table, int row) {
+						tablesApi.copyRow(table, row, copy);						
+					}
+				}.parse(false);			
+				api.setViewToBestFit(copy);				
+			}
+			else if(buttonColumn == 1){
+				final TLongHashSet ids = new TLongHashSet();
+				new ParseLegendItems() {
+					
+					@Override
+					void parseItem(ODLTableReadOnly table, int row) {
+						ids.add(table.getRowId(row));
+					}
+				}.parse(true);
+				
+				api.setSelectedIds(ids.toArray());
+			}
 
 		}
 
@@ -170,8 +206,15 @@ public class LegendPlugin implements MapPlugin {
 		}
 
 
-		private void updateLegend() {
-			List<Map.Entry<String, BufferedImage>> items = Legend.getLegendItemImages(PluginUtils.toDrawables(api.getMapDataApi().getUnfilteredAllLayersTable()), new Dimension(20, 20));
+		private void updateLegend(ODLDatastore<? extends ODLTable> ds) {
+			ArrayList<DrawableObject> list = new ArrayList<DrawableObject>();
+			MapDataApi mdApi = api.getMapDataApi();
+			for(ODLTableReadOnly table : mdApi.getDrawableTables(ds)){
+				if(table!=null){
+					list.addAll(PluginUtils.toDrawables(table));					
+				}
+			}
+			List<Map.Entry<String, BufferedImage>> items = Legend.getLegendItemImages(list, new Dimension(20, 20));
 
 			// build checkbox items
 			ArrayList<CheckBoxItem> newItems = new ArrayList<>();
@@ -194,13 +237,12 @@ public class LegendPlugin implements MapPlugin {
 			}
 
 			legendFilterTable.setItems(newItems);
-		//	checkStateChanged();
 		}
 
 
 		@Override
-		public void onObjectsChanged(MapApi api) {
-			updateLegend();
+		public void onPreObjectsChanged(MapApi api,ODLDatastore<? extends ODLTable> newMapDatastore){	
+			updateLegend(newMapDatastore);
 		}
 
 

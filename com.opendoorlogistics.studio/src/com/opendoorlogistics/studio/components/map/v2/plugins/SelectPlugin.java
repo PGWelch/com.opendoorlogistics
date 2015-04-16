@@ -81,7 +81,27 @@ public class SelectPlugin implements MapPlugin {
 					}
 				};
 
-				PluginUtils.initAction("Zoom to selection", "Zoom to selected objects.", "zoom-selected.png", action);
+				PluginUtils.initAction("Zoom to selection", "Zoom to selected objects", "zoom-selected.png", action);
+				return action;
+			}
+		}, StandardMapMenuOrdering.SELECT_MODE, groupId, NEEDS_FLAGS);
+		
+		// clear selection
+		PluginUtils.registerActionFactory(api, new ActionFactory() {
+			
+			@Override
+			public Action create(MapApi api) {
+				
+
+				AbstractAction action = new AbstractAction() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						api.clearSelection();
+					}
+				};
+
+				PluginUtils.initAction("Clear the selection", "Clear the selection", "map-clear-selection.png", action);
 				return action;
 			}
 		}, StandardMapMenuOrdering.SELECT_MODE, groupId, NEEDS_FLAGS);

@@ -224,7 +224,7 @@ public class FillPlugin implements MapPlugin {
 					if (tableCol == null) {
 						return new ArrayList<>();
 					}
-					return fillSuggestedValues.getSuggestions(tableCol.getFirst(), tableCol.getSecond(), PluginUtils.toDrawables(api.getMapDataApi().getUnfilteredDrawableTable()));
+					return fillSuggestedValues.getSuggestions(tableCol.getFirst(), tableCol.getSecond(), PluginUtils.toDrawables(api.getMapDataApi().getUnfilteredActiveTable()));
 				}
 			};
 
@@ -253,7 +253,7 @@ public class FillPlugin implements MapPlugin {
 		@Override
 		public void datastoreStructureChanged() {
 			TIntHashSet selectableTableIds = new TIntHashSet();
-			ODLTableReadOnly table = api.getMapDataApi().getUnfilteredDrawableTable();
+			ODLTableReadOnly table = api.getMapDataApi().getUnfilteredActiveTable();
 			if (table != null) {
 				int n = table.getRowCount();
 				for (int i = 0; i < n; i++) {
