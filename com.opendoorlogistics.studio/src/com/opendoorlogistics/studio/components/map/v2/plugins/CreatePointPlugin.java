@@ -7,6 +7,7 @@ import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi;
@@ -16,7 +17,8 @@ import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.studio.components.map.v2.AbstractMapMode;
-import com.opendoorlogistics.studio.components.map.v2.plugins.PluginUtils.ActionFactory;
+import com.opendoorlogistics.studio.components.map.v2.plugins.utils.PluginUtils;
+import com.opendoorlogistics.studio.components.map.v2.plugins.utils.PluginUtils.ActionFactory;
 
 public class CreatePointPlugin implements MapPlugin, ActionFactory{
 	
@@ -72,13 +74,20 @@ public class CreatePointPlugin implements MapPlugin, ActionFactory{
 				public Boolean call() throws Exception {
 					ODLTable table = mdapi.getUnfilteredActiveTable();
 					if(table!=null){
-						int rowIndx = table.createEmptyRow(-1);
+						final int rowIndx = table.createEmptyRow(-1);
 						if(rowIndx==-1){
 							return false;
 						}
 						LatLong ll = api.createImmutableConverter().getLongLat(e.getX(), e.getY());
 						table.setValueAt(ll.getLatitude(), rowIndx, mdapi.getLatitudeColumn());
 						table.setValueAt(ll.getLongitude(), rowIndx, mdapi.getLongitudeColumn());
+						SwingUtilities.invokeLater(new Runnable() {
+							
+							@Override
+							public void run() {
+								api.setSelectedIds(new long[]{table.getRowId(rowIndx)});
+							}
+						});
 					}
 					return true;
 				}

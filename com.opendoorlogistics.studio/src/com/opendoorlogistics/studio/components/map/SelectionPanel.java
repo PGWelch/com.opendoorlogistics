@@ -57,7 +57,7 @@ final public class SelectionPanel extends JPanel implements Disposable {
 			this.tableId = tableId;
 
 			setLayout(new BorderLayout());
-			table = new ODLGridTable(filteredDs, tableId,true, null,globalDs, new GridEditPermissions(true, false, false, false, false), null, preferredColumnWidths);
+			table = new ODLGridTable(filteredDs, tableId,true, null,globalDs, new GridEditPermissions(true, false, false, false, false), preferredColumnWidths);
 			JScrollPane scrollPane = new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 			add(scrollPane, BorderLayout.CENTER);
 

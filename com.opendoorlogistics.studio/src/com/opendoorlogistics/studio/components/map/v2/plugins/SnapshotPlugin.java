@@ -24,7 +24,8 @@ import com.opendoorlogistics.studio.components.map.snapshot.CreateImageConfig.Ca
 import com.opendoorlogistics.studio.components.map.snapshot.ExportImageConfig;
 import com.opendoorlogistics.studio.components.map.snapshot.ExportImagePanel;
 import com.opendoorlogistics.studio.components.map.snapshot.ProcessCreateImage;
-import com.opendoorlogistics.studio.components.map.v2.plugins.PluginUtils.ActionFactory;
+import com.opendoorlogistics.studio.components.map.v2.plugins.utils.PluginUtils;
+import com.opendoorlogistics.studio.components.map.v2.plugins.utils.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog.OnFinishedSwingThreadCB;
 import com.opendoorlogistics.utils.ui.SimpleAction;

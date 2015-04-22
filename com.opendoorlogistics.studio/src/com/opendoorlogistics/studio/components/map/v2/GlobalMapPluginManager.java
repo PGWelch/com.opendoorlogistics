@@ -17,8 +17,9 @@ import com.opendoorlogistics.studio.components.map.v2.plugins.LegendPlugin;
 import com.opendoorlogistics.studio.components.map.v2.plugins.MovePointPlugin;
 import com.opendoorlogistics.studio.components.map.v2.plugins.PanMapPlugin;
 import com.opendoorlogistics.studio.components.map.v2.plugins.RenderCheckboxesPlugin;
-import com.opendoorlogistics.studio.components.map.v2.plugins.SelectPlugin;
 import com.opendoorlogistics.studio.components.map.v2.plugins.SnapshotPlugin;
+import com.opendoorlogistics.studio.components.map.v2.plugins.ViewSyncer;
+import com.opendoorlogistics.studio.components.map.v2.plugins.selection.SelectPlugin;
 
 public class GlobalMapPluginManager {
 	private static final StandardisedStringTreeMap<MapPlugin> GLOBAL = new StandardisedStringTreeMap<MapPlugin>();
@@ -35,7 +36,8 @@ public class GlobalMapPluginManager {
 		register(new SnapshotPlugin());
 		register(new CreatePointPlugin());
 		register(new MovePointPlugin());
-
+		register(new ViewSyncer());
+		
 		// register plugins from plugins directory
 		PluginManager pm = PluginManagerFactory.createPluginManager();
 		pm.addPluginsFrom(new File("." + File.separator + "plugins").toURI());

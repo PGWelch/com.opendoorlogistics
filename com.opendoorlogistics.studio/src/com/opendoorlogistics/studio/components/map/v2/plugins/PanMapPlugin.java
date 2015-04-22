@@ -20,6 +20,7 @@ import com.opendoorlogistics.api.standardcomponents.map.MapPopupMenu;
 import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
 import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.studio.components.map.v2.AbstractMapMode;
+import com.opendoorlogistics.studio.components.map.v2.plugins.utils.PluginUtils;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 

@@ -35,6 +35,8 @@ import javax.swing.Timer;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
+import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
+import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.LatLongToScreen;
@@ -43,6 +45,7 @@ import com.opendoorlogistics.api.standardcomponents.map.MapDataApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapMode;
 import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
 import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
+import com.opendoorlogistics.api.tables.HasUndoableDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
@@ -56,6 +59,7 @@ import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoP
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactory;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
+import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
 import com.opendoorlogistics.core.gis.map.JXMapUtils;
 import com.opendoorlogistics.core.gis.map.MapUtils;
@@ -75,11 +79,12 @@ import com.opendoorlogistics.core.utils.SetUtils;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
 import com.opendoorlogistics.core.utils.ui.ShowPanel;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
+import com.opendoorlogistics.studio.AppFrame;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
 import com.opendoorlogistics.studio.InitialiseStudio;
+import com.opendoorlogistics.studio.components.map.AbstractMapViewerComponent;
 import com.opendoorlogistics.studio.components.map.LayeredDrawables;
 import com.opendoorlogistics.studio.components.map.MapConfig;
-import com.opendoorlogistics.studio.components.map.MapViewerComponent;
 import com.opendoorlogistics.studio.components.map.v2.plugins.CustomTooltipPlugin;
 import com.opendoorlogistics.studio.components.map.v2.plugins.SummariseFieldValuesTooltipPlugin;
 
@@ -90,7 +95,7 @@ import com.opendoorlogistics.studio.components.map.v2.plugins.SummariseFieldValu
  * @author Phil
  *
  */
-public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposable , SelectedIdChecker{
+public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposable , SelectionList{
 	private final MapSelectionState selectionState;
 	private final ViewPosition position;
 	private final DisposablePanel containerLevel1Panel;
@@ -110,13 +115,17 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	private BufferedImage disabledPaintImage;
 	private boolean isPendingInitContainerPanels=false;
 	
-	private class DisposablePanel extends JPanel implements Disposable {
+	public class DisposablePanel extends JPanel implements Disposable {
 
 		@Override
 		public void dispose() {
 			MapApiImpl.this.dispose();
 		}
 
+		public MapApiImpl getApi(){
+			return MapApiImpl.this;
+		}
+		
 	}
 
 	/**
@@ -140,7 +149,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		}
 	}
 	
-	public MapApiImpl(List<MapPlugin> plugins,  ComponentControlLauncherApi componentControlLauncherApi,
+	public MapApiImpl(Iterable<MapPlugin> plugins,  ComponentControlLauncherApi componentControlLauncherApi,
 			ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs, ODLDatastore<? extends ODLTable> mapDatastore) {
 	//	this.plugins = plugins;
 		this.globalDs = globalDs;
@@ -176,6 +185,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 		// Init container panel
 		containerLevel1Panel = new DisposablePanel();
+		containerLevel1Panel.setPreferredSize(new Dimension(700, 600));
 		containerLevel1Panel.setLayout(new BorderLayout());
 		containerLevel2Panel = new JPanel() {
 			@Override
@@ -355,7 +365,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		final ODLTable foreground ;
 		
 		FetchInputTables(ODLDatastore<? extends ODLTable> mapDatastore){
-			background = TableUtils.findTable(mapDatastore, MapViewerComponent.INACTIVE_BACKGROUND);
+			background = TableUtils.findTable(mapDatastore, AbstractMapViewerComponent.INACTIVE_BACKGROUND);
 			if(background!=null){
 				add(background);
 			}
@@ -365,7 +375,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 				add(activeTable);
 			}
 			
-			foreground = TableUtils.findTable(mapDatastore, MapViewerComponent.INACTIVE_FOREGROUND);
+			foreground = TableUtils.findTable(mapDatastore, AbstractMapViewerComponent.INACTIVE_FOREGROUND);
 			if(foreground!=null){
 				add(foreground);
 			}
@@ -596,16 +606,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			}
 		};
 
-		List<MapPlugin> plugins = new ArrayList<MapPlugin>();
-		for(MapPlugin p : GlobalMapPluginManager.getPlugins()){
-			plugins.add(p);
-		}
-		
-		if(config.isUseCustomTooltips()){
-			plugins.add(new CustomTooltipPlugin());						
-		}else{
-			plugins.add(new SummariseFieldValuesTooltipPlugin());			
-		}
+		List<MapPlugin> plugins = getPlugins(config);
 		
 		// Test button
 		plugins.add(new MapPlugin() {
@@ -724,7 +725,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		return mapViewPanel.getViewportBounds();
 	}
 
-	public void connectToGSM(GlobalMapSelectedRowsManager gsm) {
+	public void connectToGSM(SelectionListRegister gsm) {
 		gsm.registerMapSelectionList(this);
 		registerDisposedListener(new OnDisposedListener() {
 
@@ -764,7 +765,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 	@Override
 	public void setViewToBestFit(ODLTableReadOnly drawables) {
-		double defaultEdgeSizeDegrees = 1;
+		double defaultEdgeSizeDegrees = 0.1;
 		double maxFraction = 0.975;
 		Iterable<? extends DrawableObject> objs = MapUtils.getDrawables(drawables);
 		LatLongBoundingBox llbb = MapUtils.getLatLongBoundingBox(objs, null);
@@ -1085,12 +1086,12 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 			@Override
 			public ODLTable getUnfilteredInactiveForegroundTable() {
-				return TableUtils.findTable(mapDatastore, MapViewerComponent.INACTIVE_FOREGROUND);
+				return TableUtils.findTable(mapDatastore, AbstractMapViewerComponent.INACTIVE_FOREGROUND);
 			}
 
 			@Override
 			public ODLTable getUnfilteredInactiveBackgroundTable() {
-				return TableUtils.findTable(mapDatastore, MapViewerComponent.INACTIVE_BACKGROUND);
+				return TableUtils.findTable(mapDatastore, AbstractMapViewerComponent.INACTIVE_BACKGROUND);
 			}
 
 			@Override
@@ -1190,5 +1191,56 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	@Override
 	public ODLApi getApi() {
 		return componentControlLauncherApi.getApi();
+	}
+	
+	public static void registerComponent(final HasUndoableDatastore<ODLTableAlterable> globalDs, final HasSelectionListRegister gmsrm) {
+		ODLGlobalComponents.register(new AbstractMapViewerComponent() {
+
+			@Override
+			public void execute(ComponentExecutionApi api, int mode,final Object configuration, ODLDatastore<? extends ODLTable> ioDs, ODLDatastoreAlterable<? extends ODLTableAlterable> outputDs) {
+
+				api.submitControlLauncher(new ControlLauncherCallback() {
+					
+					@Override
+					public void launchControls(ComponentControlLauncherApi launcherApi) {
+						DisposablePanel panel = (DisposablePanel)launcherApi.getRegisteredPanel("Map");
+						if(panel!=null){
+							panel.getApi().setObjects(ioDs);
+						}
+						else{
+							// get all plugins
+							List<MapPlugin> plugins = getPlugins((MapConfig)configuration);
+							
+							// create the map api
+							MapApiImpl mapApi = new MapApiImpl(plugins, launcherApi, globalDs.getDatastore(), ioDs);
+							mapApi.connectToGSM(gmsrm.getListRegister());
+							
+							// register the panel
+							if (!launcherApi.registerPanel("Map", null, mapApi.getPanel(), true)) {
+								// presumably UI is unavailable?
+								mapApi.dispose();
+							}	
+							
+						//	mapApi.setViewToBestFit(drawables);
+						}
+					}
+				});		
+			}
+			
+		});
+	}
+
+	private static List<MapPlugin> getPlugins(MapConfig config) {
+		List<MapPlugin> plugins = new ArrayList<MapPlugin>();
+		for(MapPlugin p : GlobalMapPluginManager.getPlugins()){
+			plugins.add(p);
+		}
+		
+		if(config.isUseCustomTooltips()){
+			plugins.add(new CustomTooltipPlugin());						
+		}else{
+			plugins.add(new SummariseFieldValuesTooltipPlugin());			
+		}
+		return plugins;
 	}
 }

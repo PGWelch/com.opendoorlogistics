@@ -44,7 +44,7 @@ import com.opendoorlogistics.studio.components.map.RegisterMapComponent;
 import com.opendoorlogistics.studio.components.map.SelectionPanel;
 import com.opendoorlogistics.studio.components.map.SuggestedFillValuesManager;
 import com.opendoorlogistics.studio.components.map.ZoomUtils;
-import com.opendoorlogistics.studio.components.map.v2.SelectedIdChecker;
+import com.opendoorlogistics.studio.components.map.v2.SelectionList;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdaptedTableControl;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdapterTableDefinitionGrid;
@@ -73,7 +73,7 @@ final public class InitialiseStudio {
 			// occur once-off when the app starts.
 			if (preloadClasses) {
 				for (Class<?> cls : new Class<?>[] { InteractiveMapPanel.class, ReadOnlyMapPanel.class, ReadOnlyMapControl.class, InteractiveMapControl.class, LegendFrame.class, MapConfig.class,
-						MapModePermissions.class, SelectedIdChecker.class, RegisterMapComponent.class, SelectionPanel.class, SuggestedFillValuesManager.class, ZoomUtils.class,
+						MapModePermissions.class, SelectionList.class, RegisterMapComponent.class, SelectionPanel.class, SuggestedFillValuesManager.class, ZoomUtils.class,
 						FilteredDrawablesContainer.class, MouseMotionListener.class, ScriptEditor.class, ScriptEditorWizardGenerated.class, AdaptedTableControl.class,
 						AdapterTableDefinitionGrid.class, AdapterTablesTabControl.class, QueryAvailableData.class, ScriptsRunner.class, ScriptUIManager.class, ScriptUIManagerImpl.class,
 						ScriptExecutor.class, ScriptExecutionBlackboard.class, ExecutionReportImpl.class, AdapterBuilder.class, FunctionsBuilder.class, OptionsSubpath.class,

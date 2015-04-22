@@ -24,9 +24,9 @@ import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
 import com.opendoorlogistics.studio.components.map.ModalMouseListener.MouseMode;
 import com.opendoorlogistics.studio.components.map.ModalMouseListener.OnActionableListener;
-import com.opendoorlogistics.studio.components.map.v2.SelectedIdChecker;
+import com.opendoorlogistics.studio.components.map.v2.SelectionList;
 
-final public class InteractiveMapControl extends ReadOnlyMapControl implements Disposable,SelectedIdChecker {
+final public class InteractiveMapControl extends ReadOnlyMapControl implements Disposable,SelectionList {
 	private final SelectionPanel selectedRowsViewer;
 	private final TLongHashSet selectedGlobalRowIds = new TLongHashSet();
 	private ModalMouseListener mouseListener;

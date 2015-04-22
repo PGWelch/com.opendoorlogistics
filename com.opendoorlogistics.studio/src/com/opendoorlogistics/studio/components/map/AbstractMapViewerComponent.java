@@ -40,7 +40,7 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.utils.ui.Icons;
 
-public abstract class MapViewerComponent implements Maps {
+public abstract class AbstractMapViewerComponent implements Maps {
 	//public static final String ID = "com.opendoorlogistics.studio.uicomponents.map";
 	public static String INACTIVE_FOREGROUND = "inactive-foreground";
 	public static String INACTIVE_BACKGROUND = "inactive-background";

@@ -62,6 +62,7 @@ import org.apache.commons.io.FilenameUtils;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.tables.HasUndoableDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable.UndoStateChangedListener;
@@ -94,7 +95,9 @@ import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.LayoutUtils;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
-import com.opendoorlogistics.studio.components.map.RegisterMapComponent;
+import com.opendoorlogistics.studio.components.map.v2.MapApiImpl;
+import com.opendoorlogistics.studio.components.map.v2.SelectionList.HasSelectionListRegister;
+import com.opendoorlogistics.studio.components.map.v2.SelectionList.SelectionListRegister;
 import com.opendoorlogistics.studio.components.tables.EditableTableComponent;
 import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.controls.buttontable.ButtonTableDialog;
@@ -370,9 +373,23 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	/**
 	 * 
 	 */
-	public static void registerAppFrameDependentComponents(AppFrame appFrame) {
+	public static void registerAppFrameDependentComponents(final AppFrame appFrame) {
 		// register custom components that need the appframe
-		RegisterMapComponent.register(appFrame);
+	//	RegisterMapComponent.register(appFrame);
+		MapApiImpl.registerComponent(new HasUndoableDatastore<ODLTableAlterable>() {
+			
+			@Override
+			public ODLDatastoreUndoable<ODLTableAlterable> getDatastore() {
+				return appFrame.getLoaded().getDs();
+			}
+		}, new HasSelectionListRegister() {
+			
+			@Override
+			public SelectionListRegister getListRegister() {
+				return appFrame.getLoaded();
+			}
+		});
+		
 		ODLGlobalComponents.register(new EditableTableComponent(appFrame));
 	}
 
@@ -1306,7 +1323,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 			ODLTableDefinition table = loaded.getDs().getTableByImmutableId(tableId);
 			if (table != null) {
-				ODLGridFrame gf = new ODLGridFrame(loaded.getDs(), table.getImmutableId(), true, null, loaded.getDs(), this);
+				ODLGridFrame gf = new ODLGridFrame(loaded.getDs(), table.getImmutableId(), true, null, loaded.getDs());
 				addInternalFrame(gf, FramePlacement.AUTOMATIC);
 				return gf;
 			}

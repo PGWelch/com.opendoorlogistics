@@ -251,14 +251,14 @@ final public class RegisterMapComponent {
 
 	public static void register(final AppFrame appFrame) {
 		// register map component
-		ODLGlobalComponents.register(new MapViewerComponent() {
+		ODLGlobalComponents.register(new AbstractMapViewerComponent() {
 			@Override
 			public void execute(final ComponentExecutionApi reporter, int mode, final Object configuration, final ODLDatastore<? extends ODLTable> adaptedDsView, ODLDatastoreAlterable<? extends ODLTableAlterable> outputDb) {
 
 				// get drawable objects from input tables
-				final ODLTable background =TableUtils.findTable(adaptedDsView,MapViewerComponent.INACTIVE_BACKGROUND);
+				final ODLTable background =TableUtils.findTable(adaptedDsView,AbstractMapViewerComponent.INACTIVE_BACKGROUND);
 				final ODLTable activeTable =TableUtils.findTable(adaptedDsView, PredefinedTags.DRAWABLES);
-				final ODLTable foreground =TableUtils.findTable(adaptedDsView,MapViewerComponent.INACTIVE_FOREGROUND);
+				final ODLTable foreground =TableUtils.findTable(adaptedDsView,AbstractMapViewerComponent.INACTIVE_FOREGROUND);
 				final LayeredDrawables pnts = new LayeredDrawables(background!=null?MapUtils.getDrawables(background):null,
 						MapUtils.getDrawables(activeTable),
 						foreground!=null?MapUtils.getDrawables(foreground):null);

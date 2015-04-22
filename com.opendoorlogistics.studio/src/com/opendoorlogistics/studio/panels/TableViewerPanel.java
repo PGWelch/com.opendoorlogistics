@@ -26,8 +26,9 @@ import com.opendoorlogistics.studio.tables.grid.adapter.RowStyler;
 final public class TableViewerPanel extends JPanel implements Disposable{
 	private ODLGridTable table;
 
-	public TableViewerPanel(ODLDatastore<? extends ODLTableReadOnly> ds, int tableId,boolean enableListeners,RowStyler enableRowStyles,ODLDatastoreUndoable<ODLTableAlterable> globalDs, HasInternalFrames owner, GridEditPermissions editPermissions) {
-		table = new ODLGridTable(ds, tableId,enableListeners,enableRowStyles,globalDs,editPermissions,owner);
+	public TableViewerPanel(ODLDatastore<? extends ODLTableReadOnly> ds, int tableId,boolean enableListeners,
+			RowStyler enableRowStyles,ODLDatastoreUndoable<ODLTableAlterable> globalDs, GridEditPermissions editPermissions) {
+		table = new ODLGridTable(ds, tableId,enableListeners,enableRowStyles,globalDs,editPermissions);
 		GridTable.addToContainer(table, this);
 	}
 

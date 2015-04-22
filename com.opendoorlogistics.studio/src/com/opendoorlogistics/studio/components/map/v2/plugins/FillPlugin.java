@@ -33,7 +33,8 @@ import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.studio.components.map.SuggestedFillValuesManager;
 import com.opendoorlogistics.studio.components.map.v2.AbstractMapMode;
-import com.opendoorlogistics.studio.components.map.v2.plugins.PluginUtils.ActionFactory;
+import com.opendoorlogistics.studio.components.map.v2.plugins.utils.PluginUtils;
+import com.opendoorlogistics.studio.components.map.v2.plugins.utils.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.controls.DynamicComboBox;
 import com.opendoorlogistics.studio.panels.FieldSelectorPanel;
 

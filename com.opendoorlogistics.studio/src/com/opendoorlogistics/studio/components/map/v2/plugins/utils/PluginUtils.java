@@ -1,4 +1,4 @@
-package com.opendoorlogistics.studio.components.map.v2.plugins;
+package com.opendoorlogistics.studio.components.map.v2.plugins.utils;
 
 import java.awt.Color;
 import java.awt.Cursor;
@@ -34,19 +34,36 @@ import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.*;
 import com.opendoorlogistics.api.standardcomponents.map.*;
 
 public class PluginUtils {
-	static interface ActionFactory{
+	public static interface ActionFactory{
 		Action create(MapApi api);
 	}
 
-	static void registerActionFactory(final MapApi api,final ActionFactory factory, int priority,final String group, final long needsFlags){
+//	final JPopupMenu wizardsPopupMenu = new JPopupMenu();
+//	JMenu wizardsMenu = new JMenu("Component wizard...");
+//	for(ODLAction action : wizardActions){
+//		wizardsPopupMenu.add(action);
+//		wizardsMenu.add(action);
+//	}
+//	wizardsMenuButton = new DropDownMenuButton(Icons.loadFromStandardPath("tools-wizard-2.png")) {
+//		
+//		@Override
+//		protected JPopupMenu getPopupMenu() {
+//			return wizardsPopupMenu;
+//		}
+//	};	
+//	wizardsMenuButton.setToolTipText("Run the component wizard");
+//	toolBar.add(wizardsMenuButton);
+//	popup.add(wizardsMenu);
+
+	public static void registerActionFactory(final MapApi api,final ActionFactory factory, int priority,final String group, final long needsFlags){
 
 		class WrapperAction implements Action{
 			final Action decorated;
-			final OnObjectsChanged listener;
+			final OnObjectsChanged assignedListener;
 			
 			WrapperAction(OnObjectsChanged listener){
 				decorated = factory.create(api);
-				this.listener = listener;
+				this.assignedListener = listener;
 			}
 			
 			public void actionPerformed(ActionEvent e) {
@@ -83,6 +100,8 @@ public class PluginUtils {
 			}
 		}
 		
+		// Create an OnObjectsChanged listener to update all WrapperActions
+		// in the map toolbar assigned to this listener.
 		final OnObjectsChanged listener = new OnObjectsChanged() {
 			
 			@Override
@@ -92,7 +111,7 @@ public class PluginUtils {
 					for(Action action : toolbar.getActions()){
 						if(action!=null && WrapperAction.class.isInstance(action)){
 							WrapperAction wa = (WrapperAction)action;
-							if(wa.listener == this){
+							if(wa.assignedListener == this){
 								wa.updateEnabled();
 							}
 						}
@@ -126,7 +145,7 @@ public class PluginUtils {
 		}, priority);
 	}
 	
-	static void registerActionFactory(MapApi api,final ActionFactory factory, int priority,final String group){
+	public static void registerActionFactory(MapApi api,final ActionFactory factory, int priority,final String group){
 		api.registerOnBuildToolbarListener(new OnBuildToolbarListener() {
 			
 			@Override
@@ -147,14 +166,14 @@ public class PluginUtils {
 	}
 	
 	
-	static void initAction(String name, String description, String iconName, Action action){
+	public static void initAction(String name, String description, String iconName, Action action){
         action.putValue(Action.NAME, name);
         action.putValue(Action.SMALL_ICON, Icons.loadFromStandardPath(iconName));
         action.putValue(Action.SHORT_DESCRIPTION, description);
         action.putValue(Action.SHORT_DESCRIPTION, description);
 	}
 	
-	static Cursor createCursor(String imagefile, int xhotspot, int yhotspot){
+	public static Cursor createCursor(String imagefile, int xhotspot, int yhotspot){
 		Toolkit toolkit = Toolkit.getDefaultToolkit();
 		BufferedImage image;
 		try {
@@ -169,7 +188,7 @@ public class PluginUtils {
 		return cursor;
 	}
 	
-	static void drawRectangle(Graphics2D g, Rectangle rectangle, Color fillColour) {
+	public static void drawRectangle(Graphics2D g, Rectangle rectangle, Color fillColour) {
 		Color borderColour = new Color(0, 0, 0, 100);
 		g.setColor(borderColour);
 		g.draw(rectangle);
@@ -177,13 +196,13 @@ public class PluginUtils {
 		g.fill(rectangle);
 	}
 	
-	static LinkedList<DrawableObject> getVisibleDrawables(final MapApi api) {
+	public static LinkedList<DrawableObject> getVisibleDrawables(final MapApi api) {
 		ODLTableReadOnly drawablesTable = api.getMapDataApi().getFilteredAllLayersTable();
 		return toDrawables(drawablesTable);
 	}
 
 
-	static LinkedList<DrawableObject> toDrawables(ODLTableReadOnly drawablesTable) {
+	public static LinkedList<DrawableObject> toDrawables(ODLTableReadOnly drawablesTable) {
 		BeanTableMapping btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
 		LinkedList<DrawableObject> list = new LinkedList<DrawableObject>();
 		for(BeanMappedRow r: btm.readObjectsFromTable(drawablesTable)){
@@ -192,7 +211,7 @@ public class PluginUtils {
 		return list;
 	}
 
-	static boolean exitIfInMode(MapApi api, Class<?> modeClass){
+	public static boolean exitIfInMode(MapApi api, Class<?> modeClass){
 		if(api.getMapMode()!=null && modeClass.isInstance(api.getMapMode())&& api.getDefaultMapMode()!=null ){
 			api.setMapMode(api.getDefaultMapMode());
 			return true;
@@ -201,7 +220,7 @@ public class PluginUtils {
 		
 	}
 
-	static boolean getIsEnabled(final MapApi api, final long needsFlags) {
+	public static boolean getIsEnabled(final MapApi api, final long needsFlags) {
 		ODLTable table = api.getMapDataApi().getUnfilteredActiveTable();
 		boolean enabled = false;
 		if(table!=null){
@@ -210,7 +229,7 @@ public class PluginUtils {
 		return enabled;
 	}
 	
-	static void exitModeIfNeeded(MapApi api, final Class<?> modeClass, long needsFlags,final boolean clearSelection) {
+	public static void exitModeIfNeeded(MapApi api, final Class<?> modeClass, long needsFlags,final boolean clearSelection) {
 		if(!PluginUtils.getIsEnabled(api, needsFlags)){
 			SwingUtilities.invokeLater(new Runnable() {
 				

@@ -40,8 +40,8 @@ final public class ODLGridFrame extends GridFrame {
 		}
 	};
 	
-	public ODLGridFrame(ODLDatastoreUndoable<? extends ODLTableAlterable> ds, int tableId,boolean enableListeners,RowStyler enableRowStyles,ODLDatastoreUndoable<ODLTableAlterable> globalDatastore, HasInternalFrames owner) {
-		super(new ODLGridTable(ds, tableId,enableListeners,enableRowStyles,globalDatastore,new GridEditPermissions (true,true,true,true, true),owner),owner);
+	public ODLGridFrame(ODLDatastoreUndoable<? extends ODLTableAlterable> ds, int tableId,boolean enableListeners,RowStyler enableRowStyles,ODLDatastoreUndoable<ODLTableAlterable> globalDatastore) {
+		super(new ODLGridTable(ds, tableId,enableListeners,enableRowStyles,globalDatastore,new GridEditPermissions (true,true,true,true, true)));
 		this.ds = ds;
 		this.tableId = tableId;
 		ds.addListener(tableClosedListener);

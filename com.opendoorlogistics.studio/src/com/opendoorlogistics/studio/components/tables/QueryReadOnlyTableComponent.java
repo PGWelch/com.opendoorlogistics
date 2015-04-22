@@ -182,7 +182,7 @@ public abstract class QueryReadOnlyTableComponent implements TableViewer {
 
 					if (addTable) {
 						// don't bother using listeners as they don't work for adapted tables..
-						TableViewerPanel viewer = new TableViewerPanel(ioDb, table.getImmutableId(), false, styler, getGlobalDatastore(), getOwner(), getPermissions(table));
+						TableViewerPanel viewer = new TableViewerPanel(ioDb, table.getImmutableId(), false, styler, getGlobalDatastore(), getPermissions(table));
 						launcherApi.registerPanel(panelName, table.getName(), viewer, true);
 					}
 				}
@@ -197,7 +197,7 @@ public abstract class QueryReadOnlyTableComponent implements TableViewer {
 	
 	protected abstract ODLDatastoreUndoable<ODLTableAlterable> getGlobalDatastore();
 
-	protected abstract HasInternalFrames getOwner();
+//	protected abstract HasInternalFrames getOwner();
 
 	@Override
 	public Class<? extends Serializable> getConfigClass() {

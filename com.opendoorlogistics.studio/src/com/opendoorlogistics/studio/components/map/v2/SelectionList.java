@@ -6,6 +6,20 @@
  ******************************************************************************/
 package com.opendoorlogistics.studio.components.map.v2;
 
-public interface SelectedIdChecker {
+public interface SelectionList {
 	boolean isSelectedId(long rowId);
+	
+	/**
+	 * An interface to register and unregister a selection list
+	 * @author Phil
+	 *
+	 */
+	public static interface SelectionListRegister{
+		void registerMapSelectionList(SelectionList list);
+		void unregisterMapSelectionList(SelectionList list);
+	}
+	
+	public static interface HasSelectionListRegister{
+		SelectionListRegister getListRegister();
+	}
 }

@@ -18,10 +18,10 @@ final public class EditableTableComponent extends QueryReadOnlyTableComponent{
 		this.appFrame = appFrame;
 	}
 
-	@Override
-	protected HasInternalFrames getOwner() {
-		return appFrame;
-	}
+//	@Override
+//	protected HasInternalFrames getOwner() {
+//		return appFrame;
+//	}
 
 	@Override
 	protected ODLDatastoreUndoable<ODLTableAlterable> getGlobalDatastore() {
