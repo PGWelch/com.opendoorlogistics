@@ -367,7 +367,7 @@ final public class AdapterBuilder {
 
 
 	ODLDatastoreAlterable<ODLTableAlterable> mapToNewEmptyTable(int destinationTableId, ODLTableDefinition destDfn) {
-		ODLDatastoreAlterable<ODLTableAlterable> ret =  buildSingleTableInternalDatastore(destDfn);
+		ODLDatastoreAlterable<ODLTableAlterable> ret =  createSingleTableInternalDatastore(destDfn);
 		
 		int dsIndx = datasources.size();
 		datasources.add(ret);
@@ -809,7 +809,7 @@ final public class AdapterBuilder {
 		// Create empty grouped table with no edit permissions (permissions are used by UI later-on).
 		// Sort fields are not included in this table.
 		ODLTableDefinition destinationTable = destination.getTableAt(destTableIndex);
-		ODLDatastoreAlterable<ODLTableAlterable> groupedDs = buildSingleTableInternalDatastore(destinationTable);		
+		ODLDatastoreAlterable<ODLTableAlterable> groupedDs = createSingleTableInternalDatastore(destinationTable);		
 		final int groupedDsIndex = datasources.size();
 		datasources.add(groupedDs);
 		final ODLTableAlterable groupedTable = groupedDs.getTableAt(0);
@@ -1002,7 +1002,12 @@ final public class AdapterBuilder {
 		}
 	}
 
-	private ODLDatastoreAlterable<ODLTableAlterable> buildSingleTableInternalDatastore(ODLTableDefinition destinationTable) {
+	/**
+	 * Create a new datastore containing a single empty table with the input definition
+	 * @param destinationTable
+	 * @return
+	 */
+	private ODLDatastoreAlterable<ODLTableAlterable> createSingleTableInternalDatastore(ODLTableDefinition destinationTable) {
 		ODLDatastoreAlterable<ODLTableAlterable> ret = ODLDatastoreImpl.alterableFactory.create();
 		DatastoreCopier.copyTableDefinition(destinationTable, ret);
 		TableUtils.removeTableFlags(ret.getTableAt(0), TableFlags.UI_EDIT_PERMISSION_FLAGS);

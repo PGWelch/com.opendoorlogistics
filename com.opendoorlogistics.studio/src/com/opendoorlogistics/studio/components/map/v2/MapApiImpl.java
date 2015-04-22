@@ -725,13 +725,25 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		return mapViewPanel.getViewportBounds();
 	}
 
-	public void connectToGSM(SelectionListRegister gsm) {
+	public void connectToGSM(final SelectionListRegister gsm) {
+		// register this selection list globally
 		gsm.registerMapSelectionList(this);
+		
+		// unregister it when the map closes
 		registerDisposedListener(new OnDisposedListener() {
 
 			@Override
 			public void onDispose(MapApi api) {
 				gsm.unregisterMapSelectionList( (MapApiImpl)api);
+			}
+		}, 0);
+		
+		// and also tell the register when the selection changes
+		registerSelectionChanged(new OnChangeListener() {
+			
+			@Override
+			public void onChanged(MapApi api) {
+				gsm.onMapSelectedChanged();
 			}
 		}, 0);
 	}

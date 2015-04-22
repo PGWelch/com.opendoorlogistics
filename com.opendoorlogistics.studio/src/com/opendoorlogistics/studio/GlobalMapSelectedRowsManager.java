@@ -19,8 +19,6 @@ public abstract class GlobalMapSelectedRowsManager implements SelectionListRegis
 		void selectionChanged(GlobalMapSelectedRowsManager manager);
 	}
 	
-	public abstract void onMapSelectedChanged();
-	
 	protected void fireListeners(){
 		for(GlobalSelectionChangedCB listener:listeners){
 			listener.selectionChanged(this);

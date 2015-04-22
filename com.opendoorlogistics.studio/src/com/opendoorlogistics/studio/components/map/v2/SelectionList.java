@@ -17,6 +17,7 @@ public interface SelectionList {
 	public static interface SelectionListRegister{
 		void registerMapSelectionList(SelectionList list);
 		void unregisterMapSelectionList(SelectionList list);
+		void onMapSelectedChanged();		
 	}
 	
 	public static interface HasSelectionListRegister{
