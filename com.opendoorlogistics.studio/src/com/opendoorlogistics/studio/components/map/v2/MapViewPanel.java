@@ -14,6 +14,7 @@ import java.awt.event.MouseWheelListener;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.util.Date;
 
 import javax.swing.JPanel;
 
@@ -39,9 +40,13 @@ public class MapViewPanel extends JPanel implements Disposable, TileListener{
 	
 	private BufferedImage mapImage;
 	
-	private boolean repaintPluginOverlapOnly;
+//	private boolean repaintPluginOverlapOnly;
 	
 	private boolean disablePaint;
+	
+	private boolean pendingFullRepaint;
+	
+	private boolean pendingRepaintPluginOverlapOnly;
 	
 	//private boolean skipMapDraw;
 	
@@ -155,7 +160,11 @@ public class MapViewPanel extends JPanel implements Disposable, TileListener{
 		}
 		
 		// draw to an image first. The image can be reused to allow the selection box to redrawn but not anything else 
-		if (mapImage == null || mapImage.getWidth() != getWidth() || mapImage.getHeight() != getHeight() || repaintPluginOverlapOnly == false) {
+		boolean pluginOverlayOnlyRepaint = !pendingFullRepaint && pendingRepaintPluginOverlapOnly;
+		if (mapImage == null || mapImage.getWidth() != getWidth() || mapImage.getHeight() != getHeight() || pluginOverlayOnlyRepaint == false) {
+			
+		//	System.out.println("Full repaint " + new Date());
+			
 			mapImage = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
 			Graphics2D g2 = mapImage.createGraphics();
 			try {
@@ -178,7 +187,9 @@ public class MapViewPanel extends JPanel implements Disposable, TileListener{
 			}
 
 		}
-		repaintPluginOverlapOnly = false;
+		
+		pendingFullRepaint = false;
+		pendingRepaintPluginOverlapOnly = false;
 
 		BufferedImage modifiedImage = ((MapApiImpl)mapi).fireModifyMapImageListeners(mapi, mapImage);
 		g.drawImage(modifiedImage, 0, 0, getWidth(), getHeight(), null, null);
@@ -308,11 +319,22 @@ public class MapViewPanel extends JPanel implements Disposable, TileListener{
 	}
 	
 	public void repaint(boolean repaintPluginOverlapOnly){
-		this.repaintPluginOverlapOnly = repaintPluginOverlapOnly;
-		repaint();
+	//	this.repaintPluginOverlapOnly = repaintPluginOverlapOnly;
+		
+		if(repaintPluginOverlapOnly){
+			pendingRepaintPluginOverlapOnly = true;
+		}else{
+			pendingFullRepaint = true;
+		}
+		super.repaint();
 	}
 
-
+	@Override
+    public void repaint() {
+		pendingFullRepaint = true;
+    	super.repaint();
+    }
+    
 	public boolean isDisablePaint() {
 		return disablePaint;
 	}

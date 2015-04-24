@@ -38,6 +38,8 @@ public class ApplicationCache {
 	public static final String LOOKUP_NEAREST_TRANSFORMED_GEOMS = "lookup-nearest-transformed-geoms";
 	public static final String IMAGE_FORMULAE_CACHE = "image-formulae-cache";
 	public static final String IMAGE_WITH_VIEW_FORMULAE_CACHE = "image-with-view-formulae-cache";
+	public static final String GEOMETRY_CONTAINS_CACHE = "geometry-contains-cache";
+	public static final String GRID_TRANSFORMS_CACHE = "grid-transforms-cache";
 	
 	public static ApplicationCache singleton(){
 		return singleton;
@@ -62,6 +64,10 @@ public class ApplicationCache {
 		create(LOOKUP_NEAREST_TRANSFORMED_GEOMS, 256 * MB);
 		create(IMAGE_FORMULAE_CACHE, 64 * MB);
 		create(IMAGE_WITH_VIEW_FORMULAE_CACHE, 64 * MB);
+		create(GEOMETRY_CONTAINS_CACHE, 64 * MB);
+		create(GRID_TRANSFORMS_CACHE, 6 * MB);
+		
+		
 		
 				
 	}

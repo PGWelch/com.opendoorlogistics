@@ -6,7 +6,13 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.formulae;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.opendoorlogistics.core.formulae.Functions.FmAnd;
 import com.opendoorlogistics.core.formulae.Functions.FmConst;
+import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary;
+import com.opendoorlogistics.core.scripts.elements.UserFormula;
 import com.opendoorlogistics.core.scripts.formulae.FmLocalElement;
 
 public final class FunctionUtils {
@@ -43,5 +49,46 @@ public final class FunctionUtils {
 		}
 		return ret;
 	}
+	
+	/**
+	 * Convert the function to an equivalent array of the form a[0] && a[1] && ... && a[n].
+	 * The function can then be processed by testing each element is true consecutively
+	 * and returning false when the first non-true is found.
+	 * @param f
+	 * @return
+	 */
+	public static Function [] toEquivalentSplitAndArray(Function f){
+		final ArrayList<Function> andArrayList = new ArrayList<Function>();
+		class Helper{
+			void process(Function func){
+				if(func!=null){
+					if(FmAnd.class.isInstance(func)){
+						process(func.child(0));
+						process(func.child(1));
+					}else{
+						andArrayList.add(func);
+					}
+				}
+			}
+		}
+		
+		new Helper().process(f);
+		return andArrayList.toArray(new Function[andArrayList.size()]);
+	}
+	
+	public static void main(String[] args) throws Exception {
+
+		FunctionDefinitionLibrary lib = new FunctionDefinitionLibrary();
+		lib.build();
+		
+		FormulaParser loader = new FormulaParser(null, lib, null);
+		String function = "(2 && 5 && 7 && 2) + 1";
+		Function formula = loader.parse(function);
+		for(Function split : toEquivalentSplitAndArray(formula)){
+			System.out.println("\t" + split + " -> " + split.execute(null));
+		}
+//		System.out.println(formula.execute(null));
+	}
+	
 	
 }

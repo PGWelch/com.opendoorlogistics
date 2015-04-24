@@ -210,14 +210,14 @@ final public class AdapterBuilder {
 		for (int destTableIndx = 0; destTableIndx < processedConfig.getTableCount() && env.isFailed() == false; destTableIndx++) {
 			List<AdaptedTableConfig> union = unionSourceAdapters.get(destTableIndx);
 			if (union == null) {
-				buildNonUnionNonGroupedTable(destTableIndx);
+				buildTable(destTableIndx);
 			} else {
 				buildUnionTable(union, destination.getTableAt(destTableIndx).getImmutableId());
 			}
 			
 			AdaptedTableConfig tableConfig = processedConfig.getTable(destTableIndx);
 			if(tableConfig.isLimitResults()){
-				limitResults(destTableIndx, tableConfig.getMaxNumberRows());
+				processLimitResults(destTableIndx, tableConfig.getMaxNumberRows());
 			}
 			
 			if(env.isFailed()){
@@ -231,7 +231,7 @@ final public class AdapterBuilder {
 		return ret;
 	}
 
-	private void limitResults(int tableIndx, int limit){
+	private void processLimitResults(int tableIndx, int limit){
 		// get details of the table from the mapping
 		ODLTableDefinition dfn = destination.getTableAt(tableIndx);
 		int srcDsIndx = mapping.getSourceDatasourceIndx(dfn.getImmutableId());
@@ -554,24 +554,13 @@ final public class AdapterBuilder {
 	 * 
 	 * @param destTableIndx
 	 */
-	private void buildNonUnionNonGroupedTable(int destTableIndx) {
+	private void buildTable(int destTableIndx) {
 
 		AdaptedTableConfig tableConfig = processedConfig.getTables().get(destTableIndx);
-		
-		// should we process sorting now?
-		boolean processSortNow = AdapterBuilderUtils.hasGroupByColumn(tableConfig) == false;
-		
-		// get the filter formula and if we're sorting create a dummy one (as we need the filter decorator)
-		int[] sortCols = getOrderedSortColumns(tableConfig);
-		String filterFormula = tableConfig.getFilterFormula();
-		if (processSortNow && sortCols.length > 0 && (filterFormula == null || filterFormula.trim().length() == 0)) {
-			filterFormula = "true";
-		}
-		
-		// get definitions of destination table
-		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);
-		
+				
 		// Check for case where we have a filter formula based only on a parameter that's false and hence we can skip recurse building
+		String filterFormula = tableConfig.getFilterFormula();
+		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);		
 		if(filterFormula!=null && filterFormula.trim().length() >0 && isAlwaysFalseFilterFormula(filterFormula, tableConfig.getUserFormulae())){
 			mapToNewEmptyTable(destTable.getImmutableId(), destTable);
 			return;
@@ -594,12 +583,83 @@ final public class AdapterBuilder {
 			return;
 		}
 
-		// create a filter if needed - used when either filtering or sorting or both
+		// process join if we have one
+		if(!Strings.isEmptyWhenStandardised(tableConfig.getJoinDatastore())){
+			tableRef = buildJoinTable(table(tableRef), tableConfig);
+			if(env.isFailed()){
+				return;
+			}
+			
+			// joining also does filtering
+			filterFormula = null;
+		}
+		
+		// If we have both sorting and group by then we should process sorting early, which always requires a filter formula
+		// as it uses the filter decorator
+		int[] sortCols =getOrderedSortColumns(tableConfig);
+		boolean processSortNow = AdapterBuilderUtils.hasGroupByColumn(tableConfig) == false && sortCols.length>0;
+		if (processSortNow && (filterFormula == null || filterFormula.trim().length() == 0)) {
+			filterFormula = "true";
+		}
+		
+		tableRef = processFilteringSorting(tableConfig, processSortNow, filterFormula, tableRef);
+
+		if (env.isFailed()) {
+			return;
+		}
+
+		// Process grouped table separately
+		if (AdapterBuilderUtils.hasGroupByColumn(tableConfig)) {
+			buildGroupedByTable(tableRef, destTableIndx, originalFromDsIndex);
+			return;
+		}
+
+		// Take deep copy of adapter table config and remove any sort fields as no longer needed
+		tableConfig = tableConfig.deepCopy();		
+		for (int i = sortCols.length - 1; i >= 0; i--) {
+			tableConfig.getColumns().remove(sortCols[i]);
+		}
+
+		// Tell the mapping where to find the table
+		ODLTable srcTable = table(tableRef);
+		mapping.setTableSourceId(destTable.getImmutableId(), tableRef.dsIndex, srcTable.getImmutableId());
+
+		// Process each of the destination fields
+		for (int destFieldIndx = 0; destFieldIndx < tableConfig.getColumnCount() && !env.isFailed(); destFieldIndx++) {
+			AdapterColumnConfig field = tableConfig.getColumn(destFieldIndx);
+			if (field.isUseFormula()) {
+				Function formula = buildFormulaWithTableVariables(srcTable, field.getFormula(), originalFromDsIndex, tableConfig.getUserFormulae(),tableConfig);
+				if (formula != null) {
+					mapping.setFieldFormula(destTable.getImmutableId(), destFieldIndx, formula);
+				}
+			} else {
+				// If we use a mapped field instead of a formula we can write back to the original table
+				AdapterBuilderUtils.mapSingleField(srcTable, destTable.getImmutableId(), field, destFieldIndx, mapping, 0, env);
+			}
+
+		}
+
+	}
+
+	/**
+	 *  Create a filtered table if needed, which then becomes the source table for our final decorator...
+	 *  Filters are used when either filtering or sorting or both.
+	 * @param tableConfig
+	 * @param processSortNow
+	 * @param sortCols
+	 * @param filterFormula
+	 * @param tableRef
+	 * @return
+	 */
+	private InternalTableRef processFilteringSorting(AdaptedTableConfig tableConfig, boolean processSortNow, String filterFormula, InternalTableRef tableRef) {
+		int[] sortCols = getOrderedSortColumns(tableConfig);
+		// Create a filtered table if needed, which then becomes the source table for our final decorator...
+		// Filters are used when either filtering or sorting or both.
 		if (filterFormula != null && filterFormula.trim().length() > 0) {
 			ODLTableReadOnly srcTable = table(tableRef);
 			Function formula = buildFormulaWithTableVariables(srcTable, filterFormula, tableRef.dsIndex,tableConfig.getUserFormulae(), null);
 			if (env.isFailed()) {
-				return;
+				return null;
 			}
 
 			if (!env.isCompileOnly()) {
@@ -609,7 +669,7 @@ final public class AdapterBuilder {
 				
 				// check for simple field = value case where we can use the index (if exists)
 				boolean didIndexedSearch=false;
-				if(FmEquals.class.isInstance(formula) && formula.nbChildren()==2 && ((FmEquals)formula).isNot()==false){
+				if(FmEquals.class.isInstance(formula) && formula.nbChildren()==2 ){
 					FmConst constFnc=null;
 					FmLocalElement localVar=null;
 					for(int i =0 ; i < 2 ; i++){
@@ -646,7 +706,7 @@ final public class AdapterBuilder {
 						Object exec = formula.execute(parameters);
 						if (exec == Functions.EXECUTION_ERROR) {
 							env.setFailed("Failed to execute filter formula: " + filterFormula);
-							return;
+							return null;
 						}
 	
 						if(isTrue(exec)){
@@ -656,10 +716,10 @@ final public class AdapterBuilder {
 				}
 				
 				// sort these row ids if sort columns are set
-				if (processSortNow && sortCols.length > 0) {
+				if (processSortNow ) {
 					rowIds = new TableSorter(tableRef, rowIds, tableConfig, sortCols).sort();
 					if (env.isFailed()) {
-						return;
+						return null;
 					}
 				}
 
@@ -675,47 +735,13 @@ final public class AdapterBuilder {
 					throw new RuntimeException();
 				}
 
+				// add the filter as a new datastore
 				tableRef = new InternalTableRef(datasources.size(), 0);
 				datasources.add(rowFilter);
 
 			}
 		}
-
-		if (env.isFailed()) {
-			return;
-		}
-
-		// Process grouped table separately
-		if (AdapterBuilderUtils.hasGroupByColumn(tableConfig)) {
-			buildGroupedByTable(tableRef, destTableIndx, originalFromDsIndex);
-			return;
-		}
-
-		// Take deep copy of adapter table config and remove any sort fields as no longer needed
-		tableConfig = tableConfig.deepCopy();
-		for (int i = sortCols.length - 1; i >= 0; i--) {
-			tableConfig.getColumns().remove(sortCols[i]);
-		}
-
-		// tell the mapping where to find the table
-		ODLTable srcTable = table(tableRef);
-		mapping.setTableSourceId(destTable.getImmutableId(), tableRef.dsIndex, srcTable.getImmutableId());
-
-		// process each of the destination fields
-		for (int destFieldIndx = 0; destFieldIndx < tableConfig.getColumnCount() && !env.isFailed(); destFieldIndx++) {
-			AdapterColumnConfig field = tableConfig.getColumn(destFieldIndx);
-			if (field.isUseFormula()) {
-				Function formula = buildFormulaWithTableVariables(srcTable, field.getFormula(), originalFromDsIndex, tableConfig.getUserFormulae(),tableConfig);
-				if (formula != null) {
-					mapping.setFieldFormula(destTable.getImmutableId(), destFieldIndx, formula);
-				}
-			} else {
-				// If we use a mapped field instead of a formula we can write back to the original table
-				AdapterBuilderUtils.mapSingleField(srcTable, destTable.getImmutableId(), field, destFieldIndx, mapping, 0, env);
-			}
-
-		}
-
+		return tableRef;
 	}
 
 	private ODLTable table(InternalTableRef ref) {
@@ -1045,6 +1071,120 @@ final public class AdapterBuilder {
 		return val;
 	}
 
+	/**
+	 * Bulid the empty table which would result from joining the outer and inner tables
+	 * @param outerTable
+	 * @param innerTable
+	 * @return
+	 */
+	private ODLDatastore<? extends ODLTable> buildEmptyJoinTable(ODLTableDefinition outerTable, ODLTableDefinition innerTable){
+		ODLDatastoreAlterable<ODLTableAlterable> ret = ODLDatastoreImpl.alterableFactory.create();
+		StandardisedStringSet fieldNames = new StandardisedStringSet();
+		int no = outerTable.getColumnCount();
+		ODLTableAlterable table = ret.createTable(innerTable.getName(), -1);
+		TableUtils.removeTableFlags(table, TableFlags.UI_EDIT_PERMISSION_FLAGS);		
+		for(int i = 0 ; i < no ; i++){
+			table.addColumn(-1, outerTable.getName() + "." + outerTable.getColumnName(i), outerTable.getColumnType(0), 0);
+			fieldNames.add(table.getColumnName(i));
+		}
+		
+		int ni = innerTable.getColumnCount();
+		for(int i =0 ; i < ni ; i++){
+			String name = innerTable.getColumnName(i);
+			if(fieldNames.contains(name)){
+				throw new RuntimeException("Joining of tables results in a fieldname appearing twice: " + name);
+			}
+			table.addColumn(-1, name, innerTable.getColumnType(i), 0);
+		}
+		return ret;
+	}
+	
+	private InternalTableRef buildJoinTable(final ODLTableReadOnly innerTable, AdaptedTableConfig tableConfig){
+		// get outer table
+		int outerDsId = recurseBuild(tableConfig.getJoinDatastore());
+		if (outerDsId == -1) {
+			setFailed();
+			return null;
+		}
+		int outerTableIndx = TableUtils.findTableIndex(datasources.get(outerDsId), tableConfig.getJoinTable(), true);
+		if (outerTableIndx == -1) {
+			env.setFailed("Could not find table \"" + tableConfig.getFromTable() + "\".");
+			setFailed();
+			return null;
+		}
+		final ODLTableReadOnly outerTable = datasources.get(outerDsId).getTableAt(outerTableIndx);
+		
+		ODLDatastore<? extends ODLTable> emptyDs = buildEmptyJoinTable(outerTable, innerTable);
+		
+		// add the new datastore
+		int datastoreIndx = addDatasource(null, emptyDs);
+		
+		final ODLTable joinTable = emptyDs.getTableAt(0);
+		final int nco = outerTable.getColumnCount();
+		final int nci = innerTable.getColumnCount();
+		final int nro = outerTable.getRowCount();
+		final int nri = innerTable.getRowCount();
+		
+		class RowAdder{
+			int add(long outerRowId,long innerRowId){
+				int ret = joinTable.createEmptyRow(-1);
+				int col=0;
+				for(int i =0 ; i < nco ; i++){
+					joinTable.setValueAt(outerTable.getValueById(outerRowId, i), ret, col++);
+				}
+				for(int i =0 ; i < nci ; i++){
+					joinTable.setValueAt(innerTable.getValueById(innerRowId, i), ret, col++);
+				}
+				return ret;
+			}
+		}
+		RowAdder adder = new RowAdder();
+		
+		Function formula=null;
+		if(!Strings.isEmptyWhenStandardised(tableConfig.getFilterFormula())){
+			formula = buildFormulaWithTableVariables(joinTable, tableConfig.getFilterFormula(), -1,tableConfig.getUserFormulae(), null);		
+			
+		}
+		
+		// speed up ideas???
+		// - Split filter formula into equivalent ANDS array.
+		// - Sort formula based on (a) row independent,(b) indexable outer only first, (c) other outer only, (d) indexable inner, (e) all others.
+		// - Reduce or eliminate outer row set first.
+		// - Try indexing inner rows with values of outer
+		// - General...
+		
+		// What about a spatial lookup (e.g. quadtree) for the inner table??
+		
+		// add the rows
+		for(int i = 0 ; i < nro ; i++){
+			long orid = outerTable.getRowId(i);
+			
+			for(int j = 0 ; j < nri ; j++){
+				
+				long irid = outerTable.getRowId(j);
+				int rowIndx = adder.add(orid, irid);
+				
+				// Check the formula and delete the new row if it fails...
+				if(formula!=null){
+					FunctionParameters parameters = new TableParameters(datasources, datastoreIndx, joinTable.getImmutableId(), joinTable.getRowId(rowIndx),rowIndx,null);
+					Object exec = formula.execute(parameters);
+					if (exec == Functions.EXECUTION_ERROR) {
+						env.setFailed("Failed to execute filter formula: " + tableConfig.getFilterFormula());
+						return null;
+					}
+
+					if(!isTrue(exec)){
+						joinTable.deleteRow(rowIndx);
+					}
+				}
+			}
+		
+		}
+	
+		InternalTableRef ret = new InternalTableRef(datastoreIndx, 0);
+		return ret;
+	}
+	
 	/**
 	 * Build formula
 	 * @param srcTable The source table the formula is operating on

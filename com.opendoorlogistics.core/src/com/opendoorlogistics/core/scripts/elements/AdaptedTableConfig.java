@@ -42,6 +42,12 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	private String fromDatastore;
 
 	@XmlTransient
+	private String joinTable;
+	
+	@XmlTransient
+	private String joinDatastore;
+	
+	@XmlTransient
 	private String filterFormula="";
 
 	@XmlTransient
@@ -120,6 +126,15 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 		this.fromTable = fromTable;
 	}
 
+	public String getJoinTable() {
+		return joinTable;
+	}
+
+	@XmlAttribute
+	public void setJoinTable(String table) {
+		this.joinTable = table;
+	}
+	
 	@Override
 	public String toString() {
 		return JAXBUtils.toXMLString(this);
@@ -132,6 +147,16 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	@XmlAttribute
 	public void setFromDatastore(String fromDataSourceId) {
 		this.fromDatastore = fromDataSourceId;
+	}
+	
+
+	public String getJoinDatastore() {
+		return joinDatastore;
+	}
+
+	@XmlAttribute
+	public void setJoinDatastore(String dataSourceId) {
+		this.joinDatastore = dataSourceId;
 	}
 
 	public void setFrom(String datastore, String table){

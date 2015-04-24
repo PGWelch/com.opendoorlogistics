@@ -59,6 +59,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmMax;
 import com.opendoorlogistics.core.formulae.Functions.FmMin;
 import com.opendoorlogistics.core.formulae.Functions.FmMod;
 import com.opendoorlogistics.core.formulae.Functions.FmMultiply;
+import com.opendoorlogistics.core.formulae.Functions.FmNotEqual;
 import com.opendoorlogistics.core.formulae.Functions.FmOr;
 import com.opendoorlogistics.core.formulae.Functions.FmPostcodeUk;
 import com.opendoorlogistics.core.formulae.Functions.FmRand;
@@ -89,6 +90,7 @@ import com.opendoorlogistics.core.geometry.functions.FmCentroid;
 import com.opendoorlogistics.core.geometry.functions.FmGeom;
 import com.opendoorlogistics.core.geometry.functions.FmGeom.GeomType;
 import com.opendoorlogistics.core.geometry.functions.FmGeomBorder;
+import com.opendoorlogistics.core.geometry.functions.FmGeomContains;
 import com.opendoorlogistics.core.geometry.functions.FmLatitude;
 import com.opendoorlogistics.core.geometry.functions.FmLongitude;
 import com.opendoorlogistics.core.geometry.functions.FmShapefileLookup;
@@ -140,18 +142,8 @@ public final class FunctionDefinitionLibrary {
 		addStandardOperator(FmGreaterThan.class, ">", "Test if first value is greater than second.");
 		addStandardOperator(FmEquals.class, "==" ,"Test if first value is equal to second." );
 		addStandardOperator(FmEquals.class,  "=","Test if first value is equal to second." );
-		for(final String s : new String[]{"!=", "<>"}){
-			addOperator(new FunctionFactory() {
-				
-				@Override
-				public Function createFunction(Function... args) {
-					if(args.length!=2){
-						throwIncorrectNbArgs(s);
-					}
-					return new FmEquals(args[0], args[1], true);
-				}
-			},  s,"Test if first value is not equal to second." );	
-		}
+		addStandardOperator(FmNotEqual.class, "!=" ,"Test if first value is not equal to second." );
+		addStandardOperator(FmNotEqual.class,  "<>","Test if first value is not equal to second" );
 		addStandardOperator(FmBitwiseOr.class, "|", "Bitwise or");
 		addStandardOperator(FmAnd.class, "&&", "Boolean and function.");
 		addStandardOperator(FmOr.class, "||", "Boolean or function.");
@@ -246,14 +238,17 @@ public final class FunctionDefinitionLibrary {
 			});
 			add(dfn);
 		}
-		addStandardFunction(FmDecimalHours.class, "decimalHours", "Return the number of decimal hours in a time.","time");
 		addStandardFunction(FmLatitude.class, "latitude", "Return the latitude of a geometry. If the geometry is not a point this returns its centroid's latitude.","geometry");
 		addStandardFunction(FmLongitude.class, "longitude", "Return the longitude of a geometry. If the geometry is not a point this returns its centroid's longitude.","geometry");
 		addStandardFunction(FmCentroid.class, "centroid", "Return the centroid of the geometry, as a point geometry.","geometry");
 		addStandardFunction(FmShapefileLookup.class, "shapefilelookup", "Lookup a geometry in a shapefile on disk. For the input filename and type_name in the file, the search_value is searched for in the search_field and the geometry of the first matching record is returned.", "filename","search_value", "type_name", "search_field");
 		addStandardFunction(FmShapefileLookup.class, "shapefilelookup", "Lookup a geometry in a shapefile on disk. For the input filename and type_name in the file, the search_value is searched for in the search_field and the geometry of the first matching record is returned.", "filename","search_value", "search_field");
 		addStandardFunction(FmGeomBorder.class, "geomborder", "Return the borders of the geometry as lines.", "geometry", "include_holes");
+		addStandardFunction(FmGeomContains.class, "geomcontains", "Return whether the geometry contains the point, using the input EPSG grid projection.", "geometry", "latitude", "longitude", "EPSG");
+		addStandardFunction(FmGeomContains.class, "geomcontains", "Return whether the geometry contains the point, using a WGS84 latitude-longitude projection.", "geometry", "latitude", "longitude");
 		
+		addStandardFunction(FmDecimalHours.class, "decimalHours", "Return the number of decimal hours in a time.","time");
+
 		// uk postcodes
 		for(final UKPostcodeLevel level: UKPostcodeLevel.values()){
 			addStandardFunction(FmPostcodeUk.class, "postcodeuk" + level.name().toLowerCase(), "Find and return the first UK postcode " + level.name().toLowerCase() + " from the input string, or null if not found.", "input_string").setFactory(new FunctionFactory() {

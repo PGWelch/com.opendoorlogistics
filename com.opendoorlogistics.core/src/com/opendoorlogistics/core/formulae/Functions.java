@@ -1417,15 +1417,9 @@ public class Functions {
 	}
 
 	public static final class FmEquals extends FunctionImpl {
-		boolean not;
 
 		public FmEquals(Function a, Function b) {
-			this(a, b, false);
-		}
-
-		public FmEquals(Function a, Function b, boolean not) {
 			super(a, b);
-			this.not = not;
 		}
 
 		@Override
@@ -1437,35 +1431,53 @@ public class Functions {
 			}
 
 			boolean equals = ColumnValueProcessor.isEqual(a, b);
-			if (not) {
-				return equals ? 0L : 1L;
-			}
 			return equals ? 1L : 0L;
 		}
 
 		@Override
 		public Function deepCopy() {
-			return new FmEquals(child(0).deepCopy(), child(1).deepCopy(), not);
+			return new FmEquals(child(0).deepCopy(), child(1).deepCopy());
 		}
 
-		private String operator() {
-			if (not) {
-				return "<>";
-			} else {
-				return "=";
+
+
+		@Override
+		public String toString() {
+			return toStringWithChildOp("=");
+		}
+		
+	
+	}
+
+	public static final class FmNotEqual extends FunctionImpl {
+		public FmNotEqual(Function a, Function b) {
+			super(a, b);
+		}
+
+		@Override
+		public final Object execute(FunctionParameters parameters) {
+			Object a = child(0).execute(parameters);
+			Object b = child(1).execute(parameters);
+			if (a == EXECUTION_ERROR || b == EXECUTION_ERROR) {
+				return EXECUTION_ERROR;
 			}
+
+			boolean equals = ColumnValueProcessor.isEqual(a, b);
+			return equals ? 0L : 1L;
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmNotEqual(child(0).deepCopy(), child(1).deepCopy());
 		}
 
 		@Override
 		public String toString() {
-			return toStringWithChildOp(operator());
+			return toStringWithChildOp("!=");
 		}
-		
-		public boolean isNot(){
-			return not;
-		}
-	}
 
+	}
+	
 	public static final class FmGreaterThan extends FmComparisonBase {
 
 		public FmGreaterThan(Function a, Function b) {
