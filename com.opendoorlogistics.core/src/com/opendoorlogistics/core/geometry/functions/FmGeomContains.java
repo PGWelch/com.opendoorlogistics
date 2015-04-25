@@ -86,13 +86,29 @@ public class FmGeomContains extends FunctionImpl{
 		}
 		
 		// null epsg is valid, it just means calculate in lat long space
-		if(nbChildren()>3){
+		if(isProjected()){
 			pms.epsg =(String)ColumnValueProcessor.convertToMe(ODLColumnType.STRING, childExe[3]);
 		}
 		
 		return pms;
 	}
 
+	public Function geometry(){
+		return child(0);
+	}
+	
+	public Function latitude(){
+		return child(1);
+	}
+	
+	public Function longitude(){
+		return child(2);
+	}
+	
+	public boolean isProjected(){
+		return nbChildren()>3;
+	}
+	
 	public static class FmGeomContainsParameters{
 		public ODLGeom geometry;
 		public Double latitude;

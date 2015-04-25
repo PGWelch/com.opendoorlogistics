@@ -17,7 +17,7 @@ import com.opendoorlogistics.core.tables.ODLRowReadOnly;
  * @author Phil
  *
  */
-final public class FmThis extends FunctionImpl{
+final public class FmThis extends FmRowDependent{
 	private final int col;
 	
 	public FmThis(int col){

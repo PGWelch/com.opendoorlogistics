@@ -48,6 +48,9 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	private String joinDatastore;
 	
 	@XmlTransient
+	private boolean join;
+	
+	@XmlTransient
 	private String filterFormula="";
 
 	@XmlTransient
@@ -61,6 +64,7 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	
 	@XmlTransient
 	private String shortEditorUINote;
+
 	
 	public AdaptedTableConfig(){}
 
@@ -91,6 +95,9 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 		ret.setTags(getTags());
 		ret.setLimitResults(isLimitResults());
 		ret.setMaxNumberRows(maxNbRows);
+		ret.setJoin(isJoin());
+		ret.setJoinDatastore(getJoinDatastore());
+		ret.setJoinTable(getJoinTable());
 		if(userFormulae!=null){
 			ret.userFormulae = new ArrayList<UserFormula>();
 			for(UserFormula uf : userFormulae){
@@ -316,6 +323,15 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	@XmlAttribute(name ="ShortEditorUINote")
 	public void setShortEditorUINote(String shortEditorUINote) {
 		this.shortEditorUINote = shortEditorUINote;
+	}
+
+	public boolean isJoin() {
+		return join;
+	}
+
+	@XmlAttribute(name ="Join")
+	public void setJoin(boolean join) {
+		this.join = join;
 	}
 
 	

@@ -21,12 +21,15 @@ public final class StringTokeniser {
 		"(\"[ \\t#-~!]*\")",
 		"('[ \\t#-~!]*')",
 		"(<=)", "&&","&", "\\|\\|","\\|" ,"==", ">=", "!=", "<>", "=", "<", ">", "/", "\\++", "\\(", "\\)", 
-		"\\–", "\\-", "\\.", "%", "\\*", ",", "\\}", "\\{", ":" ,"#",
+		"\\–", "\\-", "%", "\\*", ",", "\\}", "\\{", ":" ,"#",
 		"\\[", "\\]"
 		}; 
 	protected final static  Pattern lineTokeniserPattern;
 	protected final static  Pattern intNumberCheck;
-	
+
+	final public static String VARIABLE = "([a-z][abcdefghijklmnopqrstuvwxyz0123456789._]*)";
+//	final private static Pattern okVariableOrMethodName = Pattern.compile("^[a-z][\\w]*$", Pattern.CASE_INSENSITIVE);
+
 	static{ 
 		
 		StringBuilder builder = new StringBuilder();
@@ -36,7 +39,8 @@ public final class StringTokeniser {
 			builder.append(tokensInLine[i]);
 		}
 
-		lineTokeniserPattern = Pattern.compile("^[\\s]*(\\w+"  + "|" + doubleNumber + "|" + intNumber + "|" + builder.toString() + ")[\\s]*?", Pattern.CASE_INSENSITIVE);
+//		lineTokeniserPattern = Pattern.compile("^[\\s]*(\\w+"  + "|" + doubleNumber + "|" + intNumber + "|" + builder.toString() + ")[\\s]*?", Pattern.CASE_INSENSITIVE);
+		lineTokeniserPattern = Pattern.compile("^[\\s]*("+ VARIABLE + "|" + doubleNumber + "|" + intNumber + "|" + builder.toString() + ")[\\s]*?", Pattern.CASE_INSENSITIVE);
 		intNumberCheck = Pattern.compile("^\\d+$");
 	}
 
@@ -103,7 +107,8 @@ public final class StringTokeniser {
 //		System.out.println(l);
 //		System.out.println(r);
 		Print print = new Print();
-		print.print("||||");
+		print.print("1+7+polygon.name*2");
+		print.print("5+7.433*4");
 	}
 	
 	public static List<StringToken> tokenise(String s) {
@@ -131,30 +136,30 @@ public final class StringTokeniser {
 			}
 		}
 		
-		// hack - join doubles
-		ArrayList<StringToken> ret = new ArrayList<>();
-		while(list.size()>0){
-			int nbToRemove=1;
-			if(list.size()>=3){
-				if(intNumberCheck.matcher(list.get(0).getOriginal()).matches()
-						&& list.get(1).getOriginal().equals(".") 
-						&& intNumberCheck.matcher(list.get(2).getOriginal()).matches()){
-					ret.add( new StringToken(list.get(0).getOriginal() + "." + list.get(2).getOriginal(), list.get(0).getPosition()));
-					nbToRemove = 3;
-				}
-				else{
-					ret.add(list.get(0));					
-				}
-			}else{
-				ret.add(list.get(0));
-			}
-			
-			for(int i =0 ; i < nbToRemove ; i++){
-				list.remove(0);
-			}
-		}
+//		// hack - join doubles
+//		ArrayList<StringToken> ret = new ArrayList<>();
+//		while(list.size()>0){
+//			int nbToRemove=1;
+//			if(list.size()>=3){
+//				if(intNumberCheck.matcher(list.get(0).getOriginal()).matches()
+//						&& list.get(1).getOriginal().equals(".") 
+//						&& intNumberCheck.matcher(list.get(2).getOriginal()).matches()){
+//					ret.add( new StringToken(list.get(0).getOriginal() + "." + list.get(2).getOriginal(), list.get(0).getPosition()));
+//					nbToRemove = 3;
+//				}
+//				else{
+//					ret.add(list.get(0));					
+//				}
+//			}else{
+//				ret.add(list.get(0));
+//			}
+//			
+//			for(int i =0 ; i < nbToRemove ; i++){
+//				list.remove(0);
+//			}
+//		}
 		
-		return ret;
+		return list;
 	}
 	
 //	static Integer safeParseInt(String s){

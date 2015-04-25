@@ -16,7 +16,7 @@ import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
 
-public abstract class FmAbstractGroupAggregate extends FunctionImpl{
+public abstract class FmAbstractGroupAggregate extends FmRowDependent{
 	protected final TLongObjectHashMap<TLongArrayList> groupRowIdToSourceRowIds;
 	protected final int srcDsIndex;
 	protected final int srcTableId;

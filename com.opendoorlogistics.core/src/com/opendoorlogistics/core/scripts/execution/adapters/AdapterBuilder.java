@@ -33,6 +33,7 @@ import com.opendoorlogistics.core.formulae.FormulaParser;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
+import com.opendoorlogistics.core.formulae.FunctionUtils;
 import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.formulae.Functions.FmConst;
 import com.opendoorlogistics.core.formulae.Functions.FmEquals;
@@ -505,7 +506,7 @@ final public class AdapterBuilder {
 
 	private boolean isAlwaysFalseFilterFormula(String filter, List<UserFormula> userFormulae){
 
-		// built the function lib with the parameter function but nothing else, so row-level fields are not readable
+		// build the function lib with the parameter function but nothing else, so row-level fields are not readable
 		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
 		library.build();
 		FunctionsBuilder.buildParametersFormulae(library, createIndexDatastoresWrapper(), env);
@@ -523,7 +524,7 @@ final public class AdapterBuilder {
 				// try executing the function
 				FunctionParameters parameters = new TableParameters(datasources, -1, -1, -1,-1,null);	
 				val = f.execute(parameters);
-				if(!isTrue(val)){
+				if(!FunctionUtils.isTrue(val)){
 					return true;
 				}
 				
@@ -539,15 +540,7 @@ final public class AdapterBuilder {
 		return false;
 	}
 	
-	private static boolean isTrue(Object exec){
-		if (exec != null) {
-			Long val = Numbers.toLong(exec);
-			if(val!=null && val.intValue()==1){
-				return true;						
-			}
-		}
-		return false;
-	}
+
 	
 	/**
 	 * Build a non-unioned table by filling in the field sources into the mapping object and recursively building other adapters as needed
@@ -558,12 +551,15 @@ final public class AdapterBuilder {
 
 		AdaptedTableConfig tableConfig = processedConfig.getTables().get(destTableIndx);
 				
-		// Check for case where we have a filter formula based only on a parameter that's false and hence we can skip recurse building
+		// Check for case where we have a filter formula based only on a parameter that's false and hence we can skip recurse building.
+		// Don't test if we're doing a join as we need the join table definition.
 		String filterFormula = tableConfig.getFilterFormula();
-		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);		
-		if(filterFormula!=null && filterFormula.trim().length() >0 && isAlwaysFalseFilterFormula(filterFormula, tableConfig.getUserFormulae())){
-			mapToNewEmptyTable(destTable.getImmutableId(), destTable);
-			return;
+		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);	
+		if(!tableConfig.isJoin()){
+			if(filterFormula!=null && filterFormula.trim().length() >0 && isAlwaysFalseFilterFormula(filterFormula, tableConfig.getUserFormulae())){
+				mapToNewEmptyTable(destTable.getImmutableId(), destTable);
+				return;
+			}			
 		}
 		
 		// get the input datastore, building adapters recursively when needed
@@ -584,7 +580,7 @@ final public class AdapterBuilder {
 		}
 
 		// process join if we have one
-		if(!Strings.isEmptyWhenStandardised(tableConfig.getJoinDatastore())){
+		if(tableConfig.isJoin()){
 			tableRef = buildJoinTable(table(tableRef), tableConfig);
 			if(env.isFailed()){
 				return;
@@ -709,7 +705,7 @@ final public class AdapterBuilder {
 							return null;
 						}
 	
-						if(isTrue(exec)){
+						if(FunctionUtils.isTrue(exec)){
 							rowIds.add(srcTable.getRowId(row));														
 						}
 					}
@@ -1084,7 +1080,7 @@ final public class AdapterBuilder {
 		ODLTableAlterable table = ret.createTable(innerTable.getName(), -1);
 		TableUtils.removeTableFlags(table, TableFlags.UI_EDIT_PERMISSION_FLAGS);		
 		for(int i = 0 ; i < no ; i++){
-			table.addColumn(-1, outerTable.getName() + "." + outerTable.getColumnName(i), outerTable.getColumnType(0), 0);
+			table.addColumn(-1, outerTable.getName() + "." + outerTable.getColumnName(i), outerTable.getColumnType(i), 0);
 			fieldNames.add(table.getColumnName(i));
 		}
 		
@@ -1120,31 +1116,35 @@ final public class AdapterBuilder {
 		int datastoreIndx = addDatasource(null, emptyDs);
 		
 		final ODLTable joinTable = emptyDs.getTableAt(0);
-		final int nco = outerTable.getColumnCount();
-		final int nci = innerTable.getColumnCount();
-		final int nro = outerTable.getRowCount();
-		final int nri = innerTable.getRowCount();
-		
-		class RowAdder{
-			int add(long outerRowId,long innerRowId){
-				int ret = joinTable.createEmptyRow(-1);
-				int col=0;
-				for(int i =0 ; i < nco ; i++){
-					joinTable.setValueAt(outerTable.getValueById(outerRowId, i), ret, col++);
-				}
-				for(int i =0 ; i < nci ; i++){
-					joinTable.setValueAt(innerTable.getValueById(innerRowId, i), ret, col++);
-				}
-				return ret;
-			}
-		}
-		RowAdder adder = new RowAdder();
-		
+//		final int nco = outerTable.getColumnCount();
+//		final int nci = innerTable.getColumnCount();
+//		final int nro = outerTable.getRowCount();
+//		final int nri = innerTable.getRowCount();
+//		
+//		class RowAdder{
+//			int add(long outerRowId,long innerRowId){
+//				int ret = joinTable.createEmptyRow(-1);
+//				int col=0;
+//				for(int i =0 ; i < nco ; i++){
+//					joinTable.setValueAt(outerTable.getValueById(outerRowId, i), ret, col++);
+//				}
+//				for(int i =0 ; i < nci ; i++){
+//					joinTable.setValueAt(innerTable.getValueById(innerRowId, i), ret, col++);
+//				}
+//				return ret;
+//			}
+//		}
+//		RowAdder adder = new RowAdder();
+
+		// create the formula
 		Function formula=null;
 		if(!Strings.isEmptyWhenStandardised(tableConfig.getFilterFormula())){
 			formula = buildFormulaWithTableVariables(joinTable, tableConfig.getFilterFormula(), -1,tableConfig.getUserFormulae(), null);		
-			
 		}
+
+		// use the filter formula optimiser as it fills the join table even if there's no filter formula
+		FilterFormulaOptimiser filterFormulaOptimiser = new FilterFormulaOptimiser(tableConfig.getFilterFormula(), formula, outerTable.getColumnCount());
+		filterFormulaOptimiser.fillJoinTable(outerTable, innerTable, joinTable, datasources, datastoreIndx, env);
 		
 		// speed up ideas???
 		// - Split filter formula into equivalent ANDS array.
@@ -1155,32 +1155,34 @@ final public class AdapterBuilder {
 		
 		// What about a spatial lookup (e.g. quadtree) for the inner table??
 		
-		// add the rows
-		for(int i = 0 ; i < nro ; i++){
-			long orid = outerTable.getRowId(i);
-			
-			for(int j = 0 ; j < nri ; j++){
-				
-				long irid = outerTable.getRowId(j);
-				int rowIndx = adder.add(orid, irid);
-				
-				// Check the formula and delete the new row if it fails...
-				if(formula!=null){
-					FunctionParameters parameters = new TableParameters(datasources, datastoreIndx, joinTable.getImmutableId(), joinTable.getRowId(rowIndx),rowIndx,null);
-					Object exec = formula.execute(parameters);
-					if (exec == Functions.EXECUTION_ERROR) {
-						env.setFailed("Failed to execute filter formula: " + tableConfig.getFilterFormula());
-						return null;
-					}
-
-					if(!isTrue(exec)){
-						joinTable.deleteRow(rowIndx);
-					}
-				}
-			}
-		
-		}
+//		// add the rows
+//		for(int i = 0 ; i < nro ; i++){
+//			long orid = outerTable.getRowId(i);
+//			
+//			for(int j = 0 ; j < nri ; j++){
+//				
+//				long irid = innerTable.getRowId(j);
+//				int rowIndx = adder.add(orid, irid);
+//				
+//				// Check the formula and delete the new row if it fails...
+//				if(formula!=null){
+//					FunctionParameters parameters = new TableParameters(datasources, datastoreIndx, joinTable.getImmutableId(), joinTable.getRowId(rowIndx),rowIndx,null);
+//					Object exec = formula.execute(parameters);
+//					if (exec == Functions.EXECUTION_ERROR) {
+//						env.setFailed("Failed to execute filter formula: " + tableConfig.getFilterFormula());
+//						return null;
+//					}
+//
+//					if(!FunctionUtils.isTrue(exec)){
+//						joinTable.deleteRow(rowIndx);
+//					}
+//				}
+//			}
+//		
+//		}
 	
+	//	new FilterFormulaOptimiser(null).fillJoinTable(outerTable, innerTable, joinTable, datasources, datastoreIndx);
+		
 		InternalTableRef ret = new InternalTableRef(datastoreIndx, 0);
 		return ret;
 	}

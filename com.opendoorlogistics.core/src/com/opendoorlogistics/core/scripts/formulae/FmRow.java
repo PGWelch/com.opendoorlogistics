@@ -11,11 +11,11 @@ import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
 
 /**
- * Returns the global row id of the row in which the formula is executed
+ * Returns the row number in which the formula is executed
  * @author Phil
  *
  */
-final public class FmRow extends FunctionImpl{
+final public class FmRow extends FmRowDependent{
 	public FmRow(){
 		super();
 	}

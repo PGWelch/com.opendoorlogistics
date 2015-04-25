@@ -9,11 +9,10 @@ package com.opendoorlogistics.core.scripts.formulae;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.formulae.Function;
-import com.opendoorlogistics.core.formulae.FunctionImpl;
-import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
+import com.opendoorlogistics.core.formulae.Functions;
 
-final public class FmIsSelectedInMap extends FunctionImpl{
+final public class FmIsSelectedInMap extends FmRowDependent{
 	
 	public FmIsSelectedInMap() {
 	}

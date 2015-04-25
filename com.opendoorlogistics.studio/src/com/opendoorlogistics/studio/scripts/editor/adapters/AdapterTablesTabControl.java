@@ -118,7 +118,7 @@ public class AdapterTablesTabControl extends JPanel {
 
 	private void addTabCtrl(final AdaptedTableConfig table, int index) {
 
-		AdaptedTableControl ctrl = new AdaptedTableControl(api,table, false, true, visibleTableFlags, visibleColumnFlags, availableOptionsQuery) {
+		AdaptedTableControl ctrl = new AdaptedTableControl(api,table, visibleTableFlags, visibleColumnFlags, availableOptionsQuery) {
 			@Override
 			protected List<ODLAction> createActions() {
 				List<ODLAction> ret = super.createActions();

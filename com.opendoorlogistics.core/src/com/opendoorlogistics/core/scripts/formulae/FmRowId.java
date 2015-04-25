@@ -15,7 +15,7 @@ import com.opendoorlogistics.core.formulae.FunctionParameters;
  * @author Phil
  *
  */
-final public class FmRowId extends FunctionImpl{
+final public class FmRowId extends FmRowDependent{
 	public FmRowId(){
 		super();
 	}
