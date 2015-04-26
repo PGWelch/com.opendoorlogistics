@@ -18,12 +18,12 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.studio.components.geocoder.model.GeocodeModel;
-import com.opendoorlogistics.studio.components.map.v2.AbstractMapMode;
-import com.opendoorlogistics.studio.components.map.v2.MapApiImpl;
-import com.opendoorlogistics.studio.components.map.v2.plugins.PanMapPlugin;
-import com.opendoorlogistics.studio.components.map.v2.plugins.RenderCheckboxesPlugin;
-import com.opendoorlogistics.studio.components.map.v2.plugins.utils.PluginUtils;
-import com.opendoorlogistics.studio.components.map.v2.plugins.utils.PluginUtils.ActionFactory;
+import com.opendoorlogistics.studio.components.map.AbstractMapMode;
+import com.opendoorlogistics.studio.components.map.MapApiImpl;
+import com.opendoorlogistics.studio.components.map.plugins.PanMapPlugin;
+import com.opendoorlogistics.studio.components.map.plugins.RenderCheckboxesPlugin;
+import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils;
+import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils.ActionFactory;
 
 public class NominatimMap implements Disposable{
 	private final GeocodeModel model;

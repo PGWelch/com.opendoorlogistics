@@ -45,25 +45,25 @@ final public class GeocoderMapObjects {
 		return MapUtils.convertToDatastore(createObjects(model), false);
 	}
 	
-	public static LayeredDrawables createDrawable(final GeocodeModel model) {
-		return new LayeredDrawables(null, new Iterable<DrawableObject>() {
-
-			@Override
-			public Iterator<DrawableObject> iterator() {
-				ArrayList<DrawableObjectImpl> ret = createObjects(model);
-				return new IteratorAdapter<DrawableObjectImpl, DrawableObject>(ret.iterator(), new ObjectConverter<DrawableObjectImpl, DrawableObject>() {
-
-					@Override
-					public DrawableObject convert(DrawableObjectImpl from) {
-						return from;
-					}
-				});
-				
-			}
-
-	
-		},null);
-	}
+//	public static LayeredDrawables createDrawable(final GeocodeModel model) {
+//		return new LayeredDrawables(null, new Iterable<DrawableObject>() {
+//
+//			@Override
+//			public Iterator<DrawableObject> iterator() {
+//				ArrayList<DrawableObjectImpl> ret = createObjects(model);
+//				return new IteratorAdapter<DrawableObjectImpl, DrawableObject>(ret.iterator(), new ObjectConverter<DrawableObjectImpl, DrawableObject>() {
+//
+//					@Override
+//					public DrawableObject convert(DrawableObjectImpl from) {
+//						return from;
+//					}
+//				});
+//				
+//			}
+//
+//	
+//		},null);
+//	}
 
 	private static DrawableObjectImpl createResultDrawable(double lat, double lng, boolean isSelected) {
 		DrawableObjectImpl drawable = new DrawableObjectImpl();

@@ -32,19 +32,11 @@ import com.opendoorlogistics.core.scripts.execution.dependencyinjection.Dependen
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.DependencyInjectorDecorator;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.ProcessingApiDecorator;
 import com.opendoorlogistics.studio.components.geocoder.component.NominatimGeocoderComponent;
-import com.opendoorlogistics.studio.components.map.FilteredDrawablesContainer;
-import com.opendoorlogistics.studio.components.map.InteractiveMapControl;
-import com.opendoorlogistics.studio.components.map.InteractiveMapPanel;
-import com.opendoorlogistics.studio.components.map.LegendFrame;
+import com.opendoorlogistics.studio.components.map.GlobalMapPluginManager;
+import com.opendoorlogistics.studio.components.map.MapApiImpl;
 import com.opendoorlogistics.studio.components.map.MapConfig;
-import com.opendoorlogistics.studio.components.map.MapModePermissions;
-import com.opendoorlogistics.studio.components.map.ReadOnlyMapControl;
-import com.opendoorlogistics.studio.components.map.ReadOnlyMapPanel;
-import com.opendoorlogistics.studio.components.map.RegisterMapComponent;
-import com.opendoorlogistics.studio.components.map.SelectionPanel;
+import com.opendoorlogistics.studio.components.map.SelectionList;
 import com.opendoorlogistics.studio.components.map.SuggestedFillValuesManager;
-import com.opendoorlogistics.studio.components.map.ZoomUtils;
-import com.opendoorlogistics.studio.components.map.v2.SelectionList;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdaptedTableControl;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdapterTableDefinitionGrid;
@@ -72,9 +64,9 @@ final public class InitialiseStudio {
 			// first loaded are given dummy calls here to put make the loading
 			// occur once-off when the app starts.
 			if (preloadClasses) {
-				for (Class<?> cls : new Class<?>[] { InteractiveMapPanel.class, ReadOnlyMapPanel.class, ReadOnlyMapControl.class, InteractiveMapControl.class, LegendFrame.class, MapConfig.class,
-						MapModePermissions.class, SelectionList.class, RegisterMapComponent.class, SelectionPanel.class, SuggestedFillValuesManager.class, ZoomUtils.class,
-						FilteredDrawablesContainer.class, MouseMotionListener.class, ScriptEditor.class, ScriptEditorWizardGenerated.class, AdaptedTableControl.class,
+				for (Class<?> cls : new Class<?>[] {  MapApiImpl.class, MapConfig.class,GlobalMapPluginManager.class,
+						SelectionList.class, SuggestedFillValuesManager.class,
+						 MouseMotionListener.class, ScriptEditor.class, ScriptEditorWizardGenerated.class, AdaptedTableControl.class,
 						AdapterTableDefinitionGrid.class, AdapterTablesTabControl.class, QueryAvailableData.class, ScriptsRunner.class, ScriptUIManager.class, ScriptUIManagerImpl.class,
 						ScriptExecutor.class, ScriptExecutionBlackboard.class, ExecutionReportImpl.class, AdapterBuilder.class, FunctionsBuilder.class, OptionsSubpath.class,
 						AbstractDependencyInjector.class, DependencyInjector.class, DependencyInjectorDecorator.class, ProcessingApiDecorator.class,
@@ -161,10 +153,9 @@ final public class InitialiseStudio {
 						com.opendoorlogistics.core.utils.NullComparer.class, com.opendoorlogistics.core.utils.SimpleSoftReferenceMap.class,
 						com.opendoorlogistics.core.utils.strings.StandardisedCache.class, com.opendoorlogistics.core.utils.strings.StringKeyValue.class,
 						com.opendoorlogistics.core.utils.strings.Strings.ToString.class, com.opendoorlogistics.core.utils.ui.SwingUtils.class,
-						com.opendoorlogistics.studio.components.map.ReadOnlyMapControl.GetToolTipCB.class, com.opendoorlogistics.studio.components.map.ReadOnlyMapControl.ZoomBestFitManager.class,
 						com.opendoorlogistics.studio.GlobalMapSelectedRowsManager.GlobalSelectionChangedCB.class, com.opendoorlogistics.studio.internalframes.ProgressFrame.class,
-						com.opendoorlogistics.studio.scripts.execution.ScriptsRunner.class, com.opendoorlogistics.studio.components.map.snapshot.CreateImageConfig.class,
-						com.opendoorlogistics.studio.components.map.snapshot.ExportImageConfig.class,
+						com.opendoorlogistics.studio.scripts.execution.ScriptsRunner.class, com.opendoorlogistics.studio.components.map.plugins.snapshot.CreateImageConfig.class,
+						com.opendoorlogistics.studio.components.map.plugins.snapshot.ExportImageConfig.class,
 
 				}) {
 					cls.toString();

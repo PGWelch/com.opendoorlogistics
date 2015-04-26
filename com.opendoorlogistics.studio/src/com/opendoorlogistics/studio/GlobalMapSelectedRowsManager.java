@@ -8,8 +8,8 @@ package com.opendoorlogistics.studio;
 
 import java.util.HashSet;
 
-import com.opendoorlogistics.studio.components.map.v2.SelectionList;
-import com.opendoorlogistics.studio.components.map.v2.SelectionList.SelectionListRegister;
+import com.opendoorlogistics.studio.components.map.SelectionList;
+import com.opendoorlogistics.studio.components.map.SelectionList.SelectionListRegister;
 
 public abstract class GlobalMapSelectedRowsManager implements SelectionListRegister{
 	private HashSet<SelectionList> registeredSelectionLists = new HashSet<>();
