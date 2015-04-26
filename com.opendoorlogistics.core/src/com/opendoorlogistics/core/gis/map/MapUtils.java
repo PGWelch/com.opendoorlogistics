@@ -93,10 +93,10 @@ final public class MapUtils {
 	
 	public static ODLDatastoreAlterable<ODLTableAlterable> createExampleDatastore(int n){
 		List<DrawableObjectImpl> objs = createExampleObjects(n);
-		return createDatastore(objs,true);
+		return convertToDatastore(objs,true);
 	}
 
-	public static ODLDatastoreAlterable<ODLTableAlterable> createDatastore(List<DrawableObjectImpl> objs, boolean writeGlobalIdBackToList) {
+	public static ODLDatastoreAlterable<ODLTableAlterable> convertToDatastore(List<DrawableObjectImpl> objs, boolean writeGlobalIdBackToList) {
 		ODLDatastoreAlterable<ODLTableAlterable> ret = createEmptyDatastore();
 		BeanDatastoreMapping mapping = DrawableObjectImpl.getBeanMapping();
 		ODLTable table = ret.getTableAt(0);

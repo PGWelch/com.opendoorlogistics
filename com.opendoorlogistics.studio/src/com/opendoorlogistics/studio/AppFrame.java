@@ -59,6 +59,7 @@ import javax.swing.event.MenuListener;
 
 import org.apache.commons.io.FilenameUtils;
 
+import com.graphhopper.reader.OSMRelation.Member;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
@@ -76,6 +77,7 @@ import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.DisposeCore;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptTemplatesImpl;
+import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.components.ODLWizardTemplateConfig;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
@@ -94,6 +96,7 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.LayoutUtils;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
+import com.opendoorlogistics.core.utils.ui.TextInformationDialog;
 import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
 import com.opendoorlogistics.studio.components.map.v2.MapApiImpl;
 import com.opendoorlogistics.studio.components.map.v2.SelectionList.HasSelectionListRegister;
@@ -565,6 +568,30 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 		menuBar.add(initCreateScriptsMenu());
 		addSpace.add();
 
+		// tools menu 
+		JMenu tools = new JMenu("Tools");
+		menuBar.add(tools);
+		JMenu memoryCache = new JMenu("Memory cache");
+		tools.add(memoryCache);
+		memoryCache.add(new AbstractAction("View cache statistics") {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				TextInformationDialog dlg = new TextInformationDialog(AppFrame.this, "Memory cache statistics", ApplicationCache.singleton().getUsageReport());
+				dlg.setMinimumSize(new Dimension(400, 400));
+				dlg.setLocationRelativeTo(AppFrame.this);
+				dlg.setVisible(true);
+			}
+		});
+		memoryCache.add(new AbstractAction("Clear memory cache") {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				ApplicationCache.singleton().clearCache();
+			}
+		});
+		addSpace.add();
+		
 		// add window menu
 		JMenu mnWindow = new JMenu("Window");
 		mnWindow.setMnemonic('W');

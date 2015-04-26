@@ -12,17 +12,22 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
+import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.core.gis.map.Legend;
 import com.opendoorlogistics.core.gis.map.Legend.LegendAlignment;
+import com.opendoorlogistics.core.gis.map.MapUtils;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
+import com.opendoorlogistics.core.utils.ObjectConverter;
+import com.opendoorlogistics.core.utils.iterators.IteratorAdapter;
 import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.components.geocoder.model.GeocodeModel;
 import com.opendoorlogistics.studio.components.geocoder.model.SearchResultPoint;
 import com.opendoorlogistics.studio.components.map.LayeredDrawables;
 
-final public class GeocoderMapAppearance {
+final public class GeocoderMapObjects {
 	private final static int RESULT_WIDTH=15;
 	private final static int GEOCODE_WIDTH=16;
 
@@ -36,48 +41,27 @@ final public class GeocoderMapAppearance {
 //		};
 //	}
 	
+	public static ODLDatastore<? extends ODLTable> createDrawableDs(GeocodeModel model){
+		return MapUtils.convertToDatastore(createObjects(model), false);
+	}
+	
 	public static LayeredDrawables createDrawable(final GeocodeModel model) {
 		return new LayeredDrawables(null, new Iterable<DrawableObject>() {
 
 			@Override
 			public Iterator<DrawableObject> iterator() {
-				ArrayList<DrawableObject> ret = new ArrayList<>();
-				
-				// add search results first
-				int count=0;
-				if(model.getSearchResults()!=null){
-					for(SearchResultPoint pnt : model.getSearchResults()){
-						boolean isSelected = model.getSelectedResultIndices()!=null && IteratorUtils.contains(model.getSelectedResultIndices(), count);
-						DrawableObjectImpl drawable = createResultDrawable( pnt.getLatitude(),  pnt.getLongitude(), isSelected);
-						drawable.setGlobalRowId(count);
-						
-						String name = "("+ Integer.toString(count+1) + ") ";
-						int maxLetters = 15;
-						String address = Strings.getLeftWithoutWordSplitting(pnt.getAddress(), maxLetters);
-						if(address.length() < pnt.getAddress().length()){
-							address +="...";
-						}
-						drawable.setLabel(name + address);	
-						
-						// add in reverse order so top ones render first
-						ret.add(0, drawable);
-						
-						count++;
+				ArrayList<DrawableObjectImpl> ret = createObjects(model);
+				return new IteratorAdapter<DrawableObjectImpl, DrawableObject>(ret.iterator(), new ObjectConverter<DrawableObjectImpl, DrawableObject>() {
+
+					@Override
+					public DrawableObject convert(DrawableObjectImpl from) {
+						return from;
 					}
-				}
+				});
 				
-				// then current geocode if non null
-				if(model.getLatitude()!=null && model.getLongitude()!=null){
-					double lat = model.getLatitude();
-					double lng = model.getLongitude();
-					DrawableObjectImpl item = createGeocodeDrawable(lat, lng);
-					item.setGlobalRowId(count++);
-					item.setLabel(model.getAddress());
-					ret.add(item);
-				}
-	
-				return ret.iterator();
 			}
+
+	
 		},null);
 	}
 
@@ -97,6 +81,44 @@ final public class GeocoderMapAppearance {
 			drawable.setLegendKey("Search result (selected)");
 		}
 		return drawable;
+	}
+	
+	private static ArrayList<DrawableObjectImpl> createObjects(final GeocodeModel model) {
+		ArrayList<DrawableObjectImpl> ret = new ArrayList<>();
+		
+		// add search results first
+		int count=0;
+		if(model.getSearchResults()!=null){
+			for(SearchResultPoint pnt : model.getSearchResults()){
+				boolean isSelected = model.getSelectedResultIndices()!=null && IteratorUtils.contains(model.getSelectedResultIndices(), count);
+				DrawableObjectImpl drawable = createResultDrawable( pnt.getLatitude(),  pnt.getLongitude(), isSelected);
+				drawable.setGlobalRowId(count);
+				
+				String name = "("+ Integer.toString(count+1) + ") ";
+				int maxLetters = 15;
+				String address = Strings.getLeftWithoutWordSplitting(pnt.getAddress(), maxLetters);
+				if(address.length() < pnt.getAddress().length()){
+					address +="...";
+				}
+				drawable.setLabel(name + address);	
+				
+				// add in reverse order so top ones render first
+				ret.add(0, drawable);
+				
+				count++;
+			}
+		}
+		
+		// then current geocode if non null
+		if(model.getLatitude()!=null && model.getLongitude()!=null){
+			double lat = model.getLatitude();
+			double lng = model.getLongitude();
+			DrawableObjectImpl item = createGeocodeDrawable(lat, lng);
+			item.setGlobalRowId(count++);
+			item.setLabel(model.getAddress());
+			ret.add(item);
+		}
+		return ret;
 	}
 
 	private static DrawableObjectImpl createGeocodeDrawable(double lat, double lng) {

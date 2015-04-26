@@ -197,5 +197,7 @@ final public class RecentlyUsedCache {
 		this.logToConsole = logToConsole;
 	}
 	
-	
+	public long getEstimatedTotalBytes(){
+		return totalBytes;
+	}
 }

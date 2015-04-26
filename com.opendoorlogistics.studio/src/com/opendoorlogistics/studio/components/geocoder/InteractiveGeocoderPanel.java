@@ -95,7 +95,7 @@ public class InteractiveGeocoderPanel extends JPanel implements Disposable, Geoc
 			@Override
 			public void onClickPosition(double latitude, double longitude) {
 				model.setGeocode(latitude, longitude);
-				map.setDrawables(GeocoderMapAppearance.createDrawable(model));
+				map.setDrawables(GeocoderMapObjects.createDrawable(model));
 			}
 		});
 		interactive.setZoomBestFitManager(new ZoomBestFitManager() {
@@ -135,14 +135,14 @@ public class InteractiveGeocoderPanel extends JPanel implements Disposable, Geoc
 				// Turn off the legend...
 			}
 		};
-		map.setDrawables(GeocoderMapAppearance.createDrawable(model));
+		map.setDrawables(GeocoderMapObjects.createDrawable(model));
 		map.setPreferredSize(new Dimension(600, 200));
 
 		// put map in its own panel with a legend and border
 		mainResultsPanel = new VerticalLayoutPanel();
 		mainResultsPanel.add(searchSubPanel);
 		mainResultsPanel.addNoWrap(map);
-		mainResultsPanel.add(ImageUtils.createImagePanel(GeocoderMapAppearance.createLegend(), Color.WHITE));
+		mainResultsPanel.add(ImageUtils.createImagePanel(GeocoderMapObjects.createLegend(), Color.WHITE));
 		vPanel.addNoWrap(mainResultsPanel);
 		//vPanel.addWhitespace();
 		
@@ -238,7 +238,7 @@ public class InteractiveGeocoderPanel extends JPanel implements Disposable, Geoc
 	@Override
 	public void modelChanged(boolean recordChanged, boolean searchResultsChanged) {
 		// always repaint the map
-		map.setDrawables(GeocoderMapAppearance.createDrawable(model));
+		map.setDrawables(GeocoderMapObjects.createDrawable(model));
 		interactive.repaint();
 
 		// rezoom if search results have changed

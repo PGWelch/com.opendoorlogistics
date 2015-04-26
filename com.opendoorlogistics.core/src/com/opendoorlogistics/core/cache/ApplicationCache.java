@@ -8,7 +8,14 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.cache;
 
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Map;
+
+import com.opendoorlogistics.core.utils.Pair;
 
 /**
  * A class to store all other caches! Note that cache retrieval by string
@@ -30,8 +37,8 @@ public class ApplicationCache {
 	public static final String IMPORTED_SHAPEFILE_CACHE = "imported-shapefile-cache";
 	public static final String GEOM_CENTROID_CACHE = "geom-centroid-cache";
 	public static final String PROJECTED_RENDERER_GEOMETRY = "projected-renderer-geometry";
-	public static final String ROG_QUADTREE_BLOCKS = "rog-quadtree-blocks";
-	public static final String ROG_FULL_GEOMETRY = "rog-full-geometry";
+	public static final String ROG_QUADTREE_BLOCKS = "render-optimised-geometry-quadtree-blocks";
+	public static final String ROG_FULL_GEOMETRY = "render-optimised-geometry-full-geometry";
 	public static final String MAPSFORGE_BACKGROUND_TILES = "mapsforge-background-tiles";
 	public static final String TEXT_LAYOUT_CACHE = "text-layout-cache";
 	public static final String SYNCHRONOUS_RETRIEVED_TILE_CACHE = "synchronous-retrieved-tile-cache";
@@ -43,6 +50,11 @@ public class ApplicationCache {
 	public static final String GRID_TRANSFORMS_CACHE = "grid-transforms-cache";
 	public static final String FAST_CONTAINED_POINTS_QUADTREE= "fast-contained-points-quadtree";
 	
+	public void clearCache(){
+		for(RecentlyUsedCache cache : caches.values()){
+			cache.clear();
+		}
+	}
 	
 	public static ApplicationCache singleton(){
 		return singleton;
@@ -89,5 +101,45 @@ public class ApplicationCache {
 		RecentlyUsedCache ret = new RecentlyUsedCache(cacheId,maxSizeInBytes);
 		caches.put(cacheId,ret );
 		return ret;
+	}
+	
+	public String getUsageReport(){
+		StringBuilder builder = new StringBuilder();
+		long total=0;
+		
+		ArrayList<Pair<Long, String>> list = new ArrayList<Pair<Long,String>>();
+		for(Map.Entry<String,RecentlyUsedCache> entry : caches.entrySet()){
+			long bytes = entry.getValue().getEstimatedTotalBytes();
+			list.add(new Pair<Long, String>(bytes, entry.getKey()));
+			total += bytes;
+		}
+		
+		Collections.sort(list, new Comparator<Pair<Long, String>>() {
+
+			@Override
+			public int compare(Pair<Long, String> o1, Pair<Long, String> o2) {
+				int diff = o2.getFirst().compareTo(o1.getFirst());
+				if(diff==0){
+					diff = o1.getSecond().compareTo(o2.getSecond());
+				}
+				return diff;
+			}
+		});
+		
+		class ToMbString{
+			String toMB(long bytes){
+				double val =(double) bytes / (1024*1024);
+				DecimalFormat df = new DecimalFormat("0.00");
+				return df.format(val);
+			}
+		}
+		
+		ToMbString toMB = new ToMbString();
+		
+		builder.append("Estimated total usage is " + toMB.toMB(total) + " MB" + System.lineSeparator());
+		for(Pair<Long, String> pair : list){
+			builder.append(pair.getSecond() + " estimated " + toMB.toMB(pair.getFirst()) + " MB" + System.lineSeparator());
+		}
+		return builder.toString();
 	}
 }
