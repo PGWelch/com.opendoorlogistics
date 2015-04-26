@@ -16,6 +16,7 @@ import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
 import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
+import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.studio.components.geocoder.model.GeocodeModel;
 import com.opendoorlogistics.studio.components.map.v2.AbstractMapMode;
 import com.opendoorlogistics.studio.components.map.v2.MapApiImpl;
@@ -24,7 +25,7 @@ import com.opendoorlogistics.studio.components.map.v2.plugins.RenderCheckboxesPl
 import com.opendoorlogistics.studio.components.map.v2.plugins.utils.PluginUtils;
 import com.opendoorlogistics.studio.components.map.v2.plugins.utils.PluginUtils.ActionFactory;
 
-public class NominatimMap {
+public class NominatimMap implements Disposable{
 	private final GeocodeModel model;
 	private final MapApiImpl map;
 	
@@ -45,6 +46,10 @@ public class NominatimMap {
 	void update(){
 		map.setObjects(GeocoderMapObjects.createDrawableDs(model));
 		map.repaint(false);
+	}
+	
+	void zoomBestFit(){
+		map.setViewToBestFit(map.getMapDataApi().getUnfilteredActiveTable());
 	}
 	
 	private class MyMovePlugin implements MapPlugin, ActionFactory{
@@ -103,5 +108,10 @@ public class NominatimMap {
 			model.setGeocode(ll);
 		}
 
+	}
+
+	@Override
+	public void dispose() {
+		map.dispose();
 	}
 }
