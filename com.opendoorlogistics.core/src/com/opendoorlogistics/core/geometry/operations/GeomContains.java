@@ -5,6 +5,7 @@ import gnu.trove.map.hash.TObjectByteHashMap;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.geometry.Spatial;
+import com.opendoorlogistics.core.utils.ObjectDefaultSystemHashingDecorator;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -15,9 +16,11 @@ public class GeomContains {
 	
 	private static class CacheKey{
 		final Geometry geometry;
+		final ObjectDefaultSystemHashingDecorator geomHashingDecorator;
 		final String espg;
 		
 		CacheKey(Geometry g, String espg) {
+			this.geomHashingDecorator = new ObjectDefaultSystemHashingDecorator(g);
 			this.geometry = g;
 			this.espg = espg;
 		}
@@ -27,7 +30,7 @@ public class GeomContains {
 			final int prime = 31;
 			int result = 1;
 			result = prime * result + ((espg == null) ? 0 : espg.hashCode());
-			result = prime * result + ((geometry == null) ? 0 : geometry.hashCode());
+			result = prime * result + ((geomHashingDecorator == null) ? 0 : geomHashingDecorator.hashCode());
 			return result;
 		}
 
@@ -45,10 +48,10 @@ public class GeomContains {
 					return false;
 			} else if (!espg.equals(other.espg))
 				return false;
-			if (geometry == null) {
-				if (other.geometry != null)
+			if (geomHashingDecorator == null) {
+				if (other.geomHashingDecorator != null)
 					return false;
-			} else if (!geometry.equals(other.geometry))
+			} else if (!geomHashingDecorator.equals(other.geomHashingDecorator))
 				return false;
 			return true;
 		}

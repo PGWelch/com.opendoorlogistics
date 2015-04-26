@@ -148,14 +148,10 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	
 	public MapApiImpl(Iterable<MapPlugin> plugins,  ComponentControlLauncherApi componentControlLauncherApi,
 			ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs, ODLDatastore<? extends ODLTable> mapDatastore) {
-	//	this.plugins = plugins;
 		this.globalDs = globalDs;
 		this.componentControlLauncherApi = componentControlLauncherApi;
 		this.selectionState = new MapSelectionState();
 		this.position = new ViewPosition();
-
-		// Set default side panel sizes
-		// Arrays.fill(sidePanelSizes, 0.2);
 
 		// Init renderer and set callback for when our own tiles are loaded
 		renderer = new TileCacheRenderer();
@@ -251,9 +247,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		mapViewPanel.addKeyListener(this);
 		mapViewPanel.setToolTipText(""); // add dummy tooltip text so getToolTipText method is called
 		
-		// containerPanel.add(mapViewPanel,BorderLayout.CENTER);
-
-		// Create plugins
+		// Init the plugins before building the toolbar (so they can add to it)
 		if (plugins != null) {
 			for (MapPlugin factory : plugins) {
 				factory.initMap(this);
@@ -262,11 +256,8 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 		// Init toolbar
 		toolBar = new MapToolbarImpl();
-	//	toolBar.setFloatable(false);
 		fireBuildToolbarListeners(this, toolBar);
 		containerLevel1Panel.add(toolBar.getComponent(), BorderLayout.NORTH);
-
-		// containerPanel.add(toolBar, BorderLayout.NORTH);
 
 		// Add all controls to the main panel
 		initContainerPanel(false);
@@ -289,7 +280,15 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 			@Override
 			public void run() {
-				setViewToBestFit(getMapDataApi().getFilteredAllLayersTable());
+				// delay by one event cycle to ensure map control is initialised (sometimes it has zero dimensions
+				// otherwise ... screwing up the calculation)
+				SwingUtilities.invokeLater(new Runnable() {
+					
+					@Override
+					public void run() {
+						setViewToBestFit(getMapDataApi().getFilteredAllLayersTable());
+					}
+				});
 			}
 		});
 	}

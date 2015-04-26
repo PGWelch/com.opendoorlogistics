@@ -2188,6 +2188,73 @@ public class Functions {
 
 	}
 
+	public static abstract class FmLerpToDefinedColour extends FunctionImpl{
+		public FmLerpToDefinedColour(Function colour, Function ammount){
+			super(colour, ammount);
+		}
+
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object [] vals = executeChildFormulae(parameters, true);
+			if(vals == null){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			Color col = (Color)ColumnValueProcessor.convertToMe(ODLColumnType.COLOUR, vals[0]);
+			Double lerp = (Double)ColumnValueProcessor.convertToMe(ODLColumnType.DOUBLE, vals[1]);
+			if(col== null || lerp == null){
+				return Functions.EXECUTION_ERROR;				
+			}
+			
+			Color other = getColour(col);
+			return Colours.lerp(col, other, lerp);
+		}
+		
+		protected abstract Color getColour(Color source);
+
+		@Override
+		public Function deepCopy() {
+			throw new UnsupportedOperationException();
+		}
+		
+	}
+	
+	public static final class FmGreyscale extends FmLerpToDefinedColour{
+		public FmGreyscale(Function colour, Function ammount){
+			super(colour, ammount);
+		}
+
+		@Override
+		protected Color getColour(Color source) {
+			return Colours.toGrey(source);
+		}
+		
+	}
+	
+	public static final class FmLighten extends FmLerpToDefinedColour{
+		public FmLighten(Function colour, Function ammount){
+			super(colour, ammount);
+		}
+
+		@Override
+		protected Color getColour(Color source) {
+			return Color.WHITE;
+		}
+		
+	}
+	
+	public static final class FmDarken extends FmLerpToDefinedColour{
+		public FmDarken(Function colour, Function ammount){
+			super(colour, ammount);
+		}
+
+		@Override
+		protected Color getColour(Color source) {
+			return Color.BLACK;
+		}
+		
+	}
+	
 	public static final class FmColour extends FunctionImpl {
 		public FmColour(Function red, Function green, Function blue) {
 			super(red, green, blue);

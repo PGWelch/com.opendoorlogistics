@@ -15,7 +15,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * Specialised quadtree designed for fast lookups of points with an id contained within a polygon
  */
 public class FastContainedPointsQuadtree {
-	private final static int MAX_POINTS_PER_NODE = 25;
+	private final static int MAX_POINTS_PER_NODE = 10;
 	
 	private final CacheKey cacheKey;
 	private final Node root;
@@ -242,25 +242,30 @@ public class FastContainedPointsQuadtree {
 			return ret;
 		}
 		
-		NodeQueryResult getRelationToGeometry(Geometry g){
+		NodeQueryResult getRelationToGeometry(Geometry g, QueryStats stats){
 			// check for empty node (should probably never happen)
 			if(polygonEnvelope==null){
 				return NodeQueryResult.OUTSIDE;
 			}
 			
+			stats.nbQuadIntersectionTests++;
+			
 			// check for no intersection
 			boolean intersects = g.intersects(polygonEnvelope);
 			if(!intersects){
+				stats.nbOutsideQuads++;
 				return NodeQueryResult.OUTSIDE;
 			}
 			
 			// check for completely contained
 			boolean contains = g.contains(polygonEnvelope);
 			if(contains){
+				stats.nbContainedQuads++;
 				return NodeQueryResult.INSIDE;
 			}
 			
 			// or partially contained
+			stats.nbIntersectingQuads++;
 			return NodeQueryResult.INTERSECTING;
 		}
 		
@@ -277,24 +282,26 @@ public class FastContainedPointsQuadtree {
 		}
 		
 
-		
-		void query(Geometry g, TLongHashSet ids){
+
+		void query(Geometry g, TLongHashSet ids, QueryStats stats){
 			// Check for the case where we only have one non-null child and descend straight away.
 			// This can happen for highly-concentrated points where we may have to descend many levels until finding them
 			if(nbNonNullChildren()==1){
 				for(Node c : children){
 					if(c!=null){
-						c.query(g, ids);
+						c.query(g, ids, stats);
 						return;
 					}
 				}
 			}
 			
-			NodeQueryResult relation = getRelationToGeometry(g);
+			NodeQueryResult relation = getRelationToGeometry(g,stats);
 			switch(relation){
 			case INSIDE:
 				// The node is totally inside the geometry, so fetch all its ids
+				int currentCount=ids.size();
 				fetchIds(ids);
+				stats.nbIdsIdentifiedFromContainedQuads += ids.size() - currentCount;
 				break;
 				
 			case OUTSIDE:
@@ -308,7 +315,7 @@ public class FastContainedPointsQuadtree {
 				if(children!=null){
 					for(Node c : children){
 						if(c!=null){
-							c.query(g, ids);							
+							c.query(g, ids, stats);							
 						}
 					}
 				}else{
@@ -318,6 +325,7 @@ public class FastContainedPointsQuadtree {
 
 							@Override
 							public void accept(Coordinate c, TLongHashSet s) {
+								stats.nbPointIntersectionTests++;
 								if(GeomContains.containsPoint(g, c)){
 									ids.addAll(s);									
 								}
@@ -337,8 +345,10 @@ public class FastContainedPointsQuadtree {
 		INTERSECTING,
 	}
 	
-	public void query(Geometry g, TLongHashSet ids){
-		root.query(g, ids);
+	public QueryStats query(Geometry g, TLongHashSet ids){
+		QueryStats stats = new QueryStats();
+		root.query(g, ids, stats);
+		return stats;
 	}
 	
 	public Object getCacheKey(){
@@ -440,4 +450,36 @@ public class FastContainedPointsQuadtree {
 		ret += root.getEstimatedSizeInBytes();
 		return ret;
 	}
+	
+	public static class QueryStats{
+		int nbQuadIntersectionTests;
+		int nbPointIntersectionTests;
+		int nbIdsIdentifiedFromContainedQuads;
+		int nbOutsideQuads;
+		int nbContainedQuads;
+		int nbIntersectingQuads;
+		
+		@Override
+		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			builder.append("QueryStats [nbQuadIntersectionTests=");
+			builder.append(nbQuadIntersectionTests);
+			builder.append(", nbPointIntersectionTests=");
+			builder.append(nbPointIntersectionTests);
+			builder.append(", nbIdsIdentifiedFromContainedQuads=");
+			builder.append(nbIdsIdentifiedFromContainedQuads);
+			builder.append(", nbOutsideQuads=");
+			builder.append(nbOutsideQuads);
+			builder.append(", nbContainedQuads=");
+			builder.append(nbContainedQuads);
+			builder.append(", nbIntersectingQuads=");
+			builder.append(nbIntersectingQuads);
+			builder.append("]");
+			return builder.toString();
+		}
+		
+		
+	}
+	
+
 }
