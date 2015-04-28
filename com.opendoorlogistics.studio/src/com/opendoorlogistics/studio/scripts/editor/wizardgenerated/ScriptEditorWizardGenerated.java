@@ -534,7 +534,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 				addLabelWithEditor(output, ret.panel, isMultiPane);
 
 				if (output.isUserCanEdit()) {
-					OutputPanel outputPanel = new OutputPanel(output, false, OutputType.values());
+					OutputPanel outputPanel = new OutputPanel(output,true, OutputType.values());
 					if (isMultiPane) {
 						setMultiPaneBorder(outputPanel);
 					} else {

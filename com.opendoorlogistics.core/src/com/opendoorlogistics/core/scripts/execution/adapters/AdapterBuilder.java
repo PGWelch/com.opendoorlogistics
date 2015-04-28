@@ -1067,33 +1067,7 @@ final public class AdapterBuilder {
 		return val;
 	}
 
-	/**
-	 * Bulid the empty table which would result from joining the outer and inner tables
-	 * @param outerTable
-	 * @param innerTable
-	 * @return
-	 */
-	private ODLDatastore<? extends ODLTable> buildEmptyJoinTable(ODLTableDefinition outerTable, ODLTableDefinition innerTable){
-		ODLDatastoreAlterable<ODLTableAlterable> ret = ODLDatastoreImpl.alterableFactory.create();
-		StandardisedStringSet fieldNames = new StandardisedStringSet();
-		int no = outerTable.getColumnCount();
-		ODLTableAlterable table = ret.createTable(innerTable.getName(), -1);
-		TableUtils.removeTableFlags(table, TableFlags.UI_EDIT_PERMISSION_FLAGS);		
-		for(int i = 0 ; i < no ; i++){
-			table.addColumn(-1, outerTable.getName() + "." + outerTable.getColumnName(i), outerTable.getColumnType(i), 0);
-			fieldNames.add(table.getColumnName(i));
-		}
-		
-		int ni = innerTable.getColumnCount();
-		for(int i =0 ; i < ni ; i++){
-			String name = innerTable.getColumnName(i);
-			if(fieldNames.contains(name)){
-				throw new RuntimeException("Joining of tables results in a fieldname appearing twice: " + name);
-			}
-			table.addColumn(-1, name, innerTable.getColumnType(i), 0);
-		}
-		return ret;
-	}
+
 	
 	private InternalTableRef buildJoinTable(final ODLTableReadOnly innerTable, AdaptedTableConfig tableConfig){
 		// get outer table
@@ -1110,7 +1084,7 @@ final public class AdapterBuilder {
 		}
 		final ODLTableReadOnly outerTable = datasources.get(outerDsId).getTableAt(outerTableIndx);
 		
-		ODLDatastore<? extends ODLTable> emptyDs = buildEmptyJoinTable(outerTable, innerTable);
+		ODLDatastore<? extends ODLTable> emptyDs = AdapterBuilderUtils.buildEmptyJoinTable(outerTable, innerTable);
 		
 		// add the new datastore
 		int datastoreIndx = addDatasource(null, emptyDs);

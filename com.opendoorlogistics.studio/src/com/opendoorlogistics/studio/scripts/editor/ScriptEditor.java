@@ -610,13 +610,13 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 			
 			@Override
 			public String[] queryAvailableFields(String datastore, String tablename) {
-				SourcedTable st = getTable(datastore,tablename);
+				ODLTableDefinition st = getTableDefinition(datastore,tablename);
 				if(st==null){
 					return new String[0];
 				}
-				String [] ret = new String[st.getTableDefinition().getColumnCount()];
+				String [] ret = new String[st.getColumnCount()];
 				for(int i =0 ; i <ret.length;i++){
-					ret[i] = st.getTableDefinition().getColumnName(i);
+					ret[i] = st.getColumnName(i);
 				}
 
 				return ret;
