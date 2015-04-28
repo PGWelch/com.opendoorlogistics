@@ -118,7 +118,7 @@ final public class AdapterBuilder {
 		if (env.isFailed()) {
 			return null;
 		}
-
+		
 		// check for importing files
 		if(id!=null){	
 			// check for importing a shapefile...

@@ -208,9 +208,10 @@ final public class BeanMapping {
 		 */
 		@SuppressWarnings("unchecked")
 		private <T extends BeanMappedRow> T readObjectFromTable(ODLTableReadOnly inputTable,int row, long rowId) {
-			if (!DatastoreComparer.isSameStructure(this.table, inputTable, DatastoreComparer.ALLOW_EXTRA_COLUMNS_ON_SECOND_TABLE)) {
-				throw new RuntimeException("Input table does not match expected structure.");
-			}
+			// Commented out this datastore structure check as its slow and probably not needed...
+//			if (!DatastoreComparer.isSameStructure(this.table, inputTable, DatastoreComparer.ALLOW_EXTRA_COLUMNS_ON_SECOND_TABLE)) {
+//				throw new RuntimeException("Input table does not match expected structure.");
+//			}
 
 			T ret = null;
 			try {

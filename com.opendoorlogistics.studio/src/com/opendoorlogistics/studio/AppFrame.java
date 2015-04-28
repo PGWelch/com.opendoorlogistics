@@ -1291,8 +1291,8 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 			Dimension remaining = new Dimension(Math.max(0, desktopSize.width - frameSize.width), Math.max(0, desktopSize.height - frameSize.height));
 			Dimension halfRemaining = new Dimension(remaining.width / 2, remaining.height / 2);
 			Random random = new Random();
-			int x = remaining.width / 4 + random.nextInt(halfRemaining.width);
-			int y = remaining.height / 4 + random.nextInt(halfRemaining.height);
+			int x = remaining.width / 4 + (halfRemaining.width>0 ?random.nextInt(halfRemaining.width):0);
+			int y = remaining.height / 4 + (halfRemaining.height>0?random.nextInt(halfRemaining.height):0);
 			frame.setLocation(x, y);
 		}
 		

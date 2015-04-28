@@ -809,7 +809,7 @@ final public class ScriptExecutor {
 		// check for buildable adapter
 		AdapterConfig adapterConfig = env.getAdapterConfig(id);
 		if (adapterConfig != null) {
-
+			internalExecutionApi.postStatusMessage("Building data adapter: " + (id!=null ? id : "<no id>"));
 			AdapterBuilder builder = new AdapterBuilder(id, new StandardisedStringSet(), env, internalExecutionApi, new BuiltAdapters());
 			ds = builder.build();
 			if (ds != null) {

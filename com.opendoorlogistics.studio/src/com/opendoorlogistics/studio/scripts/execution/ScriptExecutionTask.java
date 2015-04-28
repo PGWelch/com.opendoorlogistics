@@ -269,7 +269,12 @@ class ScriptExecutionTask {
 
 			// process all the launch control callbacks
 			Iterator<RecordedLauncherCallback> it = guiFascade.getControlLauncherCallbacks().iterator();
+			int count=0;
 			while (it.hasNext() && result.isFailed() == false) {
+				if(progressReporter!=null){
+					progressReporter.getProgressPanel().setText("Launching controls : " + count);
+				}
+				
 				final RecordedLauncherCallback cb = it.next();
 				final HashSet<ReporterFrame<?>> frames = new HashSet<>();
 				try {
@@ -288,6 +293,8 @@ class ScriptExecutionTask {
 						frame.setRefresherCB(runner);
 					}
 				}
+				
+				count++;
 			}
 
 		}

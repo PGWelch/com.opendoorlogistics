@@ -76,6 +76,7 @@ import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator
 import com.opendoorlogistics.core.tables.decorators.datastores.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.SetUtils;
+import com.opendoorlogistics.core.utils.SimpleCodeTimer;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
 import com.opendoorlogistics.core.utils.ui.ShowPanel;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
@@ -327,8 +328,10 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		firePreObjectsChangedListener(this, mapDatastore);
 		
 		this.mapDatastore = mapDatastore;
-		
+
+	//	SimpleCodeTimer codeTimer = new SimpleCodeTimer();
 		updateObjectFiltering();
+		//codeTimer.print("Filtering updated");
 		
 		// Update selected ids. don't allow anything to be selected that's not in the active table,
 		// however we do allow filtered out objects to stay selected (needed for polygon editing plugin).
@@ -346,9 +349,14 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			}
 		}
 
+	//	codeTimer.print("Selected updated");
+
 		if (!selectionState.equals(newSelected)) {
 			setSelectedIds(newSelected.toArray());
 		}
+		
+		//codeTimer.print("Selected state updated");
+
 	}
 
 	public DisposablePanel getPanel() {
@@ -398,6 +406,8 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 				return null;
 			}
 
+		//	SimpleCodeTimer timer = new SimpleCodeTimer();
+			
 			BeanTableMapping btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
 			int n = table.getRowCount();
 			ArrayList<DrawableObject> ret = new ArrayList<DrawableObject>(n);
@@ -412,9 +422,13 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 					}
 				}
 				
-				boolean accept = !isFiltered || fireFilterObject(MapApiImpl.this, table, i);
+				boolean accept =!isFiltered || fireFilterObject(MapApiImpl.this, table, i);
 				if (accept) {
 					if(obj==null){
+//						int nbTests=100;
+//						for(int j=0 ; j < nbTests ; j++){
+//							obj= btm.readObjectFromTableByRow(table, i);														
+//						}
 						obj= btm.readObjectFromTableByRow(table, i);							
 					}
 
@@ -424,6 +438,8 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 				}
 
 			}
+			
+		//	timer.print("Bean mapped table " + table.getName());
 			return ret;
 		}
 	}
@@ -1205,7 +1221,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		ODLGlobalComponents.register(new AbstractMapViewerComponent() {
 
 			@Override
-			public void execute(ComponentExecutionApi api, int mode,final Object configuration, ODLDatastore<? extends ODLTable> ioDs, ODLDatastoreAlterable<? extends ODLTableAlterable> outputDs) {
+			public void execute(final ComponentExecutionApi api, int mode,final Object configuration, ODLDatastore<? extends ODLTable> ioDs, ODLDatastoreAlterable<? extends ODLTableAlterable> outputDs) {
 
 				api.submitControlLauncher(new ControlLauncherCallback() {
 					
@@ -1213,7 +1229,12 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 					public void launchControls(ComponentControlLauncherApi launcherApi) {
 						DisposablePanel panel = (DisposablePanel)launcherApi.getRegisteredPanel("Map");
 						if(panel!=null){
+						//	api.postStatusMessage("Updating drawable objects in map control");
+							//long start = System.currentTimeMillis();
 							panel.getApi().setObjects(ioDs);
+							//api.postStatusMessage("Finished updating objects in map control");
+						//	long finish = System.currentTimeMillis();
+						//	System.out.println("Millis " + (finish-start));
 						}
 						else{
 							// get all plugins
