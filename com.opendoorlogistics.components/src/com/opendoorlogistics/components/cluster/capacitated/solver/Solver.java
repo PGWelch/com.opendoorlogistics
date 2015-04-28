@@ -141,19 +141,21 @@ public class Solver {
 		}
 
 		// decide how many to unallocate
-		int nbToUnallocate = 1 + random.nextInt(unallocatables.size());
-
-		// unallocate them
-		unallocatables.shuffle(random);
 		int[] mutated = Arrays.copyOf(original, original.length);
-		for (int i = 0; i < nbToUnallocate; i++) {
-			if (i < unallocatables.size()) {
-				int clusterIndex = unallocatables.get(i);
-				mutated[clusterIndex] = -1;
-			}
+		if(unallocatables.size()>0){
+			int nbToUnallocate = 1 + random.nextInt(unallocatables.size());
+
+			// unallocate them
+			unallocatables.shuffle(random);
+			for (int i = 0; i < nbToUnallocate; i++) {
+				if (i < unallocatables.size()) {
+					int clusterIndex = unallocatables.get(i);
+					mutated[clusterIndex] = -1;
+				}
+			}			
 		}
 
-		// get the available customers
+		// get the available customers - these are any locations not used in the mutated cluster set
 		TIntArrayList available = new TIntArrayList();
 		for (int i = 0; i < problem.getNbLocations(); i++) {
 			if (IntUtils.contains(mutated, i) == false) {
@@ -377,20 +379,20 @@ public class Solver {
 
 				if (random.nextBoolean()) {
 					if (useInsertionMoves) {
-						interclusterMoves(cli, clj, solution);
+						interclusterMoves(random,cli, clj, solution);
 					}
 
 					if (useSwapMoves) {
-						interclusterSwaps(cli, clj, solution);
+						interclusterSwaps(random,cli, clj, solution);
 					}
 
 				} else {
 					if (useSwapMoves) {
-						interclusterSwaps(cli, clj, solution);
+						interclusterSwaps(random,cli, clj, solution);
 					}
 
 					if (useInsertionMoves) {
-						interclusterMoves(cli, clj, solution);
+						interclusterMoves(random,cli, clj, solution);
 					}
 				}
 			}
@@ -421,12 +423,13 @@ public class Solver {
 	 * @param clusterj
 	 * @param solution
 	 */
-	private void interclusterMoves(int clusteri, int clusterj, EvaluatedSolution solution) {
+	private void interclusterMoves(Random random,int clusteri, int clusterj, EvaluatedSolution solution) {
 
 		Cost cost = new Cost();
 		TIntArrayList customersi = new TIntArrayList();
 		solution.getCustomers(clusteri, customersi);
 		int n = customersi.size();
+		customersi.shuffle(random);
 		int fixedCentre = problem.getFixedLocation(clusteri);
 
 		// loop over each customer in cluster i
@@ -442,13 +445,36 @@ public class Solver {
 		}
 	}
 
-	private void interclusterSwaps(int clusteri, int clusterj, EvaluatedSolution solution) {
+//	private void mutateLocationAssignment(Random random,int clusteri, int clusterj,double mutatefraction, EvaluatedSolution solution) {
+//
+//		TIntArrayList customersi = new TIntArrayList();
+//		solution.getCustomers(clusteri, customersi);
+//		int n = customersi.size();
+//		customersi.shuffle(random);
+//		int fixedCentre = problem.getFixedLocation(clusteri);
+//
+//		// loop over each customer in cluster i
+//		for (int i = 0; i < n; i++) {
+//			// check we're not moving the fixed centre
+//			int customeri = customersi.get(i);
+//			if (customeri != fixedCentre) {
+//				boolean mutate = random.nextDouble() < mutatefraction;
+//				if(mutate){
+//					solution.setCustomerToCluster(customeri, clusterj);					
+//				}
+//			}
+//		}
+//	}
+
+	private void interclusterSwaps(Random random,int clusteri, int clusterj, EvaluatedSolution solution) {
 
 		TIntArrayList customersi = new TIntArrayList();
 		solution.getCustomers(clusteri, customersi);
+		customersi.shuffle(random);
 
 		TIntArrayList customersj = new TIntArrayList();
 		solution.getCustomers(clusterj, customersj);
+		customersj.shuffle(random);
 
 		Cost cost = new Cost();
 		Cost bestSwap = new Cost();
