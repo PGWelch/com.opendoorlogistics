@@ -130,13 +130,18 @@ public abstract class AbstractMapViewerComponent implements Maps {
 					ODLTableDefinition src = inputTables.getSourceTable(i);
 					ODLTableDefinition dest = inputTables.getTargetTable(i);
 					String dsid = inputTables.getSourceDatastoreId(i);
-					if(!Strings.equalsStd(dest.getName(), PredefinedTags.DRAWABLES)){
+					if(!Strings.equalsStd(dest.getName(), PredefinedTags.DRAWABLES)
+					&& !Strings.equalsStd(dest.getName(), INACTIVE_BACKGROUND)
+					&& !Strings.equalsStd(dest.getName(), INACTIVE_FOREGROUND)
+					){
 						continue;
 					}
 					
+					
+					
 					if(src!=null){
 						mapAdapter.addSourcedTableToAdapter(dsid, src, dest);
-					}else{
+					}else if(Strings.equalsStd(dest.getName(), PredefinedTags.DRAWABLES)){
 						mapAdapter.addSourcelessTable(dest);
 					}
 				}
