@@ -25,14 +25,14 @@ public interface MapApiListeners {
 		void onBuildToolbar(MapApi api,MapToolbar toolBar);
 	}
 
-	/**
-	 * Callback called just prior to the map objects changing
-	 * @author Phil
-	 *
-	 */
-	interface OnPreObjectsChanged{
-		void onPreObjectsChanged(MapApi api,ODLDatastore<? extends ODLTable> newMapDatastore);
-	}
+//	/**
+//	 * Callback called just prior to the map objects changing
+//	 * @author Phil
+//	 *
+//	 */
+//	interface OnPreObjectsChanged{
+//		void onPreObjectsChanged(MapApi api,ODLDatastore<? extends ODLTable> newMapDatastore);
+//	}
 	
 	interface OnBuildContextMenu{
 		void onBuildContextMenu(MapApi api,MapPopupMenu menu);
@@ -55,14 +55,23 @@ public interface MapApiListeners {
 	}
 	
 	interface FilterVisibleObjects{
+		void startFilter(MapApi api,ODLDatastore<? extends ODLTable> newMapDatastore);
 		boolean acceptObject(ODLTableReadOnly table, int row);
+		void endFilter(MapApi api);
 	}
+
+	
+//	interface ObjectFilterFactory{
+//		FilterVisibleObjects createObjectFilter(MapApi api,ODLDatastore<? extends ODLTable> newMapDatastore);
+//	}
 	
 	interface OnToolTipListener{
 		void onToolTip(MapApi api,MouseEvent evt,long [] objectIdsUnderMouse,StringBuilder currentTip);
 	}
 	
 	void registerObjectsChangedListener(OnObjectsChanged listener, int priority);
+	
+	//void registerObjectFilterFactory(ObjectFilterFactory factory, int priority);
 	
 	void registerFilterVisibleObjectsListener(FilterVisibleObjects listener, int priority);
 	
@@ -90,7 +99,7 @@ public interface MapApiListeners {
 
 	void registerModifyMapImage(ModifyImageListener listener, int priority);
 
-	void registerPreObjectsChangedListener(OnPreObjectsChanged listener, int priority);
+//	void registerPreObjectsChangedListener(OnPreObjectsChanged listener, int priority);
 
 	void removeObjectsChangedListener(OnObjectsChanged listener);
 	
@@ -120,6 +129,7 @@ public interface MapApiListeners {
 	
 	void removeModifyMapImage(ModifyImageListener listener);
 
-	void removePreObjectsChangedListener(OnPreObjectsChanged listener);
+	//void removePreObjectsChangedListener(OnPreObjectsChanged listener);
 
+//void removeObjectFilterFactory(ObjectFilterFactory factory);
 }

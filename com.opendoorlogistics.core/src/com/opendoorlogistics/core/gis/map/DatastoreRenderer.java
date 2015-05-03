@@ -990,9 +990,13 @@ public class DatastoreRenderer implements ObjectRenderer{
 	}
 
 	private static SymbolType getSymbolType(DrawableObject obj) {
+		return getSymbolType(obj.getSymbol());
+	}
+
+	public static SymbolType getSymbolType(String symbol) {
 		SymbolType ret = null;
-		if (!Strings.isEmpty(obj.getSymbol())) {
-			ret = symbols.getType(obj.getSymbol());
+		if (!Strings.isEmpty(symbol)) {
+			ret = symbols.getType(symbol);
 		}
 		if (ret == null) {
 			ret = SymbolType.CIRCLE;
@@ -1059,20 +1063,23 @@ public class DatastoreRenderer implements ObjectRenderer{
 		if(isSelected){
 			return SELECTION_COLOUR;
 		}
-		
-		Color col = pnt.getColour();
-		if (!Strings.isEmpty(pnt.getColourKey())) {
-			col = Colours.getRandomColour(pnt.getColourKey());
-		}
-		if (col == null) {
-			col = DrawableObject.DEFAULT_COLOUR;
-		}
+		Color col = getNoAlphaColour(pnt.getColour(),  pnt.getColourKey());
 
 		double opaque = pnt.getOpaque();
 		opaque = MathUtil.clamp(opaque, 0, 1);
 		col = Colours.setAlpha(col, (int) Math.round((255 * opaque)));
 		return col;
 	}
+
+public static Color getNoAlphaColour(Color colourFieldValue, String colourKey) {
+	if (!Strings.isEmpty(colourKey)) {
+		colourFieldValue = Colours.getRandomColour(colourKey);
+	}
+	if (colourFieldValue == null) {
+		colourFieldValue = DrawableObject.DEFAULT_COLOUR;
+	}
+	return colourFieldValue;
+}
 
 	static void drawOutlinedSymbol(Graphics2D g, SymbolType symbolType, Point2D screenPos, int circumferenceInPixels, Color col, boolean outlined) {
 		int outer = symbolType.getOuterOutline();

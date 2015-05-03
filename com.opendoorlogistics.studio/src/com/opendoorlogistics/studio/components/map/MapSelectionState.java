@@ -2,37 +2,42 @@ package com.opendoorlogistics.studio.components.map;
 
 import gnu.trove.set.hash.TLongHashSet;
 
+/**
+ * Thread-safe class storing the selection state
+ * @author Phil
+ *
+ */
 public class MapSelectionState {
 	private final TLongHashSet selectedGlobalRowIds = new TLongHashSet();
 	
-	public long [] copyIds(){
+	public synchronized long [] copyIds(){
 		return selectedGlobalRowIds.toArray();
 	}
 	
-	public TLongHashSet copySet(){
+	public synchronized TLongHashSet copySet(){
 		return new TLongHashSet(selectedGlobalRowIds);
 	}
 	
-	public void clear(){
+	public synchronized void clear(){
 		set(null);
 	}
 	
-	public void add(long id){
+	public synchronized void add(long id){
 		selectedGlobalRowIds.add(id);
 	}
 	
-	public void set(long [] ids){
+	public synchronized void set(long [] ids){
 		selectedGlobalRowIds.clear();
 		if(ids!=null){
 			selectedGlobalRowIds.addAll(ids);			
 		}
 	}
 	
-	public boolean contains(long id){
+	public synchronized boolean contains(long id){
 		return selectedGlobalRowIds.contains(id);
 	}
 	
-	public boolean equals(TLongHashSet set){
+	public synchronized boolean equals(TLongHashSet set){
 		return selectedGlobalRowIds.equals(set);
 	}
 }

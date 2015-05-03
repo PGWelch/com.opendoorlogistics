@@ -46,6 +46,10 @@ public class MapApiListenersImpl implements MapApiListeners, MouseInputListener,
 				}
 			}
 		}
+		
+		public synchronized int size(){
+			return listeners.size();
+		}
 
 		@Override
 		public Iterator<T> iterator() {
@@ -79,7 +83,8 @@ public class MapApiListenersImpl implements MapApiListeners, MouseInputListener,
 	private final Listeners<FilterVisibleObjects> filters = new Listeners<FilterVisibleObjects>();	
 	private final Listeners<OnToolTipListener> tooltipListeners = new Listeners<OnToolTipListener>();
 	private final Listeners<ModifyImageListener> modifyImageListeners = new Listeners<ModifyImageListener>();
-	private final Listeners<OnPreObjectsChanged> preObjectsChanged = new Listeners<OnPreObjectsChanged>();
+	//private final Listeners<OnPreObjectsChanged> preObjectsChanged = new Listeners<OnPreObjectsChanged>();
+//	private final Listeners<ObjectFilterFactory> objectFilterFactories = new Listeners<ObjectFilterFactory>();
 	
 	
 	
@@ -215,6 +220,7 @@ public class MapApiListenersImpl implements MapApiListeners, MouseInputListener,
 			l.onModeChange(api,oldMode, newMode);
 		}
 	}
+
 	
 	public void fireTooltipListeners(MapApi api,MouseEvent evt,long [] objectIdsUnderMouse,StringBuilder currentTip){
 		for(OnToolTipListener l : tooltipListeners){
@@ -310,6 +316,17 @@ public class MapApiListenersImpl implements MapApiListeners, MouseInputListener,
 		}
 	}
 
+//	public List<FilterVisibleObjects> fireCreateObjectFilters(MapApi api,ODLDatastore<? extends ODLTable> newMapDatastore){
+//		ArrayList<FilterVisibleObjects> ret = new ArrayList<MapApiListeners.FilterVisibleObjects>(objectFilterFactories.size());
+//		for(ObjectFilterFactory factory : objectFilterFactories){
+//			FilterVisibleObjects filter = factory.createObjectFilter(api,newMapDatastore);
+//			if(filter!=null){
+//				ret.add(filter);
+//			}
+//		}
+//		return ret;
+//	}
+	
 	@Override
 	public void registerKeyListener(KeyListener listener, int priority) {
 		keyListeners.register(listener, priority);
@@ -378,19 +395,42 @@ public class MapApiListenersImpl implements MapApiListeners, MouseInputListener,
 		return mapImage;
 	}
 
-	@Override
-	public void registerPreObjectsChangedListener(OnPreObjectsChanged listener, int priority) {
-		preObjectsChanged.register(listener, priority);
-	}
-
-	@Override
-	public void removePreObjectsChangedListener(OnPreObjectsChanged listener) {
-		preObjectsChanged.remove(listener);
-	}
+//	@Override
+//	public void registerPreObjectsChangedListener(OnPreObjectsChanged listener, int priority) {
+//		preObjectsChanged.register(listener, priority);
+//	}
+//
+//	@Override
+//	public void removePreObjectsChangedListener(OnPreObjectsChanged listener) {
+//		preObjectsChanged.remove(listener);
+//	}
+//	
+//	public void firePreObjectsChangedListener(MapApi api, ODLDatastore<? extends ODLTable> newMapDatastore){
+//		for(OnPreObjectsChanged l : preObjectsChanged){
+//			l.onPreObjectsChanged(api, newMapDatastore);
+//		}
+//	}
 	
-	public void firePreObjectsChangedListener(MapApi api, ODLDatastore<? extends ODLTable> newMapDatastore){
-		for(OnPreObjectsChanged l : preObjectsChanged){
-			l.onPreObjectsChanged(api, newMapDatastore);
+	public void fireStartObjectFiltering(MapApi api, ODLDatastore<? extends ODLTable> newMapDatastore){
+		for(FilterVisibleObjects filter : filters){
+			filter.startFilter(api, newMapDatastore);
 		}
 	}
+	
+	public void fireEndObjectFiltering(MapApi api){
+		for(FilterVisibleObjects filter : filters){
+			filter.endFilter(api);
+		}
+	}
+
+
+//	@Override
+//	public void registerObjectFilterFactory(ObjectFilterFactory factory, int priority) {
+//		objectFilterFactories.register(factory, priority);
+//	}
+//
+//	@Override
+//	public void removeObjectFilterFactory(ObjectFilterFactory factory) {
+//		objectFilterFactories.remove(factory);
+//	}
 }

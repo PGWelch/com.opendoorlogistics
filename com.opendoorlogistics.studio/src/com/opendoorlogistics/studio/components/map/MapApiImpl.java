@@ -1,6 +1,7 @@
 package com.opendoorlogistics.studio.components.map;
 
 import gnu.trove.list.array.TLongArrayList;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.hash.TLongHashSet;
 
 import java.awt.BorderLayout;
@@ -26,8 +27,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.swing.AbstractAction;
+import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
@@ -70,21 +74,22 @@ import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener;
+import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.SetUtils;
-import com.opendoorlogistics.core.utils.SimpleCodeTimer;
+import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
 import com.opendoorlogistics.core.utils.ui.ShowPanel;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
-import com.opendoorlogistics.studio.AppFrame;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
 import com.opendoorlogistics.studio.InitialiseStudio;
 import com.opendoorlogistics.studio.components.map.plugins.CustomTooltipPlugin;
 import com.opendoorlogistics.studio.components.map.plugins.SummariseFieldValuesTooltipPlugin;
+import com.opendoorlogistics.studio.scripts.execution.ExecutionUtils;
 
 /**
  * The implementation of the api object is just an aggregate of other objects
@@ -94,6 +99,7 @@ import com.opendoorlogistics.studio.components.map.plugins.SummariseFieldValuesT
  *
  */
 public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposable , SelectionList{
+	private final ExecutorService executorService = Executors.newFixedThreadPool(1);
 	private final MapSelectionState selectionState;
 	private final ViewPosition position;
 	private final DisposablePanel containerLevel1Panel;
@@ -108,6 +114,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	private long renderFlags = RenderProperties.SHOW_ALL;
 	private FilteredTables filtered;
 	private MapMode mode;
+	private BeanMappedObjects objs;
 	private ODLDatastore<? extends ODLTable> mapDatastore;
 	private MeasureComponents lastMeasure;
 	private BufferedImage disabledPaintImage;
@@ -146,9 +153,14 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			mapViewPanel.setDisablePaint(disabled);
 		}
 	}
-	
+
 	public MapApiImpl(Iterable<MapPlugin> plugins,  ComponentControlLauncherApi componentControlLauncherApi,
 			ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs, ODLDatastore<? extends ODLTable> mapDatastore) {
+		this(plugins, componentControlLauncherApi, globalDs, BeanMappedObjects.create(mapDatastore), mapDatastore);
+	}
+		
+	private MapApiImpl(Iterable<MapPlugin> plugins,  ComponentControlLauncherApi componentControlLauncherApi,
+			ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs,BeanMappedObjects beanMappedObjects, ODLDatastore<? extends ODLTable> mapDatastore) {
 		this.globalDs = globalDs;
 		this.componentControlLauncherApi = componentControlLauncherApi;
 		this.selectionState = new MapSelectionState();
@@ -274,7 +286,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			}
 		});
 
-		setObjects(mapDatastore);
+		setObjects(beanMappedObjects,mapDatastore);
 
 		// Zoom all by default
 		addOnGeometryLoadedCallback(new Runnable() {
@@ -324,14 +336,99 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		super.mouseEntered(e);
 	}
 
-	public void setObjects(ODLDatastore<? extends ODLTable> mapDatastore) {
-		firePreObjectsChangedListener(this, mapDatastore);
-		
-		this.mapDatastore = mapDatastore;
+//	public void setObjects(ODLDatastore<? extends ODLTable> newMapDatastore) {
+//		
+//	//	firePreObjectsChangedListener(this, mapDatastore);
+//		
+//		updateObjectFiltering(newMapDatastore);
+//		
+//
+//	}
 
-	//	SimpleCodeTimer codeTimer = new SimpleCodeTimer();
+	public DisposablePanel getPanel() {
+		return containerLevel1Panel;
+	}
+	
+	private static class FilteredTables {
+		final FindDrawableTables unfilteredTables;
+		final Iterable<? extends DrawableObject> activeUnfiltered;
+		final Iterable<? extends DrawableObject> activeFiltered;
+		final LayeredDrawables allFiltered;
+		final MapApiImpl api;
+		final BeanMappedObjects objs;
+		
+		FilteredTables(BeanMappedObjects objs, ODLDatastore<? extends ODLTable> mapDatastore, MapApiImpl api,boolean isFiltered){
+			this.api = api;
+			this.objs = objs;
+			
+			api.fireStartObjectFiltering(api, mapDatastore);
+			
+			unfilteredTables = new FindDrawableTables(mapDatastore);
+			ArrayList< DrawableObject> activeList = new ArrayList<DrawableObject>(unfilteredTables.activeTable!=null ? unfilteredTables.activeTable.getRowCount():0);
+			activeUnfiltered = activeList;
+			
+			activeFiltered = filter(1,unfilteredTables.activeTable,isFiltered, activeList);
+			allFiltered = new LayeredDrawables(filter(0,unfilteredTables.background,isFiltered,null), activeFiltered, filter(2,unfilteredTables.foreground,isFiltered,null));
+			
+			api.fireEndObjectFiltering(api);
+		}
+		
+		private Iterable<? extends DrawableObject> filter(int tableOrder, ODLTableReadOnly table, boolean isFiltered,List< DrawableObject> saveAllToList ) {
+			if (table == null) {
+				return null;
+			}
+
+			int n = table.getRowCount();
+			ArrayList<DrawableObject> ret = new ArrayList<DrawableObject>(n);
+			for (int i = 0; i < n; i++) {
+				
+				// save to list if needed
+				DrawableObject obj =objs.get(tableOrder, i);
+				if(saveAllToList!=null && obj!=null){
+					saveAllToList.add(obj);
+				}
+				
+				if(obj!=null){
+					if(saveAllToList!=null){
+						saveAllToList.add(obj);						
+					}
+				
+					boolean accept =!isFiltered || api.fireFilterObject(api, table, i);
+					if(accept){
+						ret.add(obj);
+					}
+				}
+
+			}
+			
+			return ret;
+		}
+	}
+	
+
+	@Override
+	public void updateObjectFiltering() {
+		filtered = new FilteredTables(objs,mapDatastore, MapApiImpl.this,true);
+		
+		renderer.setObjects(filtered.allFiltered);
+		
+		mapViewPanel.repaint();
+	}
+
+
+	public void setObjects(ODLDatastore<? extends ODLTable> newMapDatastore) {
+		setObjects(BeanMappedObjects.create(newMapDatastore),newMapDatastore);
+	}
+
+	private void setObjects(BeanMappedObjects objs,ODLDatastore<? extends ODLTable> newMapDatastore) {
+
+		this.objs = objs;
+
+		mapDatastore = newMapDatastore;
+		
 		updateObjectFiltering();
-		//codeTimer.print("Filtering updated");
+		
+		fireObjectsChangedListeners(MapApiImpl.this);
 		
 		// Update selected ids. don't allow anything to be selected that's not in the active table,
 		// however we do allow filtered out objects to stay selected (needed for polygon editing plugin).
@@ -349,113 +446,12 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			}
 		}
 
-	//	codeTimer.print("Selected updated");
-
 		if (!selectionState.equals(newSelected)) {
 			setSelectedIds(newSelected.toArray());
 		}
-		
-		//codeTimer.print("Selected state updated");
-
-	}
-
-	public DisposablePanel getPanel() {
-		return containerLevel1Panel;
-	}
-	
-	private static class FetchInputTables extends ArrayList<ODLTable>{
-		final ODLTable background ;
-		final ODLTable activeTable ;
-		final ODLTable foreground ;
-		
-		FetchInputTables(ODLDatastore<? extends ODLTable> mapDatastore){
-			background = TableUtils.findTable(mapDatastore, AbstractMapViewerComponent.INACTIVE_BACKGROUND);
-			if(background!=null){
-				add(background);
-			}
-			
-			activeTable = TableUtils.findTable(mapDatastore, PredefinedTags.DRAWABLES);
-			if(activeTable!=null){
-				add(activeTable);
-			}
-			
-			foreground = TableUtils.findTable(mapDatastore, AbstractMapViewerComponent.INACTIVE_FOREGROUND);
-			if(foreground!=null){
-				add(foreground);
-			}
-		}
-	}
 
 
-	private class FilteredTables {
-		final FetchInputTables unfilteredTables= new FetchInputTables(mapDatastore);
-		final Iterable<? extends DrawableObject> activeUnfiltered;
-		final Iterable<? extends DrawableObject> activeFiltered;
-		final LayeredDrawables allFiltered;
-		
-		FilteredTables(boolean isFiltered){
-			ArrayList< DrawableObject> activeList = new ArrayList<DrawableObject>(unfilteredTables.activeTable!=null ? unfilteredTables.activeTable.getRowCount():0);
-			activeUnfiltered = activeList;
-			
-			activeFiltered = filter(unfilteredTables.activeTable,isFiltered, activeList);
-			allFiltered = new LayeredDrawables(filter(unfilteredTables.background,isFiltered,null), activeFiltered, filter(unfilteredTables.foreground,isFiltered,null));
-		}
-		
-		private Iterable<? extends DrawableObject> filter(ODLTableReadOnly table, boolean isFiltered,List< DrawableObject> saveAllToList ) {
-			if (table == null) {
-				return null;
-			}
 
-		//	SimpleCodeTimer timer = new SimpleCodeTimer();
-			
-			BeanTableMapping btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
-			int n = table.getRowCount();
-			ArrayList<DrawableObject> ret = new ArrayList<DrawableObject>(n);
-			for (int i = 0; i < n; i++) {
-				
-				// save to list if needed
-				DrawableObject obj =null;
-				if(saveAllToList!=null){
-					obj= btm.readObjectFromTableByRow(table, i);	
-					if(obj!=null){
-						saveAllToList.add(obj);
-					}
-				}
-				
-				boolean accept =!isFiltered || fireFilterObject(MapApiImpl.this, table, i);
-				if (accept) {
-					if(obj==null){
-//						int nbTests=100;
-//						for(int j=0 ; j < nbTests ; j++){
-//							obj= btm.readObjectFromTableByRow(table, i);														
-//						}
-						obj= btm.readObjectFromTableByRow(table, i);							
-					}
-
-					if (obj != null) {
-						ret.add(obj);
-					}
-				}
-
-			}
-			
-		//	timer.print("Bean mapped table " + table.getName());
-			return ret;
-		}
-	}
-	
-	
-
-	@Override
-	public void updateObjectFiltering() {
-
-		// do filtering
-		filtered = new FilteredTables(true);
-
-		renderer.setObjects(filtered.allFiltered);
-
-		fireObjectsChangedListeners(this);
-		mapViewPanel.repaint();
 	}
 
 	@Override
@@ -572,6 +568,9 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 				((Disposable) d).dispose();
 			}
 		}
+
+		executorService.shutdown();
+
 	}
 
 	@Override
@@ -652,7 +651,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 								else if( (flags & TableFlags.UI_SET_ALLOWED) !=0){
 									table.setFlags(flags & ~TableFlags.UI_SET_ALLOWED);
 								}
-								((MapApiImpl)api).setObjects(exampleds);
+								((MapApiImpl)api).setObjects(BeanMappedObjects.create(exampleds),exampleds);
 							}
 						});
 					}
@@ -707,14 +706,14 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 		};
 
-		final MapApiImpl mapApi = new MapApiImpl(plugins, dummyApi, undoable, exampleds);
+		final MapApiImpl mapApi = new MapApiImpl(plugins, dummyApi, undoable,BeanMappedObjects.create(exampleds), exampleds);
 		mapApi.connectToGSM(gsm);
 
 		undoable.addListener(new ODLListener() {
 
 			@Override
 			public void tableChanged(int tableId, int firstRow, int lastRow) {
-				mapApi.setObjects(exampleds);
+				mapApi.setObjects(BeanMappedObjects.create(exampleds),exampleds);
 			}
 
 			@Override
@@ -1135,7 +1134,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 			@Override
 			public ODLTableReadOnly getUnfilteredAllLayersTable() {
-				return toTable(new FilteredTables(false).allFiltered);
+				return toTable(new FilteredTables(objs,mapDatastore, MapApiImpl.this, false).allFiltered);
 			}
 
 			@Override
@@ -1165,7 +1164,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 			@Override
 			public Iterable<ODLTable> getDrawableTables(ODLDatastore<? extends ODLTable> mapDatastore) {
-				return new FetchInputTables(mapDatastore);
+				return new FindDrawableTables(mapDatastore);
 			}
 
 			@Override
@@ -1217,11 +1216,62 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		return componentControlLauncherApi.getApi();
 	}
 	
+	private static class BeanMappedObjects{
+		private List<TIntObjectHashMap<DrawableObject>> byRow;
+		
+		BeanMappedObjects() {
+			byRow = new ArrayList<TIntObjectHashMap<DrawableObject>>(3);
+			for(int i =0 ; i < 3 ; i++){
+				byRow.add(new TIntObjectHashMap<DrawableObject>());
+			}
+		}
+		
+		void save(int tableOrder, int row, DrawableObject obj){
+			byRow.get(tableOrder).put(row, obj);
+		}
+		
+		DrawableObject get(int tableOrder, int row){
+			return byRow.get(tableOrder).get(row);
+		}
+		
+		public static BeanMappedObjects create(ODLDatastore<? extends ODLTable> ioDs){
+			FindDrawableTables finder = new FindDrawableTables(ioDs);
+			BeanMappedObjects objs = new BeanMappedObjects();
+			class ToDrawable{
+				void convert(int tableOrder, ODLTableReadOnly table){
+					if(table==null){
+						return;
+					}
+					
+					BeanTableMapping btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
+					int n = table.getRowCount();
+					for (int row = 0; row < n; row++) {
+						DrawableObject obj = btm.readObjectFromTableByRow(table, row);
+						if(obj!=null){
+							objs.save(tableOrder, row, obj);
+						}
+					}
+				
+				}
+			}
+			ToDrawable converter = new ToDrawable();
+			converter.convert(0,finder.background);
+			converter.convert(1,finder.activeTable);
+			converter.convert(2,finder.foreground);
+			return objs;	
+		}
+	}
+	
 	public static void registerComponent(final HasUndoableDatastore<ODLTableAlterable> globalDs, final HasSelectionListRegister gmsrm) {
+		
+		
 		ODLGlobalComponents.register(new AbstractMapViewerComponent() {
 
 			@Override
 			public void execute(final ComponentExecutionApi api, int mode,final Object configuration, ODLDatastore<? extends ODLTable> ioDs, ODLDatastoreAlterable<? extends ODLTableAlterable> outputDs) {
+
+				// convert all to drawable objects using the non-EDT datastore on the non-EDT thread
+				BeanMappedObjects objs = BeanMappedObjects.create(ioDs);
 
 				api.submitControlLauncher(new ControlLauncherCallback() {
 					
@@ -1229,19 +1279,14 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 					public void launchControls(ComponentControlLauncherApi launcherApi) {
 						DisposablePanel panel = (DisposablePanel)launcherApi.getRegisteredPanel("Map");
 						if(panel!=null){
-						//	api.postStatusMessage("Updating drawable objects in map control");
-							//long start = System.currentTimeMillis();
-							panel.getApi().setObjects(ioDs);
-							//api.postStatusMessage("Finished updating objects in map control");
-						//	long finish = System.currentTimeMillis();
-						//	System.out.println("Millis " + (finish-start));
+							panel.getApi().setObjects(objs,ioDs);
 						}
 						else{
 							// get all plugins
 							List<MapPlugin> plugins = getPlugins((MapConfig)configuration);
 							
 							// create the map api
-							MapApiImpl mapApi = new MapApiImpl(plugins, launcherApi, globalDs.getDatastore(), ioDs);
+							MapApiImpl mapApi = new MapApiImpl(plugins, launcherApi, globalDs.getDatastore(),objs, ioDs);
 							mapApi.connectToGSM(gmsrm.getListRegister());
 							
 							// register the panel
@@ -1249,8 +1294,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 								// presumably UI is unavailable?
 								mapApi.dispose();
 							}	
-							
-						//	mapApi.setViewToBestFit(drawables);
+	
 						}
 					}
 				});		

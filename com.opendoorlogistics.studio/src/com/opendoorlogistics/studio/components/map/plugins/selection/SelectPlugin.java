@@ -32,6 +32,8 @@ import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
 import com.opendoorlogistics.api.standardcomponents.map.MapPopupMenu;
 import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
 import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
+import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.codefromweb.DropDownMenuButton;
@@ -433,8 +435,8 @@ public class SelectPlugin implements MapPlugin {
 
 	
 	private static class UnselectedVisibilityHandler implements MapApiListeners.FilterVisibleObjects, MapApiListeners.OnChangeListener{
-		boolean active;
-		final MapApi api;
+		private volatile boolean active;
+		private final MapApi api;
 		
 		UnselectedVisibilityHandler(MapApi mapApi){
 			this.api = mapApi;
@@ -472,6 +474,18 @@ public class SelectPlugin implements MapPlugin {
 					api.updateObjectFiltering();
 				}
 			};
+		}
+
+		@Override
+		public void startFilter(MapApi api, ODLDatastore<? extends ODLTable> newMapDatastore) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void endFilter(MapApi api) {
+			// TODO Auto-generated method stub
+			
 		}
 	}
 }

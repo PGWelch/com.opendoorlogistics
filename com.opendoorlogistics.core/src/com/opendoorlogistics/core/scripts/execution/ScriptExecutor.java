@@ -43,7 +43,6 @@ import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.TargetIODsInterpreter;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
-import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.elements.ComponentConfig;
 import com.opendoorlogistics.core.scripts.elements.InstructionConfig;
@@ -62,10 +61,10 @@ import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.ODLRowReadOnly;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator.AdapterMapping;
-import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
-import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependenciesRecorder;
 import com.opendoorlogistics.core.tables.decorators.datastores.RowFilterDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.UndoRedoDecorator;
+import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
+import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependenciesRecorder;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -601,25 +600,32 @@ final public class ScriptExecutor {
 
 		// execute the component
 		if (!compileOnly) {
-			// read all input values to ensure that the data dependencies are registered properly when the component
+			// Read all input values to ensure that the data dependencies are registered properly when the component
 			// executes; for queries the input values can be read by the table component later as well...
+			// We also optionally pass these values to the componen here, if it implements the correct interface,
+			// to save on CPU time.
 			if (ioDS != null) {
-				externalApi.postStatusMessage("Validating input data" + (Strings.isEmpty(batchKey) ? "" : " (key=" + batchKey + ")"));
-				UpdateTimer timer = new UpdateTimer(250);
-				for (int i = 0; i < ioDS.getTableCount() && checkForUserCancellation(result); i++) {
-					ODLTableReadOnly table = ioDS.getTableAt(i);
-					int nrow = table.getRowCount();
-					int ncol = table.getColumnCount();
-					for (int row = 0; row < nrow && checkForUserCancellation(result); row++) {
-						for (int col = 0; col < ncol; col++) {
-							table.getValueAt(row, col);
-						}
+				long flags = component.getFlags(externalApi.getApi(), instruction.getExecutionMode());
+				final long DisableFlag = ODLComponent.FLAG_DISABLE_FRAMEWORK_DATA_READ_FOR_DEPENDENCIES;
+				if( (flags& DisableFlag) !=DisableFlag){
+					externalApi.postStatusMessage("Validating input data" + (Strings.isEmpty(batchKey) ? "" : " (key=" + batchKey + ")"));
+					UpdateTimer timer = new UpdateTimer(250);
+					for (int i = 0; i < ioDS.getTableCount() && checkForUserCancellation(result); i++) {
+						ODLTableReadOnly table = ioDS.getTableAt(i);
+						int nrow = table.getRowCount();
+						int ncol = table.getColumnCount();
+						for (int row = 0; row < nrow && checkForUserCancellation(result); row++) {
+							for (int col = 0; col < ncol; col++) {
+								table.getValueAt(row, col);
+							}
 
-						if (timer.isUpdate()) {
-							externalApi.postStatusMessage("Validating input data" + (Strings.isEmpty(batchKey) ? "" : " (key=" + batchKey + ")") + ", table " + (i + 1) + "/" + ioDS.getTableCount() + ", row " + (row + 1) + "/" + nrow);
+							if (timer.isUpdate()) {
+								externalApi.postStatusMessage("Validating input data" + (Strings.isEmpty(batchKey) ? "" : " (key=" + batchKey + ")") + ", table " + (i + 1) + "/" + ioDS.getTableCount() + ", row " + (row + 1) + "/" + nrow);
+							}
 						}
-					}
+					}					
 				}
+
 			}
 
 			if (result.isFailed()) {

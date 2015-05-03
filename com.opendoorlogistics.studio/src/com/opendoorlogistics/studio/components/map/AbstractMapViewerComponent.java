@@ -108,7 +108,8 @@ public abstract class AbstractMapViewerComponent implements Maps {
 
 	@Override
 	public long getFlags(ODLApi api, int mode) {
-		return ODLComponent.FLAG_OUTPUT_WINDOWS_CAN_BE_SYNCHRONISED| ODLComponent.FLAG_ALLOW_USER_INTERACTION_WHEN_RUNNING;
+		return ODLComponent.FLAG_OUTPUT_WINDOWS_CAN_BE_SYNCHRONISED| ODLComponent.FLAG_ALLOW_USER_INTERACTION_WHEN_RUNNING
+				|ODLComponent.FLAG_DISABLE_FRAMEWORK_DATA_READ_FOR_DEPENDENCIES;
 	}
 
 
@@ -256,4 +257,6 @@ public abstract class AbstractMapViewerComponent implements Maps {
 	public ODLTableDefinition getDrawableTableDefinition(){
 		return getIODsDefinition(true).getTableAt(0);
 	}
+	
+	
 }

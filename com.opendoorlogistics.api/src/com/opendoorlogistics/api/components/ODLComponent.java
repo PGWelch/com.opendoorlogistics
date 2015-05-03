@@ -125,6 +125,16 @@ public interface ODLComponent extends  net.xeoh.plugins.base.Plugin{
 	 */
 	public static final long FLAG_ALLOW_USER_INTERACTION_WHEN_RUNNING = 1<<2;
 	
+	
+	/**
+	 * The script execution framework does a single read of all field values in all rows of the input data tables,
+	 * to ensure data dependencies are correctly recorded. A component can turn this off if needed,
+	 * but should ensure that its execution is deterministic with regards to the data it reads - i.e.
+	 * it should never decide to read a smaller or larger range of the data (which could result in 
+	 * uncertain dependencies).
+	 */
+	public static final long FLAG_DISABLE_FRAMEWORK_DATA_READ_FOR_DEPENDENCIES= 1<<3;
+	
 //	/**
 //	 * Get any default fixed IO structure configurations that the component defines
 //	 * @return

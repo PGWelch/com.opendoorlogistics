@@ -28,6 +28,9 @@ import java.awt.image.BufferedImage;
 import java.beans.PropertyVetoException;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -59,7 +62,6 @@ import javax.swing.event.MenuListener;
 
 import org.apache.commons.io.FilenameUtils;
 
-import com.graphhopper.reader.OSMRelation.Member;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
@@ -312,66 +314,95 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 	private void updateWindowsToolbar(){
 		windowToolBar.getToolBar().removeAll();
-		for (final JInternalFrame frame : desktopPane.getAllFrames()) {
+		
+		// get all internal frames, adding progress frames first
+		List<ODLInternalFrame> frames =new ArrayList<ODLInternalFrame>();
+		boolean hasProgress=false;
+		for(JInternalFrame frame : desktopPane.getAllFrames()){
 			if(ODLInternalFrame.class.isInstance(frame)){
-				
-				// get the title
-				String title = frame.getTitle();
-				if(ScriptEditor.class.isInstance(frame)){
-					File file = ((ScriptEditor)frame).getFile();
-					if(file!=null){
-						title = file.getName();
-						title = Strings.caseInsensitiveReplace(title,"."+ ScriptConstants.FILE_EXT, "");
-					}
-				}
-				if(title!=null){
-					int maxchar = 20;
-					if(title.length()>maxchar){
-						title = title.substring(0, maxchar) + "...";						
-					}
-				}
-				
-				// get an icon if we can
-				Icon icon = null;
-				if(ReporterFrame.class.isInstance(frame)){
-					ReporterFrame<?> rf = (ReporterFrame<?>)frame;
-					if(rf.getComponent()!=null){
-						icon = rf.getComponent().getIcon(getApi(), ODLComponent.MODE_DEFAULT);
-					}
-				}
-				else if(GridFrame.class.isInstance(frame)){
-					icon = Icons.loadFromStandardPath("table-window-toolbar-icon.png");
-				}
-				else if(TableSchemaEditor.class.isInstance(frame)){
-					icon = Icons.loadFromStandardPath("table-edit.png");
-				}
-				else if (ScriptEditor.class.isInstance(frame)){
-					icon = Icons.loadFromStandardPath("script-window-toolbar.png");
-				}
-				
-				// create the button
-				JButton button =null;
-				if(icon!=null){
-					button = new JButton(title, icon);
+				if(ProgressFrame.class.isInstance(frame)){
+					frames.add(0,(ODLInternalFrame)frame);
+					hasProgress = true;
 				}else{
-					button = new JButton(title);
+					frames.add((ODLInternalFrame)frame);					
 				}
-				button.addActionListener(new ActionListener() {
-					
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						frame.toFront();
-					}
-				});
-				button.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createSoftBevelBorder(BevelBorder.RAISED), BorderFactory.createEmptyBorder(2, 2, 2, 2))) ;
-				windowToolBar.getToolBar().add(button);
 			}
 		}
+		
+		for (final ODLInternalFrame frame : frames) {
+	
+			// get the title
+			String title = frame.getTitle();
+			if(ScriptEditor.class.isInstance(frame)){
+				File file = ((ScriptEditor)frame).getFile();
+				if(file!=null){
+					title = file.getName();
+					title = Strings.caseInsensitiveReplace(title,"."+ ScriptConstants.FILE_EXT, "");
+				}
+			}
+			if(title!=null){
+				int maxchar = 20;
+				if(title.length()>maxchar){
+					title = title.substring(0, maxchar) + "...";						
+				}
+			}
+			
+			// get an icon if we can
+			Icon icon = null;
+			if(ReporterFrame.class.isInstance(frame)){
+				ReporterFrame<?> rf = (ReporterFrame<?>)frame;
+				if(rf.getComponent()!=null){
+					icon = rf.getComponent().getIcon(getApi(), ODLComponent.MODE_DEFAULT);
+				}
+			}
+			else if(GridFrame.class.isInstance(frame)){
+				icon = Icons.loadFromStandardPath("table-window-toolbar-icon.png");
+			}
+			else if(TableSchemaEditor.class.isInstance(frame)){
+				icon = Icons.loadFromStandardPath("table-edit.png");
+			}
+			else if (ScriptEditor.class.isInstance(frame)){
+				icon = Icons.loadFromStandardPath("script-window-toolbar.png");
+			}else if (ProgressFrame.class.isInstance(frame)){
+				icon = ProgressFrame.ANIMATED_ICON;
+			}
+			
+			// create the button
+			JButton button =null;
+			if(icon!=null){
+				button = new JButton(title, icon);
+			}else{
+				button = new JButton(title);
+			}
+			button.addActionListener(new ActionListener() {
+				
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					if(frame.isIcon()){
+						try {
+							frame.setIcon(false);
+						} catch (PropertyVetoException e1) {
+						
+						}
+					}
+					frame.toFront();
+				}
+			});
+			button.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createSoftBevelBorder(BevelBorder.RAISED), BorderFactory.createEmptyBorder(2, 2, 2, 2))) ;
+			windowToolBar.getToolBar().add(button);
+		
+		}
+		
 		
 		windowToolBar.repaint();
 		
 		// need updateUI here otherwise toolbar sometimes disappears!
 		windowToolBar.updateUI();
+		
+		if(hasProgress){
+			// ensure progress are shown
+			windowToolBar.setScrollViewToInitialPosition();
+		}
 	}
 	/**
 	 * 

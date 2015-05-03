@@ -28,6 +28,7 @@ import com.opendoorlogistics.core.tables.beans.annotations.ODLTag;
 
 @ODLTableName(PredefinedTags.DRAWABLES)
 public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
+	public static final long DEFAULT_DRAW_OUTLINE=1;
 	public static final int COL_LATITUDE=0;
 	public static final int COL_LONGITUDE=COL_LATITUDE+1;
 	public static final int COL_GEOMETRY=COL_LONGITUDE+1;
@@ -200,7 +201,7 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 
 	@ODLNullAllowed
 	@ODLColumnOrder(COL_OUTLINE)	
-	@ODLDefaultLongValue(1)
+	@ODLDefaultLongValue(DEFAULT_DRAW_OUTLINE)
 	@ODLColumnDescription("Set this to 1 to draw an outline around the point or 0 otherwise.")	
 	public void setDrawOutline(long drawOutline) {
 		this.drawOutline = drawOutline;

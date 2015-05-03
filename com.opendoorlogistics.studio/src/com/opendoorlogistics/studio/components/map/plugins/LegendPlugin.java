@@ -34,8 +34,12 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.gis.map.Legend;
+import com.opendoorlogistics.core.gis.map.Legend.LegendDrawableTableBuilder;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
+import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
+import com.opendoorlogistics.core.utils.ui.SwingUtils;
+import com.opendoorlogistics.studio.components.map.FindDrawableTables;
 import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils;
 import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckBoxItem;
@@ -45,9 +49,48 @@ import com.opendoorlogistics.studio.controls.checkboxtable.CheckboxTable.ButtonC
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckboxTable.CheckChangedListener;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.SimpleAction;
+import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.*;
 
 public class LegendPlugin implements MapPlugin {
 
+
+	
+	private static class LegendState {
+		final List<Map.Entry<String, BufferedImage>> items;
+		final StandardisedStringTreeMap<Boolean> visible;
+		
+		boolean isVisible(String legendKey){
+			if(legendKey!=null){
+				Boolean b = visible.get(legendKey);
+				if(b!=null){
+					return b;
+				}				
+			}
+			return true;
+		}
+		
+		void setVisible(String legendKey, boolean visible){
+			this.visible.put(legendKey, visible);
+		}
+		
+		public LegendState(LegendDrawableTableBuilder builder, LegendState oldState) {
+			items = builder.build(new Dimension(20,20));
+			visible = new StandardisedStringTreeMap<Boolean>();
+			for(Map.Entry<String, BufferedImage> item : items){
+				
+				// visible by default
+				boolean isVisible = true;
+				
+				// use old state if we have it
+				if(oldState!=null){
+					isVisible = oldState.isVisible(item.getKey());
+				}
+				
+				this.visible.put(item.getKey(), isVisible);
+			}
+		}
+	}
+	
 	@Override
 	public String getId(){
 		return "com.opendoorlogistics.studio.components.map.plugins.LegendPlugin";
@@ -97,11 +140,12 @@ public class LegendPlugin implements MapPlugin {
 		}
 	}
 	
-	private static class LegendPanel extends JPanel implements Disposable , CheckChangedListener, ButtonClickedListener, MapApiListeners.OnPreObjectsChanged, MapApiListeners.FilterVisibleObjects{
+	private static class LegendPanel extends JPanel implements Disposable , CheckChangedListener, ButtonClickedListener, MapApiListeners.FilterVisibleObjects, MapApiListeners.OnObjectsChanged{
 		private static final Color LEGEND_BACKGROUND_COLOUR = new Color(240, 240, 240);
 		private final CheckboxTable legendFilterTable;
 		private final MapApi api;
-
+		private volatile LegendState state;
+		
 		LegendPanel(MapApi api){
 			this.api = api;
 			setLayout(new BorderLayout());
@@ -138,18 +182,20 @@ public class LegendPlugin implements MapPlugin {
 			}));
 			add(showHidePanel , BorderLayout.SOUTH);	
 			
-			updateLegend(api.getMapDataApi().getMapDatastore());
+		//	updateLegend(api.getMapDataApi().getMapDatastore());
 			
-			api.registerPreObjectsChangedListener(this, 0);
 			api.registerFilterVisibleObjectsListener(this, 0);
+			api.registerObjectsChangedListener(this, 0);
+			
+			onObjectsChanged(api);
 			api.updateObjectFiltering();
 		}
 		
 		
 		@Override
 		public void dispose() {
-			api.removePreObjectsChangedListener(this);
 			api.removeFilterVisibleObjectsListener(this);
+			api.removeObjectsChangedListener(this);
 			api.updateObjectFiltering();
 		}
 
@@ -163,7 +209,7 @@ public class LegendPlugin implements MapPlugin {
 					ODLTableReadOnly all = activeTableOnly? mdApi.getUnfilteredActiveTable() :mdApi.getUnfilteredAllLayersTable();
 					int n = all!=null ? all.getRowCount() : 0;
 					for(int i =0 ; i < n ; i++){
-						String key = getLegendKey(all, i);
+						String key =Legend.getStandardisedLegendKey(all, i);
 						if(api.getControlLauncherApi().getApi().stringConventions().equalStandardised(key, item.getText())){
 							parseItem(all, i);
 						}
@@ -174,6 +220,7 @@ public class LegendPlugin implements MapPlugin {
 			}
 			
 			if(buttonColumn==0){
+				// set view to the items
 				Tables tablesApi = api.getControlLauncherApi().getApi().tables();
 				final ODLTable copy = tablesApi.createTable(api.getMapDataApi().getUnfilteredAllLayersTable());
 				new ParseLegendItems() {
@@ -186,6 +233,7 @@ public class LegendPlugin implements MapPlugin {
 				api.setViewToBestFit(copy);				
 			}
 			else if(buttonColumn == 1){
+				// select the items
 				final TLongHashSet ids = new TLongHashSet();
 				new ParseLegendItems() {
 					
@@ -203,81 +251,79 @@ public class LegendPlugin implements MapPlugin {
 
 		@Override
 		public void checkStateChanged() {
+			// read the check states into the state
+			if(state!=null){
+				for(CheckBoxItem item : legendFilterTable.getItems()){
+					state.setVisible(item.getText(), item.isSelected());
+				}
+			}
 			api.updateObjectFiltering();
-		}
-
-
-		private void updateLegend(ODLDatastore<? extends ODLTable> ds) {
-			ArrayList<DrawableObject> list = new ArrayList<DrawableObject>();
-			MapDataApi mdApi = api.getMapDataApi();
-			for(ODLTableReadOnly table : mdApi.getDrawableTables(ds)){
-				if(table!=null){
-					list.addAll(PluginUtils.toDrawables(table));					
-				}
-			}
-			List<Map.Entry<String, BufferedImage>> items = Legend.getLegendItemImages(list, new Dimension(20, 20));
-
-			// build checkbox items
-			ArrayList<CheckBoxItem> newItems = new ArrayList<>();
-			for (Map.Entry<String, BufferedImage> item : items) {
-
-				// create new checkbox item
-				CheckBoxItemImpl cbItem = new CheckBoxItemImpl(item.getValue(), item.getKey());
-				cbItem.setSelected(true);
-				newItems.add(cbItem);
-
-				// use old selected state if available
-				if (legendFilterTable.getItems() != null) {
-					for (CheckBoxItem oldItem : legendFilterTable.getItems()) {
-						if (Strings.equalsStd(oldItem.getText(), cbItem.getText())) {
-							cbItem.setSelected(oldItem.isSelected());
-							break;
-						}
-					}
-				}
-			}
-
-			legendFilterTable.setItems(newItems);
-		}
-
-
-		@Override
-		public void onPreObjectsChanged(MapApi api,ODLDatastore<? extends ODLTable> newMapDatastore){	
-			updateLegend(newMapDatastore);
 		}
 
 
 		@Override
 		public boolean acceptObject(ODLTableReadOnly table, int row) {
-
-			String s = getLegendKey(table, row);
+			
+			String s = Legend.getStandardisedLegendKey(table, row);
 			if(s==null){
 				return true;
 			}
 			
-			for(CheckBoxItem item:legendFilterTable.getItems()){
-				if(item.isSelected()){
-					if(api.getControlLauncherApi().getApi().stringConventions().equalStandardised(s, item.getText())){
-						return true;
-					}
-				}
+			if(state!=null){
+				return state.isVisible(s);
 			}
-			
-			return false;
+
+			return true;
 		}
 
 
-		private String getLegendKey(ODLTableReadOnly table, int row) {
-			Object legendKey = table.getValueAt(row, api.getMapDataApi().getLegendKeyColumn());
-			if(legendKey==null){
-				return null;
+
+		@Override
+		public void startFilter(MapApi api, ODLDatastore<? extends ODLTable> newMapDatastore) {
+			
+		}
+
+
+		@Override
+		public void endFilter(MapApi api) {
+
+		}
+
+
+		@Override
+		public void onObjectsChanged(MapApi api) {
+			//  parse tables to create new legend state 
+			LegendDrawableTableBuilder builder = new LegendDrawableTableBuilder();
+			
+			FindDrawableTables finder = new FindDrawableTables(api.getMapDataApi().getMapDatastore());
+			for(ODLTableReadOnly table: finder){
+				if(table!=null){
+					int n = table.getRowCount();
+					for(int i =0 ; i < n ; i++){
+						builder.processRow(table, i);		
+					}					
+				}
 			}
-			String s= null;
-			ODLApi odlApi = api.getControlLauncherApi().getApi();
-			if(legendKey!=null){
-				s = (String)odlApi.values().convertValue(legendKey, ODLColumnType.STRING);				
+			
+			// create state using old state if we have it
+			state = new LegendState(builder, state);
+		
+
+			// build checkbox items
+			ArrayList<CheckBoxItem> newItems = new ArrayList<>();
+			if(state!=null){
+				for (Map.Entry<String, BufferedImage> item : state.items) {
+				
+					// create new checkbox item
+					CheckBoxItemImpl cbItem = new CheckBoxItemImpl(item.getValue(), item.getKey());
+					cbItem.setSelected(state.isVisible(item.getKey()));
+					newItems.add(cbItem);
+
+				}		
 			}
-			return s;
+			
+			// update the table by setting the new items
+			legendFilterTable.setItems(newItems);
 		}
 	}
 	

@@ -531,6 +531,11 @@ class ScriptExecutionTask {
 				// modeless
 				ProgressFrame progressFrame = new ProgressFrame(title, true,true);
 				runner.getAppFrame().addInternalFrame(progressFrame, FramePlacement.CENTRAL_RANDOMISED);
+				try {
+					// start it minimised so its visible but non-intrusive
+					progressFrame.setIcon(true);					
+				} catch (Exception e) {
+				}
 				progressFrame.getProgressPanel().start();
 				progressReporter = progressFrame;
 			} else {

@@ -183,10 +183,19 @@ public class ODLScrollableToolbar extends JPanel {
 			pos.x = max;
 		}
 
+		setViewportPosition(pos);
+	}
+
+	private void setViewportPosition(Point pos) {
 		scrollPane.getViewport().setViewPosition(pos);
 		scrollPane.repaint();
 	}
 
+	public void setScrollViewToInitialPosition(){
+		Point pos = scrollPane.getViewport().getViewPosition();	
+		setViewportPosition(new Point(0, pos.y));
+	}
+	
 	private boolean isHorizontal(){
 		return toolBar.getOrientation() == JToolBar.HORIZONTAL;
 	}
