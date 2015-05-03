@@ -359,7 +359,7 @@ final public class SelectionManager {
 
 	void changeSelection(int rowIndex, int columnIndex, boolean toggle, boolean extend) {
 		// if we're in force row selection mode then ignore column selection events
-		if(rowIndex==-1 && columnIndex!=-1){
+		if(forceRowSelection && (rowIndex==-1 && columnIndex!=-1)){
 			return;
 		}
 		
