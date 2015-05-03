@@ -199,25 +199,88 @@ final public class Strings {
 		return ret;
 	}
 
+//	/**
+//	 * Standardised version of a string value
+//	 * 
+//	 * @param s
+//	 * @return
+//	 */
+//	public static String std(String s) {
+//		if (s == null) {
+//			return "";
+//		}
+//
+//		// trim whitespace at start and end and convert to lowercase
+//		s = s.trim().toLowerCase();
+//
+//		// ensure only have single spaces
+//		s = s.replaceAll("  ", " ");
+//		return s;
+//	}
+
 	/**
-	 * Standardised version of a string value
-	 * 
+	 * Standardised version of a string value. 
+	 * Calculation is optimised as much as possible.
 	 * @param s
 	 * @return
 	 */
-	public static String std(String s) {
+	public static String std(String s){
 		if (s == null) {
 			return "";
 		}
+		
+		StringBuilder b = new StringBuilder();
+		int n = s.length();
 
-		// trim whitespace at start and end and convert to lowercase
-		s = s.trim().toLowerCase();
-
-		// ensure only have single spaces
-		s = s.replaceAll("  ", " ");
-		return s;
+		// find first non-whitespace
+		int firstNonWS=n;
+		for(int i = 0 ; i < n ; i++){
+			char c = s.charAt(i);
+			if(!Character.isWhitespace(c)){
+				firstNonWS = i;
+				break;
+			}
+		}
+			
+		// get last non-whitespace char
+		int lastNonWS=-1;
+		for(int i = n-1; i>=0 ; i--){
+			char c = s.charAt(i);
+			if(!Character.isWhitespace(c)){
+				lastNonWS = i;
+				break;
+			}
+		}
+		
+		
+		boolean inWhiteSpace=false;
+		char c;
+		for(int i =firstNonWS ; i <= lastNonWS ; i++){
+			c = Character.toLowerCase(s.charAt(i));
+							
+			if(inWhiteSpace){
+				if(Character.isWhitespace(c)){
+					// never add two whitespaces in a row
+				}else{
+					// no longer in whitespace
+					inWhiteSpace = false;
+					b.append(c);					
+				}
+			}else{
+				if(Character.isWhitespace(c)){
+					// always treat whitespace as a space
+					b.append(' ');					
+					inWhiteSpace = true;
+				}else{
+					b.append(c);										
+				}
+			}
+			
+		}
+		
+		return b.toString();
 	}
-
+	
 	/**
 	 * See http://stackoverflow.com/questions/5054995/how-to-replace-case-insensitive-literal-substrings-in-java
 	 * 
@@ -731,17 +794,18 @@ final public class Strings {
 	public static void main(String[] args) {
 
 		ArrayList<String> list = new ArrayList<>();
-		for (String s : new String[] { "vehicle 9", "vehicle", "vehicle 01", "vehicle 10", "vehicle    23b", "vehicle 23", "artic 1" }) {
-			list.add(s);
+		for (String s : new String[] { "   VEHILCE 9", "vehicle   ", "    vehicle 01	", "vehicle 10", "vehicle    23b", "ve   HIC  le 23", "  artic 1" }) {
+		//	list.add(s);
+			System.out.println("\"" + s + "\"" + " -> " +"\""+ std(s) + "\"");
 		}
-		Collections.sort(list, new Comparator<String>() {
-
-			@Override
-			public int compare(String o1, String o2) {
-				return compareStd(o1, o2);
-			}
-		});
-		System.out.println(list);
+//		Collections.sort(list, new Comparator<String>() {
+//
+//			@Override
+//			public int compare(String o1, String o2) {
+//				return compareStd(o1, o2);
+//			}
+//		});
+//		System.out.println(list);
 	}
 
 	public static TreeSet<String> toTreeSet(String... strs) {

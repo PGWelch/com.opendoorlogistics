@@ -21,8 +21,23 @@ public interface MapDataApi {
 	ODLTable getUnfilteredInactiveForegroundTable();
 	ODLTable getUnfilteredInactiveBackgroundTable();
 	ODLTableReadOnly getActiveTableSelectedOnly();
-	ODLTableReadOnly getFilteredAllLayersTable();
-	ODLTableReadOnly getUnfilteredAllLayersTable();
+	
+	/**
+	 * Get a single table with all input tables (filtered)
+	 * @param immutableSnapshot True if you want to the return data to be an immutable thread-safe
+	 * snapshot (if false, the data may still be a snapshot, but this isn't guaranteed.
+	 * @return
+	 */
+	ODLTableReadOnly getFilteredAllLayersTable(boolean immutableSnapshot);
+	
+	/**
+	 * Get a single table with all input tables (unfiltered)
+	 * @param immutableSnapshot True if you want to the return data to be an immutable thread-safe
+	 * snapshot (if false, the data may still be a snapshot, but this isn't guaranteed.
+	 * @return
+	 */
+	ODLTableReadOnly getUnfilteredAllLayersTable(boolean immutableSnapshot);
 	Iterable<ODLTable> getDrawableTables(ODLDatastore<? extends ODLTable> mapDatastore);
 	ODLDatastore<? extends ODLTable> getMapDatastore();
+	
 }

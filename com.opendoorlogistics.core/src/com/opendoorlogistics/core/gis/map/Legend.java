@@ -289,6 +289,15 @@ final public class Legend {
 		
 		private final HashMap<String,CalcLegendEntry> workingMap = new HashMap<String,Legend.LegendDrawableTableBuilder.CalcLegendEntry>();
 		
+//		public static interface LegendRowData{
+//			public String key(); 
+//			public Color color();
+//			public Color legendColour();
+//			public String colourKey();
+//			public String symbol();
+//			public Long outline();
+//		}
+		
 		public void processRow(ODLTableReadOnly drawables, int row){
 			String key =(String) drawables.getValueAt(row, DrawableObjectImpl.COL_LEGEND_KEY);
 			String stdKey = getStandardisedLegendKey(key);

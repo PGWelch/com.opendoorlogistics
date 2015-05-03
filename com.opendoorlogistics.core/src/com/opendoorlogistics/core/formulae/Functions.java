@@ -1127,6 +1127,8 @@ public class Functions {
 	public static final class FmConst extends FunctionImpl {
 		private final Object val;
 
+		public static final FmConst NULL = new FmConst((Object)null);
+		
 		public FmConst(Object val) {
 			super();
 			this.val = val;

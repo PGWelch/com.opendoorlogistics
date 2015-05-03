@@ -163,6 +163,9 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 	public ScriptsRunner(AppFrame parentFrame, ODLDatastoreUndoable<ODLTableAlterable> ds) {
 		this.appFrame = parentFrame;
 		this.ds = ds;
+		
+		// Have only 1 execution service thread so control updates finish processing in the order
+		// they're submitted (otherwise wrong results may appear on-screen).
 		this.executorService = Executors.newFixedThreadPool(1);
 	}
 	

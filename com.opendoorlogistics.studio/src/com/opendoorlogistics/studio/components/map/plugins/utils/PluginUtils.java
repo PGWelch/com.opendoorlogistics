@@ -197,7 +197,7 @@ public class PluginUtils {
 	}
 	
 	public static LinkedList<DrawableObject> getVisibleDrawables(final MapApi api) {
-		ODLTableReadOnly drawablesTable = api.getMapDataApi().getFilteredAllLayersTable();
+		ODLTableReadOnly drawablesTable = api.getMapDataApi().getFilteredAllLayersTable(true);
 		return toDrawables(drawablesTable);
 	}
 

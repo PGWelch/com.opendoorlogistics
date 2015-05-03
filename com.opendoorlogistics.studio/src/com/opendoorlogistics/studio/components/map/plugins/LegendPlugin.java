@@ -206,7 +206,7 @@ public class LegendPlugin implements MapPlugin {
 			abstract class ParseLegendItems{
 				void parse(boolean activeTableOnly){
 					MapDataApi mdApi = api.getMapDataApi();
-					ODLTableReadOnly all = activeTableOnly? mdApi.getUnfilteredActiveTable() :mdApi.getUnfilteredAllLayersTable();
+					ODLTableReadOnly all = activeTableOnly? mdApi.getUnfilteredActiveTable() :mdApi.getUnfilteredAllLayersTable(true);
 					int n = all!=null ? all.getRowCount() : 0;
 					for(int i =0 ; i < n ; i++){
 						String key =Legend.getStandardisedLegendKey(all, i);
@@ -222,7 +222,7 @@ public class LegendPlugin implements MapPlugin {
 			if(buttonColumn==0){
 				// set view to the items
 				Tables tablesApi = api.getControlLauncherApi().getApi().tables();
-				final ODLTable copy = tablesApi.createTable(api.getMapDataApi().getUnfilteredAllLayersTable());
+				final ODLTable copy = tablesApi.createTable(api.getMapDataApi().getUnfilteredAllLayersTable(true));
 				new ParseLegendItems() {
 					
 					@Override
@@ -292,38 +292,78 @@ public class LegendPlugin implements MapPlugin {
 
 		@Override
 		public void onObjectsChanged(MapApi api) {
-			//  parse tables to create new legend state 
-			LegendDrawableTableBuilder builder = new LegendDrawableTableBuilder();
+			// get immutable table on EDT thread
+			ODLTableReadOnly table = api.getMapDataApi().getUnfilteredAllLayersTable(true);
 			
-			FindDrawableTables finder = new FindDrawableTables(api.getMapDataApi().getMapDatastore());
-			for(ODLTableReadOnly table: finder){
-				if(table!=null){
+			api.submitWork(new Runnable() {
+				
+				@Override
+				public void run() {
+					// create new state on worker thread
+					LegendDrawableTableBuilder builder = new LegendDrawableTableBuilder();
 					int n = table.getRowCount();
 					for(int i =0 ; i < n ; i++){
 						builder.processRow(table, i);		
-					}					
+					}	
+					
+					// create state using old state if we have it, doing an atomic set
+					// to the state variable so nobody sees a half-set state
+					state = new LegendState(builder, state);
+					
+					// finally update the control on the EDT
+					SwingUtils.invokeLaterOnEDT(new Runnable() {
+						
+						@Override
+						public void run() {
+							// build checkbox items
+							ArrayList<CheckBoxItem> newItems = new ArrayList<>();
+							if(state!=null){
+								for (Map.Entry<String, BufferedImage> item : state.items) {
+								
+									// create new checkbox item
+									CheckBoxItemImpl cbItem = new CheckBoxItemImpl(item.getValue(), item.getKey());
+									cbItem.setSelected(state.isVisible(item.getKey()));
+									newItems.add(cbItem);
+
+								}		
+							}
+							
+							// update the table by setting the new items
+							legendFilterTable.setItems(newItems);
+						}
+					});
 				}
-			}
-			
-			// create state using old state if we have it
-			state = new LegendState(builder, state);
+			});
+
 		
 
-			// build checkbox items
-			ArrayList<CheckBoxItem> newItems = new ArrayList<>();
-			if(state!=null){
-				for (Map.Entry<String, BufferedImage> item : state.items) {
-				
-					// create new checkbox item
-					CheckBoxItemImpl cbItem = new CheckBoxItemImpl(item.getValue(), item.getKey());
-					cbItem.setSelected(state.isVisible(item.getKey()));
-					newItems.add(cbItem);
-
-				}		
-			}
 			
-			// update the table by setting the new items
-			legendFilterTable.setItems(newItems);
+//			// get immutable table
+//			ODLTableReadOnly table = api.getMapDataApi().getUnfilteredAllLayersTable(true);
+//			LegendDrawableTableBuilder builder = new LegendDrawableTableBuilder();
+//			int n = table.getRowCount();
+//			for(int i =0 ; i < n ; i++){
+//				builder.processRow(table, i);		
+//			}	
+//			
+//			// create state using old state if we have it
+//			state = new LegendState(builder, state);
+//		
+//			// build checkbox items
+//			ArrayList<CheckBoxItem> newItems = new ArrayList<>();
+//			if(state!=null){
+//				for (Map.Entry<String, BufferedImage> item : state.items) {
+//				
+//					// create new checkbox item
+//					CheckBoxItemImpl cbItem = new CheckBoxItemImpl(item.getValue(), item.getKey());
+//					cbItem.setSelected(state.isVisible(item.getKey()));
+//					newItems.add(cbItem);
+//
+//				}		
+//			}
+//			
+//			// update the table by setting the new items
+//			legendFilterTable.setItems(newItems);
 		}
 	}
 	

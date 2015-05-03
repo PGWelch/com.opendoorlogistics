@@ -77,5 +77,17 @@ public interface MapApi extends MapApiListeners{
 
 	void updateObjectFiltering();
 
+	/**
+	 * The map api maintains a single worker thread which can have tasks added to it and
+	 * executed in-order.
+	 * @param runnable
+	 */
+	void submitWork(Runnable runnable);
+	
+	/**
+	 * Has the api been disposed (and should no longer be used?)
+	 * @return
+	 */
+	boolean isDisposed();
 }
 

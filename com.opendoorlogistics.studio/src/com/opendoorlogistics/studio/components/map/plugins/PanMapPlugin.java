@@ -100,7 +100,7 @@ public class PanMapPlugin implements MapPlugin{
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					api.setViewToBestFit(api.getMapDataApi().getFilteredAllLayersTable());
+					api.setViewToBestFit(api.getMapDataApi().getFilteredAllLayersTable(true));
 				}
 			});
 			

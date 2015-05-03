@@ -6,10 +6,12 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.scripts.execution.adapters;
 
+import gnu.trove.impl.Constants;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.hash.TIntHashSet;
 
 import java.io.File;
@@ -498,8 +500,13 @@ final public class AdapterBuilder {
 
 		Function buildFunction(ODLTableReadOnly sourceTable, AdapterColumnConfig col) {
 			Function formula;
-			String uncompiled = getSafeFormula(col); 
-			formula = buildFormulaWithTableVariables(sourceTable, uncompiled, sourceTableRef.dsIndex,adaptedTableConfig.getUserFormulae(), null);
+			String uncompiled = getSafeFormula(col);
+			if(uncompiled!=null){
+				formula = buildFormulaWithTableVariables(sourceTable, uncompiled, sourceTableRef.dsIndex,adaptedTableConfig.getUserFormulae(), null);				
+			}
+			else{
+				formula = FmConst.NULL;
+			}
 			return formula;
 		}
 	}
@@ -762,9 +769,11 @@ final public class AdapterBuilder {
 		if(col.isUseFormula()){
 			return col.getFormula();
 		}
-		else{
+		else if (!Strings.isEmptyWhenStandardised(col.getFrom())){
 			// wrap in speech marks in-case we have a field like "stop-id"
 			return "\"" + col.getFrom() + "\"";
+		}else{
+			return null;
 		}
 	}
 	
@@ -813,7 +822,11 @@ final public class AdapterBuilder {
 			// build the formula, converting a field reference to a formula
 			AdapterColumnConfig field = nonSortCols.getColumn(gbf);
 			String formulaText = getSafeFormula(field);
-			nonSortFormulae[gbf] = buildFormulaWithTableVariables(srcTable, formulaText, defaultDsIndex,rawTableConfig.getUserFormulae(), null);
+			if(formulaText!=null){
+				nonSortFormulae[gbf] = buildFormulaWithTableVariables(srcTable, formulaText, defaultDsIndex,rawTableConfig.getUserFormulae(), null);				
+			}else{
+				nonSortFormulae[gbf] = FmConst.NULL;
+			}
 			if (env.isFailed()) {
 				return;
 			}
@@ -836,10 +849,45 @@ final public class AdapterBuilder {
 		datasources.add(groupedDs);
 		final ODLTableAlterable groupedTable = groupedDs.getTableAt(0);
 
+		class GroupByKey{
+			final String [] strs;
+			
+			GroupByKey(Object[] key){
+				strs = new String[key.length];
+				for(int i =0 ; i < strs.length ; i++){
+					strs[i] =Strings.std((String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, key[i]));
+				}
+			}
+
+			@Override
+			public int hashCode() {
+				final int prime = 31;
+				int result = 1;
+				result = prime * result + Arrays.hashCode(strs);
+				return result;
+			}
+
+			@Override
+			public boolean equals(Object obj) {
+				if (this == obj)
+					return true;
+				if (obj == null)
+					return false;
+				if (getClass() != obj.getClass())
+					return false;
+				GroupByKey other = (GroupByKey) obj;
+				if (!Arrays.equals(strs, other.strs))
+					return false;
+				return true;
+			}
+			
+		}
+		
 		// Fill in group table for the columns defining the groups, creating the groups as we do this.
 		// We build all groups with complexity O( nrows x ngroups).
 		int nbSourceRows = srcTable.getRowCount();
 		final TLongObjectHashMap<TLongArrayList> groupRowIdToSourceRowIds = new TLongObjectHashMap<>();
+		final TObjectIntHashMap<GroupByKey> keyToRow = new TObjectIntHashMap<GroupByKey>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
 		for (int srcRow = 0; srcRow < nbSourceRows; srcRow++) {
 
 			// get grouped by key by executing the formulae
@@ -854,17 +902,8 @@ final public class AdapterBuilder {
 			}
 
 			// find matching row in grouped table
-			int nbGroups = groupedTable.getRowCount();
-			int groupIndx = -1;
-			for (int group = 0; group < nbGroups && groupIndx == -1; group++) {
-				groupIndx = group;
-				for (int gbf : groupByFields) {
-					if (!ColumnValueProcessor.isEqual(key[gbf], groupedTable.getValueAt(group, gbf))) {
-						groupIndx = -1;
-						break;
-					}
-				}
-			}
+			GroupByKey gbyKey = new GroupByKey(key);
+			int groupIndx = keyToRow.get(gbyKey);
 
 			// create new group if needed
 			if (groupIndx == -1) {
@@ -873,6 +912,7 @@ final public class AdapterBuilder {
 					groupedTable.setValueAt(key[gbf], groupIndx, gbf);
 				}
 				groupRowIdToSourceRowIds.put(groupedTable.getRowId(groupIndx), new TLongArrayList());
+				keyToRow.put(gbyKey, groupIndx);
 			}
 
 			// copy row reference
@@ -938,7 +978,7 @@ final public class AdapterBuilder {
 				// We compile the formula against the source table as only source table fields are accessible
 				// (should only be via an aggregate method...)
 				String formulaText =getSafeFormula(field);
-				Function ret = buildFormula(formulaText, library, uvp, rawTableConfig.getUserFormulae(),FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION);
+				Function ret = formulaText!=null? buildFormula(formulaText, library, uvp, rawTableConfig.getUserFormulae(),FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION) : FmConst.NULL;
 				if (ret == null) {
 					env.setFailed("Failed to build non-group formula or access field in group-by query: " + formulaText);
 				}

@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.swing.AbstractAction;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
@@ -74,14 +73,12 @@ import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener;
-import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.SetUtils;
-import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
 import com.opendoorlogistics.core.utils.ui.ShowPanel;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
@@ -89,7 +86,6 @@ import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
 import com.opendoorlogistics.studio.InitialiseStudio;
 import com.opendoorlogistics.studio.components.map.plugins.CustomTooltipPlugin;
 import com.opendoorlogistics.studio.components.map.plugins.SummariseFieldValuesTooltipPlugin;
-import com.opendoorlogistics.studio.scripts.execution.ExecutionUtils;
 
 /**
  * The implementation of the api object is just an aggregate of other objects
@@ -99,7 +95,6 @@ import com.opendoorlogistics.studio.scripts.execution.ExecutionUtils;
  *
  */
 public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposable , SelectionList{
-	private final ExecutorService executorService = Executors.newFixedThreadPool(1);
 	private final MapSelectionState selectionState;
 	private final ViewPosition position;
 	private final DisposablePanel containerLevel1Panel;
@@ -109,6 +104,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	private final JPanel[] sidePanels = new JPanel[PanelPosition.values().length];
 	private final ComponentControlLauncherApi componentControlLauncherApi;
 	private final MapViewPanel mapViewPanel;
+	private final ExecutorService executorService = Executors.newFixedThreadPool(1);
 	private MapMode defaultMode;
 	private TileCacheRenderer renderer;
 	private long renderFlags = RenderProperties.SHOW_ALL;
@@ -119,6 +115,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	private MeasureComponents lastMeasure;
 	private BufferedImage disabledPaintImage;
 	private boolean isPendingInitContainerPanels=false;
+	private volatile boolean isDisposed=false;
 	
 	public class DisposablePanel extends JPanel implements Disposable {
 
@@ -299,7 +296,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 					
 					@Override
 					public void run() {
-						setViewToBestFit(getMapDataApi().getFilteredAllLayersTable());
+						setViewToBestFit(getMapDataApi().getFilteredAllLayersTable(true));
 					}
 				});
 			}
@@ -380,10 +377,10 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 			int n = table.getRowCount();
 			ArrayList<DrawableObject> ret = new ArrayList<DrawableObject>(n);
-			for (int i = 0; i < n; i++) {
+			for (int row = 0; row < n; row++) {
 				
 				// save to list if needed
-				DrawableObject obj =objs.get(tableOrder, i);
+				DrawableObject obj =objs.get(tableOrder, row);
 				if(saveAllToList!=null && obj!=null){
 					saveAllToList.add(obj);
 				}
@@ -393,7 +390,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 						saveAllToList.add(obj);						
 					}
 				
-					boolean accept =!isFiltered || api.fireFilterObject(api, table, i);
+					boolean accept =!isFiltered || api.fireFilterObject(api, table, row);
 					if(accept){
 						ret.add(obj);
 					}
@@ -560,16 +557,17 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 	@Override
 	public void dispose() {
+		isDisposed = true;
 		renderer.dispose();
 		fireDisposedListeners(this);
 
+		executorService.shutdown();
+		
 		for (JPanel d : sidePanels) {
 			if (d != null) {
 				((Disposable) d).dispose();
 			}
 		}
-
-		executorService.shutdown();
 
 	}
 
@@ -1123,7 +1121,8 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			}
 
 			@Override
-			public ODLTableReadOnly getFilteredAllLayersTable() {
+			public ODLTableReadOnly getFilteredAllLayersTable(boolean immutableSnapshot) {
+				// At the moment we always do an immutable snapshot, but we may improve this in the future
 				return toTable(filtered.allFiltered);
 			}
 
@@ -1133,7 +1132,13 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			}
 
 			@Override
-			public ODLTableReadOnly getUnfilteredAllLayersTable() {
+			public ODLTableReadOnly getUnfilteredAllLayersTable(boolean immutableSnapshot) {
+				// At the moment we always do an immutable snapshot, but we may improve this in the future
+				
+				// Get table .. this will be a copy as it combines all input tables into one. 
+				// As this recreates a table from the beanmapped objects it is quicker than actually
+				// reading the original table (as this involves reading many layers of decorators),
+				// this boosts performance when using the legend.
 				return toTable(new FilteredTables(objs,mapDatastore, MapApiImpl.this, false).allFiltered);
 			}
 
@@ -1315,5 +1320,22 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			plugins.add(new SummariseFieldValuesTooltipPlugin());			
 		}
 		return plugins;
+	}
+
+	@Override
+	public void submitWork(Runnable runnable) {
+		executorService.submit(new Callable<Void>() {
+
+			@Override
+			public Void call() throws Exception {
+				runnable.run();
+				return null;
+			}
+		});
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return isDisposed;
 	}
 }
