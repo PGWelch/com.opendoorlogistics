@@ -34,5 +34,10 @@ final public class InsertEmptyRow extends Command{
 		return new DeleteRow(tableId, insertAt);
 	}
 
+	@Override
+	public long calculateEstimateSizeBytes() {
+		return 12 + 4 + 8;
+	}
+
 
 }

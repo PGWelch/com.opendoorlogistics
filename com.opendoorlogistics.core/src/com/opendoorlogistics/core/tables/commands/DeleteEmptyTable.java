@@ -37,4 +37,9 @@ final public class DeleteEmptyTable extends Command{
 		return new CreateTable(name, tableId, flags);
 	}
 
+	@Override
+	public long calculateEstimateSizeBytes() {
+		return 12;
+	}
+
 }

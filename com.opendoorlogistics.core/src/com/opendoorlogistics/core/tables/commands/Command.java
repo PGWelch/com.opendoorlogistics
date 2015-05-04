@@ -6,15 +6,21 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.tables.commands;
 
+import java.awt.image.BufferedImage;
+
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.api.tables.ODLTime;
+import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 
 public abstract class Command {
+
 	protected final int tableId;
 
 	protected Command(int tableId) {
 		super();
 		this.tableId = tableId;
+		
 	}
 
 	/**
@@ -28,4 +34,32 @@ public abstract class Command {
 		return tableId;
 	}
 	
+	public abstract long calculateEstimateSizeBytes();
+	
+	protected long getEstimatedObjectMemoryFootprintBytes(Object o){
+		long ret =8; // for the pointer
+		if(o!=null){
+			if(String.class.isInstance(o)){
+				ret+= ((String)o).length() * 8;
+			}
+			else if (BufferedImage.class.isInstance(o)){
+				BufferedImage img = (BufferedImage)o;
+				ret += (long)img.getWidth() * img.getHeight() * 4;
+			}
+			else if(ODLTime.class.isInstance(o)){
+				ret += 12;
+			}
+			else if (ODLLoadedGeometry.class.isInstance(o)){
+				// Only worry about loaded geometry as this is created in the polygon editor.
+				// Other sorts of geometry are probably cached elsewhere and hence we just include the pointer
+				ret += ((ODLLoadedGeometry)o).getEstimatedSizeInBytes();
+			}
+			else{
+				ret += 8;
+			}
+		}
+		return ret;
+	}
+	
+
 }

@@ -34,4 +34,9 @@ final public class DeleteEmptyCol extends Command {
 	public int getColumnIndex(){
 		return col;
 	}
+
+	@Override
+	public long calculateEstimateSizeBytes() {
+		return 12 + 4;
+	}
 }

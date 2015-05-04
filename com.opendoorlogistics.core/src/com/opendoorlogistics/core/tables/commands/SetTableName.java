@@ -28,4 +28,9 @@ final public class SetTableName extends Command{
 		return null;
 	}
 
+	@Override
+	public long calculateEstimateSizeBytes() {
+		return 12 + getEstimatedObjectMemoryFootprintBytes(name);
+	}
+
 }

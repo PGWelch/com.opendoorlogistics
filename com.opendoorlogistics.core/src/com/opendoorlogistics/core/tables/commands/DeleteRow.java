@@ -39,5 +39,11 @@ final public class DeleteRow extends Command{
 		table.deleteRow(row);
 		return new UndeleteRow(tableId, row,rowid, originals);
 	}
+
+
+	@Override
+	public long calculateEstimateSizeBytes() {
+		return 12 + 4;
+	}
 	
 }

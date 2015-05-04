@@ -32,17 +32,45 @@ import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.utils.LargeList;
 
 final public class UndoRedoDecorator<T extends ODLTableDefinition> extends SimpleDecorator<T> implements ODLDatastoreUndoable<T>{
-	/**
-	 * 
-	 */
+	private static final boolean USE_NEW_VERSION_BUFFER_TRIMMING = false;
+	private static final long MAX_BUFFER_SIZE_BYTES = 1024 * 1024 *100;
 	private static final long serialVersionUID = -3961824291406998570L;
-	private final LargeList<UndoRedo> buffer = new LargeList<>();
-	private final int maxSize = Integer.MAX_VALUE;
-	private int nextCommandNb=1;
-	private int currentCommandNb=-1;
-	private int position;
+	private final UndoRedoBuffer buffer = new UndoRedoBuffer();
+	private final long maxSize = Integer.MAX_VALUE;
+	private long nextCommandNb=1;
+	private long currentCommandNb=-1;
+	private long position;
 	private HashSet<UndoStateChangedListener<T>> undoStateListeners = new HashSet<>(); 
 	private UndoState lastFiredUndoState;
+	
+	private static class UndoRedoBuffer{
+		private final LargeList<UndoRedo> list = new LargeList<>();
+		private long sizeInBytes=0;
+		
+		long size(){
+			return list.longSize();
+		}
+		
+		UndoRedo get(long i){
+			return list.get(i);
+		}
+		
+		void add(UndoRedo undoRedo){
+			list.add(undoRedo);
+			
+			if(USE_NEW_VERSION_BUFFER_TRIMMING){
+				sizeInBytes += undoRedo.getEstimatedSizeInBytes();				
+			}
+		}
+		
+		void remove(long i){
+			UndoRedo undoRedo = list.remove(i);
+			
+			if(USE_NEW_VERSION_BUFFER_TRIMMING){
+				sizeInBytes -= undoRedo.getEstimatedSizeInBytes();				
+			}
+		}
+	}
 	
 	private class UndoState{
 		boolean hasUndo;
@@ -84,13 +112,20 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 	private static class UndoRedo{
 		private Command undoCommand;
 		private Command redoCommand;
-		final int transactionNb;
+		final long transactionNb;
+		private final long estimatedSizeInBytes;
 		
-		private UndoRedo(Command undo, Command redo, int transactionNb) {
+		private UndoRedo(Command undo, Command redo, long transactionNb) {
 			super();
 			this.undoCommand = undo;
 			this.redoCommand = redo;
 			this.transactionNb = transactionNb;
+			
+			if( USE_NEW_VERSION_BUFFER_TRIMMING){
+				estimatedSizeInBytes = undo.calculateEstimateSizeBytes() + redo.calculateEstimateSizeBytes();
+			}else{
+				estimatedSizeInBytes = 0;
+			}
 		}	
 		
 		void undo(ODLDatastore<? extends ODLTableDefinition> database){
@@ -106,6 +141,10 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 				throw new RuntimeException();
 			}			
 		}
+		
+		long getEstimatedSizeInBytes(){
+			return estimatedSizeInBytes;
+		}
 	}
 	
 	public UndoRedoDecorator(Class<T> tableClass, ODLDatastore<? extends T>  decorated) {
@@ -114,8 +153,8 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 
 	
 	
-	private int getNextCommandNb(){
-		if(nextCommandNb==Integer.MAX_VALUE){
+	private long getNextCommandNb(){
+		if(nextCommandNb==Long.MAX_VALUE){
 			nextCommandNb=1;
 		}
 		else{
@@ -131,7 +170,7 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 		if(hasUndo()){
 			disableListeners();
 			// get command number and always undo full command
-			int transactionNb = buffer.get(position-1).transactionNb;
+			long transactionNb = buffer.get(position-1).transactionNb;
 			position--;
 			buffer.get(position).undo(decorated);
 
@@ -155,7 +194,7 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 
 		if(hasRedo()){
 			disableListeners();
-			int transactionNb = buffer.get(position).transactionNb;
+			long transactionNb = buffer.get(position).transactionNb;
 			buffer.get(position).redo(decorated);
 			position++;
 			
@@ -185,22 +224,104 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 	private void trim(){
 		checkNotInTransaction();
 		
-		// always delete whole commands but keep at least the last whole command
-		if(buffer.size()>maxSize){
-			int currentSize = buffer.size();
-			int targetSize = maxSize;
-			while(targetSize < currentSize && buffer.get(targetSize-1).transactionNb!=-1
-				&& buffer.get(targetSize-2).transactionNb == buffer.get(targetSize-1).transactionNb){
-				targetSize++;
+		if(USE_NEW_VERSION_BUFFER_TRIMMING){
+			// new version
+			// delete whole commands, keeping at least the last command
+
+			
+			if(buffer.size()<2 || buffer.sizeInBytes < MAX_BUFFER_SIZE_BYTES){
+				return;
 			}
 			
-			while(buffer.size() > targetSize){
+			// find the maximum index we can delete, starting at the last but one position
+			long n = buffer.size();
+			long lastAllowedDeleteIndex = n-2;
+			while(lastAllowedDeleteIndex > 0){
+				
+				// if the current position if not in a transaction, we can use it 
+				UndoRedo current = buffer.get(lastAllowedDeleteIndex);
+				if(current.transactionNb==-1){
+					break;
+				}
+
+				// if the preceding position is in a different transaction, we can use it
+				UndoRedo preceeding = buffer.get(lastAllowedDeleteIndex-1);
+				if(preceeding.transactionNb != current.transactionNb){
+					break;
+				}
+				
+				// go the the preceeding position
+				lastAllowedDeleteIndex--;
+			}
+			
+			if(lastAllowedDeleteIndex<=1){
+				return;
+			}
+			
+			// now decide what to delete up to, looping forward from 0
+			long estimatedSize = buffer.sizeInBytes;
+			long targetSize = MAX_BUFFER_SIZE_BYTES / 2;
+			long lastDeleteIndex=0;
+			while(true){	
+				
+				// Reduce the size as we're deleting this index
+				UndoRedo current = buffer.get(lastDeleteIndex);
+				estimatedSize -= current.getEstimatedSizeInBytes();
+				
+				// Now decide whether to delete the next index
+				
+				// We can't delete the next index if we're already on the last allowed one
+				if(lastDeleteIndex == lastAllowedDeleteIndex){
+					break;
+				}
+				
+				// We must delete the next index if its the same transaction 
+				UndoRedo next = buffer.get(lastDeleteIndex+1);
+				boolean delete = false;
+				if(current.transactionNb!=-1 && current.transactionNb == next.transactionNb){
+					lastDeleteIndex++;
+					continue;
+				}
+
+				// We must also delete the next index if we're still over the memory limit
+				if(estimatedSize > targetSize){
+					lastDeleteIndex++;
+					continue;
+				}
+				
+				// Otherwise stop deleting
+				break;
+			}
+			
+			// Now finally do the deletion
+			for(long i =0 ; i <= lastDeleteIndex ; i++){
 				buffer.remove(0);
 				position--;
 				if(position<0){
 					throw new RuntimeException();
 				}
 			}
+		}else{
+			// old version
+			
+			// always delete whole commands but keep at least the last whole command
+			if(buffer.size()>maxSize){
+				long currentSize = buffer.size();
+				long targetSize = maxSize;
+				while(targetSize < currentSize && buffer.get(targetSize-1).transactionNb!=-1
+					&& buffer.get(targetSize-2).transactionNb == buffer.get(targetSize-1).transactionNb){
+					targetSize++;
+				}
+				
+				while(buffer.size() > targetSize){
+					buffer.remove(0);
+					position--;
+					if(position<0){
+						throw new RuntimeException();
+					}
+				}
+			}
+			
 		}
 
 		fireUndoStateListeners();
@@ -220,6 +341,7 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 		if(currentCommandNb!=-1){
 			throw new RuntimeException("Datastore is already in a transaction");
 		}
+		
 		decorated.disableListeners();
 		checkNotInTransaction();
 		trim();
@@ -405,7 +527,7 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 
 	@Override
 	public void rollbackTransaction() {
-		int command = currentCommandNb;
+		long command = currentCommandNb;
 		endTransaction();
 		
 		if(position>0 && buffer.get(position-1).transactionNb == command){
@@ -496,8 +618,10 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 		undoStateListeners.remove(listener);
 	}
 	
+	/**
+	 * Checks if a change to the hasUndo / hasRedo state has occurred and fires listeners if so.
+	 */
 	private void fireUndoStateListeners(){
-		// only fire when a change has occurred
 		UndoState state = new UndoState();
 		state.hasRedo = hasRedo();
 		state.hasUndo = hasUndo();

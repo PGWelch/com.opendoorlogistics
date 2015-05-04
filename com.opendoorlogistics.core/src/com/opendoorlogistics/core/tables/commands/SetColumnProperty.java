@@ -70,4 +70,9 @@ final public class SetColumnProperty extends Command{
 		return new SetColumnProperty(tableId,col,type,current);
 	}
 
+	@Override
+	public long calculateEstimateSizeBytes() {
+		return 12 + 4 + 4 + getEstimatedObjectMemoryFootprintBytes(value);
+	}
+
 }

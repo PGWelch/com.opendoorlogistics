@@ -33,4 +33,12 @@ final public class CreateTable extends Command {
 		return null;
 	}
 
+	@Override
+	public long calculateEstimateSizeBytes() {
+		long ret = 12;
+		ret += getEstimatedObjectMemoryFootprintBytes(name);
+		ret += 8;
+		return ret;
+	}
+
 }
