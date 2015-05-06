@@ -76,7 +76,7 @@ import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListe
 import com.opendoorlogistics.core.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
-import com.opendoorlogistics.core.tables.decorators.datastores.UndoRedoDecorator;
+import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.SetUtils;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
