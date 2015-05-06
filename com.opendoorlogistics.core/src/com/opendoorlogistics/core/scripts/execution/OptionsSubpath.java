@@ -129,7 +129,6 @@ public class OptionsSubpath {
 	 * @return
 	 */
 	public static Script getSubpathScript(Script script, final String[] optionIds, ExecutionReport report) {
-		ExecutionReportImpl executionReport = new ExecutionReportImpl();
 		try {
 			Processor processor = new Processor(script, optionIds, report);
 			if(!processor.processAll()){
@@ -137,7 +136,9 @@ public class OptionsSubpath {
 			}
 			return processor.script;			
 		} catch (Exception e) {
-			executionReport.setFailed(e);
+			if(report!=null){
+				report.setFailed(e);
+			}
 			return null;
 		}
 	}

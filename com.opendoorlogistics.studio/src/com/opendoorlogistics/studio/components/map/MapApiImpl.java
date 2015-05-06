@@ -48,6 +48,7 @@ import com.opendoorlogistics.api.standardcomponents.map.MapDataApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapMode;
 import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
 import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
+import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList;
 import com.opendoorlogistics.api.tables.HasUndoableDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -94,7 +95,7 @@ import com.opendoorlogistics.studio.components.map.plugins.SummariseFieldValuesT
  * @author Phil
  *
  */
-public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposable , SelectionList{
+public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposable , MapSelectionList{
 	private final MapSelectionState selectionState;
 	private final ViewPosition position;
 	private final DisposablePanel containerLevel1Panel;
@@ -702,6 +703,17 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 				return api;
 			}
 
+			@Override
+			public ODLDatastoreUndoable<? extends ODLTableAlterable> getGlobalDatastore() {
+				return undoable;
+			}
+
+			@Override
+			public MapSelectionListRegister getMapSelectionListRegister() {
+				// TODO Auto-generated method stub
+				return gsm;
+			}
+
 		};
 
 		final MapApiImpl mapApi = new MapApiImpl(plugins, dummyApi, undoable,BeanMappedObjects.create(exampleds), exampleds);
@@ -734,7 +746,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		return mapViewPanel.getViewportBounds();
 	}
 
-	public void connectToGSM(final SelectionListRegister gsm) {
+	public void connectToGSM(final MapSelectionListRegister gsm) {
 		// register this selection list globally
 		gsm.registerMapSelectionList(this);
 		
@@ -1267,7 +1279,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		}
 	}
 	
-	public static void registerComponent(final HasUndoableDatastore<ODLTableAlterable> globalDs, final HasSelectionListRegister gmsrm) {
+	public static void registerComponent( ) {
 		
 		
 		ODLGlobalComponents.register(new AbstractMapViewerComponent() {
@@ -1291,8 +1303,8 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 							List<MapPlugin> plugins = getPlugins((MapConfig)configuration);
 							
 							// create the map api
-							MapApiImpl mapApi = new MapApiImpl(plugins, launcherApi, globalDs.getDatastore(),objs, ioDs);
-							mapApi.connectToGSM(gmsrm.getListRegister());
+							MapApiImpl mapApi = new MapApiImpl(plugins, launcherApi, launcherApi.getGlobalDatastore(),objs, ioDs);
+							mapApi.connectToGSM(launcherApi.getMapSelectionListRegister());
 							
 							// register the panel
 							if (!launcherApi.registerPanel("Map", null, mapApi.getPanel(), true)) {

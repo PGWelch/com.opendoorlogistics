@@ -8,11 +8,11 @@ package com.opendoorlogistics.studio;
 
 import java.util.HashSet;
 
-import com.opendoorlogistics.studio.components.map.SelectionList;
-import com.opendoorlogistics.studio.components.map.SelectionList.SelectionListRegister;
+import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList;
+import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList.MapSelectionListRegister;
 
-public abstract class GlobalMapSelectedRowsManager implements SelectionListRegister{
-	private HashSet<SelectionList> registeredSelectionLists = new HashSet<>();
+public abstract class GlobalMapSelectedRowsManager implements MapSelectionListRegister{
+	private HashSet<MapSelectionList> registeredSelectionLists = new HashSet<>();
 	private HashSet<GlobalSelectionChangedCB> listeners = new HashSet<>();
 
 	public interface GlobalSelectionChangedCB{
@@ -26,12 +26,12 @@ public abstract class GlobalMapSelectedRowsManager implements SelectionListRegis
 	}
 	
 	@Override
-	public void registerMapSelectionList(SelectionList list){
+	public void registerMapSelectionList(MapSelectionList list){
 		registeredSelectionLists.add(list);
 	}
 	
 	@Override
-	public void unregisterMapSelectionList(SelectionList list){
+	public void unregisterMapSelectionList(MapSelectionList list){
 		registeredSelectionLists.remove(list);
 	}
 
@@ -44,7 +44,7 @@ public abstract class GlobalMapSelectedRowsManager implements SelectionListRegis
 	}
 
 	public boolean isRowSelectedInMap(long rowId){
-		for(SelectionList list:registeredSelectionLists){
+		for(MapSelectionList list:registeredSelectionLists){
 			if(list.isSelectedId(rowId)){
 				return true;
 			}

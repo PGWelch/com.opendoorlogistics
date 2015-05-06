@@ -28,9 +28,6 @@ import java.awt.image.BufferedImage;
 import java.beans.PropertyVetoException;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -65,7 +62,6 @@ import org.apache.commons.io.FilenameUtils;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
-import com.opendoorlogistics.api.tables.HasUndoableDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable.UndoStateChangedListener;
@@ -101,9 +97,7 @@ import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.TextInformationDialog;
 import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
 import com.opendoorlogistics.studio.components.map.MapApiImpl;
-import com.opendoorlogistics.studio.components.map.SelectionList.HasSelectionListRegister;
-import com.opendoorlogistics.studio.components.map.SelectionList.SelectionListRegister;
-import com.opendoorlogistics.studio.components.tables.EditableTableComponent;
+import com.opendoorlogistics.studio.components.tables.TableControlComponent;
 import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.controls.buttontable.ButtonTableDialog;
 import com.opendoorlogistics.studio.dialogs.AboutBoxDialog;
@@ -255,7 +249,6 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 		initWindowPosition();
 
-		registerAppFrameDependentComponents(this);
 
 		// then create other objects which might use the components
 		tables = new DatastoreTablesPanel(this);
@@ -404,28 +397,8 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 			windowToolBar.setScrollViewToInitialPosition();
 		}
 	}
-	/**
-	 * 
-	 */
-	public static void registerAppFrameDependentComponents(final AppFrame appFrame) {
-		// register custom components that need the appframe
-	//	RegisterMapComponent.register(appFrame);
-		MapApiImpl.registerComponent(new HasUndoableDatastore<ODLTableAlterable>() {
-			
-			@Override
-			public ODLDatastoreUndoable<ODLTableAlterable> getDatastore() {
-				return appFrame.getLoaded().getDs();
-			}
-		}, new HasSelectionListRegister() {
-			
-			@Override
-			public SelectionListRegister getListRegister() {
-				return appFrame.getLoaded();
-			}
-		});
-		
-		ODLGlobalComponents.register(new EditableTableComponent(appFrame));
-	}
+
+
 
 	private void initToolbar(Container con) {
 		con.add(mainToolbar, BorderLayout.WEST);
@@ -492,6 +465,8 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 		return loaded;
 	}
 
+
+	
 	private void initMenus() {
 		final JMenuBar menuBar = new JMenuBar();
 		class AddSpace {
@@ -560,7 +535,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 							@Override
 							public void actionPerformed(ActionEvent e) {
-								scriptManager.executeScript(item.getFile(), item.getLaunchExecutorId());
+								executeScript(item.getFile(), item.getLaunchExecutorId());
 							}
 						});
 					} else if (item.getChildCount() > 0) {
@@ -573,7 +548,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 									@Override
 									public void actionPerformed(ActionEvent e) {
-										scriptManager.executeScript(child.getFile(), child.getLaunchExecutorId());
+										executeScript(child.getFile(), child.getLaunchExecutorId());
 									}
 								});
 							}
@@ -636,6 +611,10 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 	}
 
+	public void executeScript(File file , String [] optionIds){
+		scriptManager.executeScript(file, optionIds);
+	}
+	
 	private JMenu initCreateScriptsMenu() {
 		JMenu mnCreateScript = new JMenu("Create script");
 		mnCreateScript.setMnemonic('C');
@@ -759,7 +738,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 	}
 
-	void importFile(final File file, final SupportedFileType option) {
+	public void importFile(final File file, final SupportedFileType option) {
 		final ExecutionReport report = new ExecutionReportImpl();
 
 		// open the datastore if we don't have it open
@@ -1527,5 +1506,9 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	@Override
 	public ScriptsProvider getScriptsProvider() {
 		return scriptsPanel.getScriptsProvider();
+	}
+	
+	public void setScriptsDirectory(File directory){
+		scriptsPanel.setScriptsDirectory(directory);
 	}
 }

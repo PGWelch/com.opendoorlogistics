@@ -4,9 +4,9 @@
  * are made available under the terms of the GNU Lesser Public License v3
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
-package com.opendoorlogistics.studio.components.map;
+package com.opendoorlogistics.api.standardcomponents.map;
 
-public interface SelectionList {
+public interface MapSelectionList {
 	boolean isSelectedId(long rowId);
 	
 	/**
@@ -14,13 +14,13 @@ public interface SelectionList {
 	 * @author Phil
 	 *
 	 */
-	public static interface SelectionListRegister{
-		void registerMapSelectionList(SelectionList list);
-		void unregisterMapSelectionList(SelectionList list);
+	public static interface MapSelectionListRegister{
+		void registerMapSelectionList(MapSelectionList list);
+		void unregisterMapSelectionList(MapSelectionList list);
 		void onMapSelectedChanged();		
 	}
 	
-	public static interface HasSelectionListRegister{
-		SelectionListRegister getListRegister();
-	}
+//	public static interface HasMapSelectionListRegister{
+//		MapSelectionListRegister getListRegister();
+//	}
 }

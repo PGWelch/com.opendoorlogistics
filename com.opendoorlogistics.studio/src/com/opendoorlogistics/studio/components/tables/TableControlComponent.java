@@ -54,7 +54,7 @@ import com.opendoorlogistics.studio.tables.grid.GridEditPermissions;
 import com.opendoorlogistics.studio.tables.grid.adapter.RowStyler;
 import com.opendoorlogistics.utils.ui.Icons;
 
-public abstract class QueryReadOnlyTableComponent implements TableViewer {
+public class TableControlComponent implements TableViewer {
 
 	@XmlRootElement
 	public static class QueryTableConfig implements Serializable {
@@ -182,7 +182,7 @@ public abstract class QueryReadOnlyTableComponent implements TableViewer {
 
 					if (addTable) {
 						// don't bother using listeners as they don't work for adapted tables..
-						TableViewerPanel viewer = new TableViewerPanel(ioDb, table.getImmutableId(), false, styler, getGlobalDatastore(), getPermissions(table));
+						TableViewerPanel viewer = new TableViewerPanel(ioDb, table.getImmutableId(), false, styler, launcherApi.getGlobalDatastore(), getPermissions(table));
 						launcherApi.registerPanel(panelName, table.getName(), viewer, true);
 					}
 				}
@@ -195,7 +195,7 @@ public abstract class QueryReadOnlyTableComponent implements TableViewer {
 		return GridEditPermissions.create(table,false);
 	}
 	
-	protected abstract ODLDatastoreUndoable<ODLTableAlterable> getGlobalDatastore();
+	//protected abstract ODLDatastoreUndoable<ODLTableAlterable> getGlobalDatastore();
 
 //	protected abstract HasInternalFrames getOwner();
 

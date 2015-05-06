@@ -18,6 +18,7 @@ import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 
+import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList;
 import com.opendoorlogistics.components.InitialiseComponents;
 import com.opendoorlogistics.core.InitialiseCore;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
@@ -35,8 +36,8 @@ import com.opendoorlogistics.studio.components.geocoder.component.NominatimGeoco
 import com.opendoorlogistics.studio.components.map.GlobalMapPluginManager;
 import com.opendoorlogistics.studio.components.map.MapApiImpl;
 import com.opendoorlogistics.studio.components.map.MapConfig;
-import com.opendoorlogistics.studio.components.map.SelectionList;
 import com.opendoorlogistics.studio.components.map.SuggestedFillValuesManager;
+import com.opendoorlogistics.studio.components.tables.TableControlComponent;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdaptedTableControl;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdapterTableDefinitionGrid;
@@ -59,13 +60,16 @@ final public class InitialiseStudio {
 			InitialiseCore.initialise();
 			InitialiseComponents.initialise();
 			ODLGlobalComponents.register(new NominatimGeocoderComponent());
+			MapApiImpl.registerComponent();		
+			ODLGlobalComponents.register(new TableControlComponent());
+			
 
 			// hack .. any classes which cause a noticeable pause in the UI when
 			// first loaded are given dummy calls here to put make the loading
 			// occur once-off when the app starts.
 			if (preloadClasses) {
 				for (Class<?> cls : new Class<?>[] {  MapApiImpl.class, MapConfig.class,GlobalMapPluginManager.class,
-						SelectionList.class, SuggestedFillValuesManager.class,
+						MapSelectionList.class, SuggestedFillValuesManager.class,
 						 MouseMotionListener.class, ScriptEditor.class, ScriptEditorWizardGenerated.class, AdaptedTableControl.class,
 						AdapterTableDefinitionGrid.class, AdapterTablesTabControl.class, QueryAvailableData.class, ScriptsRunner.class, ScriptUIManager.class, ScriptUIManagerImpl.class,
 						ScriptExecutor.class, ScriptExecutionBlackboard.class, ExecutionReportImpl.class, AdapterBuilder.class, FunctionsBuilder.class, OptionsSubpath.class,

@@ -64,7 +64,7 @@ import com.opendoorlogistics.core.tables.io.SupportedFileType;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.PreferencesManager;
-import com.opendoorlogistics.studio.components.tables.QueryReadOnlyTableComponent;
+import com.opendoorlogistics.studio.components.tables.TableControlComponent;
 import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
 import com.opendoorlogistics.studio.scripts.editor.adapters.QueryAvailableData;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;

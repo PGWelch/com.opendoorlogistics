@@ -353,5 +353,8 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 		return scriptsTree.getScriptsProvider();
 	}
 	
-
+	public void setScriptsDirectory(File directory)
+	{
+		onDirectoryChanged(directory);
+	}
 }

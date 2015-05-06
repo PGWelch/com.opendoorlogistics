@@ -11,6 +11,9 @@ import java.util.List;
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList.MapSelectionListRegister;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
+import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.ui.Disposable;
 
 public interface ComponentControlLauncherApi {
@@ -43,6 +46,10 @@ public interface ComponentControlLauncherApi {
 	void toFront(JPanel panel);
 	
 	ODLApi getApi();
+	
+	ODLDatastoreUndoable<? extends ODLTableAlterable> getGlobalDatastore();
+	
+	MapSelectionListRegister getMapSelectionListRegister();
 	
 	public interface ControlLauncherCallback{
 		void launchControls(ComponentControlLauncherApi launcherApi);

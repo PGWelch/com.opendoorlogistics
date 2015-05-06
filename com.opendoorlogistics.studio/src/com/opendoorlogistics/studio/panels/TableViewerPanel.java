@@ -27,7 +27,7 @@ final public class TableViewerPanel extends JPanel implements Disposable{
 	private ODLGridTable table;
 
 	public TableViewerPanel(ODLDatastore<? extends ODLTableReadOnly> ds, int tableId,boolean enableListeners,
-			RowStyler enableRowStyles,ODLDatastoreUndoable<ODLTableAlterable> globalDs, GridEditPermissions editPermissions) {
+			RowStyler enableRowStyles,ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs, GridEditPermissions editPermissions) {
 		table = new ODLGridTable(ds, tableId,enableListeners,enableRowStyles,globalDs,editPermissions);
 		GridTable.addToContainer(table, this);
 	}

@@ -18,13 +18,12 @@ import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 public final class ODLComponentsList implements ODLComponentProvider , Iterable<ODLComponent>{
 	private final StandardisedStringTreeMap<ODLComponent> components = new StandardisedStringTreeMap<>();
 	
-	public synchronized boolean register(ODLComponent component){
-		if(getComponent(component.getId())!=null){
-			return false;
-		}
-		
+	@Override
+	public synchronized void register(ODLComponent component){
+
+		// replace existing component if already registered
 		components.put(component.getId(), component);
-		return true;
+
 	}
 	
 

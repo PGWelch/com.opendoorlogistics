@@ -10,5 +10,5 @@ package com.opendoorlogistics.api.components;
 public interface ODLComponentProvider extends Iterable<ODLComponent>{
 	ODLComponent getComponent(String id);
 	ODLComponent remove(String id);
-	boolean register(ODLComponent component);
+	void register(ODLComponent component);
 }
