@@ -32,18 +32,18 @@ import com.opendoorlogistics.core.tables.decorators.datastores.SimpleDecorator;
 import com.opendoorlogistics.core.tables.utils.ExampleData;
 
 final public class UndoRedoDecorator<T extends ODLTableDefinition> extends SimpleDecorator<T> implements ODLDatastoreUndoable<T>{
-	static final boolean USE_NEW_VERSION_BUFFER_TRIMMING = false;
-	private static final long MAX_BUFFER_SIZE_BYTES = 1024 * 1024 *100;
+	private static final long DEFAULT_MAX_BUFFER_SIZE_BYTES = 1024 * 1024 *256;
 	private static final long serialVersionUID = -3961824291406998570L;
 	private final UndoRedoBuffer buffer = new UndoRedoBuffer();
-	private final long maxSize = Integer.MAX_VALUE;
-	private long nextCommandNb=1;
-	private long currentCommandNb=-1;
+	private final long maxBufferSizeBytes;
+	private long nextTransactionNb=1;
+	private long currentTransactionNb=-1;
 	private long position;
+	private long trimCount;
 	private HashSet<UndoStateChangedListener<T>> undoStateListeners = new HashSet<>(); 
 	private UndoState lastFiredUndoState;
 	
-	private class UndoState{
+	private static class UndoState{
 		boolean hasUndo;
 		boolean hasRedo;
 		
@@ -51,7 +51,6 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + getOuterType().hashCode();
 			result = prime * result + (hasRedo ? 1231 : 1237);
 			result = prime * result + (hasUndo ? 1231 : 1237);
 			return result;
@@ -65,73 +64,35 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 			if (getClass() != obj.getClass())
 				return false;
 			UndoState other = (UndoState) obj;
-			if (!getOuterType().equals(other.getOuterType()))
-				return false;
 			if (hasRedo != other.hasRedo)
 				return false;
 			if (hasUndo != other.hasUndo)
 				return false;
 			return true;
 		}
-		private UndoRedoDecorator getOuterType() {
-			return UndoRedoDecorator.this;
-		}
+		
+
 		
 		
-	}
-	
-	static class UndoRedo{
-		private Command undoCommand;
-		private Command redoCommand;
-		final long transactionNb;
-		private final long estimatedSizeInBytes;
-		
-		private UndoRedo(Command undo, Command redo, long transactionNb) {
-			super();
-			this.undoCommand = undo;
-			this.redoCommand = redo;
-			this.transactionNb = transactionNb;
-			
-			if( USE_NEW_VERSION_BUFFER_TRIMMING){
-				estimatedSizeInBytes = undo.calculateEstimateSizeBytes() + redo.calculateEstimateSizeBytes();
-			}else{
-				estimatedSizeInBytes = 0;
-			}
-		}	
-		
-		void undo(ODLDatastore<? extends ODLTableDefinition> database){
-			redoCommand = undoCommand.doCommand(database);
-			if(redoCommand==null){
-				throw new RuntimeException();
-			}
-		}
-		
-		void redo(ODLDatastore<? extends ODLTableDefinition> database){
-			undoCommand = redoCommand.doCommand(database);
-			if(undoCommand==null){
-				throw new RuntimeException();
-			}			
-		}
-		
-		long getEstimatedSizeInBytes(){
-			return estimatedSizeInBytes;
-		}
 	}
 	
 	public UndoRedoDecorator(Class<T> tableClass, ODLDatastore<? extends T>  decorated) {
-		super(tableClass,decorated);
+		this(tableClass,decorated, DEFAULT_MAX_BUFFER_SIZE_BYTES);
 	}
 
-	
-	
-	private long getNextCommandNb(){
-		if(nextCommandNb==Long.MAX_VALUE){
-			nextCommandNb=1;
+	public UndoRedoDecorator(Class<T> tableClass, ODLDatastore<? extends T>  decorated, long maxBufferSizeBytes) {
+		super(tableClass,decorated);
+		this.maxBufferSizeBytes = maxBufferSizeBytes;
+	}
+
+	private long getNextTransactionNb(){
+		if(nextTransactionNb==Long.MAX_VALUE){
+			nextTransactionNb=1;
 		}
 		else{
-			nextCommandNb++;
+			nextTransactionNb++;
 		}
-		return nextCommandNb;
+		return nextTransactionNb;
 	}
 	
 	@Override
@@ -140,17 +101,19 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 
 		if(hasUndo()){
 			disableListeners();
-			// get command number and always undo full command
-			long transactionNb = buffer.get(position-1).transactionNb;
-			position--;
-			buffer.get(position).undo(decorated);
-
-			if(transactionNb!=-1){
-				while(hasUndo() && buffer.get(position-1).transactionNb == transactionNb){
-					position--;
-					buffer.get(position).undo(decorated);					
-				}
-			}
+			buffer.get(--position).undo(decorated);
+			
+//			// get command number and always undo full command
+//			long transactionNb = buffer.get(position-1).transactionNb;
+//			position--;
+//			buffer.get(position).undo(decorated);
+//
+//			if(transactionNb!=-1){
+//				while(hasUndo() && buffer.get(position-1).transactionNb == transactionNb){
+//					position--;
+//					buffer.get(position).undo(decorated);					
+//				}
+//			}
 			enableListeners();
 			
 			fireUndoStateListeners();
@@ -165,16 +128,17 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 
 		if(hasRedo()){
 			disableListeners();
-			long transactionNb = buffer.get(position).transactionNb;
-			buffer.get(position).redo(decorated);
-			position++;
-			
-			if(transactionNb!=-1){
-				while(hasRedo() && buffer.get(position).transactionNb == transactionNb){
-					buffer.get(position).redo(decorated);	
-					position++;
-				}
-			}
+			buffer.get(position++).redo(decorated);
+//			long transactionNb = buffer.get(position).transactionNb;
+//			buffer.get(position).redo(decorated);
+//			position++;
+//			
+//			if(transactionNb!=-1){
+//				while(hasRedo() && buffer.get(position).transactionNb == transactionNb){
+//					buffer.get(position).redo(decorated);	
+//					position++;
+//				}
+//			}
 			enableListeners();
 			
 			fireUndoStateListeners();
@@ -195,119 +159,32 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 	private void trim(){
 		checkNotInTransaction();
 		
-		if(USE_NEW_VERSION_BUFFER_TRIMMING){
-			// new version
-			// delete whole commands, keeping at least the last command
-
 			
-			if(buffer.size()<2 || buffer.sizeInBytes() < MAX_BUFFER_SIZE_BYTES){
-				return;
-			}
-			
-			// THIS COULD DELETE PAST THE CURRENT POSITION IF WE'VE JUST UNDONE
-			// SOME MOVES AND THE POSITION IS NOT AT THE END....
-			
-			// NEW VERSION... TEST IF WE CAN DELETE THE 0th INDEX TRANSACTION
-			
-			
-			// find the maximum index we can delete, starting at the last but one position
-			long n = buffer.size();
-			long lastAllowedDeleteIndex = n-2;
-			while(lastAllowedDeleteIndex > 0){
-				
-				// if the current position if not in a transaction, we can use it 
-				UndoRedo current = buffer.get(lastAllowedDeleteIndex);
-				if(current.transactionNb==-1){
-					break;
-				}
-
-				// if the preceding position is in a different transaction, we can use it
-				UndoRedo preceeding = buffer.get(lastAllowedDeleteIndex-1);
-				if(preceeding.transactionNb != current.transactionNb){
-					break;
-				}
-				
-				// go the the preceeding position
-				lastAllowedDeleteIndex--;
-			}
-			
-			if(lastAllowedDeleteIndex<=1){
-				return;
-			}
-			
-			// now decide what to delete up to, looping forward from 0
-			long estimatedSize = buffer.sizeInBytes();
-			long targetSize = MAX_BUFFER_SIZE_BYTES / 2;
-			long lastDeleteIndex=0;
-			while(true){	
-				
-				// Reduce the size as we're deleting this index
-				UndoRedo current = buffer.get(lastDeleteIndex);
-				estimatedSize -= current.getEstimatedSizeInBytes();
-				
-				// Now decide whether to delete the next index
-				
-				// We can't delete the next index if we're already on the last allowed one
-				if(lastDeleteIndex == lastAllowedDeleteIndex){
-					break;
-				}
-				
-				// We must delete the next index if its the same transaction 
-				UndoRedo next = buffer.get(lastDeleteIndex+1);
-				boolean delete = false;
-				if(current.transactionNb!=-1 && current.transactionNb == next.transactionNb){
-					lastDeleteIndex++;
-					continue;
-				}
-
-				// We must also delete the next index if we're still over the memory limit
-				if(estimatedSize > targetSize){
-					lastDeleteIndex++;
-					continue;
-				}
-				
-				// Otherwise stop deleting
-				break;
-			}
-			
-			// Now finally do the deletion
-			for(long i =0 ; i <= lastDeleteIndex ; i++){
-				buffer.remove(0);
-				position--;
-				if(position<0){
-					throw new RuntimeException();
-				}
-			}
-		}else{
-			// old version
-			
-			// always delete whole commands but keep at least the last whole command
-			if(buffer.size()>maxSize){
-				long currentSize = buffer.size();
-				long targetSize = maxSize;
-				while(targetSize < currentSize && buffer.get(targetSize-1).transactionNb!=-1
-					&& buffer.get(targetSize-2).transactionNb == buffer.get(targetSize-1).transactionNb){
-					targetSize++;
-				}
-				
-				while(buffer.size() > targetSize){
-					buffer.remove(0);
-					position--;
-					if(position<0){
-						throw new RuntimeException();
-					}
-				}
-			}
-			
+		if(buffer.size()<2 || buffer.sizeInBytes() < maxBufferSizeBytes){
+			return;
 		}
-
+		
+		// Keep deleting whilst (a) the buffer still has a couple of undo/redos, (b) we're above the target size
+		// and (c) the current undo / redo position is not too close to the buffer start
+		long targetSize = maxBufferSizeBytes/2;
+		boolean didTrim=false;
+		while(buffer.size() >=2 && buffer.sizeInBytes() > targetSize && position > 5){
+			buffer.removeTransaction(0);
+			position--;
+			didTrim = true;
+		}
+		
+		if(didTrim){
+			trimCount++;
+		}
+		
 		fireUndoStateListeners();
 
 	}
 	
-	private void clearRedos() {
+	public void clearRedos() {
 		while(hasRedo()){
-			buffer.remove(buffer.size()-1);
+			buffer.removeTransaction(buffer.size()-1);
 		}
 		
 		fireUndoStateListeners();
@@ -315,22 +192,22 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 
 	@Override
 	public void startTransaction(){
-		if(currentCommandNb!=-1){
+		if(currentTransactionNb!=-1){
 			throw new RuntimeException("Datastore is already in a transaction");
 		}
 		
 		decorated.disableListeners();
 		checkNotInTransaction();
 		trim();
-		currentCommandNb = getNextCommandNb();
+		currentTransactionNb = getNextTransactionNb();
 	}
 	
 	@Override
 	public void endTransaction(){
-		if(currentCommandNb==-1){
+		if(currentTransactionNb==-1){
 			throw new RuntimeException();		
 		}
-		currentCommandNb =-1;
+		currentTransactionNb =-1;
 		
 		decorated.enableListeners();
 	}
@@ -343,7 +220,7 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 	
 	@Override
 	public boolean isInTransaction(){
-		return currentCommandNb!=-1;
+		return currentTransactionNb!=-1;
 	}
 	
 	@Override
@@ -361,8 +238,9 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 		// if undo is null then the command was not performed
 		Command undo = command.doCommand(decorated);
 		if(undo!=null){
-			buffer.add(new UndoRedo(undo, command, currentCommandNb));
-			position++;
+			if(buffer.addUndoRedo(new UndoRedo(undo, command, currentTransactionNb))){
+				position++;				
+			}
 		}
 		
 		fireUndoStateListeners();
@@ -504,10 +382,11 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 
 	@Override
 	public void rollbackTransaction() {
-		long command = currentCommandNb;
+		// save the current transaction nunmber as endTransaction resets it
+		long transactionNb = currentTransactionNb;
 		endTransaction();
 		
-		if(position>0 && buffer.get(position-1).transactionNb == command){
+		if(position>0 && buffer.get(position-1).transactionNb == transactionNb){
 			undo();
 		}
 		
@@ -553,6 +432,8 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 		// undo all
 		while(undoRedo.hasUndo()){
 			undoRedo.undo();
+			System.out.println("Re-added column");
+			System.out.println(undoRedo);
 		}
 		System.out.println("Undone remove all columns");
 		System.out.println(undoRedo);
@@ -614,5 +495,13 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 	@Override
 	public boolean isRollbackSupported(){
 		return true;
+	}
+	
+	public long getTrimCount(){
+		return trimCount;
+	}
+	
+	public long getEstimatedBufferSizeInBytes(){
+		return buffer.sizeInBytes();
 	}
 }

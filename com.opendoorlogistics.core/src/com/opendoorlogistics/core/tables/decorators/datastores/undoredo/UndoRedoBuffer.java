@@ -3,7 +3,7 @@ package com.opendoorlogistics.core.tables.decorators.datastores.undoredo;
 import com.opendoorlogistics.core.utils.LargeList;
 
 class UndoRedoBuffer{
-	private final LargeList<UndoRedoDecorator.UndoRedo> list = new LargeList<>();
+	private final LargeList<Transaction> list = new LargeList<>();
 	private long sizeInBytes=0;
 	
 	long size(){
@@ -14,36 +14,43 @@ class UndoRedoBuffer{
 		return sizeInBytes;
 	}
 	
-	UndoRedoDecorator.UndoRedo get(long i){
+	Transaction get(long i){
 		return list.get(i);
 	}
 	
-	void add(UndoRedoDecorator.UndoRedo undoRedo){
-		list.add(undoRedo);
+	/**
+	 * Add command to the undo / redo buffer
+	 * @param undoRedo
+	 * @return True if a new transaction record was created
+	 */
+	boolean addUndoRedo(UndoRedo undoRedo){
+		// Create new transaction if (a) undo redo isn't in a transaction or (b) its a different transaction to the last one
+		boolean newTransaction = undoRedo.transactionNb==-1 || list.size()==0 || list.get(list.size()-1).transactionNb != undoRedo.transactionNb;
 		
-		if(UndoRedoDecorator.USE_NEW_VERSION_BUFFER_TRIMMING){
-			sizeInBytes += undoRedo.getEstimatedSizeInBytes();				
+		// Create or get transaction
+		Transaction transaction;
+		if(newTransaction){
+			transaction = new Transaction(undoRedo.transactionNb);
+			list.add(transaction);
+			
+		}else{
+			transaction = list.get(list.size()-1);
 		}
+		
+		transaction.undoRedo.add(undoRedo);
+		
+		sizeInBytes += undoRedo.getEstimatedSizeInBytes();	
+		
+		return newTransaction;
 	}
 	
-	void remove(long i){
-		UndoRedoDecorator.UndoRedo undoRedo = list.remove(i);
+	Transaction removeTransaction(long i){
+		Transaction transaction = list.remove(i);
 		
-		if(UndoRedoDecorator.USE_NEW_VERSION_BUFFER_TRIMMING){
-			sizeInBytes -= undoRedo.getEstimatedSizeInBytes();				
+		for(UndoRedo undoRedo : transaction.undoRedo){
+			sizeInBytes -= undoRedo.getEstimatedSizeInBytes();								
 		}
+		return transaction;
 	}
-	
-	boolean isFirstTransactionTrimable(long currentBufferPosition){
-		long i = 0;
-		long n = size();
-		if(n<2){
-			return false;
-		}
-		
-		long transaction = get(0).transactionNb;
-		
-		// TO DO... 
-		return false;
-	}
+
 }

@@ -40,7 +40,8 @@ public abstract class Command {
 		long ret =8; // for the pointer
 		if(o!=null){
 			if(String.class.isInstance(o)){
-				ret+= ((String)o).length() * 8;
+				// assume string is always 2 bytes per character (not always true but should be a rough upper limit)
+				ret+= ((String)o).length() * 2;
 			}
 			else if (BufferedImage.class.isInstance(o)){
 				BufferedImage img = (BufferedImage)o;
