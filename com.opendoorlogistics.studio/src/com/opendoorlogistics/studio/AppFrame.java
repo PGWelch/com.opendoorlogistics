@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -96,8 +97,6 @@ import com.opendoorlogistics.core.utils.ui.LayoutUtils;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.TextInformationDialog;
 import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
-import com.opendoorlogistics.studio.components.map.MapApiImpl;
-import com.opendoorlogistics.studio.components.tables.TableControlComponent;
 import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.controls.buttontable.ButtonTableDialog;
 import com.opendoorlogistics.studio.dialogs.AboutBoxDialog;
@@ -125,12 +124,13 @@ import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.ODLAction;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 
-public final class AppFrame extends JFrame implements HasInternalFrames, HasScriptsProvider {
+public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsProvider {
 	private BufferedImage background;
 	private final DesktopScrollPane desktopScrollPane;
 	private final JSplitPane splitterTablesScripts;
 	private final JSplitPane splitterLeftPanelMain;
 	private final ODLScrollableToolbar windowToolBar;
+	private boolean haltJVMOnDispose=true;
 	
 	private final JDesktopPane desktopPane = new JDesktopPane() {
 
@@ -292,7 +292,9 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 			public void windowClosing(WindowEvent e) {
 				if (canCloseDatastore()) {
 					dispose();
-					System.exit(0);
+					if(haltJVMOnDispose){
+						System.exit(0);						
+					}
 				}
 			}
 		});
@@ -611,8 +613,8 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 	}
 
-	public void executeScript(File file , String [] optionIds){
-		scriptManager.executeScript(file, optionIds);
+	public Future<Void> executeScript(File file , String [] optionIds){
+		return scriptManager.executeScript(file, optionIds);
 	}
 	
 	private JMenu initCreateScriptsMenu() {
@@ -874,7 +876,7 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 		});
 	}
 
-	private boolean canCloseDatastore() {
+	protected boolean canCloseDatastore() {
 		if (loaded == null) {
 			return true;
 		}
@@ -1090,8 +1092,9 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 
 	}
 
-	// Based on
-	// http://www.javalobby.org/forums/thread.jspa?threadID=15690&tstart=0
+	/**
+	 * Based on http://www.javalobby.org/forums/thread.jspa?threadID=15690&tstart=0
+	 */
 	private void cascadeWindows() {
 		JInternalFrame[] frames = desktopPane.getAllFrames();
 		Rectangle dBounds = desktopPane.getBounds();
@@ -1511,4 +1514,14 @@ public final class AppFrame extends JFrame implements HasInternalFrames, HasScri
 	public void setScriptsDirectory(File directory){
 		scriptsPanel.setScriptsDirectory(directory);
 	}
+
+	public boolean isHaltJVMOnDispose() {
+		return haltJVMOnDispose;
+	}
+
+	public void setHaltJVMOnDispose(boolean haltJVMOnDispose) {
+		this.haltJVMOnDispose = haltJVMOnDispose;
+	}
+	
+	
 }

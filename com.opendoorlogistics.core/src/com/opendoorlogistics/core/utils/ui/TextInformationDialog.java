@@ -69,7 +69,7 @@ public class TextInformationDialog extends JDialog {
 				 */
 				public void hyperlinkUpdate(HyperlinkEvent e) {
 					if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-						if (Desktop.isDesktopSupported()) {
+						if (Desktop.isDesktopSupported() && Desktop.getDesktop()!=null) {
 
 							try {
 								URL url = e.getURL();

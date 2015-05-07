@@ -26,6 +26,8 @@ final public class ReporterConfig implements Serializable{
 	private boolean html;
 	private boolean pdf;
 	private boolean xls;
+	private boolean openExportFile;
+	
 	//private Mode mode = Mode.NORMAL;
 	
 //	public enum Mode{
@@ -145,6 +147,15 @@ final public class ReporterConfig implements Serializable{
 	@XmlAttribute(name="XLS")
 	public void setXls(boolean xls) {
 		this.xls = xls;
+	}
+
+	public boolean isOpenExportFile() {
+		return openExportFile;
+	}
+
+	@XmlAttribute(name="OpenExportFile")
+	public void setOpenExportFile(boolean openExportFile) {
+		this.openExportFile = openExportFile;
 	}
 
 //	public Mode getMode() {
