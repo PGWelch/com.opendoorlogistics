@@ -235,6 +235,9 @@ public class FillPlugin implements MapPlugin {
 			add(vlp, BorderLayout.SOUTH);
 
 			api.getMapDataApi().getGlobalDatastore().addListener(this);
+			
+			// call data structured changed as this updates the available fields based on the used tables
+			datastoreStructureChanged();
 		}
 
 		String getFillValue() {
