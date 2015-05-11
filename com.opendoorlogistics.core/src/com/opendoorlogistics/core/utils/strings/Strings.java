@@ -885,4 +885,18 @@ final public class Strings {
 	public static boolean isEmptyAlphaNumericWhitespaceOrDash(String s) {
 		return nonAlphaNumericOrWhitespace.matcher(s).find() == false;
 	}
+	
+	/**
+	 * Create a copy of the array where the first element is removed.
+	 * @param arr
+	 * @return
+	 */
+	public static String [] removeFirstElement(String [] arr){
+		int n = arr.length-1;
+		String [] ret = new String[Math.max(0, n)];
+		for(int i =0 ; i< n ; i++){
+			ret[i]  = arr[i+1];
+		}
+		return ret;
+	}
 }
