@@ -29,6 +29,7 @@ import com.opendoorlogistics.core.scripts.formulae.FmLocalElement;
 import com.opendoorlogistics.core.scripts.formulae.FmRowDependent;
 import com.opendoorlogistics.core.scripts.formulae.TableParameters;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
+import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
@@ -104,9 +105,17 @@ public class FilterFormulaOptimiser {
 					adder.removeLast();
 					
 					if(ogem!=null){
+						
+						// check for an empty string
+						if(Strings.isEmptyWhenStandardised(ColumnValueProcessor.convertToMe(ODLColumnType.STRING, ogem))){
+							return null;
+						}
+						
 						ODLGeom odlGeom = (ODLGeom)ColumnValueProcessor.convertToMe(ODLColumnType.GEOM, ogem);
 						if(odlGeom==null || ((ODLGeomImpl)odlGeom).getJTSGeometry()==null){
 							logExecError(report);
+							report.setFailed("Invalid or empty geometry found.");
+							return null;
 						}
 						
 						TLongHashSet set = new TLongHashSet();

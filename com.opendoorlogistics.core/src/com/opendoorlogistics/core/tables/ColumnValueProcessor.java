@@ -264,7 +264,7 @@ public class ColumnValueProcessor {
 					return new ODLShapefileLinkGeom(link);
 				}
 				Geometry geometry = wktReader.read(other.toString());
-				return new ODLLoadedGeometry(geometry);
+				return geometry!=null? new ODLLoadedGeometry(geometry): null;
 			} catch (Throwable e) {
 				return null;
 			}

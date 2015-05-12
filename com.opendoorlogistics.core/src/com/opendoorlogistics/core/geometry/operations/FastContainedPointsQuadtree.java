@@ -243,6 +243,11 @@ public class FastContainedPointsQuadtree {
 		}
 		
 		NodeQueryResult getRelationToGeometry(Geometry g, QueryStats stats){
+			if(g==null){
+				// everything is outside of null geometry
+				return NodeQueryResult.OUTSIDE;				
+			}
+			
 			// check for empty node (should probably never happen)
 			if(polygonEnvelope==null){
 				return NodeQueryResult.OUTSIDE;
