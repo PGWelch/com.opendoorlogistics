@@ -525,6 +525,32 @@ final public class ScriptUtils {
 //		return false;
 //	}
 
+	/**
+	 * Returns the first matching optionid for the input name
+	 * @param root
+	 * @param optionName
+	 * @return
+	 */
+	public static String getOptionIdByName(Option root, String optionName){
+		class Ret{
+			String id;
+		}
+		Ret ret = new Ret();
+		visitOptions(root, new OptionVisitor() {
+			
+			@Override
+			public boolean visitOption(Option parent, Option option, int depth) {
+				if(ret.id==null && Strings.equalsStd(optionName, option.getName())){
+					ret.id = option.getOptionId();
+				}
+				// keep on parsing unless we've found the first one
+				return ret.id ==null;
+			}
+		});
+		
+		return ret.id;
+	}
+	
 	public static ComponentConfig getComponentConfig(Option root, final String configId) {
 		return getScriptElement(new FindScriptElement<ComponentConfig>() {
 

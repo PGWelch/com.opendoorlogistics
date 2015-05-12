@@ -11,10 +11,10 @@ import java.awt.geom.Rectangle2D;
 
 import org.geotools.geometry.jts.JTS;
 
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.Spatial;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.TransformGeomToWorldBitmap;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;

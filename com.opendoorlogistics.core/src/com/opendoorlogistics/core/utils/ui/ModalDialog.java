@@ -34,7 +34,7 @@ public class ModalDialog extends JDialog {
 	private ModalDialogResult lastResult = null;
 
 	public ModalDialog(Window parent, JPanel content, String title, final ModalDialogResult... buttons) {
-		super(parent, title, ModalityType.APPLICATION_MODAL);
+		super(parent, title, ModalityType.DOCUMENT_MODAL);
 
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		setLayout(new BorderLayout());

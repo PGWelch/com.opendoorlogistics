@@ -20,13 +20,13 @@ public class GridFrame extends ODLInternalFrame implements Disposable {
 	private final GridTable table;
 	
 	public GridFrame() {
-		this(null,null);
+		this(null);
 	}
 
 	/**
 	 * Create the frame.
 	 */
-	public GridFrame(GridTable gridTable, HasInternalFrames owner) {
+	public GridFrame(GridTable gridTable) {
 		super(gridTable.getTableName());
 		this.table = gridTable;
 		GridTable.addToContainer(gridTable, this);

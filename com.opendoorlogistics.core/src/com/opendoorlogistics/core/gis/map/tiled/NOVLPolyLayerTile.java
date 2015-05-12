@@ -26,13 +26,13 @@ import java.awt.image.ImageProducer;
 import java.awt.image.Kernel;
 import java.awt.image.RGBImageFilter;
 
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
 import com.opendoorlogistics.core.gis.map.ObjectRenderer;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectDecorator;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
 import com.opendoorlogistics.core.utils.images.ImageUtils;

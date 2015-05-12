@@ -37,5 +37,17 @@ final public class UndeleteRow extends Command{
 		}
 		return new DeleteRow(tableId, row);
 	}
+
+	@Override
+	public long calculateEstimateSizeBytes() {
+		long ret=12;
+		ret += 4 + 8;
+		if(values!=null){
+			for(Object v : values){
+				ret += getEstimatedObjectMemoryFootprintBytes(v);
+			}
+		}
+		return ret;
+	}
 	
 }

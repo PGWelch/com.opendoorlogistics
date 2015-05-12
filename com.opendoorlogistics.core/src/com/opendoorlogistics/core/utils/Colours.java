@@ -42,6 +42,7 @@ final public class Colours {
 
 		return builder.toString();
 	}
+	
 
 	static {
 
@@ -116,6 +117,13 @@ final public class Colours {
 			col = Colours.getColourByString(o.toString());
 		}
 		return col;
+	}
+	
+	public static Color toGrey(Color c){
+		double av = (c.getRed() + c.getBlue() + c.getGreen() ) / (255.0 * 3.0);
+		int val = to0To255Int(av);
+		Color greyCol = new Color(val, val, val, c.getAlpha());
+		return greyCol;
 	}
 
 	public static Color getColourByString(String s) {

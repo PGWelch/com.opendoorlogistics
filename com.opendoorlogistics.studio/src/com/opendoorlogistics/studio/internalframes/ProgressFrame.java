@@ -8,22 +8,26 @@ package com.opendoorlogistics.studio.internalframes;
 
 import java.awt.Dimension;
 
-import javax.swing.JInternalFrame;
+import javax.swing.ImageIcon;
 
 import com.opendoorlogistics.studio.panels.ProgressPanel;
 import com.opendoorlogistics.studio.panels.ProgressPanel.ProgressReporter;
+import com.opendoorlogistics.utils.ui.Icons;
 
-public class ProgressFrame extends JInternalFrame implements ProgressReporter {
+public class ProgressFrame extends ODLInternalFrame implements ProgressReporter {
 	private final ProgressPanel panel;
 	private boolean isDisposed = false;
+	
+	public static final ImageIcon ANIMATED_ICON = Icons.loadFromStandardPath("progress-animation.gif"); 
 
 	public ProgressFrame(String title, boolean showFinishNow, boolean showCancel) {
-		super(title);
+		super(null);
+		setTitle(title);
 		panel = new ProgressPanel(showFinishNow,showCancel);
 		setContentPane(panel);
 		setClosable(false);
 		setMaximizable(false);
-		setIconifiable(false);
+		setIconifiable(true);
 
 		Dimension dimension = new Dimension(ProgressPanel.STANDARD_DIALOG_WIDTH, ProgressPanel.STANDARD_DIALOG_HEIGHT);
 		setMinimumSize(dimension);

@@ -18,6 +18,7 @@ import javax.swing.AbstractListModel;
 import javax.swing.Action;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
+import javax.swing.DefaultListSelectionModel;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
@@ -41,16 +42,14 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.codefromweb.DropDownMenuButton;
-import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptTemplatesImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
-import com.opendoorlogistics.core.components.ODLWizardTemplateConfig;
-import com.opendoorlogistics.core.scripts.wizard.ScriptGenerator;
 import com.opendoorlogistics.core.tables.decorators.tables.SimpleTableDefinitionDecorator;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
-import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
+import com.opendoorlogistics.core.utils.strings.Strings;
+import com.opendoorlogistics.core.utils.strings.Strings.DoesStringExist;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.ODLAction;
@@ -64,7 +63,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 	private final List<ODLAction> wizardActions;
 	private final DropDownMenuButton wizardsMenuButton;
 	private final JLabel tablesLabel;
-	
+
 	public DatastoreTablesPanel() {
 		this(null);
 	}
@@ -80,7 +79,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 			setEnabled(ds != null);
 		}
 	}
-	
+
 	private abstract class MyNeedsSelectedAction extends MyAction {
 
 		public MyNeedsSelectedAction(String name, String tooltip, String smallIconPng) {
@@ -89,50 +88,54 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 
 		@Override
 		public void updateEnabled() {
-			setEnabled(ds!=null && list.getSelectedValue() != null && list.getSelectedValuesList().size()==1);
+			setEnabled(ds != null && list.getSelectedValue() != null && list.getSelectedValuesList().size() == 1);
 		}
 	}
 
-//	private class LaunchScriptWizardAction extends MyNeedsSelectedAction{
-//		private final ScriptType type;
-//		public LaunchScriptWizardAction(String name, String tooltip,ScriptType type) {
-//			super(name, tooltip, IconsByScriptType.getFilename(type));
-//			this.type = type;
-//		}
-//
-//		@Override
-//		public void actionPerformed(ActionEvent e) {
-//			if(list.getSelectedValue()!=null){
-//				appFrame.launchSingleTableScriptWizard(list.getSelectedValue().getImmutableId(), type);
-//			}
-//		}	
-//	}
-	
-	private class LaunchScriptWizardActionV2 extends ODLAction{
+	// private class LaunchScriptWizardAction extends MyNeedsSelectedAction{
+	// private final ScriptType type;
+	// public LaunchScriptWizardAction(String name, String tooltip,ScriptType
+	// type) {
+	// super(name, tooltip, IconsByScriptType.getFilename(type));
+	// this.type = type;
+	// }
+	//
+	// @Override
+	// public void actionPerformed(ActionEvent e) {
+	// if(list.getSelectedValue()!=null){
+	// appFrame.launchSingleTableScriptWizard(list.getSelectedValue().getImmutableId(),
+	// type);
+	// }
+	// }
+	// }
+
+	private class LaunchScriptWizardActionV2 extends ODLAction {
 		private final ODLComponent component;
 
 		public LaunchScriptWizardActionV2(ODLComponent component) {
-			super(component.getName(),component.getName(), component.getIcon(appFrame.getApi(),ODLComponent.MODE_DEFAULT));
+			super(component.getName(), component.getName(), component.getIcon(appFrame.getApi(), ODLComponent.MODE_DEFAULT));
 			this.component = component;
 		}
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			List<ODLTableDefinition> selected = list.getSelectedValuesList();
-			int [] ids = new int[selected.size()];
-			for(int i =0 ; i<ids.length;i++){
+			int[] ids = new int[selected.size()];
+			for (int i = 0; i < ids.length; i++) {
 				ids[i] = selected.get(i).getImmutableId();
 			}
-			
+
 			appFrame.launchScriptWizard(ids, component);
-		}	
-		
-		public void updateEnabled(){
-			//setEnabled(minNbTables == 0 || (ds!=null && hasSingleTableConfig && list.getSelectedValue()!=null));
+		}
+
+		public void updateEnabled() {
+			// setEnabled(minNbTables == 0 || (ds!=null && hasSingleTableConfig
+			// && list.getSelectedValue()!=null));
 			setEnabled(true);
 		}
-		
+
 	}
+
 	/**
 	 * Create the panel.
 	 */
@@ -156,9 +159,49 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		list.setCellRenderer(new DefaultListCellRenderer() {
 		});
 
-		// Only select one table at a time
-		list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-		
+		DefaultListSelectionModel selectionModel = new DefaultListSelectionModel() {
+			@Override
+			public void setSelectionInterval(int index0, int index1) {
+				// if we only have one element selected and we've just clicked on it, deselect it
+				if (index0 == index1 && isSelectedIndex(index0) && getMinSelectionIndex() == index0 && getMaxSelectionIndex() == index1) {
+					removeSelectionInterval(index0, index1);
+				} else {
+					super.setSelectionInterval(index0, index1);
+				}
+			}
+		};
+		selectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+		list.setSelectionModel(selectionModel);
+
+		// See
+		// http://stackoverflow.com/questions/2528344/jlist-deselect-when-clicking-an-already-selected-item
+		// Allows multiple selection and toggling of selected.
+		// list.setSelectionModel(new DefaultListSelectionModel() {
+		// private static final long serialVersionUID = 1L;
+		//
+		// boolean gestureStarted = false;
+		//
+		// @Override
+		// public void setSelectionInterval(int index0, int index1) {
+		// if(!gestureStarted){
+		// if (isSelectedIndex(index0)) {
+		// super.removeSelectionInterval(index0, index1);
+		// } else {
+		// super.addSelectionInterval(index0, index1);
+		// }
+		// }
+		// gestureStarted = true;
+		// }
+		//
+		// @Override
+		// public void setValueIsAdjusting(boolean isAdjusting) {
+		// if (isAdjusting == false) {
+		// gestureStarted = false;
+		// }
+		// }
+		//
+		// });
+
 		JScrollPane listScrollPane = new JScrollPane();
 		listScrollPane.setViewportView(list);
 		setLayout(new BorderLayout());
@@ -174,13 +217,13 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 
 			@Override
 			protected void launchMenu(MouseEvent me) {
-				popup.show(me.getComponent(), me.getX(), me.getY());	
+				popup.show(me.getComponent(), me.getX(), me.getY());
 			}
-//			public void mouseReleased(MouseEvent Me) {
-//				if (Me.isPopupTrigger()) {
-//					popup.show(Me.getComponent(), Me.getX(), Me.getY());
-//				}
-//			}
+			// public void mouseReleased(MouseEvent Me) {
+			// if (Me.isPopupTrigger()) {
+			// popup.show(Me.getComponent(), Me.getX(), Me.getY());
+			// }
+			// }
 		});
 		list.addListSelectionListener(new ListSelectionListener() {
 
@@ -205,22 +248,22 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 			toolBar.add(action);
 			popup.add(action);
 		}
-		
+
 		// add wizard for single table script types
 		wizardActions = createLaunchScriptWizardActions();
 		final JPopupMenu wizardsPopupMenu = new JPopupMenu();
 		JMenu wizardsMenu = new JMenu("Component wizard...");
-		for(ODLAction action : wizardActions){
+		for (ODLAction action : wizardActions) {
 			wizardsPopupMenu.add(action);
 			wizardsMenu.add(action);
 		}
 		wizardsMenuButton = new DropDownMenuButton(Icons.loadFromStandardPath("tools-wizard-2.png")) {
-			
+
 			@Override
 			protected JPopupMenu getPopupMenu() {
 				return wizardsPopupMenu;
 			}
-		};	
+		};
 		wizardsMenuButton.setToolTipText("Run the component wizard");
 		toolBar.add(wizardsMenuButton);
 		popup.add(wizardsMenu);
@@ -235,14 +278,14 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 	private List<ODLAction> createLaunchScriptWizardActions() {
 		ArrayList<ODLAction> ret = new ArrayList<>();
 
-		for(ODLComponent component : ODLGlobalComponents.getProvider()){
-			if(component.getIcon(appFrame.getApi(),ODLComponent.MODE_DEFAULT)!=null && IteratorUtils.size(ScriptTemplatesImpl.getTemplates(appFrame.getApi(),component))>0){
+		for (ODLComponent component : ODLGlobalComponents.getProvider()) {
+			if (component.getIcon(appFrame.getApi(), ODLComponent.MODE_DEFAULT) != null && IteratorUtils.size(ScriptTemplatesImpl.getTemplates(appFrame.getApi(), component)) > 0) {
 				ret.add(new LaunchScriptWizardActionV2(component));
 			}
 		}
 		return ret;
 	}
-	
+
 	private List<MyAction> createActions() {
 		ArrayList<MyAction> ret = new ArrayList<>();
 
@@ -250,13 +293,23 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				String name = getTableNameFromDialog("New table");
+				String newName = "New table";
+				if(ds!=null){
+					newName = Strings.makeUnique(newName, new DoesStringExist() {
+						
+						@Override
+						public boolean isExisting(String s) {
+							return TableUtils.findTable(ds, s)!=null;
+						}
+					});
+				};
+				String name = getTableNameFromDialog(newName);
 				if (name != null) {
 					ODLTableDefinition table = null;
 					try {
-						table = ds.createTable(name, -1);						
+						table = ds.createTable(name, -1);
 					} catch (Throwable e2) {
-						
+
 					}
 					if (table == null) {
 						showTableNameError();
@@ -294,7 +347,6 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 			}
 		});
 
-
 		ret.add(new MyNeedsSelectedAction("Edit table schema", "Edit table schema", "table-edit.png") {
 
 			@Override
@@ -305,7 +357,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 				}
 			}
 		});
-				
+
 		ret.add(new MyNeedsSelectedAction("Copy table", "Copy table", "table-copy.png") {
 
 			@Override
@@ -333,10 +385,11 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 			}
 
 		});
-	
-		
-	//	ret.add(new LaunchScriptWizardAction("Build table view", "Build a view of the table", ScriptType.ADAPTED_TABLE));
-	//	ret.add(new LaunchScriptWizardAction("Show map", "Launch the show map wizard",ScriptType.SHOW_MAP));
+
+		// ret.add(new LaunchScriptWizardAction("Build table view",
+		// "Build a view of the table", ScriptType.ADAPTED_TABLE));
+		// ret.add(new LaunchScriptWizardAction("Show map",
+		// "Launch the show map wizard",ScriptType.SHOW_MAP));
 
 		return ret;
 	}
@@ -413,35 +466,35 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 	}
 
 	private void launchSelectedTable() {
-		if(list.getSelectedValue()==null){
+		if (list.getSelectedValue() == null) {
 			return;
 		}
 		DatastoreTablesPanel.this.appFrame.launchTableGrid(list.getSelectedValue().getImmutableId());
 	}
 
-//	public interface UILauncher {
-//		JComponent launchTableGrid(int tableId);
-//		void launchSingleTableScriptWizard(int tableId, final ScriptType type);
-//
-//	}
+	// public interface UILauncher {
+	// JComponent launchTableGrid(int tableId);
+	// void launchSingleTableScriptWizard(int tableId, final ScriptType type);
+	//
+	// }
 
 	private void updateAppearance() {
 		for (MyAction action : actions) {
 			action.updateEnabled();
 		}
-		for(ODLAction action :wizardActions){
+		for (ODLAction action : wizardActions) {
 			action.updateEnabled();
 		}
 		list.setEnabled(ds != null);
-	//	wizardsMenuButton.setEnabled(ds!=null);
-		
-		if(ds==null){
-			list.setBackground(new Color(220,220,220));
-		}else{
+		// wizardsMenuButton.setEnabled(ds!=null);
+
+		if (ds == null) {
+			list.setBackground(new Color(220, 220, 220));
+		} else {
 			list.setBackground(Color.WHITE);
 		}
-		
-		tablesLabel.setEnabled(ds!=null);
+
+		tablesLabel.setEnabled(ds != null);
 	}
 
 	private ODLTableDefinition getSelectedShowErrorIfNone() {

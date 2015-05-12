@@ -8,12 +8,14 @@ package com.opendoorlogistics.studio.scripts.execution;
 
 import java.io.File;
 import java.util.HashSet;
+import java.util.concurrent.Future;
 
 import javax.swing.JInternalFrame;
 import javax.swing.JOptionPane;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
@@ -25,11 +27,9 @@ import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.studio.AppFrame;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames.FramePlacement;
-import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.editor.ScriptWizardActions;
 import com.opendoorlogistics.studio.scripts.editor.adapters.QueryAvailableData;
 import com.opendoorlogistics.studio.scripts.editor.adapters.QueryAvailableDataImpl;
@@ -133,13 +133,13 @@ final public class ScriptUIManagerImpl implements ScriptUIManager, ODLListener {
 	 * opendoorlogistics.core.scripts.Script, java.lang.String)
 	 */
 	@Override
-	public void executeScript(Script script, String[]optionIds,String name) {
+	public Future<Void> executeScript(Script script, String[]optionIds,String name) {
 		// take a deep copy of the script to ensure its immutable
 		script = new ScriptIO().deepCopy(script);
 		
 		if (getDs() == null && ScriptUtils.getReadsExternalDatastore(getApi(),script)) {
 			showMessage("Cannot execute as no data tables are loaded.", false);
-			return;
+			return null;
 		}
 
 		if (getDs() == null) {
@@ -150,7 +150,7 @@ final public class ScriptUIManagerImpl implements ScriptUIManager, ODLListener {
 			name = ScriptUtils.getDefaultScriptName(script);
 		}
 		
-		getScriptRunner().execute(script,optionIds, name);
+		return getScriptRunner().execute(script,optionIds, name);
 	}
 
 	/*
@@ -180,11 +180,12 @@ final public class ScriptUIManagerImpl implements ScriptUIManager, ODLListener {
 	 * com.opendoorlogistics.studio.IScriptUIManager#executeScript(java.io.File)
 	 */
 	@Override
-	public void executeScript(File file, String[]optionIds) {
+	public Future<Void> executeScript(File file, String[]optionIds) {
 		Script loaded = loadScript(file);
 		if (loaded != null) {
-			executeScript(loaded,optionIds, file.getName());
+			return executeScript(loaded,optionIds, file.getName());
 		}
+		return null;
 	}
 
 	/*

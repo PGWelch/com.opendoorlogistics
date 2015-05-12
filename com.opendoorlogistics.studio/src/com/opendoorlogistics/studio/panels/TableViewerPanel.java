@@ -8,10 +8,10 @@ package com.opendoorlogistics.studio.panels;
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
 import com.opendoorlogistics.studio.tables.grid.GridEditPermissions;
 import com.opendoorlogistics.studio.tables.grid.GridTable;
@@ -26,8 +26,9 @@ import com.opendoorlogistics.studio.tables.grid.adapter.RowStyler;
 final public class TableViewerPanel extends JPanel implements Disposable{
 	private ODLGridTable table;
 
-	public TableViewerPanel(ODLDatastore<? extends ODLTableReadOnly> ds, int tableId,boolean enableListeners,RowStyler enableRowStyles,ODLDatastoreUndoable<ODLTableAlterable> globalDs, HasInternalFrames owner, GridEditPermissions editPermissions) {
-		table = new ODLGridTable(ds, tableId,enableListeners,enableRowStyles,globalDs,editPermissions,owner);
+	public TableViewerPanel(ODLDatastore<? extends ODLTableReadOnly> ds, int tableId,boolean enableListeners,
+			RowStyler enableRowStyles,ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs, GridEditPermissions editPermissions) {
+		table = new ODLGridTable(ds, tableId,enableListeners,enableRowStyles,globalDs,editPermissions);
 		GridTable.addToContainer(table, this);
 	}
 

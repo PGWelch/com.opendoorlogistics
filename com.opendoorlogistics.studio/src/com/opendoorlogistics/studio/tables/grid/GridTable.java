@@ -93,7 +93,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 
 	protected final GridEditPermissions defaultPermissions;
 
-	protected final SelectionManager selectionManager = new SelectionManager(this);
+	protected final SelectionManager selectionManager = createSelectionManager();
 
 	protected GridTable(TableModel tableModel, GridEditPermissions permissions) {
 		this.defaultPermissions = permissions;
@@ -202,6 +202,10 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 
 	}
 
+	protected SelectionManager createSelectionManager(){
+		return new SelectionManager(this,false);
+	}
+	
 	private void setHeaderRenderer() {
 		JTableHeader header = getTableHeader();
 		if (showFilters) {

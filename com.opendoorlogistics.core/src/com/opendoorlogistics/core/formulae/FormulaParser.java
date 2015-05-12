@@ -226,7 +226,7 @@ public final class FormulaParser {
 
 	private final static Pattern anyNumberExactStringMatcher = Pattern.compile(anyNumberExactString);
 
-	final private static Pattern okVariableOrMethodName = Pattern.compile("^[a-z][\\w]*$", Pattern.CASE_INSENSITIVE);
+	final private static Pattern okVariableOrMethodName = Pattern.compile("^" + StringTokeniser.VARIABLE +"$", Pattern.CASE_INSENSITIVE);
 
 	final private FunctionDefinitionLibrary library;
 	

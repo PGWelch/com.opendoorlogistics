@@ -32,6 +32,11 @@ final public class InsertEmptyCol extends Command{
 	}
 
 	@Override
+	public long calculateEstimateSizeBytes() {
+		return 12 + 4 + 4 + getEstimatedObjectMemoryFootprintBytes(name) + 4 + 8 + 4 + getEstimatedObjectMemoryFootprintBytes(description);
+	}
+	
+	@Override
 	public Command doCommand(ODLDatastore<? extends ODLTableDefinition> database) {	
 		ODLTableAlterable table = (ODLTableAlterable)database.getTableByImmutableId(tableId);
 		if(table==null){
@@ -44,6 +49,8 @@ final public class InsertEmptyCol extends Command{
 		}
 		return null;
 	}
+
+
 
 
 }

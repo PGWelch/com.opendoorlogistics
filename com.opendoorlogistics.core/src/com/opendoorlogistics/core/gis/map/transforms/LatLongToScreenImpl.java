@@ -10,6 +10,7 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 
 public abstract class LatLongToScreenImpl implements LatLongToScreen{
 

@@ -68,4 +68,9 @@ final public class SetTableProperty extends Command{
 		return new SetTableProperty(tableId,type,current);
 	}
 
+	@Override
+	public long calculateEstimateSizeBytes() {
+		return 12 + 4 + getEstimatedObjectMemoryFootprintBytes(value);
+	}
+
 }

@@ -22,6 +22,11 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LinearRing;
 
+/**
+ * Function to create a geometry
+ * @author Phil
+ *
+ */
 public final class FmGeom extends FunctionImpl {
 	private final FmGeom.GeomType type;
 

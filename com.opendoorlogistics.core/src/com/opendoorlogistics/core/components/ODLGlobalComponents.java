@@ -32,12 +32,8 @@ public final class ODLGlobalComponents {
 		GLOBAL = new ODLComponentsList();
 		
 		// register plugins from plugins directory
-		PluginManager pm = PluginManagerFactory.createPluginManager();
-		pm.addPluginsFrom(new File("." + File.separator + "plugins").toURI());
-		PluginManagerUtil pmu = new PluginManagerUtil(pm);		
-		for(ODLComponent component : pmu.getPlugins(ODLComponent.class)){
-			register(component);
-		}			
+		File dir = new File("." + File.separator + "plugins");
+		PluginManagerUtil pmu = registerPluginDirectory(dir);			
 		
 		// find libraries and init them; this can add further components or even remove them
 		ODLApiImpl api = new ODLApiImpl();
@@ -45,15 +41,24 @@ public final class ODLGlobalComponents {
 			lib.init(api);
 		}
 	}
+
+
+
+	public static PluginManagerUtil registerPluginDirectory(File dir) {
+		PluginManager pm = PluginManagerFactory.createPluginManager();
+		pm.addPluginsFrom(dir.toURI());
+		PluginManagerUtil pmu = new PluginManagerUtil(pm);		
+		for(ODLComponent component : pmu.getPlugins(ODLComponent.class)){
+			register(component);
+		}
+		return pmu;
+	}
+	
+
 	
 	public static synchronized void register(ODLComponent component){
-		if(GLOBAL.register(component)){
-			logger.info("Registered component " + component.getId());
-			//System.out.println("Registered component " + component.getId());
-		}else{
-			logger.severe("Failed to register component " + component.getId() + "; id is already registered");
-			//System.out.println("Failed to register component " + component.getId() + "; id is already registered");			
-		}
+		GLOBAL.register(component);
+		logger.info("Registered component " + component.getId());
 	}
 	
 	public static ODLComponentProvider getProvider(){

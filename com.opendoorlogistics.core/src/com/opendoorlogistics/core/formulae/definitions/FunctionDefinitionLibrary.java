@@ -36,6 +36,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmConst;
 import com.opendoorlogistics.core.formulae.Functions.FmContains;
 import com.opendoorlogistics.core.formulae.Functions.FmCos;
 import com.opendoorlogistics.core.formulae.Functions.FmCreateUUID;
+import com.opendoorlogistics.core.formulae.Functions.FmDarken;
 import com.opendoorlogistics.core.formulae.Functions.FmDecimalFormat;
 import com.opendoorlogistics.core.formulae.Functions.FmDecimalHours;
 import com.opendoorlogistics.core.formulae.Functions.FmDivide;
@@ -45,6 +46,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmFirstNonNull;
 import com.opendoorlogistics.core.formulae.Functions.FmFloor;
 import com.opendoorlogistics.core.formulae.Functions.FmGreaterThan;
 import com.opendoorlogistics.core.formulae.Functions.FmGreaterThanEqualTo;
+import com.opendoorlogistics.core.formulae.Functions.FmGreyscale;
 import com.opendoorlogistics.core.formulae.Functions.FmIfThenElse;
 import com.opendoorlogistics.core.formulae.Functions.FmIndexOf;
 import com.opendoorlogistics.core.formulae.Functions.FmLeft;
@@ -52,6 +54,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmLen;
 import com.opendoorlogistics.core.formulae.Functions.FmLerp;
 import com.opendoorlogistics.core.formulae.Functions.FmLessThan;
 import com.opendoorlogistics.core.formulae.Functions.FmLessThanEqualTo;
+import com.opendoorlogistics.core.formulae.Functions.FmLighten;
 import com.opendoorlogistics.core.formulae.Functions.FmLn;
 import com.opendoorlogistics.core.formulae.Functions.FmLog10;
 import com.opendoorlogistics.core.formulae.Functions.FmLower;
@@ -59,6 +62,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmMax;
 import com.opendoorlogistics.core.formulae.Functions.FmMin;
 import com.opendoorlogistics.core.formulae.Functions.FmMod;
 import com.opendoorlogistics.core.formulae.Functions.FmMultiply;
+import com.opendoorlogistics.core.formulae.Functions.FmNotEqual;
 import com.opendoorlogistics.core.formulae.Functions.FmOr;
 import com.opendoorlogistics.core.formulae.Functions.FmPostcodeUk;
 import com.opendoorlogistics.core.formulae.Functions.FmRand;
@@ -89,6 +93,7 @@ import com.opendoorlogistics.core.geometry.functions.FmCentroid;
 import com.opendoorlogistics.core.geometry.functions.FmGeom;
 import com.opendoorlogistics.core.geometry.functions.FmGeom.GeomType;
 import com.opendoorlogistics.core.geometry.functions.FmGeomBorder;
+import com.opendoorlogistics.core.geometry.functions.FmGeomContains;
 import com.opendoorlogistics.core.geometry.functions.FmLatitude;
 import com.opendoorlogistics.core.geometry.functions.FmLongitude;
 import com.opendoorlogistics.core.geometry.functions.FmShapefileLookup;
@@ -140,18 +145,8 @@ public final class FunctionDefinitionLibrary {
 		addStandardOperator(FmGreaterThan.class, ">", "Test if first value is greater than second.");
 		addStandardOperator(FmEquals.class, "==" ,"Test if first value is equal to second." );
 		addStandardOperator(FmEquals.class,  "=","Test if first value is equal to second." );
-		for(final String s : new String[]{"!=", "<>"}){
-			addOperator(new FunctionFactory() {
-				
-				@Override
-				public Function createFunction(Function... args) {
-					if(args.length!=2){
-						throwIncorrectNbArgs(s);
-					}
-					return new FmEquals(args[0], args[1], true);
-				}
-			},  s,"Test if first value is not equal to second." );	
-		}
+		addStandardOperator(FmNotEqual.class, "!=" ,"Test if first value is not equal to second." );
+		addStandardOperator(FmNotEqual.class,  "<>","Test if first value is not equal to second" );
 		addStandardOperator(FmBitwiseOr.class, "|", "Bitwise or");
 		addStandardOperator(FmAnd.class, "&&", "Boolean and function.");
 		addStandardOperator(FmOr.class, "||", "Boolean or function.");
@@ -187,6 +182,10 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmRandColour.class, "randcolour", "Create a random colour based on the input value.","seed_value");
 		addStandardFunction(FmColourMultiply.class, "colourmultiply", "Multiply the input colour by the factor, making it lighter or darker.","colour", "factor");
 		addStandardFunction(FmColourMultiply.class, "colormultiply", "Multiply the input color by the factor, making it lighter or darker.","color", "factor");
+		addStandardFunction(FmGreyscale.class, "greyscale", "Convert the input colour to grey, based on the factor (between 0 and 1).", "colour", "factor");
+		addStandardFunction(FmGreyscale.class, "grayscale", "Convert the input color to gray, based on the factor (between 0 and 1).", "color", "factor");
+		addStandardFunction(FmLighten.class, "lighten", "Lighten the input colour based on the factor (between 0 and 1).", "colour", "factor");
+		addStandardFunction(FmDarken.class, "darken", "Darken the input colour based on the factor (between 0 and 1).", "colour", "factor");
 		addStandardFunction(FmRandPalletColour.class, "randPalletColour", "Choose a random colour from ODL's internal pallet.");
 		addStandardFunction(FmRandPalletColour.class, "randPalletColor", "Choose a random color from ODL's internal pallet.");
 		addStandardFunction(FmLerp.class, "lerp", "Linearly interpolate between value a and value b based on value c (which is in the range 0 to 1).", "a","b","c");
@@ -246,14 +245,17 @@ public final class FunctionDefinitionLibrary {
 			});
 			add(dfn);
 		}
-		addStandardFunction(FmDecimalHours.class, "decimalHours", "Return the number of decimal hours in a time.","time");
 		addStandardFunction(FmLatitude.class, "latitude", "Return the latitude of a geometry. If the geometry is not a point this returns its centroid's latitude.","geometry");
 		addStandardFunction(FmLongitude.class, "longitude", "Return the longitude of a geometry. If the geometry is not a point this returns its centroid's longitude.","geometry");
 		addStandardFunction(FmCentroid.class, "centroid", "Return the centroid of the geometry, as a point geometry.","geometry");
 		addStandardFunction(FmShapefileLookup.class, "shapefilelookup", "Lookup a geometry in a shapefile on disk. For the input filename and type_name in the file, the search_value is searched for in the search_field and the geometry of the first matching record is returned.", "filename","search_value", "type_name", "search_field");
 		addStandardFunction(FmShapefileLookup.class, "shapefilelookup", "Lookup a geometry in a shapefile on disk. For the input filename and type_name in the file, the search_value is searched for in the search_field and the geometry of the first matching record is returned.", "filename","search_value", "search_field");
 		addStandardFunction(FmGeomBorder.class, "geomborder", "Return the borders of the geometry as lines.", "geometry", "include_holes");
+		addStandardFunction(FmGeomContains.class, "geomcontains", "Return whether the geometry contains the point, using the input EPSG grid projection.", "geometry", "latitude", "longitude", "EPSG");
+		addStandardFunction(FmGeomContains.class, "geomcontains", "Return whether the geometry contains the point, using a WGS84 latitude-longitude projection.", "geometry", "latitude", "longitude");
 		
+		addStandardFunction(FmDecimalHours.class, "decimalHours", "Return the number of decimal hours in a time.","time");
+
 		// uk postcodes
 		for(final UKPostcodeLevel level: UKPostcodeLevel.values()){
 			addStandardFunction(FmPostcodeUk.class, "postcodeuk" + level.name().toLowerCase(), "Find and return the first UK postcode " + level.name().toLowerCase() + " from the input string, or null if not found.", "input_string").setFactory(new FunctionFactory() {

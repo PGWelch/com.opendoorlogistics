@@ -16,6 +16,7 @@ import org.opengis.referencing.operation.NoninvertibleTransformException;
 import org.opengis.referencing.operation.TransformException;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 
 /**

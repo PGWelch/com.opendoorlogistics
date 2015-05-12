@@ -11,8 +11,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.swing.JInternalFrame;
 import javax.swing.JOptionPane;
@@ -20,12 +24,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.AppFrame;
@@ -163,6 +167,9 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 	public ScriptsRunner(AppFrame parentFrame, ODLDatastoreUndoable<ODLTableAlterable> ds) {
 		this.appFrame = parentFrame;
 		this.ds = ds;
+		
+		// Have only 1 execution service thread so control updates finish processing in the order
+		// they're submitted (otherwise wrong results may appear on-screen).
 		this.executorService = Executors.newFixedThreadPool(1);
 	}
 	
@@ -268,20 +275,60 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 	 * @param isScriptRefresh
 	 * @return
 	 */
-	void execute(final Script script,final String[] optionIds,final String name) {
+	Future<Void> execute(final Script script,final String[] optionIds,final String name) {
 		//new ScriptExecutionTask(this,script, optionIds, name, false).start();
 
 		ExecutionUtils.throwIfNotOnEDT();
 
+		class FinishedTester implements Future<Void>{
+			volatile boolean isDone;
+			
+			@Override
+			public boolean cancel(boolean mayInterruptIfRunning) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public boolean isCancelled() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public boolean isDone() {
+				return isDone;
+			}
+
+			@Override
+			public Void get() throws InterruptedException, ExecutionException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+				throw new UnsupportedOperationException();
+			}
+			
+		}
+		
+		FinishedTester finishedTester = new FinishedTester();
+		
 		// run as many concurrent tasks as the user wants as they have been called manually
 		new SwingWorker<Void, Void>() {
 
 			@Override
 			protected Void doInBackground() throws Exception {
-				new ScriptExecutionTask(ScriptsRunner.this,script, optionIds, name, false).executeNonEDT();
+				try {
+					new ScriptExecutionTask(ScriptsRunner.this,script, optionIds, name, false).executeNonEDT();					
+				} catch (Exception e) {
+				}
+				
+				finishedTester.isDone = true;
+			
 				return null;
 			}
 		}.execute();
+		
+		return finishedTester;
 	}
 	
 	AppFrame getAppFrame() {

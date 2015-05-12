@@ -42,6 +42,15 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	private String fromDatastore;
 
 	@XmlTransient
+	private String joinTable;
+	
+	@XmlTransient
+	private String joinDatastore;
+	
+	@XmlTransient
+	private boolean join;
+	
+	@XmlTransient
 	private String filterFormula="";
 
 	@XmlTransient
@@ -55,6 +64,7 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	
 	@XmlTransient
 	private String shortEditorUINote;
+
 	
 	public AdaptedTableConfig(){}
 
@@ -85,6 +95,9 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 		ret.setTags(getTags());
 		ret.setLimitResults(isLimitResults());
 		ret.setMaxNumberRows(maxNbRows);
+		ret.setJoin(isJoin());
+		ret.setJoinDatastore(getJoinDatastore());
+		ret.setJoinTable(getJoinTable());
 		if(userFormulae!=null){
 			ret.userFormulae = new ArrayList<UserFormula>();
 			for(UserFormula uf : userFormulae){
@@ -120,6 +133,15 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 		this.fromTable = fromTable;
 	}
 
+	public String getJoinTable() {
+		return joinTable;
+	}
+
+	@XmlAttribute
+	public void setJoinTable(String table) {
+		this.joinTable = table;
+	}
+	
 	@Override
 	public String toString() {
 		return JAXBUtils.toXMLString(this);
@@ -132,6 +154,16 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	@XmlAttribute
 	public void setFromDatastore(String fromDataSourceId) {
 		this.fromDatastore = fromDataSourceId;
+	}
+	
+
+	public String getJoinDatastore() {
+		return joinDatastore;
+	}
+
+	@XmlAttribute
+	public void setJoinDatastore(String dataSourceId) {
+		this.joinDatastore = dataSourceId;
 	}
 
 	public void setFrom(String datastore, String table){
@@ -291,6 +323,15 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	@XmlAttribute(name ="ShortEditorUINote")
 	public void setShortEditorUINote(String shortEditorUINote) {
 		this.shortEditorUINote = shortEditorUINote;
+	}
+
+	public boolean isJoin() {
+		return join;
+	}
+
+	@XmlAttribute(name ="Join")
+	public void setJoin(boolean join) {
+		this.join = join;
 	}
 
 	

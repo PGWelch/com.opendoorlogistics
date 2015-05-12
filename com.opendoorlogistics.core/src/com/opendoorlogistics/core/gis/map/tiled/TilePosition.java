@@ -12,7 +12,7 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
 import com.opendoorlogistics.api.geometry.LatLong;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreenImpl;
 
 class TilePosition {

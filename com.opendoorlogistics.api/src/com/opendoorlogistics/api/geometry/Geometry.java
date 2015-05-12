@@ -17,4 +17,20 @@ public interface Geometry {
 	 * @return
 	 */
 	double calculateGreatCircleDistance(LatLong from, LatLong to);
+	
+	/**
+	 * Create a polygon. The first point and last point each input array
+	 * must always match
+	 * @param outer
+	 * @param holes
+	 * @return
+	 */
+	ODLGeom createPolygon(LatLong [] outer, LatLong [][]holes);
+	
+	/**
+	 * Create a multipolygon. The input polygons must all be of type polygon
+	 * @param polygons
+	 * @return
+	 */
+	ODLGeom createMultipolygon(ODLGeom [] polygons);
 }

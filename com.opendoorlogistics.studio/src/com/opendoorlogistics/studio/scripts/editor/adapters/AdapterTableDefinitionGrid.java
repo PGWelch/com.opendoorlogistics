@@ -342,9 +342,16 @@ public class AdapterTableDefinitionGrid extends AbstractTableDefinitionGrid {
 
 					// check source column
 					if (column == SRC_COL && queryAvailableFields != null) {
-						ODLTableDefinition srcTable = queryAvailableFields.getTableDefinition(dfn.getFromDatastore(), dfn.getFromTable());
-						if (srcTable != null && value != null && value.toString().length() > 0) {
-							if (TableUtils.findColumnIndx(srcTable, value.toString()) == -1) {
+						String[] fields = queryAvailableFields.queryAvailableFields(dfn.getFromDatastore(), dfn.getFromTable());
+						if (fields != null && value != null && value.toString().length() > 0) {
+							boolean found=false;
+							for(String field:fields){
+								if(Strings.equalsStd(field, value.toString())){
+									found = true;
+									break;
+								}
+							}
+							if (!found) {
 								showError = true;
 							}
 						}

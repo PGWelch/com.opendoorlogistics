@@ -15,6 +15,8 @@ import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.CoordinateOperation;
 
+import com.opendoorlogistics.core.cache.ApplicationCache;
+import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.geometry.Spatial;
 import com.vividsolutions.jts.geom.Geometry;
 
@@ -73,5 +75,23 @@ public class GridTransforms {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+	
+	/**
+	 * Get the transform and cache if not already cached
+	 * @param espg
+	 * @return
+	 */
+	public static synchronized GridTransforms getAndCache(String espg){
+		Spatial.initSpatial();		
+		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.GRID_TRANSFORMS_CACHE);
+		Object o = cache.get(espg);
+		if(o!=null){
+			return (GridTransforms)o;
+		}
+		
+		GridTransforms ret = new GridTransforms(espg);
+		cache.put(espg, ret, 1024);
+		return ret;
 	}
 }

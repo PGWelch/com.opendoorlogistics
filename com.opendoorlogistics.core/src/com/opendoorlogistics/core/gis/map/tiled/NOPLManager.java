@@ -12,12 +12,12 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.gis.map.DatastoreRenderer;
 import com.opendoorlogistics.core.gis.map.ObjectRenderer;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.tiled.DrawableObjectLayer.LayerType;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.strings.StandardisedCache;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;

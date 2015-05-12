@@ -34,5 +34,10 @@ final public class Set extends Command{
 		return new Set(tableId, row, col, originalValue);
 	}
 
+	@Override
+	public long calculateEstimateSizeBytes() {
+		return 12 + 4 + 4 + getEstimatedObjectMemoryFootprintBytes(newValue);
+	}
+
 
 }

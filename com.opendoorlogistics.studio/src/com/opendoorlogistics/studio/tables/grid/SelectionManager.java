@@ -18,6 +18,7 @@ import javax.swing.event.TableModelEvent;
 
 final public class SelectionManager {
 	private final GridTable table;
+	private final boolean forceRowSelection;
 	private Point focusPoint;
 	private SelectionState selectionState = SelectionState.SHEET;
 	private OneDimensionalSelection rowSelection = new OneDimensionalSelection();
@@ -150,8 +151,12 @@ final public class SelectionManager {
 		}
 	}
 
-	public SelectionManager(GridTable table) {
+	public SelectionManager(GridTable table, boolean forceRowSelection) {
 		this.table = table;
+		this.forceRowSelection = forceRowSelection;
+		if(forceRowSelection){
+			selectionState = SelectionState.ROW;
+		}
 	}
 
 	private int[] getRowRangeContainingSelectedCells() {
@@ -335,6 +340,8 @@ final public class SelectionManager {
 	}
 
 	private void changeState(SelectionState newState, boolean toggle) {
+
+		
 		if (toggle) {
 			// keep everything currently selected
 			addPointMatrix(getSelectedPoints(), selectedCells);
@@ -342,10 +349,20 @@ final public class SelectionManager {
 			// clear everything
 			clearSelection();
 		}
-		selectionState = newState;
+		if(forceRowSelection){
+			selectionState = SelectionState.ROW;
+		}
+		else{
+			selectionState = newState;			
+		}
 	}
 
 	void changeSelection(int rowIndex, int columnIndex, boolean toggle, boolean extend) {
+		// if we're in force row selection mode then ignore column selection events
+		if(forceRowSelection && (rowIndex==-1 && columnIndex!=-1)){
+			return;
+		}
+		
 		// get selected row range
 		int[] oldSelRowRange = getRowRangeContainingSelectedCells();
 
@@ -463,7 +480,7 @@ final public class SelectionManager {
 		}
 	}
 
-	void checkForLeavingExt(boolean toggle, boolean extend) {
+	private void checkForLeavingExt(boolean toggle, boolean extend) {
 		if (!extend && isExt) {
 			if (toggle) {
 				addPoints(getPoints(getExtendRectangle()), selectedCells);
@@ -513,7 +530,7 @@ final public class SelectionManager {
 	}
 
 	void clearSelection() {
-		selectionState = SelectionState.SHEET;
+		selectionState =forceRowSelection? SelectionState.ROW: SelectionState.SHEET;
 		isExt = false;
 		extAnchorPoint = null;
 		extStretchPoint = null;

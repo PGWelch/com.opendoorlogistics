@@ -34,5 +34,10 @@ final public class SetByRowId extends Command{
 		return new SetByRowId(tableId, rowId, col, originalValue);
 	}
 
+	@Override
+	public long calculateEstimateSizeBytes() {
+		return 12 + 8 + 4 + getEstimatedObjectMemoryFootprintBytes(newValue);
+	}
+
 
 }

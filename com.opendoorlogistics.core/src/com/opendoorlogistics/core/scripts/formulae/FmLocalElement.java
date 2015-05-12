@@ -12,7 +12,7 @@ import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
 
-public class FmLocalElement extends FunctionImpl{
+public class FmLocalElement extends FmRowDependent{
 	private final String name;
 	private final int columnIndex;
 	

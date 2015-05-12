@@ -28,27 +28,28 @@ import com.opendoorlogistics.core.tables.beans.annotations.ODLTag;
 
 @ODLTableName(PredefinedTags.DRAWABLES)
 public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
-	private static final int COL_LATITUDE=0;
-	private static final int COL_LONGITUDE=COL_LATITUDE+1;
-	private static final int COL_GEOMETRY=COL_LONGITUDE+1;
-	private static final int COL_LABEL=COL_GEOMETRY+1;
-	private static final int COL_COLOUR=COL_LABEL+1;
-	private static final int COL_SYMBOL=COL_COLOUR+1;
-	private static final int COL_OPAQUE=COL_SYMBOL+1;
-	private static final int COL_COLOUR_KEY=COL_OPAQUE+1;
-	private static final int COL_PIXEL_WIDTH=COL_COLOUR_KEY+1;
-	private static final int COL_FONT_SIZE=COL_PIXEL_WIDTH+1;
-	private static final int COL_OUTLINE=COL_FONT_SIZE+1;
-	private static final int COL_LEGEND_COLOUR=COL_OUTLINE+1;
-	private static final int COL_LEGEND_KEY=COL_LEGEND_COLOUR+1;
-	private static final int COL_IMAGE_FORMULA_KEY=COL_LEGEND_COLOUR+1;
-	private static final int COL_LABEL_GROUP_KEY=COL_IMAGE_FORMULA_KEY+1;
-	private static final int COL_NOPL_GROUP_KEY=COL_LABEL_GROUP_KEY+1;
-	private static final int COL_TOOLTIP= COL_NOPL_GROUP_KEY + 1;
-	private static final int COL_SELECTABLE= COL_TOOLTIP + 1;
-	private static final int COL_LPO= COL_SELECTABLE + 1;
-	private static final int COL_LABEL_COLOUR= COL_LPO + 1;
-	private static final int COL_FLAGS= COL_LABEL_COLOUR + 1;
+	public static final long DEFAULT_DRAW_OUTLINE=1;
+	public static final int COL_LATITUDE=0;
+	public static final int COL_LONGITUDE=COL_LATITUDE+1;
+	public static final int COL_GEOMETRY=COL_LONGITUDE+1;
+	public static final int COL_LABEL=COL_GEOMETRY+1;
+	public static final int COL_COLOUR=COL_LABEL+1;
+	public static final int COL_SYMBOL=COL_COLOUR+1;
+	public static final int COL_OPAQUE=COL_SYMBOL+1;
+	public static final int COL_COLOUR_KEY=COL_OPAQUE+1;
+	public static final int COL_PIXEL_WIDTH=COL_COLOUR_KEY+1;
+	public static final int COL_FONT_SIZE=COL_PIXEL_WIDTH+1;
+	public static final int COL_OUTLINE=COL_FONT_SIZE+1;
+	public static final int COL_LEGEND_COLOUR=COL_OUTLINE+1;
+	public static final int COL_LEGEND_KEY=COL_LEGEND_COLOUR+1;
+	public static final int COL_IMAGE_FORMULA_KEY=COL_LEGEND_KEY+1;
+	public static final int COL_LABEL_GROUP_KEY=COL_IMAGE_FORMULA_KEY+1;
+	public static final int COL_NOPL_GROUP_KEY=COL_LABEL_GROUP_KEY+1;
+	public static final int COL_TOOLTIP= COL_NOPL_GROUP_KEY + 1;
+	public static final int COL_SELECTABLE= COL_TOOLTIP + 1;
+	public static final int COL_LPO= COL_SELECTABLE + 1;
+	public static final int COL_LABEL_COLOUR= COL_LPO + 1;
+	public static final int COL_FLAGS= COL_LABEL_COLOUR + 1;
 
 	private static final BeanDatastoreMapping mapping;
 	private static final double DEFAULT_OPAQUE = 1.0;
@@ -200,7 +201,7 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 
 	@ODLNullAllowed
 	@ODLColumnOrder(COL_OUTLINE)	
-	@ODLDefaultLongValue(1)
+	@ODLDefaultLongValue(DEFAULT_DRAW_OUTLINE)
 	@ODLColumnDescription("Set this to 1 to draw an outline around the point or 0 otherwise.")	
 	public void setDrawOutline(long drawOutline) {
 		this.drawOutline = drawOutline;

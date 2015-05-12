@@ -20,24 +20,23 @@ import gnu.trove.set.hash.TLongHashSet;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.Stroke;
-import java.awt.Toolkit;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.FilteredImageSource;
-import java.awt.image.ImageProducer;
-import java.awt.image.RGBImageFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.geotools.geometry.jts.LiteShape;
+
+import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
@@ -49,13 +48,13 @@ import com.opendoorlogistics.core.gis.map.OnscreenGeometry.CachedGeomKey;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
-import com.opendoorlogistics.core.gis.map.transforms.LatLongToScreen;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.IntUtils;
 import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedCache;
 import com.opendoorlogistics.core.utils.strings.Strings;
+import com.vividsolutions.jts.awt.PolygonShape;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateSequence;
 import com.vividsolutions.jts.geom.Envelope;
@@ -430,6 +429,9 @@ public class DatastoreRenderer implements ObjectRenderer{
 	public static List<DrawableObject> getObjectsWithinRectangle(Iterable<? extends DrawableObject> pnts, LatLongToScreen converter, Rectangle selRectOnScreen, boolean filterUnselectable) {
 
 		List<DrawableObject> ret = new ArrayList<>();
+		if(pnts == null){
+			return ret;
+		}
 
 		// create blank image with the bounds that we're testing to give us a valid graphics object
 		int w = Math.max(selRectOnScreen.width, 1);
@@ -496,7 +498,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 						else if (onScreenBounds.intersects(selRectOnScreen)) {
 							
 							// need to do geometry testing
-							OnscreenGeometry cachedGeometry = getCachedGeometry(pnt.getGeometry(), converter, true);
+							OnscreenGeometry cachedGeometry = getCachedGeometry((ODLGeomImpl)pnt.getGeometry(), converter, true);
 							if(cachedGeometry!=null){
 
 								if (cachedGeometry.isDrawFilledBounds()) {
@@ -773,70 +775,64 @@ public class DatastoreRenderer implements ObjectRenderer{
 						}
 					}
 
-				} else if (LineString.class.isInstance(geometry)) {
-					if(!bordersOnly){
-						LineString ls = (LineString) geometry;
-						Path2D path = toOnscreenPath(ls.getCoordinateSequence(), viewport);
-
-						BasicStroke stroke = new BasicStroke(obj.getPixelWidth(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-						g.setStroke(stroke);
-						if (hitTestOnScreen == null) {
-							g.draw(path);
-						} else {
-							hit |= g.hit(hitTestOnScreen, path, true);
-						}						
-					}
-
-
-				} else if (Polygon.class.isInstance(geometry)) {
-					Polygon polygon = (Polygon) geometry;
-					Path2D exterior = toOnscreenPath(polygon.getExteriorRing().getCoordinateSequence(), viewport);
-					exterior.closePath();
-
-					Shape shape = exterior;
-					int nholes = polygon.getNumInteriorRing();
-					if (nholes > 0) {
-						Area area = new Area(exterior);
-						shape = area;
-						for (int i = 0; i < nholes; i++) {
-							Path2D hole = toOnscreenPath(polygon.getInteriorRingN(i).getCoordinateSequence(), viewport);
-							hole.closePath();
-							area.subtract(new Area(hole));
-						}
-					}
-
-					if (hitTestOnScreen == null) {
-						// g.fill(shape);
-						//fillWidenedPolygon(shape, exterior, col, g, (int) Math.ceil(viewport.getWidth()), (int) Math.ceil(viewport.getHeight()));
-						if(!bordersOnly){							
-							g.setColor(col);
-							g.fill(shape);
-						}
-					} else {
-						hit |= g.hit(hitTestOnScreen, shape, false);
-						hit |= shape.intersects(hitTestOnScreen);
-					}
-
-					// Draw the outline
-					if (obj.getDrawOutline() != 0 && skipBorders==false) {
-						float borderWidth = (renderFlags & RenderProperties.THIN_POLYGON_BORDERS)==RenderProperties.THIN_POLYGON_BORDERS? 1 : 2;
-						BasicStroke stroke = new BasicStroke(borderWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
-						g.setStroke(stroke);
-
-						if (outlineCol != null) {
-							g.setColor(outlineCol);
-						}
-						if (hitTestOnScreen == null) {
-							g.draw(exterior);
-						} else {
-							hit |= g.hit(hitTestOnScreen, exterior, true);
-						}
-					}
-
-				} else {
-					throw new UnsupportedOperationException("Unsupported geometry type: " + geometry.getClass());
 				}
+				else{
+					// create world bitmap to screen position transform
+					AffineTransform transform = AffineTransform.getTranslateInstance(-viewport.getX(), -viewport.getY());
+					
+					if (LineString.class.isInstance(geometry)) {
+						if(!bordersOnly){
+							
+							Shape path = new LiteShape(geometry,transform, false);
+							BasicStroke stroke = new BasicStroke(obj.getPixelWidth(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+							g.setStroke(stroke);
+							if (hitTestOnScreen == null) {
+								g.draw(path);
+							} else {
+								hit |= g.hit(hitTestOnScreen, path, true);
+							}						
+						}
 
+
+					} else if (Polygon.class.isInstance(geometry)) {
+						Polygon polygon = (Polygon) geometry;
+						
+						Shape exterior = new LiteShape(polygon.getExteriorRing(), transform, false);
+						Shape shape = new LiteShape(polygon,transform, false);
+
+						if (hitTestOnScreen == null) {
+							// g.fill(shape);
+							//fillWidenedPolygon(shape, exterior, col, g, (int) Math.ceil(viewport.getWidth()), (int) Math.ceil(viewport.getHeight()));
+							if(!bordersOnly){							
+								g.setColor(col);
+								g.fill(shape);
+							}
+						} else {
+							hit |= g.hit(hitTestOnScreen, shape, false);
+							hit |= shape.intersects(hitTestOnScreen);
+						}
+
+						// Draw the outline
+						if (obj.getDrawOutline() != 0 && skipBorders==false) {
+							float borderWidth = (renderFlags & RenderProperties.THIN_POLYGON_BORDERS)==RenderProperties.THIN_POLYGON_BORDERS? 1 : 2;
+							BasicStroke stroke = new BasicStroke(borderWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
+							g.setStroke(stroke);
+
+							if (outlineCol != null) {
+								g.setColor(outlineCol);
+							}
+							if (hitTestOnScreen == null) {
+								g.draw(exterior);
+							} else {
+								hit |= g.hit(hitTestOnScreen, exterior, true);
+							}
+						}
+
+					} else {
+						throw new UnsupportedOperationException("Unsupported geometry type: " + geometry.getClass());
+					}					
+				}
+				
 				g.setStroke(oldStroke);
 
 			}
@@ -867,7 +863,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 	}
 	
 	private static boolean hasPoint(DrawableObject o){
-		return o.getGeometry()==null || ((ODLGeomImpl)o.getGeometry()).getAtomicGeomCount(AtomicGeomType.POINT)>0;
+		return o.getGeometry()==null || o.getGeometry().getAtomicGeomCount(AtomicGeomType.POINT)>0;
 	}
 	
 	private boolean renderGeometry(Graphics2D g, final LatLongToScreen converter, DrawableObject pnt, boolean isSelected, long renderFlags) {
@@ -992,9 +988,13 @@ public class DatastoreRenderer implements ObjectRenderer{
 	}
 
 	private static SymbolType getSymbolType(DrawableObject obj) {
+		return getSymbolType(obj.getSymbol());
+	}
+
+	public static SymbolType getSymbolType(String symbol) {
 		SymbolType ret = null;
-		if (!Strings.isEmpty(obj.getSymbol())) {
-			ret = symbols.getType(obj.getSymbol());
+		if (!Strings.isEmpty(symbol)) {
+			ret = symbols.getType(symbol);
 		}
 		if (ret == null) {
 			ret = SymbolType.CIRCLE;
@@ -1061,20 +1061,23 @@ public class DatastoreRenderer implements ObjectRenderer{
 		if(isSelected){
 			return SELECTION_COLOUR;
 		}
-		
-		Color col = pnt.getColour();
-		if (!Strings.isEmpty(pnt.getColourKey())) {
-			col = Colours.getRandomColour(pnt.getColourKey());
-		}
-		if (col == null) {
-			col = DrawableObject.DEFAULT_COLOUR;
-		}
+		Color col = getNoAlphaColour(pnt.getColour(),  pnt.getColourKey());
 
 		double opaque = pnt.getOpaque();
 		opaque = MathUtil.clamp(opaque, 0, 1);
 		col = Colours.setAlpha(col, (int) Math.round((255 * opaque)));
 		return col;
 	}
+
+public static Color getNoAlphaColour(Color colourFieldValue, String colourKey) {
+	if (!Strings.isEmpty(colourKey)) {
+		colourFieldValue = Colours.getRandomColour(colourKey);
+	}
+	if (colourFieldValue == null) {
+		colourFieldValue = DrawableObject.DEFAULT_COLOUR;
+	}
+	return colourFieldValue;
+}
 
 	static void drawOutlinedSymbol(Graphics2D g, SymbolType symbolType, Point2D screenPos, int circumferenceInPixels, Color col, boolean outlined) {
 		int outer = symbolType.getOuterOutline();

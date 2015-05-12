@@ -1127,6 +1127,8 @@ public class Functions {
 	public static final class FmConst extends FunctionImpl {
 		private final Object val;
 
+		public static final FmConst NULL = new FmConst((Object)null);
+		
 		public FmConst(Object val) {
 			super();
 			this.val = val;
@@ -1417,15 +1419,9 @@ public class Functions {
 	}
 
 	public static final class FmEquals extends FunctionImpl {
-		boolean not;
 
 		public FmEquals(Function a, Function b) {
-			this(a, b, false);
-		}
-
-		public FmEquals(Function a, Function b, boolean not) {
 			super(a, b);
-			this.not = not;
 		}
 
 		@Override
@@ -1437,35 +1433,53 @@ public class Functions {
 			}
 
 			boolean equals = ColumnValueProcessor.isEqual(a, b);
-			if (not) {
-				return equals ? 0L : 1L;
-			}
 			return equals ? 1L : 0L;
 		}
 
 		@Override
 		public Function deepCopy() {
-			return new FmEquals(child(0).deepCopy(), child(1).deepCopy(), not);
+			return new FmEquals(child(0).deepCopy(), child(1).deepCopy());
 		}
 
-		private String operator() {
-			if (not) {
-				return "<>";
-			} else {
-				return "=";
+
+
+		@Override
+		public String toString() {
+			return toStringWithChildOp("=");
+		}
+		
+	
+	}
+
+	public static final class FmNotEqual extends FunctionImpl {
+		public FmNotEqual(Function a, Function b) {
+			super(a, b);
+		}
+
+		@Override
+		public final Object execute(FunctionParameters parameters) {
+			Object a = child(0).execute(parameters);
+			Object b = child(1).execute(parameters);
+			if (a == EXECUTION_ERROR || b == EXECUTION_ERROR) {
+				return EXECUTION_ERROR;
 			}
+
+			boolean equals = ColumnValueProcessor.isEqual(a, b);
+			return equals ? 0L : 1L;
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmNotEqual(child(0).deepCopy(), child(1).deepCopy());
 		}
 
 		@Override
 		public String toString() {
-			return toStringWithChildOp(operator());
+			return toStringWithChildOp("!=");
 		}
-		
-		public boolean isNot(){
-			return not;
-		}
-	}
 
+	}
+	
 	public static final class FmGreaterThan extends FmComparisonBase {
 
 		public FmGreaterThan(Function a, Function b) {
@@ -2176,6 +2190,73 @@ public class Functions {
 
 	}
 
+	public static abstract class FmLerpToDefinedColour extends FunctionImpl{
+		public FmLerpToDefinedColour(Function colour, Function ammount){
+			super(colour, ammount);
+		}
+
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object [] vals = executeChildFormulae(parameters, true);
+			if(vals == null){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			Color col = (Color)ColumnValueProcessor.convertToMe(ODLColumnType.COLOUR, vals[0]);
+			Double lerp = (Double)ColumnValueProcessor.convertToMe(ODLColumnType.DOUBLE, vals[1]);
+			if(col== null || lerp == null){
+				return Functions.EXECUTION_ERROR;				
+			}
+			
+			Color other = getColour(col);
+			return Colours.lerp(col, other, lerp);
+		}
+		
+		protected abstract Color getColour(Color source);
+
+		@Override
+		public Function deepCopy() {
+			throw new UnsupportedOperationException();
+		}
+		
+	}
+	
+	public static final class FmGreyscale extends FmLerpToDefinedColour{
+		public FmGreyscale(Function colour, Function ammount){
+			super(colour, ammount);
+		}
+
+		@Override
+		protected Color getColour(Color source) {
+			return Colours.toGrey(source);
+		}
+		
+	}
+	
+	public static final class FmLighten extends FmLerpToDefinedColour{
+		public FmLighten(Function colour, Function ammount){
+			super(colour, ammount);
+		}
+
+		@Override
+		protected Color getColour(Color source) {
+			return Color.WHITE;
+		}
+		
+	}
+	
+	public static final class FmDarken extends FmLerpToDefinedColour{
+		public FmDarken(Function colour, Function ammount){
+			super(colour, ammount);
+		}
+
+		@Override
+		protected Color getColour(Color source) {
+			return Color.BLACK;
+		}
+		
+	}
+	
 	public static final class FmColour extends FunctionImpl {
 		public FmColour(Function red, Function green, Function blue) {
 			super(red, green, blue);

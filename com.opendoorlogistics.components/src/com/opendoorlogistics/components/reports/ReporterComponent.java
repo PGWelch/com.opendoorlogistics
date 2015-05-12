@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.reports;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Files;
@@ -193,22 +194,22 @@ final public class ReporterComponent implements Reporter {
 
 		// do each export option
 		if (rc.isCsv()) {
-			export(new JRCsvExporter(), print, filename, "csv");
+			export(new JRCsvExporter(), print, filename, "csv", rc.isOpenExportFile());
 		}
 		if (rc.isDocx()) {
-			export(new JRDocxExporter(), print, filename, "docx");
+			export(new JRDocxExporter(), print, filename, "docx", rc.isOpenExportFile());
 		}
 		if (rc.isOdt()) {
-			export(new JROdtExporter(), print, filename, "odt");
+			export(new JROdtExporter(), print, filename, "odt", rc.isOpenExportFile());
 		}
 		if (rc.isHtml()) {
-			export(new JRHtmlExporter(), print, filename, "html");
+			export(new JRHtmlExporter(), print, filename, "html", rc.isOpenExportFile());
 		}
 		if (rc.isPdf()) {
-			export(new JRPdfExporter(), print, filename, "pdf");
+			export(new JRPdfExporter(), print, filename, "pdf", rc.isOpenExportFile());
 		}
 		if (rc.isXls()) {
-			export(new JRXlsExporter(), print, filename, "xls");
+			export(new JRXlsExporter(), print, filename, "xls", rc.isOpenExportFile());
 		}
 
 		// do show viewer at the end so it pops up after everything else
@@ -256,11 +257,17 @@ final public class ReporterComponent implements Reporter {
 		return filename;
 	}
 
-	private static void export(JRAbstractExporter exporter, JasperPrint printable, String filename, String extension) {
+	private static void export(JRAbstractExporter exporter, JasperPrint printable, String filename, String extension, boolean openAfter) {
 		try {
 			exporter.setParameter(JRExporterParameter.JASPER_PRINT, printable);
-			exporter.setParameter(JRExporterParameter.OUTPUT_FILE, new File(filename + "." + extension));
+			File file = new File(filename + "." + extension);
+			exporter.setParameter(JRExporterParameter.OUTPUT_FILE,file );
 			exporter.exportReport();
+			
+			if(openAfter && Desktop.isDesktopSupported() && Desktop.getDesktop()!=null){
+				Desktop.getDesktop().open(file);
+			}
+			
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}

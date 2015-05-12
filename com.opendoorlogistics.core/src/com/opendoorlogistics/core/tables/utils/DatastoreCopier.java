@@ -325,6 +325,16 @@ final public class DatastoreCopier {
 		}
 	}
 
+	public static void copyRowById(ODLTableReadOnly tFrom,long fromRowId, ODLTable tTo){
+
+		int row = tTo.createEmptyRow(-1);
+		int nc = tFrom.getColumnCount();
+		for(int col =0 ; col < nc; col++){
+			tTo.setValueAt(tFrom.getValueById(fromRowId, col), row, col);
+		}
+	}
+
+	
 	public static void copyCell(ODLTableReadOnly from, int fromRow,int fromCol, ODLTable to, int toRow, int toCol) {
 		to.setValueAt(from.getValueAt(fromRow, fromCol), toRow, toCol);
 	}

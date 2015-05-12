@@ -23,7 +23,9 @@ import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList.MapSelectionListRegister;
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.scripts.elements.Option;
@@ -269,7 +271,12 @@ class ScriptExecutionTask {
 
 			// process all the launch control callbacks
 			Iterator<RecordedLauncherCallback> it = guiFascade.getControlLauncherCallbacks().iterator();
+			int count=0;
 			while (it.hasNext() && result.isFailed() == false) {
+				if(progressReporter!=null){
+					progressReporter.getProgressPanel().setText("Launching controls : " + count);
+				}
+				
 				final RecordedLauncherCallback cb = it.next();
 				final HashSet<ReporterFrame<?>> frames = new HashSet<>();
 				try {
@@ -288,6 +295,8 @@ class ScriptExecutionTask {
 						frame.setRefresherCB(runner);
 					}
 				}
+				
+				count++;
 			}
 
 		}
@@ -417,15 +426,6 @@ class ScriptExecutionTask {
 					}
 					frameTitle = adder.add(frameTitle , scriptName);
 					
-//					if (scriptName != null) {
-//						frameTitle += scriptName;
-//					}
-//					if (Strings.isEmpty(title) == false) {
-//						if (frameTitle.length() > 0) {
-//							frameTitle += " - ";
-//						}
-//						frameTitle += title;
-//					}
 					frame = new ReporterFrame<T>(panel, id, frameTitle,cb.getComponent(), refreshMode, runner.getAppFrame().getLoaded());
 					frames.add(frame);
 					runner.getAppFrame().addInternalFrame(frame, FramePlacement.AUTOMATIC);
@@ -497,6 +497,16 @@ class ScriptExecutionTask {
 					rf.toFront();
 				}
 			}
+
+			@Override
+			public ODLDatastoreUndoable<? extends ODLTableAlterable> getGlobalDatastore() {
+				return runner.getAppFrame().getLoaded()!=null?runner.getAppFrame().getLoaded().getDs():null;
+			}
+
+			@Override
+			public MapSelectionListRegister getMapSelectionListRegister() {
+				return runner.getAppFrame().getLoaded();
+			}
 		};
 	}
 
@@ -524,6 +534,11 @@ class ScriptExecutionTask {
 				// modeless
 				ProgressFrame progressFrame = new ProgressFrame(title, true,true);
 				runner.getAppFrame().addInternalFrame(progressFrame, FramePlacement.CENTRAL_RANDOMISED);
+				try {
+					// start it minimised so its visible but non-intrusive
+					progressFrame.setIcon(true);					
+				} catch (Exception e) {
+				}
 				progressFrame.getProgressPanel().start();
 				progressReporter = progressFrame;
 			} else {

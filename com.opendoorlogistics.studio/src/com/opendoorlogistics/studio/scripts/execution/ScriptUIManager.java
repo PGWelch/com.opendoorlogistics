@@ -7,6 +7,7 @@
 package com.opendoorlogistics.studio.scripts.execution;
 
 import java.io.File;
+import java.util.concurrent.Future;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -23,11 +24,11 @@ public interface ScriptUIManager {
 
 	void launchScriptEditor(File file,String optionId);
 
-	void executeScript(Script script, String []optionIds,String name);
+	Future<Void> executeScript(Script script, String []optionIds,String name);
 
 	void testCompileScript(Script script, String []optionIds,String name);
 
-	void executeScript(File file,String []optionIds);
+	Future<Void> executeScript(File file,String []optionIds);
 
 	void testCompileScript(File file,String []optionIds);
 	

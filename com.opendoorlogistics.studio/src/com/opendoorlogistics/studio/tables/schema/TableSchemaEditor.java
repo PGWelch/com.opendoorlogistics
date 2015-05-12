@@ -11,12 +11,12 @@ import java.awt.BorderLayout;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.components.tables.creator.TableDefinitionGrid;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
 

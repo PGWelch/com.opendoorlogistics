@@ -51,6 +51,7 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 	private final ScriptUIManager scriptUIManager;
 	private final JPopupMenu popup;
 	private final ODLApi api;
+	private final FileBrowserPanel dirChooser ;
 	private File directory;
 	private WatchSingleDirectory watcher;
 
@@ -115,7 +116,7 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 		JPanel labelPanel = new JPanel(new BorderLayout());
 		labelPanel.add(lblLabel, BorderLayout.CENTER);
 		labelPanel.setMaximumSize(lblLabel.getMinimumSize());
-		JPanel dirChooser = new FileBrowserPanel(directory.getAbsolutePath(), new FilenameChangeListener() {
+		dirChooser = new FileBrowserPanel(directory.getAbsolutePath(), new FilenameChangeListener() {
 
 			@Override
 			public void filenameChanged(String newFilename) {
@@ -353,5 +354,9 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 		return scriptsTree.getScriptsProvider();
 	}
 	
-
+	public void setScriptsDirectory(File directory)
+	{
+		dirChooser.setFilename(directory.getAbsolutePath());
+		onDirectoryChanged(directory);
+	}
 }

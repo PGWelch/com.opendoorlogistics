@@ -64,7 +64,7 @@ import com.opendoorlogistics.core.tables.io.SupportedFileType;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.PreferencesManager;
-import com.opendoorlogistics.studio.components.tables.QueryReadOnlyTableComponent;
+import com.opendoorlogistics.studio.components.tables.TableControlComponent;
 import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
 import com.opendoorlogistics.studio.scripts.editor.adapters.QueryAvailableData;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
@@ -610,13 +610,13 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 			
 			@Override
 			public String[] queryAvailableFields(String datastore, String tablename) {
-				SourcedTable st = getTable(datastore,tablename);
+				ODLTableDefinition st = getTableDefinition(datastore,tablename);
 				if(st==null){
 					return new String[0];
 				}
-				String [] ret = new String[st.getTableDefinition().getColumnCount()];
+				String [] ret = new String[st.getColumnCount()];
 				for(int i =0 ; i <ret.length;i++){
-					ret[i] = st.getTableDefinition().getColumnName(i);
+					ret[i] = st.getColumnName(i);
 				}
 
 				return ret;

@@ -6,10 +6,12 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.reports;
 
+import java.awt.Dimension;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.JCheckBox;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -38,6 +40,8 @@ final class ReporterConfigPanel extends VerticalLayoutPanel {
 	final private JCheckBox html;
 	final private JCheckBox pdf;
 	final private JCheckBox xls;
+	
+	final private JCheckBox openFileAfterwords;
 
 	private void updateEnabled() {
 		exportDirectory.setEnabled(rc.isExportToFile());
@@ -48,6 +52,7 @@ final class ReporterConfigPanel extends VerticalLayoutPanel {
 		html.setEnabled(rc.isExportToFile());
 		pdf.setEnabled(rc.isExportToFile());
 		xls.setEnabled(rc.isExportToFile());
+		openFileAfterwords.setEnabled(rc.isExportToFile());
 	}
 
 	ReporterConfigPanel(ReporterConfig rc){
@@ -90,6 +95,9 @@ final class ReporterConfigPanel extends VerticalLayoutPanel {
 		exportDirectory = new FileBrowserPanel("Export directory ", rc.getExportDirectory(), filenameListener, true, "OK");
 		exportFilenamePrefix = new TextEntryPanel("Export filename prefix ", null, rc.getExportFilenamePrefix(), null, EntryType.String, listener);
 
+		openFileAfterwords = new JCheckBox("Open file after exporting", rc.isOpenExportFile());
+		openFileAfterwords.addItemListener(itemListener);
+		
 		csv = new JCheckBox("CSV    ", rc.isCsv());
 		docx = new JCheckBox("Word    ", rc.isDocx());
 		odt = new JCheckBox("OpenOffice    ", rc.isOdt());
@@ -116,7 +124,7 @@ final class ReporterConfigPanel extends VerticalLayoutPanel {
 		add(exportCheckBox);
 		exportPanel.add( exportDirectory);
 		exportPanel.addHalfWhitespace();
-		exportPanel.add(exportFilenamePrefix);
+		exportPanel.addLine(openFileAfterwords,Box.createRigidArea(new Dimension(40, 2)),exportFilenamePrefix, Box.createGlue());
 		exportPanel.addHalfWhitespace();
 	//	csv.setBorder(null);
 		exportPanel.addLine(csv, xls, html, odt, pdf, docx);
@@ -130,6 +138,7 @@ final class ReporterConfigPanel extends VerticalLayoutPanel {
 	private void readFromPanel() {
 		rc.setCompiledReport(compiledReport.getFilename());
 
+		rc.setOpenExportFile(openFileAfterwords.isSelected());
 
 		rc.setExportToFile(exportCheckBox.isSelected());
 		rc.setExportDirectory(exportDirectory.getFilename());

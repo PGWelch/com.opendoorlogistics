@@ -6,10 +6,16 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.gis.map;
 
+import gnu.trove.impl.Constants;
+import gnu.trove.map.hash.TByteLongHashMap;
+import gnu.trove.map.hash.TObjectByteHashMap;
+import gnu.trove.map.hash.TObjectLongHashMap;
+import gnu.trove.procedure.TByteLongProcedure;
+import gnu.trove.procedure.TObjectLongProcedure;
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.font.FontRenderContext;
@@ -22,16 +28,18 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import javax.swing.JInternalFrame;
 import javax.swing.SwingUtilities;
 
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
+import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.Colours.CalculateAverageColour;
@@ -45,7 +53,7 @@ final public class Legend {
 	
 	public static void main(String[] args) {
 
-		List<Map.Entry<String, Color>> list = createEntries();
+		List<Map.Entry<String, Color>> list = createDummyEntries();
 
 		for (int font : new int[] { 100,50, 30, 20, 10  }) {
 			final BufferedImage img = createLegendImage(list, font, LegendAlignment.VERTICAL);
@@ -58,35 +66,6 @@ final public class Legend {
 				}
 			});
 		}
-	}
-
-	public static JInternalFrame createLegendFrame(Iterable<? extends DrawableObject> pnts) {
-		BufferedImage image = createLegendImageFromDrawables(pnts);
-		JInternalFrame ret = createLegendFrame(image);
-		return ret;
-	}
-
-	public static JInternalFrame createLegendFrame(BufferedImage image) {
-		JInternalFrame ret = ImageUtils.createImageInternalFrame(image, LEGEND_BACKGROUND_COLOUR);
-		ret.setTitle("Legend");
-		ret.setClosable(true);
-		ret.setResizable(true);
-		ret.pack();
-		ret.setDefaultCloseOperation(JInternalFrame.DISPOSE_ON_CLOSE);
-		ret.setBackground(LEGEND_BACKGROUND_COLOUR);
-		ret.setAlignmentX(JInternalFrame.LEFT_ALIGNMENT);
-
-		// size to include the title
-		int minWidth = 100;
-		if (ret.getWidth() < minWidth) {
-			ret.setPreferredSize(new Dimension(minWidth, ret.getPreferredSize().height));
-			ret.pack();
-		}
-		return ret;
-	}
-
-	public static BufferedImage createLegendImageFromDrawables(Iterable<? extends DrawableObject> pnts) {
-		return createLegendImageFromDrawables(pnts,DEFAULT_FONT_SIZE,DEFAULT_ALIGNMENT);
 	}
 
 	public static BufferedImage createLegendImageFromDrawables(Iterable<? extends DrawableObject> pnts,int fontSize,  LegendAlignment align) {
@@ -113,13 +92,15 @@ final public class Legend {
 		}
 		return ret;
 	}
+	
+	
 	/**
 	 * Gets the text for the legend by averaging the colour for each distinct value of the legend key
 	 * 
 	 * @param pnts
 	 * @return
 	 */
-	public static List<Map.Entry<String, Color>> getLegendText(Iterable<? extends DrawableObject> pnts) {
+	private static List<Map.Entry<String, Color>> getLegendText(Iterable<? extends DrawableObject> pnts) {
 
 		// get average column for each legend item
 		TreeMap<String, CalculateAverageColour> map = new TreeMap<>();
@@ -258,7 +239,7 @@ final public class Legend {
 		return img;
 	}
 
-	static List<Map.Entry<String, Color>> createEntries() {
+	private static List<Map.Entry<String, Color>> createDummyEntries() {
 		ArrayList<Map.Entry<String, Color>> ret = new ArrayList<>();
 		for (String s : ExampleData.getExampleNouns()) {
 			AbstractMap.SimpleEntry<String, Color> entry = new SimpleEntry<>(s, Colours.getRandomColour(s));
@@ -269,4 +250,169 @@ final public class Legend {
 		}
 		return ret;
 	}
+	
+	public static String getStandardisedLegendKey(ODLTableReadOnly drawables, int row){
+		String key =(String) drawables.getValueAt(row, DrawableObjectImpl.COL_LEGEND_KEY);
+		return getStandardisedLegendKey(key);
+	}
+
+	/**
+	 * Get the standardised legend key or return null if key would not be used as a legend
+	 * @param rawKeyFieldValue
+	 * @return
+	 */
+	public static String getStandardisedLegendKey(String rawKeyFieldValue) {
+		if(rawKeyFieldValue!=null && rawKeyFieldValue.length()>0){
+			String stdKey = Strings.std(rawKeyFieldValue);
+			if(stdKey!=null && stdKey.length()>0){
+				return stdKey;				
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * A class which processes the legend logic directly from a drawable table
+	 * @author Phil
+	 *
+	 */
+	public static class LegendDrawableTableBuilder{
+		private static class CalcLegendEntry{
+			String unstandard;
+			String std;
+			CalculateAverageColour col = new CalculateAverageColour();
+			//StandardisedStringTreeMap<Long> symbolCount = new StandardisedStringTreeMap<Long>(); 
+			TObjectLongHashMap<String> symbolCount = new TObjectLongHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, 0);
+			TByteLongHashMap outlinedCount = new TByteLongHashMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR,(byte) 0, (byte)0);
+			
+		}
+		
+		private final HashMap<String,CalcLegendEntry> workingMap = new HashMap<String,Legend.LegendDrawableTableBuilder.CalcLegendEntry>();
+		
+//		public static interface LegendRowData{
+//			public String key(); 
+//			public Color color();
+//			public Color legendColour();
+//			public String colourKey();
+//			public String symbol();
+//			public Long outline();
+//		}
+		
+		public void processRow(ODLTableReadOnly drawables, int row){
+			String key =(String) drawables.getValueAt(row, DrawableObjectImpl.COL_LEGEND_KEY);
+			String stdKey = getStandardisedLegendKey(key);
+			if(stdKey!=null){
+
+				// get entry or create if needed
+				CalcLegendEntry entry = workingMap.get(stdKey);
+				if(entry==null){
+					entry = new CalcLegendEntry();
+					entry.unstandard = key;
+					entry.std = stdKey;
+					workingMap.put(stdKey, entry);
+				}
+				
+				// process the colour
+				Color color = (Color )drawables.getValueAt(row, DrawableObjectImpl.COL_LEGEND_COLOUR);
+				if(color==null){
+					color = DatastoreRenderer.getNoAlphaColour((Color)drawables.getValueAt(row, DrawableObjectImpl.COL_COLOUR), (String)drawables.getValueAt(row, DrawableObjectImpl.COL_COLOUR_KEY));						
+				}
+				entry.col.add(color);
+				
+				// process the symbol
+				String symbol = (String)drawables.getValueAt(row, DrawableObjectImpl.COL_SYMBOL);
+				if(symbol == null){
+					symbol = "";
+				}
+				else{
+					symbol = Strings.std(symbol);
+				}
+				long count = entry.symbolCount.get(symbol);
+				count++;
+				entry.symbolCount.put(symbol, count);
+				
+				// process outlined
+				Long outlined = (Long)drawables.getValueAt(row, DrawableObjectImpl.COL_OUTLINE);
+				if(outlined==null){
+					outlined = DrawableObjectImpl.DEFAULT_DRAW_OUTLINE;
+				}
+				byte byteOutlined = (byte)(outlined==1 ? 1 : 0);
+				count = entry.outlinedCount.get(byteOutlined);
+				count++;
+				entry.outlinedCount.put(byteOutlined, count);
+			}				
+		
+		}
+		
+		public List<Map.Entry<String, BufferedImage>> build(Dimension imageSize){
+			// sort all entries in a manner sensitive to numbers etc...
+			ArrayList<CalcLegendEntry> entries = new ArrayList<Legend.LegendDrawableTableBuilder.CalcLegendEntry>(workingMap.values());
+			Collections.sort(entries, new Comparator<CalcLegendEntry>() {
+
+				@Override
+				public int compare(CalcLegendEntry o1, CalcLegendEntry o2) {
+					return Strings.compareStd(o1.std, o2.std);
+				}
+			});
+			
+			// work out symbol size
+			Point2D centre = new Point2D.Double(imageSize.width/2.0, imageSize.height/2.0);
+			int circum = Math.min(imageSize.width, imageSize.height);
+			circum = 2 * circum/3;
+			ArrayList<Map.Entry<String, BufferedImage>> ret = new ArrayList<>();
+			
+			// process each one
+			for(CalcLegendEntry entry: entries){
+				
+				// get average colour
+				Color col = entry.col.getAverage();
+
+				// get modal average symbol
+				class CountMax{
+					long max;
+					String symbol;
+					long outlined;
+				}
+				CountMax countMax = new CountMax();
+				entry.symbolCount.forEachEntry(new TObjectLongProcedure<String>() {
+
+					@Override
+					public boolean execute(String a, long b) {
+						if(countMax.symbol==null || countMax.max < b){
+							countMax.symbol = a;
+							countMax.max = b;
+						}
+						return true;
+					}
+				});
+				
+				// get modal average outlined boolean
+				countMax.max=0;
+				countMax.outlined = DrawableObjectImpl.DEFAULT_DRAW_OUTLINE;
+				entry.outlinedCount.forEachEntry(new TByteLongProcedure() {
+					
+					@Override
+					public boolean execute(byte a, long b) {
+						if(countMax.max < b){
+							countMax.outlined = a;
+							countMax.max = b;
+						}
+						return true;
+					}
+				});
+				
+				// draw the picture using average colour, symbol and outlining across all entries with the same std legend key
+				BufferedImage img = ImageUtils.createBlankImage(imageSize.width, imageSize.height,Color.WHITE);
+				Graphics2D g = (Graphics2D)img.getGraphics();
+				SymbolType type = DatastoreRenderer.getSymbolType(countMax.symbol);
+				DatastoreRenderer.drawOutlinedSymbol(g, type,centre, circum, col, countMax.outlined==1);
+				g.dispose();
+				ret.add(new AbstractMap.SimpleEntry<String, BufferedImage>(entry.unstandard,img));
+
+			}
+			
+			return ret;
+		}
+	}
+	
 }

@@ -9,13 +9,8 @@ package com.opendoorlogistics.studio.components.geocoder;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -24,34 +19,21 @@ import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStateListener;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStatusObservable;
 import com.opendoorlogistics.api.tables.ODLDatastore;
-import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTable;
-import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
-import com.opendoorlogistics.core.tables.decorators.datastores.UndoRedoDecorator;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
-import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.LayoutUtils;
-import com.opendoorlogistics.core.utils.ui.ShowPanel;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.studio.components.geocoder.component.NominatimConfig;
 import com.opendoorlogistics.studio.components.geocoder.model.GeocodeModel;
 import com.opendoorlogistics.studio.components.geocoder.model.GeocodeModelListener;
-import com.opendoorlogistics.studio.components.map.InteractiveMapControl;
-import com.opendoorlogistics.studio.components.map.InteractiveMapControl.OnClickPosition;
-import com.opendoorlogistics.studio.components.map.MapConfig;
-import com.opendoorlogistics.studio.components.map.MapModePermissions;
-import com.opendoorlogistics.studio.components.map.ModalMouseListener.MouseMode;
-import com.opendoorlogistics.studio.components.map.ReadOnlyMapControl;
-import com.opendoorlogistics.studio.components.map.ReadOnlyMapControl.ZoomBestFitManager;
-import com.opendoorlogistics.studio.components.map.ReadOnlyMapPanel;
-import com.opendoorlogistics.studio.components.map.ZoomUtils;
 
 public class InteractiveGeocoderPanel extends JPanel implements Disposable, GeocodeModelListener, ClosedStatusObservable {
-	private final InteractiveMapControl interactive;
-	private final ReadOnlyMapPanel map;
+//	private final InteractiveMapControl interactive;
+//	private final ReadOnlyMapPanel map;
+	private final NominatimMap nmap;
 	private final SearchResultsPanel searchSubPanel;
 	private final GeocodeItemPanel itemPanel;
 	private final GeocodeToolbar toolbar;
@@ -87,62 +69,65 @@ public class InteractiveGeocoderPanel extends JPanel implements Disposable, Geoc
 		searchSubPanel.setMinimumSize(searchPanelSize);
 		searchSubPanel.table.setPreferredScrollableViewportSize(new Dimension(600, 104));
 
-		// create map
-		interactive = new InteractiveMapControl(new MapConfig(),new MapModePermissions(0xFFFFFFFFFFFFFFFFL),null,null);
-		//interactive.setLegendCreator(GeocoderMapAppearance.createLegendCreator());
-		interactive.addOnMoveObjectListener(new OnClickPosition() {
 
-			@Override
-			public void onClickPosition(double latitude, double longitude) {
-				model.setGeocode(latitude, longitude);
-				map.setDrawables(GeocoderMapAppearance.createDrawable(model));
-			}
-		});
-		interactive.setZoomBestFitManager(new ZoomBestFitManager() {
+//		// create map
+//		interactive = new InteractiveMapControl(new MapConfig(),new MapModePermissions(0xFFFFFFFFFFFFFFFFL),null,null);
+//		//interactive.setLegendCreator(GeocoderMapAppearance.createLegendCreator());
+//		interactive.addOnMoveObjectListener(new OnClickPosition() {
+//
+//			@Override
+//			public void onClickPosition(double latitude, double longitude) {
+//				model.setGeocode(latitude, longitude);
+//				map.setDrawables(GeocoderMapObjects.createDrawable(model));
+//			}
+//		});
+//		interactive.setZoomBestFitManager(new ZoomBestFitManager() {
+//
+//			@Override
+//			public void zoomBestFit(ReadOnlyMapControl viewer, double maxFraction) {
+//				ZoomUtils.zoomToBestFit(viewer, viewer.getLatLongBoundingBox(null), maxFraction, true, 0.001);
+//			}
+//		});
+//		map = new ReadOnlyMapPanel(interactive, true, controlLauncher) {
+//
+//			@Override
+//			protected List<Action> createActions() {
+//				List<Action> ret = super.createActions();
+//				ret.add(null);
+//
+//				// create action to enter each of the mouse modes
+//				for (final MouseMode mode : new MouseMode[] { MouseMode.NAVIGATE, MouseMode.MOVE_OBJECT }) {
+//					AbstractAction action = new AbstractAction(Strings.convertEnumToDisplayFriendly(mode.toString()), mode.getButtonImageIcon()) {
+//
+//						@Override
+//						public void actionPerformed(ActionEvent e) {
+//							interactive.setMouseMode(mode);
+//						}
+//					};
+//
+//					action.putValue(Action.SHORT_DESCRIPTION, mode.getDescription());
+//					action.putValue(Action.LONG_DESCRIPTION, mode.getDescription());
+//					ret.add(action);
+//				}
+//
+//				return ret;
+//			}
+//
+//			@Override
+//			protected void createLegendAction(Collection<Action> ret) {
+//				// Turn off the legend...
+//			}
+//		};
+//		map.setDrawables(GeocoderMapObjects.createDrawable(model));
+//		map.setPreferredSize(new Dimension(600, 200));
 
-			@Override
-			public void zoomBestFit(ReadOnlyMapControl viewer, double maxFraction) {
-				ZoomUtils.zoomToBestFit(viewer, viewer.getLatLongBoundingBox(null), maxFraction, true, 0.001);
-			}
-		});
-		map = new ReadOnlyMapPanel(interactive, true, controlLauncher) {
-
-			@Override
-			protected List<Action> createActions() {
-				List<Action> ret = super.createActions();
-				ret.add(null);
-
-				// create action to enter each of the mouse modes
-				for (final MouseMode mode : new MouseMode[] { MouseMode.NAVIGATE, MouseMode.MOVE_OBJECT }) {
-					AbstractAction action = new AbstractAction(Strings.convertEnumToDisplayFriendly(mode.toString()), mode.getButtonImageIcon()) {
-
-						@Override
-						public void actionPerformed(ActionEvent e) {
-							interactive.setMouseMode(mode);
-						}
-					};
-
-					action.putValue(Action.SHORT_DESCRIPTION, mode.getDescription());
-					action.putValue(Action.LONG_DESCRIPTION, mode.getDescription());
-					ret.add(action);
-				}
-
-				return ret;
-			}
-
-			@Override
-			protected void createLegendAction(Collection<Action> ret) {
-				// Turn off the legend...
-			}
-		};
-		map.setDrawables(GeocoderMapAppearance.createDrawable(model));
-		map.setPreferredSize(new Dimension(600, 200));
-
+		nmap = new NominatimMap(model);
+		
 		// put map in its own panel with a legend and border
 		mainResultsPanel = new VerticalLayoutPanel();
 		mainResultsPanel.add(searchSubPanel);
-		mainResultsPanel.addNoWrap(map);
-		mainResultsPanel.add(ImageUtils.createImagePanel(GeocoderMapAppearance.createLegend(), Color.WHITE));
+		mainResultsPanel.addNoWrap(nmap.getComponent());
+		mainResultsPanel.add(ImageUtils.createImagePanel(GeocoderMapObjects.createLegend(), Color.WHITE));
 		vPanel.addNoWrap(mainResultsPanel);
 		//vPanel.addWhitespace();
 		
@@ -190,7 +175,7 @@ public class InteractiveGeocoderPanel extends JPanel implements Disposable, Geoc
 
 	@Override
 	public void dispose() {
-		interactive.dispose();
+		nmap.dispose();
 		// globalDs.removeListener(fieldSelectorPanel);
 	}
 
@@ -237,10 +222,9 @@ public class InteractiveGeocoderPanel extends JPanel implements Disposable, Geoc
 
 	@Override
 	public void modelChanged(boolean recordChanged, boolean searchResultsChanged) {
-		// always repaint the map
-		map.setDrawables(GeocoderMapAppearance.createDrawable(model));
-		interactive.repaint();
-
+		// always repaint the map with a fresh drawable datastore
+		nmap.update();
+		
 		// rezoom if search results have changed
 		if (searchResultsChanged) {
 			// do zooming after current event as it won't work if controls are
@@ -249,7 +233,7 @@ public class InteractiveGeocoderPanel extends JPanel implements Disposable, Geoc
 
 				@Override
 				public void run() {
-					map.zoomBestFit();
+					nmap.zoomBestFit();
 					// final double maxZoomFraction = 0.95;
 					// if(model.getSelectedResultsCount()>1){
 					// interactive.zoomBestFit(maxZoomFraction);

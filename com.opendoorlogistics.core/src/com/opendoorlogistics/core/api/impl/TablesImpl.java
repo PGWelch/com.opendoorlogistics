@@ -120,4 +120,21 @@ public class TablesImpl implements Tables {
 		return ExampleData.createTerritoriesExample(3);
 	}
 
+	@Override
+	public void copyRow(ODLTableReadOnly from, int rowIndex, ODLTable to) {
+		DatastoreCopier.insertRow(from, rowIndex, to, to.getRowCount());
+	}
+
+	@Override
+	public ODLTableAlterable createTable(ODLTableDefinition tableDefinition) {
+		ODLDatastoreAlterable<? extends ODLTableAlterable> ds = createAlterableDs();
+		DatastoreCopier.copyTableDefinition(tableDefinition, ds);
+		return ds.getTableAt(0);
+	}
+
+	@Override
+	public void copyRowById(ODLTableReadOnly from, long rowId, ODLTable to) {
+		DatastoreCopier.copyRowById(from, rowId, to);
+	}
+
 }

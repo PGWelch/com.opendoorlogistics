@@ -7,6 +7,7 @@
 package com.opendoorlogistics.studio.tables.grid;
 
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.list.array.TLongArrayList;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -37,13 +38,13 @@ import net.sf.jasperreports.swing.JRViewer;
 
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.codefromweb.PackTableColumn;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
-import com.opendoorlogistics.core.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.SortColumn;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -55,28 +56,30 @@ import com.opendoorlogistics.studio.tables.grid.adapter.RowStyler;
 import com.opendoorlogistics.studio.tables.grid.adapter.SwingAdapter;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 
-final public class ODLGridTable extends GridTable {
+public class ODLGridTable extends GridTable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 4204113069098514992L;
-	private final HasInternalFrames owner;
-	private final ODLDatastoreUndoable<ODLTableAlterable> globalDs;
+	//private final HasInternalFrames owner;
+	private final ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs;
 	private final PreferredColumnWidths preferredColumnWidths;
 
 	public ODLGridTable(ODLDatastore<? extends ODLTableReadOnly> ds, int tableId, boolean enableListeners,
-			RowStyler rowStyler, ODLDatastoreUndoable<ODLTableAlterable> globalDs, GridEditPermissions permissions, HasInternalFrames owner) {
-		this(ds, tableId, enableListeners, rowStyler,globalDs, permissions, owner, null);
+			RowStyler rowStyler, ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs, GridEditPermissions permissions
+			) {
+		this(ds, tableId, enableListeners, rowStyler,globalDs, permissions, null);
 	}
 
 	public ODLGridTable(ODLDatastore<? extends ODLTableReadOnly> ds, int tableId, boolean enableListeners,
 			RowStyler rowStyler,
-			ODLDatastoreUndoable<ODLTableAlterable> globalDs, GridEditPermissions permissions, HasInternalFrames owner, PreferredColumnWidths pcw) {
+			ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs, GridEditPermissions permissions,
+			PreferredColumnWidths pcw) {
 		super(new SwingAdapter(ds, tableId, enableListeners, permissions.get(Permission.setValues) == false,rowStyler), permissions);
 		this.preferredColumnWidths = pcw;
 		this.globalDs = globalDs;
 		myCellRenderer = new ODLCellRenderer();
-		this.owner = owner;
+	//	this.owner = owner;
 
 		// replace editor to disable default validation as we do it later on
 		for (final ODLColumnType type : ODLColumnType.values()) {
@@ -421,8 +424,8 @@ final public class ODLGridTable extends GridTable {
 			for (int row = min.y; row <= max.y; row++) {
 				for (int col = min.x; col <= max.x; col++) {
 					if (selected.contains(new Point(col, row))) {
-						// Object o = getModel().getValueAt(row, col);
-						// builder.append(o.toString());
+						
+						// get the actual value, remembering to -1 from the column
 						String s = TableUtils.getValueAsString(getTable(), row, col - 1);
 						if (s != null) {
 							builder.append(s);
@@ -476,14 +479,14 @@ final public class ODLGridTable extends GridTable {
 	// }
 	// }
 
-	private void showReportViewer(boolean portrait, JRViewer viewer) {
-		ODLInternalFrame internalFrame = new ODLInternalFrame("Report of " + getTableName());
-		internalFrame.setContentPane(viewer);
-		internalFrame.setPreferredSize(portrait ? new Dimension(600, 800) : new Dimension(800, 600));
-		internalFrame.pack();
-		internalFrame.setVisible(true);
-		owner.addInternalFrame(internalFrame, FramePlacement.AUTOMATIC);
-	}
+//	private void showReportViewer(boolean portrait, JRViewer viewer) {
+//		ODLInternalFrame internalFrame = new ODLInternalFrame("Report of " + getTableName());
+//		internalFrame.setContentPane(viewer);
+//		internalFrame.setPreferredSize(portrait ? new Dimension(600, 800) : new Dimension(800, 600));
+//		internalFrame.pack();
+//		internalFrame.setVisible(true);
+//		owner.addInternalFrame(internalFrame, FramePlacement.AUTOMATIC);
+//	}
 
 	private class ImageRenderer extends JPanel {
 		private BufferedImage image;
@@ -879,6 +882,20 @@ final public class ODLGridTable extends GridTable {
 			return ret;
 		}
 		return new GridEditPermissions();
+	}
+	
+	public long [] getRowIds(boolean selectedOnly){
+		ODLTableReadOnly table = getTable();
+		int n = table.getRowCount();
+		TLongArrayList tmp = new TLongArrayList();
+		
+		for(int row = 0 ; row < n ; row++){
+			if(!selectedOnly || selectionManager.isRowSelected(row)){
+				tmp.add(table.getRowId(row));				
+			}
+		}
+		
+		return tmp.toArray();
 	}
 
 }

@@ -319,6 +319,7 @@ public class CheckboxTable  extends JScrollPane{
 			disableListeners = false;
 			fireListeners();
 		}
+		repaint();
 	}
 
 	public void addCheckChangedListener(CheckChangedListener listener){

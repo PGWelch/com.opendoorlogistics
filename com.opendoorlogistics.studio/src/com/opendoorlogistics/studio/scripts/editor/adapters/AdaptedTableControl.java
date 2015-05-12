@@ -11,6 +11,9 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +29,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -39,10 +43,12 @@ import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.ui.UIFactory.IntChangedListener;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
+import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilderUtils;
 import com.opendoorlogistics.core.scripts.formulae.FmIsSelectedInMap;
 import com.opendoorlogistics.core.scripts.wizard.ScriptGenerator;
 import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.tables.utils.ODLDatastoreDefinitionProvider;
+import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.IntegerEntryPanel;
 import com.opendoorlogistics.core.utils.ui.LayoutUtils;
@@ -62,7 +68,13 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 	private final QueryAvailableData queryAvailableFields;
 	private final FromDatastoreCombo fromDatastore;
 	private final FromTableCombo fromTable;
-	private final JTextField outputTableName;
+	//private final JTextField outputTableName;
+	private final JCheckBox joinCheckBox;
+	private final JLabel joinLabel1;
+	private final JLabel joinLabel2;
+	private final FromDatastoreCombo joinDatastore;
+	private final FromTableCombo joinTable;
+
 	private final AdapterTableDefinitionGrid fieldGrid;
 	private final ODLApi api;
 	private final long visibleTableFlags;
@@ -77,7 +89,7 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 		this.formChangedListener = formChangedListener;
 	}
 
-	private abstract class AutocorrectCombo extends DynamicComboBox<String> {
+	private static abstract class AutocorrectCombo extends DynamicComboBox<String> {
 
 		public AutocorrectCombo(String initialValue) {
 			super(initialValue, true,true);
@@ -103,10 +115,12 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 		protected abstract boolean isImportLink();
 	}
 
-	private class FromDatastoreCombo extends AutocorrectCombo {
-
-		public FromDatastoreCombo(String initialValue) {
+	private static class FromDatastoreCombo extends AutocorrectCombo {
+		private final QueryAvailableData queryAvailableFields;
+		
+		public FromDatastoreCombo(QueryAvailableData queryAvailableFields, String initialValue) {
 			super(initialValue);
+			this.queryAvailableFields = queryAvailableFields;
 		}
 
 		@Override
@@ -143,16 +157,22 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 		}
 	}
 
-	private class FromTableCombo extends AutocorrectCombo {
-
-		public FromTableCombo(String initialValue) {
+	private static class FromTableCombo extends AutocorrectCombo {
+		private final FromDatastoreCombo datastoreCombo;
+		private final boolean isJoin;
+		private final QueryAvailableData queryAvailableFields;
+		
+		public FromTableCombo(QueryAvailableData queryAvailableFields,FromDatastoreCombo datastoreCombo, String initialValue, boolean isJoin) {
 			super(initialValue);
+			this.datastoreCombo = datastoreCombo;
+			this.isJoin = isJoin;
+			this.queryAvailableFields = queryAvailableFields;
 		}
 
 		@Override
 		protected List<String> getAvailableItems() {
 			if (queryAvailableFields != null) {
-				return asList(queryAvailableFields.queryAvailableTables(config.getFromDatastore()));
+				return asList(queryAvailableFields.queryAvailableTables(datastoreCombo.getValue()));
 			}
 			return new ArrayList<>();
 		}
@@ -160,14 +180,14 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 		@Override
 		protected boolean isUnknown() {
 			if (queryAvailableFields != null) {
-				if (fromDatastore.isUnknown() == false) {
-					if(queryAvailableFields.getDatastoreDefinition(fromDatastore.getValue())==null){
+				if (datastoreCombo.isUnknown() == false) {
+					if(queryAvailableFields.getDatastoreDefinition(datastoreCombo.getValue())==null){
 						// datastore may be known as its the external one (which is assumed to always exist),
 						// however tables are not known
 						return false;
 					}
 					
-					if (queryAvailableFields.getTableDefinition(fromDatastore.getValue(), getValue()) == null) {
+					if (queryAvailableFields.getTableDefinition(datastoreCombo.getValue(), getValue()) == null) {
 						return true;
 					}
 				}
@@ -179,6 +199,52 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 		protected boolean isImportLink() {
 			return false;
 		}
+	}
+	
+	private class MyQueryAvailableDataDecorator extends QueryAvailableDataDecorator{
+
+		public MyQueryAvailableDataDecorator(QueryAvailableData decorated) {
+			super(decorated);
+		}
+		
+		@Override
+		public String[] queryAvailableFields(String datastore, String tablename) {
+	
+			// add extra fields if we're joining and querying the source table
+			if(isJoinTable(datastore, tablename)){
+				ODLTableDefinition dfn = getTableDefinition(datastore, tablename);
+				ArrayList<String> newFields = new ArrayList<String>();
+				if(dfn!=null){
+					int nc = dfn.getColumnCount();
+					for(int i =0 ; i < nc ; i++){
+						newFields.add(dfn.getColumnName(i));
+					}
+				}
+				return newFields.toArray(new String[newFields.size()]);					
+			}
+			else{
+				return super.queryAvailableFields(datastore, tablename);
+			}
+		
+		}
+
+		private boolean isJoinTable(String datastore, String tablename) {
+			return config.isJoin() && Strings.equalsStd(datastore, config.getFromDatastore()) && Strings.equalsStd(tablename, config.getFromTable());
+		}
+		
+		@Override
+		public ODLTableDefinition getTableDefinition(String datastore, String tablename) {
+			if(isJoinTable(datastore, tablename)){
+				ODLTableDefinition inner = super.getTableDefinition(datastore, tablename);
+				ODLTableDefinition outer = super.getTableDefinition(config.getJoinDatastore(), config.getJoinTable());
+				if(inner!=null && outer!=null){
+					return AdapterBuilderUtils.buildEmptyJoinTable(outer, inner).getTableAt(0);
+				}
+			}
+			
+			return super.getTableDefinition(datastore, tablename);
+		}
+
 	}
 
 	private class CustomFormulaControls extends LabelledRadioButton{
@@ -251,18 +317,10 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 	}
 
 	protected void readFromForm() {
-		if (outputTableName != null) {
-			config.setName(outputTableName.getText());
-		}
 
-		if (fromDatastore != null) {
-			config.setFromDatastore(fromDatastore.getValue());
-		}
-
-		if (fromTable != null) {
-			config.setFromTable(fromTable.getValue());
-		}
-
+		config.setFromDatastore(fromDatastore.getValue());
+		config.setFromTable(fromTable.getValue());
+		
 		if (noFilterCtrls.radio.isSelected()) {
 			config.setFilterFormula("");
 		}
@@ -273,6 +331,10 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 			config.setFilterFormula(customFormulaControls.text.getText());
 		}
 
+		config.setJoin(joinCheckBox.isSelected());
+		config.setJoinDatastore(joinDatastore.getValue());
+		config.setJoinTable(joinTable.getValue());
+		
 		updateAppearance();
 		
 		if(formChangedListener!=null){
@@ -288,9 +350,9 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 		// customFormulaControls.radio.setSelected(true);
 		// }
 
-		if (outputTableName != null) {
-			outputTableName.setText(config.getName());
-		}
+//		if (outputTableName != null) {
+//			outputTableName.setText(config.getName());
+//		}
 
 		String text="";
 		switch(getOption()){
@@ -331,69 +393,79 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 	}
 	
 	@SuppressWarnings("serial")
-	public AdaptedTableControl(ODLApi api,AdaptedTableConfig config, boolean includeTableName, boolean includeSourceControl,long visibleTableFlags, long visibleColumnFlags,
+	public AdaptedTableControl(ODLApi api,AdaptedTableConfig config,  long visibleTableFlags, long visibleColumnFlags,
 			QueryAvailableData availableOptionsQuery) {
+		
+		// decorate the options object so it knows about join fields
+		availableOptionsQuery = new MyQueryAvailableDataDecorator(availableOptionsQuery);
+		
 		this.config = config;
 		this.api = api;
 		this.queryAvailableFields = availableOptionsQuery;
 		this.visibleTableFlags = visibleTableFlags;
 
-		// allow table name to be changed if flagged
-		if (includeTableName) {
-			outputTableName = new JTextField(config.getName());
-			outputTableName.getDocument().addDocumentListener(new DocumentListener() {
-
-				@Override
-				public void removeUpdate(DocumentEvent e) {
-					readFromForm();
+		class SetSize{
+			void set(JComponent component){
+				Dimension size = new Dimension(160, 26);
+				component.setPreferredSize(size);
+				component.setMaximumSize(size);
+			}
+			
+			void setBorder(Component line){
+				if(JComponent.class.isInstance(line)){
+					((JComponent)line).setBorder(new EmptyBorder(0, 5, 0, 5));
 				}
-
-				@Override
-				public void insertUpdate(DocumentEvent e) {
-					readFromForm();
-				}
-
-				@Override
-				public void changedUpdate(DocumentEvent e) {
-					readFromForm();
-				}
-			});
-
-			outputTableName.setMaximumSize(new Dimension(200, 26));
-			addLine(new JLabel("Generate table with name  "), outputTableName);
-			addWhitespace();
-		} else {
-			outputTableName = null;
+						
+			}
 		}
+		SetSize setSize = new SetSize();
+		
+		ValueChangedListener<String> listener = new ValueChangedListener<String>() {
 
-		// create select header...
-		if (includeSourceControl) {
-			// with source datastore and table
-			fromDatastore = new FromDatastoreCombo(config.getFromDatastore());
-			fromTable = new FromTableCombo(config.getFromTable());
-			ValueChangedListener<String> listener = new ValueChangedListener<String>() {
+			@Override
+			public void comboValueChanged(String newValue) {
+				readFromForm();
+			}
+		};
+		
+		// join controls
+		joinCheckBox = new JCheckBox("", config.isJoin());
+		joinCheckBox.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				readFromForm();
+			}
+		});
+		joinDatastore = new FromDatastoreCombo(queryAvailableFields,config.getJoinDatastore());
+		joinDatastore.addValueChangedListener(listener);
+		joinLabel1 = new JLabel("Join tables - run for each row in datastore ");
+		joinLabel1.addMouseListener(new MouseAdapter() {
+						
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				joinCheckBox.setSelected(!joinCheckBox.isSelected());
+				readFromForm();
+			}
+		});
+		joinLabel2 = new JLabel("  table  ");
+		joinTable = new FromTableCombo(queryAvailableFields,joinDatastore,config.getJoinTable(),true);
+		joinTable.addValueChangedListener(listener);
+		setSize.set(joinDatastore);
+		setSize.set(joinTable);
+		setSize.setBorder(addLine(joinCheckBox,joinLabel1, joinDatastore, joinLabel2, joinTable));
+		updateJoinAppearance();
 
-				@Override
-				public void comboValueChanged(String newValue) {
-					readFromForm();
-				}
-			};
-			fromDatastore.addValueChangedListener(listener);
-			fromTable.addValueChangedListener(listener);
-			Dimension size = new Dimension(160, 26);
-			fromDatastore.setPreferredSize(size);
-			fromDatastore.setMaximumSize(size);
-			fromTable.setPreferredSize(size);
-			fromTable.setMaximumSize(size);
-			addLine(new JLabel("Select rows from datastore  "), fromDatastore, new JLabel("  table  "), fromTable);
-		} else {
-			// without source
-			fromDatastore = null;
-			fromTable = null;
-			add(new JLabel("Select rows from:"));
-			addHalfWhitespace();
-		}
+		// from source datastore and table
+		fromDatastore = new FromDatastoreCombo(queryAvailableFields,config.getFromDatastore());
+		fromTable = new FromTableCombo(queryAvailableFields,fromDatastore,config.getFromTable(),false);
+		fromDatastore.addValueChangedListener(listener);
+		fromTable.addValueChangedListener(listener);
+		setSize.set(fromDatastore);
+		setSize.set(fromTable);
+		setSize.setBorder(addLine(new JLabel("Select rows from datastore  "), fromDatastore, new JLabel("  table  "), fromTable));
 
+	
 		// create filters line
 		noFilterCtrls = new LabelledRadioButton("All rows", "Select all rows from the table.", RadioOption.ALL);
 		selCtrls = new LabelledRadioButton("Selected in map", "Select the rows from the table which are selected in the map.",RadioOption.SEL);
@@ -576,6 +648,15 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 			fromTable.updateAppearance();
 
 		}
+		
+		updateJoinAppearance();
+	}
+
+	private void updateJoinAppearance() {
+		joinDatastore.setEnabled(config.isJoin());
+		joinLabel1.setEnabled(config.isJoin());
+		joinLabel2.setEnabled(config.isJoin());
+		joinTable.setEnabled(config.isJoin());
 	}
 
 	public void setTargetDatastoreDefinitionProvider(ODLDatastoreDefinitionProvider targetDatastoreDefinitionProvider) {
