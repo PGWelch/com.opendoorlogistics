@@ -147,4 +147,11 @@ class ODLWebTileFactory extends AbstractTileFactory  {
 		return fadeImage(img);
 	}
 
+
+
+	@Override
+	public boolean isRenderedOffline() {
+		return false;
+	}
+
 }

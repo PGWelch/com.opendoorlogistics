@@ -106,4 +106,9 @@ public class EmptyTileFactory extends TileFactory
 		return null;
 	}
 
+	@Override
+	public boolean isRenderedOffline() {
+		return true;
+	}
+
 }

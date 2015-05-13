@@ -132,6 +132,13 @@ public final class BackgroundTileFactorySingleton {
 			// TODO Auto-generated method stub
 			
 		}
+
+
+
+		@Override
+		public boolean isRenderedOffline() {
+			return true;
+		}
 		
 	}
 	

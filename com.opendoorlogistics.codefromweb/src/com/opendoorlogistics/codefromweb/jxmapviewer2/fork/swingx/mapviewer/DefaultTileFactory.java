@@ -33,4 +33,9 @@ public class DefaultTileFactory extends AbstractTileFactory
 		return null;
 	}
 
+	@Override
+	public boolean isRenderedOffline() {
+		return false;
+	}
+
 }
