@@ -502,4 +502,9 @@ class MapsforgeTileFactory extends TileFactory {
 			return mapsforgeToODL.get(mapsforge);
 		}
 	}
+
+	@Override
+	public boolean isRenderedOffline() {
+		return true;
+	}
 }

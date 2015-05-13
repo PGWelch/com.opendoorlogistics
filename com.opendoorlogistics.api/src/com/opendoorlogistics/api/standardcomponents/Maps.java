@@ -23,6 +23,9 @@ public interface Maps extends ODLComponent {
 	ODLTableDefinition getDrawableTableDefinition();
 
 	void setCustomTooltips(boolean customTooltip, Serializable config);
+	
+	boolean isBackgroundMapRenderedOffline();
+	
 	//ODLDatastore<? extends ODLTable> createDs();
 	
 	//ODLTableDefinition getDrawableTableDefinition();

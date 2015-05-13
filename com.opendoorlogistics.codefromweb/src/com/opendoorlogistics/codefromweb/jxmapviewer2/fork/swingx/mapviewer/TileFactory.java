@@ -151,4 +151,6 @@ public abstract class TileFactory
 	 * @return
 	 */
 	public abstract BufferedImage renderSynchronously(int x, int y, int zoom);
+	
+	public abstract boolean isRenderedOffline();
 }

@@ -33,6 +33,7 @@ import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.components.reports.ReporterComponent;
 import com.opendoorlogistics.components.reports.ReporterConfig;
 import com.opendoorlogistics.core.gis.map.MapUtils;
+import com.opendoorlogistics.core.gis.map.background.BackgroundTileFactorySingleton;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
@@ -263,5 +264,8 @@ public abstract class AbstractMapViewerComponent implements Maps {
 		return getIODsDefinition(true).getTableAt(0);
 	}
 	
-	
+	@Override
+	public boolean isBackgroundMapRenderedOffline(){
+		return BackgroundTileFactorySingleton.getFactory().isRenderedOffline();
+	}
 }
