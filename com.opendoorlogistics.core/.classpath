@@ -43,6 +43,6 @@
 	<classpathentry kind="lib" path="libs/poi-ooxml-3.11-beta2-20140822.jar" sourcepath="C:/Users/Phil/Dropbox/Business/DevelopmentSpace/3rdParty/poi-3.11-beta2/src"/>
 	<classpathentry kind="lib" path="libs/poi-ooxml-schemas-3.11-beta2-20140822.jar"/>
 	<classpathentry kind="lib" path="libs/log4j-1.2.13.jar"/>
-	<classpathentry kind="lib" path="libs/mapsforge-SwingMapViewer-0.5.0.jar" sourcepath="C:/Users/Phil/Dropbox/Business/DevelopmentSpace/3rdParty/mapsforge-0.5.0"/>
+	<classpathentry kind="lib" path="libs/mapsforge-SwingMapViewer-0.5.1-jar-with-dependencies.jar" sourcepath="C:/Users/Phil/Dropbox/Business/DevelopmentSpace/Github/mapsforge"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

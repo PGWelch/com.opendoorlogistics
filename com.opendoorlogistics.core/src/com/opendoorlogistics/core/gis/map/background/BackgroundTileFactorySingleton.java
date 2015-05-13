@@ -14,7 +14,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
-import org.mapsforge.map.reader.MapDatabase;
+import org.mapsforge.map.reader.MapFile;
 
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.OSMTileFactoryInfo;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.Tile;
@@ -148,7 +148,7 @@ public final class BackgroundTileFactorySingleton {
 		BackgroundType type = config.getType();
 
 		if (type == BackgroundType.MAPSFORGE) {
-			Pair<File, MapDatabase> result = openMapsforgeDb(config.getMapsforgeFilename());
+			Pair<File, MapFile> result = openMapsforgeDb(config.getMapsforgeFilename());
 			if (result != null) {
 				return new MapsforgeTileFactory(info, result.getFirst(), config.getMapsforgeXMLRenderTheme(),result.getSecond(), config.getFade());
 			}
@@ -164,7 +164,7 @@ public final class BackgroundTileFactorySingleton {
 
 	}
 
-	private static Pair<File, MapDatabase> openMapsforgeDb(String filename) {
+	private static Pair<File, MapFile> openMapsforgeDb(String filename) {
 		if (Strings.isEmpty(filename)) {
 			return null;
 		}
@@ -173,12 +173,12 @@ public final class BackgroundTileFactorySingleton {
 		if (file == null) {
 			return null;
 		}
+		
 
-		MapDatabase mapDatabase = new MapDatabase();
+
 		try {
-			if (mapDatabase.openFile(file).isSuccess()) {
-				return new Pair<File, MapDatabase>(file, mapDatabase);
-			}
+			MapFile mf= new MapFile(file);
+			return new Pair<File, MapFile>(file, mf);	
 		} catch (Exception e) {
 		}
 
