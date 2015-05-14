@@ -6,6 +6,9 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.utils.ui;
 
+import com.opendoorlogistics.api.ui.UIFactory.DoubleChangedListener;
+import com.opendoorlogistics.api.ui.UIFactory.TextChangedListener;
+
 
 
 final public class DoubleEntryPanel extends TextEntryPanel{
@@ -34,9 +37,9 @@ final public class DoubleEntryPanel extends TextEntryPanel{
 		setPreferredTextboxWidth(100);
 	}
 		
-	public static interface DoubleChangedListener {
-		void doubleChange(double newDbl);
-	}
-	
+//	public static interface DoubleChangedListener {
+//		void doubleChange(double newDbl);
+//	}
+//	
 
 }

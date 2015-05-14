@@ -15,9 +15,8 @@ import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.distances.DistancesOutputConfiguration;
 import com.opendoorlogistics.api.distances.DistancesOutputConfiguration.OutputType;
-import com.opendoorlogistics.api.ui.UIFactory;
+import com.opendoorlogistics.api.ui.UIFactory.DoubleChangedListener;
 import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel;
-import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel.DoubleChangedListener;
 import com.opendoorlogistics.core.utils.ui.EnumComboBox;
 
 public class OutputCostTypeBox extends AbstractDistancesConfigBox{

@@ -6,9 +6,9 @@ import javax.swing.Box;
 import javax.swing.JLabel;
 
 import com.opendoorlogistics.api.ui.UIFactory.IntChangedListener;
+import com.opendoorlogistics.api.ui.UIFactory.TextChangedListener;
 import com.opendoorlogistics.core.utils.ui.IntegerEntryPanel;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel;
-import com.opendoorlogistics.core.utils.ui.TextEntryPanel.TextChangedListener;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 
 public class BaseChartConfigPanel  extends VerticalLayoutPanel{

@@ -10,8 +10,6 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Window;
 import java.io.File;
-import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,9 +20,12 @@ import javax.swing.JTable;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
 
-import com.opendoorlogistics.core.utils.ui.*;
-import com.opendoorlogistics.core.utils.ui.TextEntryPanel.TextChangedListener;
 import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
+import com.opendoorlogistics.api.ui.UIFactory.TextChangedListener;
+import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
+import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
+import com.opendoorlogistics.core.utils.ui.TextEntryPanel;
+import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 
 final public class MultiExportDialog extends OkCancelDialog{
 	private VerticalLayoutPanel panel;

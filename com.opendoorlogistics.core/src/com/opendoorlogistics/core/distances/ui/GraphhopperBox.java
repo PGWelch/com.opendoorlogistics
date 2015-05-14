@@ -11,10 +11,10 @@ import java.awt.Window;
 import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.distances.GraphhopperConfiguration;
-import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel;
-import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel.DoubleChangedListener;
-import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
+import com.opendoorlogistics.api.ui.UIFactory.DoubleChangedListener;
 import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
+import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel;
+import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
 
 public class GraphhopperBox extends AbstractDistancesConfigBox{
 	

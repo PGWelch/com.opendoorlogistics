@@ -15,8 +15,8 @@ import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.distances.GreatCircleConfiguration;
+import com.opendoorlogistics.api.ui.UIFactory.DoubleChangedListener;
 import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel;
-import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel.DoubleChangedListener;
 
 public class GreatCircleBox extends AbstractDistancesConfigBox{
 	private final DoubleEntryPanel distanceMultiplier;

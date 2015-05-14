@@ -7,6 +7,7 @@
 package com.opendoorlogistics.core.utils.ui;
 
 import com.opendoorlogistics.api.ui.UIFactory.IntChangedListener;
+import com.opendoorlogistics.api.ui.UIFactory.TextChangedListener;
 
 
 

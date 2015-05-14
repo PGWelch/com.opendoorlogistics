@@ -20,6 +20,7 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 
+import com.opendoorlogistics.api.ui.UIFactory.TextChangedListener;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 public class TextEntryPanel extends JPanel {
@@ -43,7 +44,7 @@ public class TextEntryPanel extends JPanel {
 		this(label, initialValue, tooltip, EntryType.String, textChangedListener);
 	}
 
-	public TextEntryPanel(String label, String initialValue, String tooltip, EntryType entryType, final TextChangedListener textChangedListener) {
+	public TextEntryPanel(String label, String initialValue, String tooltip, EntryType entryType,  TextChangedListener textChangedListener) {
 		this(label, null, initialValue, tooltip, entryType, textChangedListener);
 	}
 
@@ -161,9 +162,6 @@ public class TextEntryPanel extends JPanel {
 		textField.setToolTipText(text);
 	}
 
-	public static interface TextChangedListener {
-		void textChange(String newText);
-	}
 
 	@Override
 	public void setEnabled(boolean enabled) {

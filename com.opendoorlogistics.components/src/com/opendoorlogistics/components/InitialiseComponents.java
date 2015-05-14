@@ -12,6 +12,7 @@ import com.opendoorlogistics.components.cluster.kmeans.latlng.KMeansLatLngCompon
 import com.opendoorlogistics.components.gantt.GanttChartComponent;
 import com.opendoorlogistics.components.geocode.postcodes.PCGeocoderComponent;
 import com.opendoorlogistics.components.geocode.postcodes.PCImporterComponent;
+import com.opendoorlogistics.components.heatmap.HeatmapComponent;
 import com.opendoorlogistics.components.linegraph.LineGraphComponent;
 import com.opendoorlogistics.components.reports.ReporterComponent;
 import com.opendoorlogistics.components.reports.builder.ReportsReflectionValidation;
@@ -45,6 +46,7 @@ final public class InitialiseComponents {
 		ODLGlobalComponents.register(new GanttChartComponent());
 		ODLGlobalComponents.register(new ShapefileExporterComponent());
 		ODLGlobalComponents.register(new LineGraphComponent());
+		ODLGlobalComponents.register(new HeatmapComponent());
 		registered = true;
 	}
 }

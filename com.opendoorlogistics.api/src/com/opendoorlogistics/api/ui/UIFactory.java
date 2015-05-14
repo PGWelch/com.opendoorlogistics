@@ -19,9 +19,21 @@ public interface UIFactory {
 	public static interface IntChangedListener {
 		void intChange(int newInt);
 	}
+
+	public static interface DoubleChangedListener {
+		void doubleChange(double newValue);
+	}
 	
+	public static interface TextChangedListener {
+		void textChange(String newText);
+	}
+
 	JPanel createIntegerEntryPane(String label, int initialValue, String tooltip,final IntChangedListener intChangedListener);
 	
+	JPanel createDoubleEntryPane(String label, double initialValue, String tooltip,final DoubleChangedListener dblChangedListener);
+
+	JPanel createTextEntryPane(String label, String initialValue, String tooltip,final TextChangedListener listener);
+
 	public static interface ItemChangedListener<T> {
 		void itemChanged(T item);
 	}

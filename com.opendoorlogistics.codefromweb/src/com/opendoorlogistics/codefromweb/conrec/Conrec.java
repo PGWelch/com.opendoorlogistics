@@ -121,8 +121,11 @@ public class Conrec {
             }
         };
         
+        // Loop over all elements in the region of interest
         for (j=(jub-1);j>=jlb;j--) {
             for (i=ilb;i<=iub-1;i++) {
+            	
+            	// Get the min and max heights around this element
                 double temp1,temp2;
                 temp1 = Math.min(d[i][j],d[i][j+1]);
                 temp2 = Math.min(d[i+1][j],d[i+1][j+1]);
@@ -131,9 +134,15 @@ public class Conrec {
                 temp2 = Math.max(d[i+1][j],d[i+1][j+1]);
                 dmax  = Math.max(temp1,temp2);
                 
+                // Check to see if the height range values fit within the contour range.
                 if (dmax>=z[0]&&dmin<=z[nc-1]) {
+                	
+                	// Loop over all contours
                     for (k=0;k<nc;k++) {
+                    	
+                    	// Check to see if the height range values cross this contour
                         if (z[k]>=dmin&&z[k]<=dmax) {
+                        	
                             for (m=4;m>=0;m--) {
                                 if (m>0) {
                                     // The indexing of im and jm should be noted as it has to
