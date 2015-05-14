@@ -70,7 +70,7 @@ public class HeatmapComponent implements ODLComponent {
 	@Override
 	public ODLDatastore<? extends ODLTableDefinition> getOutputDsDefinition(ODLApi api, int mode, Serializable configuration) {
 		ODLDatastoreAlterable<?extends ODLTableDefinitionAlterable> ds = api.tables().createDefinitionDs();
-		ODLTableDefinitionAlterable table = ds.createTable("CountourPolygons", -1);
+		ODLTableDefinitionAlterable table = ds.createTable("ContourPolygons", -1);
 		table.addColumn(-1, "Level", ODLColumnType.LONG, 0);
 		table.addColumn(-1, "Min", ODLColumnType.DOUBLE, 0);
 		table.addColumn(-1, "Max", ODLColumnType.DOUBLE, 0);
@@ -132,17 +132,18 @@ public class HeatmapComponent implements ODLComponent {
 		// write out
 		ODLTable outTable = outputDs.getTableAt(0);
 		for(SingleContourGroup r : result.groups){
-			int row = outTable.createEmptyRow(-1);
-			outTable.setValueAt(r.level+1, row, 0);
-			outTable.setValueAt(result.levelLowerLimits[r.level], row, 1);
-			outTable.setValueAt(result.levelUpperLimits[r.level], row, 2);
-			outTable.setValueAt(Colours.temperature((double)r.level / (c.getNbContourLevels()+1)), row, 3);
-			Geometry p = r.geometry;
-			if(transform!=null){
-				p = transform.gridToWGS84(p);
-			}
-			outTable.setValueAt(new ODLLoadedGeometry(p) ,row, 4);
-			
+			if(r.geometry!=null){
+				int row = outTable.createEmptyRow(-1);
+				outTable.setValueAt(r.level+1, row, 0);
+				outTable.setValueAt(result.levelLowerLimits[r.level], row, 1);
+				outTable.setValueAt(result.levelUpperLimits[r.level], row, 2);
+				outTable.setValueAt(Colours.temperature((double)r.level / (c.getNbContourLevels()+1)), row, 3);
+				Geometry p = r.geometry;
+				if(transform!=null){
+					p = transform.gridToWGS84(p);
+				}
+				outTable.setValueAt(new ODLLoadedGeometry(p) ,row, 4);	
+			}			
 		}
 	}
 

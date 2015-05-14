@@ -190,9 +190,9 @@ public class HeatmapGenerator {
 		return finishedPolygons;
 	}
 
-	private static boolean isValidMultipolygon(List<Polygon> polyGridCoordList) {
-		return new GeometryFactory().createMultiPolygon(polyGridCoordList.toArray(new Polygon[polyGridCoordList.size()])).isValid();
-	}
+//	private static boolean isValidMultipolygon(List<Polygon> polyGridCoordList) {
+//		return new GeometryFactory().createMultiPolygon(polyGridCoordList.toArray(new Polygon[polyGridCoordList.size()])).isValid();
+//	}
 
 	
 	private static List<List<LineString>> linkEdges(Collection<LineString> inputEdges, boolean allowMultiple, double linkTolerance, GeometryFactory factory) {
@@ -391,8 +391,9 @@ public class HeatmapGenerator {
 	}
 	
 	public static class SingleContourGroup{
-		LargeList<LineString> rawEdges = new LargeList<LineString>();
+		//LargeList<LineString> rawEdges = new LargeList<LineString>();
 		Geometry geometry;
+		List<Polygon> rawPolygons;
 		int level;
 		
 	}
@@ -518,9 +519,8 @@ public class HeatmapGenerator {
 		// flood fill to join levels
 		TLongArrayList openSet = new TLongArrayList();
 		TLongArrayList nextSet = new TLongArrayList();
-		//LargeList<HashSet<LineString>> edgesByGroup = new LargeList<HashSet<LineString>>();
-		TIntArrayList levelsByGroup = new TIntArrayList();
-		LargeList<MultiPolygon> unionPerGroup = new LargeList<MultiPolygon>();
+
+		int polygonCount=0;
 		for(int ix =0 ; ix < cellCoords.xDim; ix++){
 			for(int iy = 0 ; iy < cellCoords.yDim ; iy++){
 				if(groups[ix][iy]!=-1){
@@ -528,16 +528,15 @@ public class HeatmapGenerator {
 				}
 				
 				// new group - init seed point
-				final int groupId = levelsByGroup.size();
+				final int groupId = result.groups.size();
 				final int level = levels[ix][iy];
-				levelsByGroup.add(level);
-			//	unionPerGroup.add(null);
+				final HashSet<LineString> edges = new HashSet<LineString>();
+				final SingleContourGroup group = new SingleContourGroup();
+				result.groups.add(group);
+				group.level = levels[ix][iy];
 				openSet.clear();
 				openSet.add(getXYAsLong(ix, iy));
-				final HashSet<LineString> edges = new HashSet<LineString>();
-		//		ArrayList<Geometry> cellPolygons = new ArrayList<Geometry>();
-			//	edgesByGroup.add(edges);
-				
+
 				// keep on filling from this new group's seed point
 				while(openSet.size()>0){
 					nextSet.clear();
@@ -579,36 +578,52 @@ public class HeatmapGenerator {
 				}
 				
 				// do union of all
-				List<Polygon> polygons = buildPolygonsFromEdgeList(edges, cellLength * 0.000000001, factory);
-				MultiPolygon mp = factory.createMultiPolygon(polygons.toArray(new Polygon[polygons.size()]));
-				unionPerGroup.add(mp);
-			//	GeometryCollection geometryCollection  = factory.createGeometryCollection(cellPolygons.toArray(new Geometry[cellPolygons.size()]));
-				//buildPolygonsFromEdgeList(id, edges, linkTolerance, factory)
-				//unionPerGroup.add(geometryCollection.union());
+				group.rawPolygons = buildPolygonsFromEdgeList(edges, cellLength * 0.000000001, factory);
+				polygonCount += group.rawPolygons.size();
+				group.geometry  = factory.createMultiPolygon(group.rawPolygons.toArray(new Polygon[group.rawPolygons.size()]));
+
 			}
 		}
 		
-		// create polygons for each group...
-		int n = levelsByGroup.size();
-	//	LargeList<Polygon> allGeoms = new LargeList<Polygon>();
-		for(int i =0 ; i < n ; i++){
-			SingleContourGroup polyResult = new SingleContourGroup();
-			polyResult.level  =levelsByGroup.get(i);
-			polyResult.geometry = unionPerGroup.get(i);
-		//	allGeoms.add(polyResult.geometry);
-			result.groups.add(polyResult);
-//			Polygonizer polygonizer = new Polygonizer();
-//			polygonizer.add(edgesByGroup.get(i));
-//			Collection<?> polygons = polygonizer.getPolygons();
-//			for(Object o : polygons){
-//				PolygonResult polyResult = new PolygonResult();
-//				polyResult.polygon = (Polygon)o;
-//				polyResult.level = level;
-//				result.polygons.add(polyResult);
-//				allGeoms.add(polyResult.polygon);
-//			}
-		}
 
+		if(simplify){
+			// get single array of all polygons
+			Polygon [] polygons = new Polygon[polygonCount];
+			int i =0;
+			for(SingleContourGroup group : result.groups){
+				for(Polygon p : group.rawPolygons){
+					polygons[i++] = p;	
+				}
+			}
+			
+			MultiPolygon mp = factory.createMultiPolygon(polygons);
+			double tolerance = 5 * cellLength;
+			Geometry simplified = TopologyPreservingSimplifier.simplify(mp, tolerance);
+			if(MultiPolygon.class.isInstance(simplified) && simplified.getNumGeometries() == polygonCount){
+				i =0;
+				for(SingleContourGroup group : result.groups){
+					int np = group.rawPolygons.size();
+					ArrayList<Polygon> groupPolygons = new ArrayList<Polygon>(np);
+					for(int j = 0 ; j < np ; j++){
+						Geometry geometry = simplified.getGeometryN(i++);
+						if(geometry!=null && Polygon.class.isInstance(geometry) && !geometry.isEmpty()){
+							groupPolygons.add((Polygon)geometry);
+						}
+					}
+					
+					if(groupPolygons.size()>0){
+						group.geometry = factory.createMultiPolygon(groupPolygons.toArray(new Polygon[groupPolygons.size()]));						
+					}else{
+						// simplified to nothing!
+						group.geometry = null;
+					}
+				}
+			}
+		//	TIntArrayList polygonIndexToGroup = new TIntArrayList();
+		}
+		
+		// TO DO .. try simplifying with everything as one big multipolygon...
+		
 //		// simplify to get rid of jaggedness
 //		if(simplify){
 //	
