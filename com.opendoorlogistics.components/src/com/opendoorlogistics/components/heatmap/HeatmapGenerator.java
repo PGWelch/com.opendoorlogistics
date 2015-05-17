@@ -1,21 +1,37 @@
 package com.opendoorlogistics.components.heatmap;
 
-import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.list.array.TLongArrayList;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.procedure.TObjectProcedure;
+import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.set.hash.TLongHashSet;
 
-import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+
+
+
+
+
+
+
+
+
+
+
+
 
 import com.opendoorlogistics.core.utils.LargeList;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
@@ -23,6 +39,7 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.PrecisionModel;
+import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.operation.polygonize.Polygonizer;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
 
@@ -93,14 +110,20 @@ public class HeatmapGenerator {
 		int nbFailed=0;
 		for (List<LineString> list : shapes) {
 			try{
+//				Polygonizer polygonizer = new Polygonizer();
+//				polygonizer.add(list);
+//				for(Object p : polygonizer.getPolygons()){
+//					polygons.add((Polygon)p);
+//				}
+				
 				Polygon polygon = createJTSPolygon(list);
 				if (polygon.getNumInteriorRing() > 0) {
 					throw new RuntimeException();
 				}
-				
-			//	double gap = VoronoiEdge.totalGapBetweenLinks(list);
-			//	System.out.println(id + ", " + list.size() + " edges, gap=" + gap + ", area=" + polygon.getArea());
-								
+//				
+//			//	double gap = VoronoiEdge.totalGapBetweenLinks(list);
+//			//	System.out.println(id + ", " + list.size() + " edges, gap=" + gap + ", area=" + polygon.getArea());
+//								
 				polygons.add(polygon);
 				
 			}catch(Exception e){
@@ -242,7 +265,7 @@ public class HeatmapGenerator {
 
 			if (closest.dstSqd > linkTolerance) {
 				if (allowMultiple == false) {
-					throw new RuntimeException("Problem with voronoi diagram. Cannot form complete shape.");
+					throw new RuntimeException("Cannot form complete shape.");
 				} else {
 					ret.add(linked);
 					linked = new ArrayList<>(edges.size());
@@ -333,11 +356,34 @@ public class HeatmapGenerator {
 			return getCell(y, area.getMinY());
 		}
 		
+		double value(int ix, int iy, Quadtree q, Gaussian g){
+			Coordinate c = new Coordinate(getCellXCentre(ix), getCellYCentre(iy),0);
+			Envelope envelope = new Envelope(c);
+			envelope.expandBy(g.cutoff);
+			List<?> list = q.query(envelope);
+			double ret=0;
+			for(Object pnt : list){
+				InputPoint ip = (InputPoint)pnt;
+				Coordinate cp = ip.point.getCoordinate();
+				double distSqd = twoDimDistSqd(c, cp);
+				if(distSqd<= g.cutoffSqd){
+					double dist = Math.sqrt(distSqd);
+					double value = g.value(dist) * ip.weight;
+					ret+=value;
+				}
+			}
+			return ret;
+		}
+		
 		private int getCell(double s, double l){
 			if(s >= l){
 				return (int)Math.floor( (s - l) / boxLength ); 
 			}
 			return -1 -  (int)Math.floor( (l - s ) / boxLength ); 
+		}
+		
+		boolean isInsideGrid(int ox, int oy){
+			return ox>=0 && oy >= 0 && ox < xDim && oy < yDim;			
 		}
 		
 		LineString getEdge(int ix, int iy, EdgeType type, GeometryFactory factory){
@@ -391,10 +437,20 @@ public class HeatmapGenerator {
 	}
 	
 	public static class SingleContourGroup{
+		final int index;
+		
+		SingleContourGroup(int index) {
+			this.index = index;
+		}
 		//LargeList<LineString> rawEdges = new LargeList<LineString>();
 		Geometry geometry;
 		List<Polygon> rawPolygons;
 		int level;
+		TLongHashSet boundaryCells = new TLongHashSet();
+		TIntHashSet bordersGroups = new TIntHashSet();
+		TIntHashSet containsGroups = new TIntHashSet();
+		HashSet<LineString> outerRing = new HashSet<LineString>();
+		TIntObjectHashMap<HashSet<LineString> > innerRings = new TIntObjectHashMap<HashSet<LineString>>();
 		
 	}
 	
@@ -404,8 +460,14 @@ public class HeatmapGenerator {
 		double [] levelUpperLimits;
 	}
 	
+//	private static class Edge{
+//		LineString ls;
+//		int group1=-1;
+//		int group2=-1;
+//	}
+	
 	public static HeatMapResult build(Iterable<InputPoint> points,double radius, Envelope area, double cellLength, int nbContourLevels, boolean simplify){
-		GeometryFactory factory = new GeometryFactory(new PrecisionModel(0.0000001 * cellLength));
+		GeometryFactory factory = new GeometryFactory();
 		Gaussian g = new Gaussian(radius);
 		
 		CellCoords cellCoords = new CellCoords(area, cellLength);
@@ -520,7 +582,7 @@ public class HeatmapGenerator {
 		TLongArrayList openSet = new TLongArrayList();
 		TLongArrayList nextSet = new TLongArrayList();
 
-		int polygonCount=0;
+		//int polygonCount=0;
 		for(int ix =0 ; ix < cellCoords.xDim; ix++){
 			for(int iy = 0 ; iy < cellCoords.yDim ; iy++){
 				if(groups[ix][iy]!=-1){
@@ -530,8 +592,8 @@ public class HeatmapGenerator {
 				// new group - init seed point
 				final int groupId = result.groups.size();
 				final int level = levels[ix][iy];
-				final HashSet<LineString> edges = new HashSet<LineString>();
-				final SingleContourGroup group = new SingleContourGroup();
+				//final HashSet<LineString> edges = new HashSet<LineString>();
+				final SingleContourGroup group = new SingleContourGroup(groupId);
 				result.groups.add(group);
 				group.level = levels[ix][iy];
 				openSet.clear();
@@ -555,7 +617,7 @@ public class HeatmapGenerator {
 								int ox = x + offset.dx;
 								int oy = y + offset.dy;
 								
-								boolean insideGrid = ox>=0 && oy >= 0 && ox < cellCoords.xDim && oy < cellCoords.yDim;
+								boolean insideGrid = cellCoords.isInsideGrid(ox, oy);
 								if(insideGrid){
 									if(groups[ox][oy]==-1 && levels[ox][oy] == level){
 										nextSet.add(getXYAsLong(ox, oy));
@@ -564,7 +626,9 @@ public class HeatmapGenerator {
 								
 								// check for an edge and save it
 								if(!insideGrid || levels[ox][oy]!=level){
-									edges.add(cellCoords.getEdge(x, y, offset.edge, factory));
+									// record that this is a boundary cell
+									group.boundaryCells.add(getXYAsLong(x, y));
+									//edges.add(cellCoords.getEdge(x, y, offset.edge, factory));
 								}
 							}
 						}
@@ -578,72 +642,208 @@ public class HeatmapGenerator {
 				}
 				
 				// do union of all
-				group.rawPolygons = buildPolygonsFromEdgeList(edges, cellLength * 0.000000001, factory);
-				polygonCount += group.rawPolygons.size();
-				group.geometry  = factory.createMultiPolygon(group.rawPolygons.toArray(new Polygon[group.rawPolygons.size()]));
+				//group.rawPolygons = buildPolygonsFromEdgeList(edges, cellLength * 0.000000001, factory);
+				//polygonCount += group.rawPolygons.size();
+				//group.geometry  = factory.createMultiPolygon(group.rawPolygons.toArray(new Polygon[group.rawPolygons.size()]));
 
 			}
 		}
 		
-
-		if(simplify){
-			// get single array of all polygons
-			Polygon [] polygons = new Polygon[polygonCount];
-			int i =0;
-			for(SingleContourGroup group : result.groups){
-				for(Polygon p : group.rawPolygons){
-					polygons[i++] = p;	
-				}
-			}
-			
-			MultiPolygon mp = factory.createMultiPolygon(polygons);
-			double tolerance = 5 * cellLength;
-			Geometry simplified = TopologyPreservingSimplifier.simplify(mp, tolerance);
-			if(MultiPolygon.class.isInstance(simplified) && simplified.getNumGeometries() == polygonCount){
-				i =0;
-				for(SingleContourGroup group : result.groups){
-					int np = group.rawPolygons.size();
-					ArrayList<Polygon> groupPolygons = new ArrayList<Polygon>(np);
-					for(int j = 0 ; j < np ; j++){
-						Geometry geometry = simplified.getGeometryN(i++);
-						if(geometry!=null && Polygon.class.isInstance(geometry) && !geometry.isEmpty()){
-							groupPolygons.add((Polygon)geometry);
+		// We need to work out what's the outer boundary of each group and just build this into
+		// a polygon. 
+		// We then subtract the outer boundary polygons of smaller polygons from larger ones?
+		// A group is enclosed by another group if all of its neighbours are itself or the other group.
+		// The edges of any enclosed groups are therefore inner boundaries.
+		for(SingleContourGroup group : result.groups){
+			for(long l : group.boundaryCells.toArray()){
+				int x = getXFromLong(l);
+				int y = getYFromLong(l);
+				for(Offset offset : offsets){
+					int ox = x + offset.dx;
+					int oy = y + offset.dy;
+					boolean insideGrid = cellCoords.isInsideGrid(ox, oy);
+					if(!insideGrid){
+						group.bordersGroups.add(-1);
+					}else{
+						int otherGroup = groups[ox][oy];
+						if(otherGroup!=group.index){
+							group.bordersGroups.add(otherGroup);							
 						}
 					}
-					
-					if(groupPolygons.size()>0){
-						group.geometry = factory.createMultiPolygon(groupPolygons.toArray(new Polygon[groupPolygons.size()]));						
-					}else{
-						// simplified to nothing!
-						group.geometry = null;
-					}
 				}
 			}
-		//	TIntArrayList polygonIndexToGroup = new TIntArrayList();
 		}
 		
-		// TO DO .. try simplifying with everything as one big multipolygon...
+		// Mark which groups are contained by which other groups
+		for(SingleContourGroup group : result.groups){
+			// doesn't reach the edge but does reach something?
+			if(group.bordersGroups.contains(-1)==false && group.bordersGroups.size()==1){
+				int parent = group.bordersGroups.iterator().next();
+				result.groups.get(parent).containsGroups.add(group.index);
+			}
+		}
 		
-//		// simplify to get rid of jaggedness
-//		if(simplify){
-//	
-//			n = unionPerGroup.size();
-//			Geometry [] garr = new Geometry[n];
-//			for(int i =0 ; i < n ; i++){
-//				garr[i] = unionPerGroup.get(i);
-//			}
+		// Loop over all the edge cells in a group and then make the polygon
+		for(SingleContourGroup group : result.groups){
+			
+			class TmpEdge{
+				int otherGroup;
+				int y;
+				LineString ls;
+			}
+			
+			HashMap<LineString, TmpEdge> edges = new HashMap<LineString, TmpEdge>();
+			ArrayList<TmpEdge> deciderYLine = new ArrayList<TmpEdge>();
+			
+			int firstY=-1;
+			for(long l : group.boundaryCells.toArray()){
+				int x = getXFromLong(l);
+				int y = getYFromLong(l);
+				
+				
+				for(Offset offset : offsets){
+					int ox = x + offset.dx;
+					int oy = y + offset.dy;
+					
+					LineString ls = cellCoords.getEdge(x, y, offset.edge, factory);
+					boolean insideGrid = cellCoords.isInsideGrid(ox, oy);
+					int otherGroup =insideGrid? groups[ox][oy]:-1;
+					if(otherGroup!=group.index && !edges.containsKey(ls)){
+						TmpEdge te = new TmpEdge();
+						te.ls = ls;
+						te.y = y;
+						te.otherGroup = otherGroup;
+						edges.put(ls, te);
+						
+						// is vertical?
+						if(offset.dx==0){
+							if(firstY==-1){
+								firstY = y;
+							}
+							
+							if(y == firstY){
+								deciderYLine.add(te);
+							}		
+						}
+	
+					}
+				}
+				
+				double linkTolerance =  cellLength * 0.000000001;
+				List<List<LineString>> linked  = linkEdges(edges.keySet(), true, linkTolerance, factory);
+				
+				Collections.sort(deciderYLine, new Comparator<TmpEdge>() {
+
+					@Override
+					public int compare(TmpEdge o1, TmpEdge o2) {
+						return Double.compare(o1.ls.getCoordinate().x, o2.ls.getCoordinate().x);
+					}
+				});
+				
+				
+				// find the outer ring
+				int nrings = linked.size();
+				int outerIndex=-1;
+				LineString decider = deciderYLine.get(0).ls;
+				for(int i =0 ; i < nrings&& outerIndex==-1 ; i++){
+					for(LineString ls : linked.get(i)){
+						// check to see if this linestring overlays on the decider
+						if(ls.equals(decider) || ls.reverse().equals(decider)){
+							outerIndex = i;
+							break;
+						}
+					}
+				}
+				
+				// TO DO NEED ANOTHER METHOD OF IDENTIFYING OUTER EDGE
+				// AS CONTAINSGROUPS LOGIC DOESN'T WORK...
+				
+				// MAYBE WE SHOULD JUST TRACE A LINE FROM EACH SEALED LINEARRING
+				// TO THE OUTSIDE - I.E. NORMAL WAY OF TELLING...
+				
+				// WE ONLY NEED TO LOOK AT VERTICAL LINES WITH THE SAME Y 
+				// WE THEN SORT THEM
+				
+					
+//					if(insideGrid){
+//						
+//						// is this another group?
+//						if(otherGroup!=group.index){
 //
-//			GeometryCollection collection = factory.createGeometryCollection(garr);
-//			double tolerance = 2 * cellLength;
-//			Geometry simplified = TopologyPreservingSimplifier.simplify(collection, tolerance);
-//			if(GeometryCollection.class.isInstance(simplified) && simplified.getNumGeometries() == n){
-//				for(int i =0 ; i < n ; i++){
-//					result.groups.get(i).geometry = simplified.getGeometryN(i);
+//							// is it inside this group?
+//							if(group.containsGroups.contains(otherGroup)){
+//								HashSet<LineString> set = group.innerRings.get(otherGroup);
+//								if(set==null){
+//									set = new HashSet<LineString>();
+//									group.innerRings.put(otherGroup, set);
+//								}
+//								set.add(ls);														
+//							}else{
+//								group.outerRing.add(ls);								
+//							}
+//						}
+//			
+//					}else{
+//						group.outerRing.add(ls);
+//					}
+					
+				
+				
+				
+
+				
+	
+			}
+			
+			double linkTolerance =  cellLength * 0.000000001;
+			LinearRing outer = createJTSLinearRing(linkEdges(group.outerRing, false, linkTolerance, factory).get(0));
+			int nbInner = group.innerRings.size();
+			LinearRing [] inners = new LinearRing[nbInner];
+			int i =0 ; 
+			for(HashSet<LineString> set : group.innerRings.valueCollection()){
+				inners[i++]= createJTSLinearRing(linkEdges(set, false, linkTolerance, factory).get(0));
+			}
+
+			group.geometry = factory.createPolygon(outer, inners);
+		}
+		
+
+
+		if(simplify){
+//			// get single array of all polygons
+//			Polygon [] polygons = new Polygon[polygonCount];
+//			int i =0;
+//			for(SingleContourGroup group : result.groups){
+//				for(Polygon p : group.rawPolygons){
+//					polygons[i++] = p;	
 //				}
 //			}
 //			
-//			
-//		}
+//			MultiPolygon mp = factory.createMultiPolygon(polygons);
+//			double tolerance = 5 * cellLength;
+//			Geometry simplified = TopologyPreservingSimplifier.simplify(mp, tolerance);
+//			if(MultiPolygon.class.isInstance(simplified) && simplified.getNumGeometries() == polygonCount){
+//				i =0;
+//				for(SingleContourGroup group : result.groups){
+//					int np = group.rawPolygons.size();
+//					ArrayList<Polygon> groupPolygons = new ArrayList<Polygon>(np);
+//					for(int j = 0 ; j < np ; j++){
+//						Geometry geometry = simplified.getGeometryN(i++);
+//						if(geometry!=null && Polygon.class.isInstance(geometry) && !geometry.isEmpty()){
+//							groupPolygons.add((Polygon)geometry);
+//						}
+//					}
+//					
+//					if(groupPolygons.size()>0){
+//						group.geometry = factory.createMultiPolygon(groupPolygons.toArray(new Polygon[groupPolygons.size()]));						
+//					}else{
+//						// simplified to nothing!
+//						group.geometry = null;
+//					}
+//				}
+//			}
+		}
+		
 
 		return result;
 	}
@@ -663,11 +863,13 @@ public class HeatmapGenerator {
 
 	private static class Gaussian{
 		final double cutoff;
+		final double cutoffSqd;
 		final double factorA;
 		final double factorB;
 		
 		Gaussian(double radius) {
 			cutoff = radius * GAUSSIAN_CUTOFF;
+			cutoffSqd = cutoff * cutoff;
 			factorA = 1.0/Math.sqrt(2 * Math.PI * radius * radius);
 			factorB = -1.0/ (2 * radius * radius);
 		}
@@ -713,5 +915,10 @@ public class HeatmapGenerator {
 		
 	}
 	
+	private static double twoDimDistSqd(Coordinate a, Coordinate b){
+		double dx = a.x - b.x;
+		double dy = a.y - b.y;
+		return dx*dx + dy*dy;
+	}
 
 }
