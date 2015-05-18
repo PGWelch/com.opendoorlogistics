@@ -7,16 +7,31 @@
 package com.opendoorlogistics.components.jsprit;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.net.URL;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextPane;
+
+import sun.misc.IOUtils;
 
 import com.opendoorlogistics.api.components.ComponentConfigurationEditorAPI;
 import com.opendoorlogistics.api.ui.UIFactory;
@@ -34,11 +49,12 @@ final class VRPConfigPanel extends JPanel {
 
 	}
 
-	VRPConfigPanel(VRPConfig rc, ComponentConfigurationEditorAPI editorAPI) {
+	VRPConfigPanel(VRPConfig rc,final ComponentConfigurationEditorAPI editorAPI) {
 		this.conf = rc;
 		this.editorAPI = editorAPI;
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
+		
 		JPanel iterations = editorAPI.getApi().uiFactory().createIntegerEntryPane("Number of iterations  ", conf.getNbIterations(), "How many iterations should the optimiser run for?", new IntChangedListener() {
 
 			@Override
@@ -96,9 +112,76 @@ final class VRPConfigPanel extends JPanel {
 			boxes[opt.ordinal()].addItemListener(itemListener);
 			optPanel.add(boxes[opt.ordinal()]);
 		}
+		
+		JButton btnViewConfig = new  JButton(new AbstractAction("View algorithm configuration file") {
+			
+			@Override
+			public void actionPerformed(ActionEvent evt) {
+				URL url = VRPComponent.getConfigFileURL(editorAPI.getApi());
+				InputStream stream =null;
+				StringBuilder builder = new StringBuilder();
+				try{
+					stream = url.openStream();
+				//	builder.append("Configuration file: " + url.toExternalForm());
+				//	builder.append(System.lineSeparator());
+					
+					InputStreamReader is = new InputStreamReader(stream);
+					BufferedReader br = new BufferedReader(is);
+					String read = br.readLine();
+					while(read != null) {
+						builder.append(read);
+						builder.append(System.lineSeparator());
+					    read =br.readLine();
+					}					
+					
+				}catch(Exception e){
+					JOptionPane.showMessageDialog(editorAPI.getAncestorFrame(), "Error reading configuration file");
+					return;
+				}finally{
+					try {
+						if(stream!=null){
+							stream.close();
+						}						
+					} catch (Exception e2) {
+						
+					}
 
+				}
+				
+				// Show dialog
+				if(builder.length()>0){
+					JTextPane pane = new JTextPane();
+					pane.setText(builder.toString());
+					pane.setEditable(false);
+					JDialog dialog = new JDialog(editorAPI.getAncestorFrame());
+					dialog.setLayout( new BorderLayout());
+					dialog.add(new JScrollPane(pane), BorderLayout.CENTER);
+					dialog.setTitle(url.toExternalForm());
+//					JButton close = new JButton(new AbstractAction("Close") {
+//						
+//						@Override
+//						public void actionPerformed(ActionEvent e) {
+//							dialog.dispose();
+//						}
+//					});
+//					dialog.add(close, BorderLayout.SOUTH);
+					dialog.setResizable(true);
+					dialog.setPreferredSize(new Dimension(600, 800));
+					dialog.pack();
+					dialog.setVisible(true);
+				}
+			}
+		});
+		
+		// create a wrapper panel so the button is sized correctly
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.setLayout(new BorderLayout());
+		buttonPanel.add(btnViewConfig, BorderLayout.WEST);
+		optPanel.add(buttonPanel);
+		
 		add(optPanel);
 
+		
 		if (editorAPI != null) {
 		//	add(Box.createRigidArea(new Dimension(0,6)));
 			JPanel leftAlignHack = new JPanel();
@@ -109,6 +192,7 @@ final class VRPConfigPanel extends JPanel {
 			add(leftAlignHack);
 		}
 
+		
 		updateEnabled();
 	}
 
