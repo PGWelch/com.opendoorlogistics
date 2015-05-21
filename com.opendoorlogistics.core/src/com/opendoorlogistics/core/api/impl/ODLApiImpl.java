@@ -110,9 +110,18 @@ public class ODLApiImpl implements ODLApi{
 				
 				@Override
 				public File getStandardDataDirectory() {
-					File ret = new File(AppConstants.DATA_DIRECTORY);
+					return getAbsFile(AppConstants.DATA_DIRECTORY);
+				}
+
+				private File getAbsFile(String s) {
+					File ret = new File(s);
 					ret = ret.getAbsoluteFile();
 					return ret;
+				}
+
+				@Override
+				public File getStandardConfigDirectory() {
+					return getAbsFile(AppConstants.ODL_CONFIG_DIR);
 				}
 			};
 		}

@@ -28,4 +28,8 @@ public class VRPConstants {
 	static final int DEFAULT_NB_ITERATIONS = 500;
 	
 	public static final boolean ROUTE_EDITING_SHOWS_STATS = true;
+	
+	static final String ALGORITHM_EXTERNAL_CONFIG_FILENAME = "jsprit-odl-algorithm-config.xml";
+
+	static final String ALGORITHM_DEFAULT_CONFIG_FILENAME = "schrimpf.xml";
 }

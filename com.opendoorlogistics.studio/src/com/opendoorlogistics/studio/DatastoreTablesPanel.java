@@ -217,6 +217,10 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 
 			@Override
 			protected void launchMenu(MouseEvent me) {
+				//select the item under the mouse
+				list.setSelectedIndex(list.locationToIndex(me.getPoint()));
+				
+				// launch the popup menu
 				popup.show(me.getComponent(), me.getX(), me.getY());
 			}
 			// public void mouseReleased(MouseEvent Me) {
@@ -237,6 +241,9 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		list.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent evt) {
 				if (evt.getClickCount() >= 2) {
+					// ensure the item is selected (may have been deselected by the toggle)
+					list.setSelectedIndex(list.locationToIndex(evt.getPoint()));
+					
 					launchSelectedTable();
 				}
 			}

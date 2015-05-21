@@ -36,10 +36,11 @@ import org.mapsforge.map.layer.queue.Job;
 import org.mapsforge.map.layer.renderer.DatabaseRenderer;
 import org.mapsforge.map.layer.renderer.RendererJob;
 import org.mapsforge.map.model.DisplayModel;
-import org.mapsforge.map.reader.MapDatabase;
+import org.mapsforge.map.reader.MapFile;
 import org.mapsforge.map.rendertheme.ExternalRenderTheme;
 import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.mapsforge.map.rendertheme.XmlRenderTheme;
+import org.mapsforge.map.rendertheme.rule.RenderThemeFuture;
 
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.Tile;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactory;
@@ -57,7 +58,7 @@ class MapsforgeTileFactory extends TileFactory {
 	private static final int TILE_SIZE = 256;
 	private static final float TEXT_SCALE = 1.0f;
 
-	private final MapDatabase mapDatabase;
+	private final MapFile mapDatabase;
 	private final LinkedList<Tile> toCreate = new LinkedList<>();
 	private final DatabaseRenderer databaseRenderer;
 	private final XmlRenderTheme renderTheme;
@@ -81,7 +82,7 @@ class MapsforgeTileFactory extends TileFactory {
 		return InternalRenderTheme.OSMARENDER;
 	}
 	
-	MapsforgeTileFactory(TileFactoryInfo info, File mapFile, String xmlRenderThemeFilename,MapDatabase mapDatabase, Color fadeColour) {
+	MapsforgeTileFactory(TileFactoryInfo info, File mapFile, String xmlRenderThemeFilename,MapFile mapDatabase, Color fadeColour) {
 		super(info);
 		this.fadeColour =fadeColour;
 		this.mapDatabase = mapDatabase;
@@ -257,7 +258,7 @@ class MapsforgeTileFactory extends TileFactory {
 		}
 
 		databaseRenderer.destroy();
-		mapDatabase.closeFile();
+		mapDatabase.close();
 	}
 
 	@Override
@@ -304,10 +305,14 @@ class MapsforgeTileFactory extends TileFactory {
 		public BufferedImage call()  {
 			// get mapsforge zoom from jxmapviewer2 zoom (they use different conventions)
 			byte mapsforgeZoom = zoomLevelConverter.getMapsforge(tile.getZoom());
-			
+
+			// load the render them
+			RenderThemeFuture rtf = new RenderThemeFuture(AwtGraphicFactory.INSTANCE, renderTheme, model);
+			rtf.run();
+
 			// render the mapsforge tile
 			org.mapsforge.core.model.Tile mtile = new org.mapsforge.core.model.Tile(tile.getX(), tile.getY(), mapsforgeZoom, TILE_SIZE);
-			RendererJob job = new RendererJob(mtile, mapFile, renderTheme, model, TEXT_SCALE, true, false);
+			RendererJob job = new RendererJob(mtile, mapDatabase, rtf, model, TEXT_SCALE, true, false);
 			TileBitmap bitmap = databaseRenderer.executeJob(job);
 
 			// copy it over onto an image (CompressedImage needs TYPE_INT_ARGB and anyway we can't access the buffered image internal to the tile)
@@ -441,6 +446,12 @@ class MapsforgeTileFactory extends TileFactory {
 			public boolean containsKey(Job key) {
 				int odlZoom = zoomLevelConverter.getODL(key.tile.zoomLevel);
 				return getCachedTileImage(key.tile.tileX, key.tile.tileY, odlZoom)!=null;
+			}
+
+			@Override
+			public void purge() {
+				// TODO Auto-generated method stub
+				
 			}
 		};
 		

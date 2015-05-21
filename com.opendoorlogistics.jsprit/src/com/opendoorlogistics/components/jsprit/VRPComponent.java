@@ -10,7 +10,9 @@ import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.Serializable;
+import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,6 +50,7 @@ import jsprit.core.problem.solution.route.activity.TourActivity;
 import jsprit.core.problem.solution.route.activity.TourActivity.JobActivity;
 import jsprit.core.problem.vehicle.PenaltyVehicleType;
 import jsprit.core.problem.vehicle.Vehicle;
+import jsprit.core.util.Resource;
 import jsprit.core.util.Solutions;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 
@@ -285,11 +288,23 @@ public class VRPComponent implements ODLComponent {
 
 	}
 
+	static String getConfigFilename(ODLApi api){
+		File configDir = api.io().getStandardConfigDirectory();
+		File file = new File(configDir, VRPConstants.ALGORITHM_EXTERNAL_CONFIG_FILENAME);
+		file = file.getAbsoluteFile();
+		if( Resource.getAsURL(file.getAbsolutePath())!=null){
+			return file.getAbsolutePath();
+		}
+		return VRPConstants.ALGORITHM_DEFAULT_CONFIG_FILENAME;
+	}
 
-
-	private VehicleRoutingAlgorithm initOptimiser(VRPConfig config, VehicleRoutingProblem problem) {
+	static URL getConfigFileURL(ODLApi api){
+		return Resource.getAsURL(getConfigFilename(api));
+	}
 	
-        VehicleRoutingAlgorithmBuilder vraBuilder = new VehicleRoutingAlgorithmBuilder(problem,"schrimpf.xml");
+	private VehicleRoutingAlgorithm initOptimiser(ODLApi api,VRPConfig config, VehicleRoutingProblem problem) {
+	
+        VehicleRoutingAlgorithmBuilder vraBuilder = new VehicleRoutingAlgorithmBuilder(problem,getConfigFilename(api));
         vraBuilder.addDefaultCostCalculators();
         vraBuilder.addCoreConstraints();
         
@@ -338,7 +353,7 @@ public class VRPComponent implements ODLComponent {
 		final BestEver bestEver = new BestEver();
 		
 		// get the algorithm out-of-the-box
-		VehicleRoutingAlgorithm algorithm =initOptimiser(conf,built.getJspritProblem());
+		VehicleRoutingAlgorithm algorithm =initOptimiser(api.getApi(),conf,built.getJspritProblem());
 	//	VehicleRoutingAlgorithm algorithm = new SchrimpfFactory().createAlgorithm(built.getJspritProblem());
 		algorithm.setMaxIterations(Math.max(conf.getNbIterations(),1));
 		class LastUpdate {
