@@ -16,8 +16,8 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 
+import com.opendoorlogistics.api.ui.UIFactory.TextChangedListener;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel;
-import com.opendoorlogistics.core.utils.ui.TextEntryPanel.TextChangedListener;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.studio.components.geocoder.model.GeocodeAverageType;
 import com.opendoorlogistics.studio.components.geocoder.model.GeocodeModel;

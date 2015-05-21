@@ -16,9 +16,9 @@ import javax.swing.event.ChangeListener;
 
 import com.opendoorlogistics.api.components.ComponentConfigurationEditorAPI;
 import com.opendoorlogistics.api.ui.UIFactory;
+import com.opendoorlogistics.api.ui.UIFactory.DoubleChangedListener;
 import com.opendoorlogistics.api.ui.UIFactory.IntChangedListener;
 import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel;
-import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel.DoubleChangedListener;
 import com.opendoorlogistics.core.utils.ui.IntegerEntryPanel;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 

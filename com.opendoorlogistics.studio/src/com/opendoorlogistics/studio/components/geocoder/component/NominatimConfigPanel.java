@@ -14,10 +14,10 @@ import javax.swing.AbstractAction;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 
+import com.opendoorlogistics.api.ui.UIFactory.TextChangedListener;
 import com.opendoorlogistics.components.geocode.Countries.Country;
 import com.opendoorlogistics.core.utils.ui.ShowPanel;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel;
-import com.opendoorlogistics.core.utils.ui.TextEntryPanel.TextChangedListener;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.studio.components.geocoder.Controls;
 import com.opendoorlogistics.studio.controls.EditableComboBox;

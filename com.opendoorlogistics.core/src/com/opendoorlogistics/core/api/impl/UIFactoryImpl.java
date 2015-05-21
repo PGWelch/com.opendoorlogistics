@@ -18,10 +18,13 @@ import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 import com.opendoorlogistics.core.distances.ui.DistancesPanel;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.utils.ui.ComboEntryPanel;
+import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
 import com.opendoorlogistics.core.utils.ui.IntegerEntryPanel;
+import com.opendoorlogistics.core.utils.ui.TextEntryPanel;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
+import com.opendoorlogistics.core.utils.ui.TextEntryPanel.EntryType;
 
 public class UIFactoryImpl implements UIFactory{
 
@@ -73,6 +76,16 @@ public class UIFactoryImpl implements UIFactory{
 			String initialDirectoryName,
 			FilenameChangeListener directoryChangedListener) {
 		return FileBrowserPanel.createComponents(label,initialDirectoryName,directoryChangedListener, true, "OK");
+	}
+
+	@Override
+	public JPanel createDoubleEntryPane(String label, double initialValue, String tooltip, DoubleChangedListener dblChangedListener) {
+		return new DoubleEntryPanel(label, initialValue, tooltip, dblChangedListener);
+	}
+
+	@Override
+	public JPanel createTextEntryPane(String label, String initialValue, String tooltip, TextChangedListener listener) {
+		return new TextEntryPanel(label, initialValue, tooltip, EntryType.String, listener);
 	}
 
 }
