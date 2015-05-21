@@ -456,6 +456,9 @@ public class HeatmapGenerator {
 				for(cell.y = 0 ; cell.y < coordsSys.yDim ; cell.y++){
 					
 					int level = levelAccessor.getLevel(cell);
+					if(level==-1){
+						continue;
+					}
 					
 					// and each edge of the cell
 					for(Offset offset : Offset.NGBS4){
@@ -633,7 +636,9 @@ public class HeatmapGenerator {
 				}
 			}
 			
-			if(n>=4 && createDiagonals){
+			// A linear ring needs at least 4 points. Creating diagonals can halve the points,
+			// so only create diagonals if we're guaranteed to end up with at least 4 points
+			if(n>=8 && createDiagonals){
 				
 				LargeList<java.awt.Point> newOrdered1 = new LargeList<java.awt.Point>();
 				new PointLooper().loop(orderedPoints, new PointProcessor(){
@@ -931,11 +936,15 @@ public class HeatmapGenerator {
 			for(int ix =0 ; ix < cellCoords.xDim; ix++){
 				for(int iy = 0 ; iy < cellCoords.yDim ; iy++){
 					double z = data[ix][iy];
-					int level = (int)Math.floor( z * oneOverLevelWidth);
-					if(level>(nbContourLevels-1)){
-						level = nbContourLevels-1;
+					if(z>0){
+						int level = (int)Math.floor( z * oneOverLevelWidth);
+						if(level>(nbContourLevels-1)){
+							level = nbContourLevels-1;
+						}
+						levels[ix][iy] = level;						
+					}else{
+						levels[ix][iy] = -1;
 					}
-					levels[ix][iy] = level;
 				}
 			}
 		}else{

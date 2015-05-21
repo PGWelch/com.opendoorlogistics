@@ -10,7 +10,7 @@ public class HeatMapConfig implements Serializable {
 	private String EPSG;
 	private double pointRadius = 0.1;
 	private int nbContourLevels = 25;
-	private int resolution = 100;
+	private int resolution = 1000;
 	
 	public String getEPSG() {
 		return EPSG;
