@@ -2,6 +2,7 @@ package com.opendoorlogistics.components.heatmap;
 
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.procedure.TIntObjectProcedure;
+import gnu.trove.set.hash.TIntHashSet;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -597,7 +598,10 @@ public class HeatmapGenerator {
 			result.isHole = !rawPolygon.contains(factory.createPoint(cellCentre));
 
 			// Now create the final polygon with diagonals
-			result.polygon= createPolygonFromTracedPoints(orderedPoints,true, factory);
+			//result.polygon= createPolygonFromTracedPoints(orderedPoints,true, factory);
+			
+			// Turn off diagonal creation for the moment as its not reliable
+			result.polygon = rawPolygon;
 			return result;
 	
 		}
@@ -638,6 +642,7 @@ public class HeatmapGenerator {
 			
 			// A linear ring needs at least 4 points. Creating diagonals can halve the points,
 			// so only create diagonals if we're guaranteed to end up with at least 4 points
+			TIntHashSet nearbyLevels = new TIntHashSet();
 			if(n>=8 && createDiagonals){
 				
 				LargeList<java.awt.Point> newOrdered1 = new LargeList<java.awt.Point>();
@@ -645,10 +650,12 @@ public class HeatmapGenerator {
 
 					@Override
 					void process(int i, java.awt.Point pp, java.awt.Point cp, java.awt.Point np) {
-						// horizontal followed by vertical
 						boolean remove=false;
+						
+						// only remove if the points haven't been involved in an earlier remove 
 						double dist = pp.distance(np);
 						if(dist < sepLimit){
+							// horizontal followed by vertical
 							if(pp.y == cp.y && cp.x == np.x){
 								remove = true;
 							}
@@ -659,6 +666,19 @@ public class HeatmapGenerator {
 							}						
 						}
 		
+						// don't remove if we near to another level as this goes wrong 
+						if(remove){
+							nearbyLevels.clear();
+							int buffer = 5;
+							for(int x = cp.x - buffer ; x< cp.x + buffer ; x++){
+								for(int y = cp.y - buffer ; y< cp.y + buffer ; y++){
+									nearbyLevels.add(levelAccessor.getLevel(x, y));
+								}
+							}
+							
+							// nearby levels will be >=3 if there's a 3rd level nearby
+							remove = nearbyLevels.size()<=2;
+						}
 						
 						if(!remove){
 							newOrdered1.add(cp);
@@ -948,7 +968,7 @@ public class HeatmapGenerator {
 				}
 			}
 		}else{
-			return null;
+			return result;
 		}
 		
 		
