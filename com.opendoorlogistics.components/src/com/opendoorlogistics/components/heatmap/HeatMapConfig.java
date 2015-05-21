@@ -8,7 +8,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class HeatMapConfig implements Serializable {
 	private String EPSG;
-	private boolean simplify = true;
 	private double pointRadius = 0.1;
 	private int nbContourLevels = 25;
 	private int resolution = 100;
@@ -22,14 +21,6 @@ public class HeatMapConfig implements Serializable {
 		EPSG = ePSG;
 	}
 	
-	public boolean isSimplify() {
-		return simplify;
-	}
-	
-	@XmlAttribute
-	public void setSimplify(boolean simplify) {
-		this.simplify = simplify;
-	}
 	
 	public double getPointRadius() {
 		return pointRadius;

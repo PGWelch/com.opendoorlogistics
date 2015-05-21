@@ -127,7 +127,10 @@ public class HeatmapComponent implements ODLComponent {
 		double cellLength = maxDim / c.getResolution();
 		
 		// create result
-		HeatMapResult result = HeatmapGenerator.build(points, c.getPointRadius(), envelope, cellLength, c.getNbContourLevels(), c.isSimplify());
+		HeatMapResult result = HeatmapGenerator.build(points, c.getPointRadius(), envelope, cellLength, c.getNbContourLevels(),api);
+		if(api.isCancelled()){
+			return;
+		}
 		
 		// write out
 		ODLTable outTable = outputDs.getTableAt(0);
@@ -201,15 +204,15 @@ public class HeatmapComponent implements ODLComponent {
 			}
 		}));
 		
-		JCheckBox checkBox = new JCheckBox("Smooth polygon edges", c.isSimplify());
-		checkBox.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				c.setSimplify(checkBox.isSelected());
-			}
-		});
-		ret.add(checkBox);
+//		JCheckBox checkBox = new JCheckBox("Smooth polygon edges", c.isSimplify());
+//		checkBox.addActionListener(new ActionListener() {
+//			
+//			@Override
+//			public void actionPerformed(ActionEvent e) {
+//				c.setSimplify(checkBox.isSelected());
+//			}
+//		});
+//		ret.add(checkBox);
 		
 		return ret;
 	}
