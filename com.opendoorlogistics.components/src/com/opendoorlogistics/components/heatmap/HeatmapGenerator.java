@@ -1065,6 +1065,8 @@ public class HeatmapGenerator {
 		
 		// Loop over all points and add contribution to the cells
 		api.postStatusMessage("Calculating density value at each cell");
+		UpdateTimer timer = new UpdateTimer(250);
+		long nbParsed=0;
 		for(InputPoint point : points){
 			int cx = cellCoords.getCellX(point.point.getX());
 			int cy = cellCoords.getCellY(point.point.getY());
@@ -1091,6 +1093,11 @@ public class HeatmapGenerator {
 
 			if(api.isCancelled()){
 				return null;
+			}
+			
+			nbParsed++;
+			if(timer.isUpdate()){
+				api.postStatusMessage("Calculating density value at each cell - processed " + nbParsed + " input points.");				
 			}
 		}
 		
