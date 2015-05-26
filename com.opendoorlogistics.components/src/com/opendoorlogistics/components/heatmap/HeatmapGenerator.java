@@ -1,20 +1,26 @@
 package com.opendoorlogistics.components.heatmap;
 
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.procedure.TIntObjectProcedure;
 import gnu.trove.set.hash.TIntHashSet;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.core.utils.LargeList;
+import com.opendoorlogistics.core.utils.Numbers;
+import com.opendoorlogistics.core.utils.UpdateTimer;
+import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.index.quadtree.Quadtree;
 import com.vividsolutions.jts.simplify.TopologyPreservingSimplifier;
 
@@ -29,7 +35,7 @@ public class HeatmapGenerator {
 		RIGHT
 	}
 	
-	private static class CellCoordSystem{
+	static class CellCoordSystem{
 		final Envelope area;
 		final double cellLength;
 		final double halfCellLength;
@@ -251,7 +257,7 @@ public class HeatmapGenerator {
 	 * @author Phil
 	 *
 	 */
-	private static class TraceCoord{
+	static class TraceCoord{
 		java.awt.Point cell = new java.awt.Point();
 		java.awt.Point edgeStart = new java.awt.Point();
 		java.awt.Point edgeEnd = new java.awt.Point();
@@ -439,6 +445,172 @@ public class HeatmapGenerator {
 		
 		}
 		
+		synchronized void traceAllV2(GeometryFactory factory, List<SingleContourGroup> result){
+			TraceGraph graph = new TraceGraph();
+			UpdateTimer timer = new UpdateTimer(100);
+						
+			if(LOG_TO_CONSOLE){
+				logLevelsToConsole();
+				System.out.println();
+			}
+			
+			// loop over each cell and do all traces
+			TIntArrayList completedTraceIds = new TIntArrayList();
+			java.awt.Point cell = new java.awt.Point();
+			java.awt.Point otherCell = new java.awt.Point();
+			for(cell.x =0 ; cell.x<coordsSys.xDim ; cell.x++){
+				for(cell.y = 0 ; cell.y < coordsSys.yDim ; cell.y++){
+					
+					int level = levelAccessor.getLevel(cell);
+					if(level==-1){
+						continue;
+					}
+					
+					// and each edge of the cell
+					for(Offset offset : Offset.NGBS4){
+						offset.addTo(cell, otherCell);
+						int otherLevel = levelAccessor.getLevel(otherCell);
+						if(level!=otherLevel){
+							// This is a boundary!!!
+							
+							// define the edge
+							TraceCoord startCoord = new TraceCoord(cell, offset);
+							if(graph.isEdgeTracedFromCellAlready(startCoord)){
+								continue;
+							}
+							
+							// trace to create the polygon
+							int traceRingNb = graph.createTraceFirstEdge(startCoord, level);
+							
+							TraceCoord current = new TraceCoord();
+							current.set(startCoord);
+							boolean reachedStart=false;
+							while(!reachedStart){
+								traceNext(current);
+												
+								// check for reaching start again
+								reachedStart=current.edgeEnd.equals(startCoord.edgeStart);
+									
+								// check we've not already traced this edge (can happen when multiple rings are traced in succession)
+								if(!reachedStart && graph.isEdgeTracedFromCellAlready(current)){
+									break;
+								}
+	
+								graph.createTraceLaterEdge(current, level, traceRingNb);
+								
+							}
+							
+							if(reachedStart){
+								completedTraceIds.add(traceRingNb);
+							}
+							
+						}
+					}
+					
+					if(timer.isUpdate()){
+						double pc = 100.0*cell.x / coordsSys.xDim;
+						DecimalFormat df = new DecimalFormat("#.00"); 
+						api.postStatusMessage("Traced " + df.format(pc) +"% and found " + completedTraceIds.size() + " contour rings.");
+					}
+				}
+				
+				if(api.isCancelled()){
+					return;
+				}
+			}
+
+			// Calculate diagonals (i.e. what points to remove)
+			api.postStatusMessage("Calculating diagonals");
+			graph.calculateDiagonals();
+			if(api.isCancelled()){
+				return;
+			}
+			
+			// Build the polygons and find out if they're holes or not
+			api.postStatusMessage("Building polygons and testing for holes");
+			TIntObjectHashMap<List<Geometry>> polygonsByLevel = new TIntObjectHashMap<List<Geometry>>();
+			TIntObjectHashMap<List<Geometry>> holesByLevel = new TIntObjectHashMap<List<Geometry>>();
+			int nbBuilt = 0;
+			for(int ringId: completedTraceIds.toArray()){
+				List<java.awt.Point> pnts = graph.getPoints(ringId, false);
+				Geometry rawPolygon = createPolygonFromTracedPoints(pnts, false, factory);
+				
+				// Test if the central position of the original cell is inside or outside the polygon
+				// This determines if its a hole or not. Do this before creating diagonals (as diagonals break this test)
+				java.awt.Point startCell = graph.getFirstCell(ringId);
+				Coordinate cellCentre = new Coordinate(coordsSys.getCellXCentre(startCell.x), coordsSys.getCellYCentre(startCell.y), 0);
+				boolean isHole = !rawPolygon.contains(factory.createPoint(cellCentre));
+				
+				// Now create with diagonals
+				pnts = graph.getPoints(ringId, true);
+				Geometry polygon= createPolygonFromTracedPoints(pnts, false, factory);
+				
+				// And save it
+				TIntObjectHashMap<List<Geometry>> map = isHole ? holesByLevel:polygonsByLevel;	
+				int level = graph.getLevel(ringId);
+				List<Geometry> list = map.get(level);
+				if(list==null){
+					list = new ArrayList<Geometry>();
+					map.put(level, list);
+				}
+				list.add(polygon);
+				
+				nbBuilt++;
+				if(timer.isUpdate()){
+					api.postStatusMessage("Building polygons and testing for holes - built " + nbBuilt);	
+				}
+			}
+			
+			if(api.isCancelled()){
+				return;
+			}
+			
+			api.postStatusMessage("Removing holes from polygons");	
+			polygonsByLevel.forEachEntry(new TIntObjectProcedure<List<Geometry>>() {
+
+				@Override
+				public boolean execute(int level, List<Geometry> polygons) {
+					// build up a quadtree of holes
+					List<Geometry> holes = holesByLevel.get(level);
+					Quadtree quadtree = new Quadtree();
+					if(holes!=null){
+						for(Geometry hole : holes){
+							quadtree.insert(hole.getEnvelopeInternal(), hole);
+						}
+					}
+					
+					for(Geometry p : polygons){
+						// remove all holes
+						List<?> intersectingHoles = quadtree.query(p.getEnvelopeInternal());
+						for(Object o : intersectingHoles){
+							// Remove the hole if (and only if) its contained by the geometry;
+							// otherwise we remove non-holes which are contained within holes.
+							if(p.contains((Geometry)o)){
+								p = p.difference((Geometry)o);								
+							}
+						}
+						
+						// we now have the final geometry
+						if(p!=null && p.isEmpty()==false){
+							
+							// Simplify by a tiny tolerance that just removes unneeded points
+							Geometry simplified = TopologyPreservingSimplifier.simplify(p, coordsSys.cellLength * 0.0000000001);
+							if(LOG_TO_CONSOLE){
+								System.out.println("Simplified, reduced " + p.getNumPoints() + " down to " + simplified.getNumPoints());
+							}
+							
+							SingleContourGroup singleContourGroup = new SingleContourGroup(result.size());
+							singleContourGroup.geometry = simplified;
+							singleContourGroup.level = level;
+							result.add(singleContourGroup);
+						}
+						
+					}
+					return true;
+				}
+			});
+		}
+		
 		synchronized void traceAll(GeometryFactory factory, List<SingleContourGroup> result){
 			HashSet<Object> tracedEdges = new HashSet<Object>();
 			
@@ -598,10 +770,10 @@ public class HeatmapGenerator {
 			result.isHole = !rawPolygon.contains(factory.createPoint(cellCentre));
 
 			// Now create the final polygon with diagonals
-			//result.polygon= createPolygonFromTracedPoints(orderedPoints,true, factory);
+			result.polygon= createPolygonFromTracedPoints(orderedPoints,true, factory);
 			
 			// Turn off diagonal creation for the moment as its not reliable
-			result.polygon = rawPolygon;
+		//	result.polygon = rawPolygon;
 			return result;
 	
 		}
@@ -661,7 +833,7 @@ public class HeatmapGenerator {
 							}
 								
 							// vertical followed by horizontal
-							else if(pp.x == cp.x && pp.y == np.y){
+							if(pp.x == cp.x && pp.y == np.y){
 								remove = true;
 							}						
 						}
@@ -669,7 +841,7 @@ public class HeatmapGenerator {
 						// don't remove if we near to another level as this goes wrong 
 						if(remove){
 							nearbyLevels.clear();
-							int buffer = 5;
+							int buffer = 2;
 							for(int x = cp.x - buffer ; x< cp.x + buffer ; x++){
 								for(int y = cp.y - buffer ; y< cp.y + buffer ; y++){
 									nearbyLevels.add(levelAccessor.getLevel(x, y));
@@ -708,15 +880,16 @@ public class HeatmapGenerator {
 //					
 //				});
 
-				// ensure start and end points match
-				if(!newOrdered1.get(0).equals(newOrdered1.get(newOrdered1.size()-1))){
-					newOrdered1.add(newOrdered1.get(0));
-				}
-				
 				orderedPoints = newOrdered1;
 								
 			}
 
+			// ensure start and end points match
+			if(!orderedPoints.get(0).equals(orderedPoints.get(orderedPoints.size()-1))){
+				orderedPoints = new ArrayList<java.awt.Point>(orderedPoints);
+				orderedPoints.add(orderedPoints.get(0));
+			}
+			
 			// Now convert into real coords and create a polygon
 			n = orderedPoints.size();
 			Coordinate [] coordArray = new Coordinate[n];
@@ -993,7 +1166,9 @@ public class HeatmapGenerator {
 			}
 		});
 		
-		tracer.traceAll(factory, result.groups);
+		
+		//tracer.traceAll(factory, result.groups);
+		tracer.traceAllV2(factory, result.groups);
 
 		return result;
 	}	
