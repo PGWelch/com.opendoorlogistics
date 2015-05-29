@@ -39,10 +39,21 @@ final public class UKPostcodes {
 	public static final Pattern isSector = Pattern.compile("^(" + allSector + ")$",Pattern.CASE_INSENSITIVE);
 	public static final Pattern isUnit = Pattern.compile("^(" + allDistrict + ")\\s*(" + std2ndPart + ")$",Pattern.CASE_INSENSITIVE);
 	
+	/**
+	 * Match a UK unit postcode only, with or without a space, with groups that give the before space and after space parts separately. 
+	 */
+	public static final Pattern unitWithWithoutSpaceGroupedForSpace = Pattern.compile("([a-z][a-z]?\\d\\d?[a-z]?)\\s*(\\d[a-z][a-z])", Pattern.CASE_INSENSITIVE);
+	
 	public static String standardisePostcode(String s, boolean removeExtraDistrictLetter){
 		// run basic standardise
 		s = Strings.std(s);
-		
+
+		// if its a UK unit postcode then ensure its got the space
+		Matcher ukUnit = unitWithWithoutSpaceGroupedForSpace.matcher(s);
+		if(ukUnit.matches()){
+			s = ukUnit.group(1) + " " + ukUnit.group(2);
+		}
+
 		// remove the extra postcode digits used for some areas in London
 		if(removeExtraDistrictLetter){
 			Matcher special = UKPostcodes.LondonExtraDigitFormatSectorLevel.matcher(s);
@@ -67,5 +78,18 @@ final public class UKPostcodes {
 		District,
 		Sector,
 		Unit
+	}
+	
+	public static void main(String[]args){
+		
+		for(String s : new String[]{"LE119FZ" , "LE11    9FZ" , "B28BQ" , "B2A8TG"}){
+			Matcher matcher = UKPostcodes.unitWithWithoutSpaceGroupedForSpace.matcher(s);
+			if(matcher.matches()){
+				System.out.println(s + " -> " + matcher.group(1) + " " + matcher.group(2));			
+			}else{
+				System.out.println(s + " -> no match");
+			}	
+		}
+
 	}
 }

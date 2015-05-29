@@ -7,6 +7,7 @@
 package com.opendoorlogistics.core.utils;
 
 import java.awt.Color;
+import java.time.LocalDate;
 
 import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.core.utils.strings.Strings;
@@ -50,6 +51,10 @@ final public class Numbers {
 			return ((ODLTime) o).longValue();
 		}
 
+		if(LocalDate.class.isInstance(o)){
+			return ((LocalDate)o).toEpochDay();
+		}
+		
 		if (Color.class.isInstance(o)) {
 			long l = ((Color) o).getRGB();
 			return l;
@@ -60,10 +65,11 @@ final public class Numbers {
 		}
 
 		String s = o.toString();
-		if (s.toLowerCase().equals("true") || s.toLowerCase().equals("yes")) {
+		String lc = s.toLowerCase();
+		if (lc.equals("true") || lc.equals("yes")|| lc.equals("oui")|| lc.equals("vrai")) {
 			return 1L;
 		}
-		if (s.toLowerCase().equals("false") || s.toLowerCase().equals("no")) {
+		if (lc.equals("false") || lc.equals("no")|| lc.equals("faux")|| lc.equals("non")) {
 			return 0L;
 		}
 
@@ -106,6 +112,10 @@ final public class Numbers {
 			return ((Number) o).doubleValue();
 		}
 
+		if(LocalDate.class.isInstance(o)){
+			return (double) ((LocalDate)o).toEpochDay();
+		}
+		
 		String s = o.toString().toLowerCase().trim();
 		if (s.equals("true") || s.equals("yes") || s.equals("vrai")) {
 			return 1.0;

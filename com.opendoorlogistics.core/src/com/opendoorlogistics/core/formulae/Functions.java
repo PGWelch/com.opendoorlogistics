@@ -840,7 +840,7 @@ public class Functions {
 			}
 
 			String sa = (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, a);
-			if (a == null) {
+			if (sa == null) {
 				return null;
 			}
 			return execute(sa);
@@ -940,7 +940,7 @@ public class Functions {
 
 			String sa = (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, a);
 
-			Long l = Numbers.toLongIfNotFloatingPoint(b);
+			Long l = Numbers.toLong(b);
 			if (l == null) {
 				return EXECUTION_ERROR;
 			}
@@ -2335,6 +2335,142 @@ public class Functions {
 		protected abstract Object execute(Geometry geometry);
 	}
 
+	public static final class FmPostcodeUKFormatUnit extends FmSingleString{
+
+		public FmPostcodeUKFormatUnit(Function child) {
+			super(child);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmPostcodeUKFormatUnit(child(0).deepCopy());
+		}
+
+		@Override
+		protected Object execute(String s) {
+			Matcher matcher = UKPostcodes.unitWithWithoutSpaceGroupedForSpace.matcher(s);
+			if(matcher.matches()){
+				return matcher.group(1) + " " + matcher.group(2);
+			}
+			return null;
+		}
+		
+	}
+	
+
+	public static abstract class FmAbstractRegExp extends FunctionImpl{
+
+		public FmAbstractRegExp(Function...functions) {
+			super(functions);
+		}
+
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object [] childs = executeChildFormulae(parameters, false);
+			if(childs==null){
+				return Functions.EXECUTION_ERROR;
+			}
+			if(childs[0]==null){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			String regExp = (String)ColumnValueProcessor.convertToMe(ODLColumnType.STRING, childs[0]);
+			if(regExp==null){				
+				return Functions.EXECUTION_ERROR;
+			}
+			String str = (String)ColumnValueProcessor.convertToMe(ODLColumnType.STRING, childs[1]);
+			if(str==null){
+				// no match
+				return 0L;
+			}
+			
+			try {
+				Pattern pattern = Pattern.compile(regExp);	
+				Matcher matcher = pattern.matcher(str);
+				return execute(parameters,childs, matcher);
+			} catch (Exception e) {
+				return Functions.EXECUTION_ERROR;
+			}
+		}
+
+		protected abstract Object execute(FunctionParameters parameters, Object [] childs,Matcher matcher);
+		
+	}
+	
+	public static final class FmRegExpMatchedText extends FmAbstractRegExp{
+
+		public FmRegExpMatchedText(Function regExp, Function str) {
+			super(regExp, str);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmRegExpMatches(child(0).deepCopy(), child(1).deepCopy());
+		}
+
+		@Override
+		protected Object execute(FunctionParameters parameters,Object [] childs, Matcher matcher){
+			if( matcher.matches() ){
+				return matcher.group();
+			}
+			else{
+				return null;
+			}
+		}
+		
+	}
+	
+	public static final class FmRegExpMatchedGroup extends FmAbstractRegExp{
+
+		public FmRegExpMatchedGroup(Function regExp, Function str, Function indx) {
+			super(regExp, str, indx);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmRegExpMatches(child(0).deepCopy(), child(1).deepCopy());
+		}
+
+		@Override
+		protected Object execute(FunctionParameters parameters,Object [] childs, Matcher matcher){
+			Long indx = Numbers.toLong(childs[2],false);
+			if(indx==null){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			if( matcher.matches() ){
+				if(indx.intValue() < matcher.groupCount()){
+					return matcher.group(indx.intValue()+1);					
+				}
+				return Functions.EXECUTION_ERROR;
+			}
+			else{
+				return null;
+			}
+		}
+		
+	}
+	
+	public static final class FmRegExpMatches extends FmAbstractRegExp{
+
+		public FmRegExpMatches(Function regExp, Function str) {
+			super(regExp, str);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmRegExpMatches(child(0).deepCopy(), child(1).deepCopy());
+		}
+
+		@Override
+		protected Object execute(FunctionParameters parameters,Object [] childs, Matcher matcher){
+			return matcher.matches() ? 1L : 0L;
+		}
+		
+	}
+	
+	
+	
 	public static final class FmPostcodeUk extends FmSingleString {
 
 		private static final Pattern unit = Pattern.compile("(" + UKPostcodes.allUnit + ")", Pattern.CASE_INSENSITIVE);

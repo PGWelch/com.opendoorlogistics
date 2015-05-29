@@ -25,6 +25,9 @@ class ColumnTypeEstimator {
 		// assume that nobody ever tries to save images to the datastore as checking if something as an image
 		// is very slow - it actually creates a temporary file
 		okByType[ODLColumnType.IMAGE.ordinal()]=false;
+		
+		// keep date auto-detect off as well, as different date format can create problems in different countries
+		okByType[ODLColumnType.DATE.ordinal()]=false;
 	}
 	
 	void processValue(String value){

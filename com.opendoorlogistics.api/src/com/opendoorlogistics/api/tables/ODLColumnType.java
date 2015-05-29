@@ -11,7 +11,7 @@ import javax.xml.bind.annotation.XmlEnum;
 @XmlEnum(String.class)
 public enum ODLColumnType {
 	STRING, LONG, DOUBLE, COLOUR,
-	IMAGE, GEOM, TIME;
+	IMAGE, GEOM, TIME, DATE;
 
 
 }

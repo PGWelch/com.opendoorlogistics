@@ -78,6 +78,10 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		public void updateEnabled() {
 			setEnabled(ds != null);
 		}
+		
+		public boolean addToToolbar(){
+			return true;
+		}
 	}
 
 	private abstract class MyNeedsSelectedAction extends MyAction {
@@ -162,12 +166,15 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		DefaultListSelectionModel selectionModel = new DefaultListSelectionModel() {
 			@Override
 			public void setSelectionInterval(int index0, int index1) {
-				// if we only have one element selected and we've just clicked on it, deselect it
-				if (index0 == index1 && isSelectedIndex(index0) && getMinSelectionIndex() == index0 && getMaxSelectionIndex() == index1) {
-					removeSelectionInterval(index0, index1);
-				} else {
-					super.setSelectionInterval(index0, index1);
-				}
+				super.setSelectionInterval(index0, index1);
+				
+				// Comment out code do the deselection at the moment as it's a bit confusing in the UI; offer a unselect all action instead.
+//				// if we only have one element selected and we've just clicked on it, deselect it
+//				if (index0 == index1 && isSelectedIndex(index0) && getMinSelectionIndex() == index0 && getMaxSelectionIndex() == index1) {
+//					removeSelectionInterval(index0, index1);
+//				} else {
+//					super.setSelectionInterval(index0, index1);
+//				}
 			}
 		};
 		selectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
@@ -251,8 +258,10 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 
 		// create all actions and add as buttons and menu items
 		actions = createActions();
-		for (Action action : actions) {
-			toolBar.add(action);
+		for (MyAction action : actions) {
+			if(action.addToToolbar()){
+				toolBar.add(action);				
+			}
 			popup.add(action);
 		}
 
@@ -392,6 +401,35 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 			}
 
 		});
+
+		ret.add(new MyAction("Select all tables", "Select all tables", "select-all-tables.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				list.getSelectionModel().setSelectionInterval(0, list.getModel().getSize()-1);
+			}
+
+			@Override
+			public boolean addToToolbar(){
+				return false;
+			}
+		});
+		
+
+		ret.add(new MyNeedsSelectedAction("Unselect all tables", "Unselect all tables", "unselect-all-tables.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				list.clearSelection();
+			}
+
+			@Override
+			public boolean addToToolbar(){
+				return false;
+			}
+
+		});
+		
 
 		// ret.add(new LaunchScriptWizardAction("Build table view",
 		// "Build a view of the table", ScriptType.ADAPTED_TABLE));

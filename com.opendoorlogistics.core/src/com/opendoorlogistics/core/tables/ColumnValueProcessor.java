@@ -10,6 +10,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,14 +30,15 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.WKTReader;
 
 /**
- * Contains all the logic to process different values supported by column type, e.g. conversion, comparison etc...
+ * Contains all the logic to process different values supported by column type,
+ * e.g. conversion, comparison etc...
  * 
  * @author Phil
  *
  */
 public class ColumnValueProcessor {
-	private static final Pattern STRICT_DOUBLE_TESTER= Pattern.compile(".*[a-zA-Z_].*");
-	
+	private static final Pattern STRICT_DOUBLE_TESTER = Pattern.compile(".*[a-zA-Z_].*");
+
 	private ColumnValueProcessor() {
 	}
 
@@ -65,6 +67,9 @@ public class ColumnValueProcessor {
 		case TIME:
 			return ODLTime.class;
 
+		case DATE:
+			return LocalDate.class;
+
 		default:
 			throw new RuntimeException();
 		}
@@ -87,11 +92,11 @@ public class ColumnValueProcessor {
 
 		time = time.toLowerCase().trim();
 		String[] split = time.split(":");
-		if(split.length < 2){
+		if (split.length < 2) {
 			// must have at least one :
 			return null;
 		}
-		
+
 		// the first will either be days and hours or just days
 		Long days = 0L;
 		Long hours = 0L;
@@ -173,7 +178,7 @@ public class ColumnValueProcessor {
 	}
 
 	public static Object convertToMe(ODLColumnType convertToMe, Object other) {
-		
+
 		if (other == null) {
 			// null always converts to null
 			return null;
@@ -201,7 +206,8 @@ public class ColumnValueProcessor {
 			}
 		}
 
-		// do conversion .. find most suitable supported type to avoid string parsing
+		// do conversion .. find most suitable supported type to avoid string
+		// parsing
 		Class<?> otherCls = other.getClass();
 
 		if (ODLTime.class.isInstance(other)) {
@@ -215,9 +221,9 @@ public class ColumnValueProcessor {
 		if (Numbers.isInteger(otherCls)) {
 			return convertToMe(convertToMe, ((Number) other).longValue(), ODLColumnType.LONG);
 		}
-		
-		if(Color.class.isAssignableFrom(otherCls)){
-			return convertToMe(convertToMe, other, ODLColumnType.COLOUR);			
+
+		if (Color.class.isAssignableFrom(otherCls)) {
+			return convertToMe(convertToMe, other, ODLColumnType.COLOUR);
 		}
 
 		// just try parsing, will throw exception if fails
@@ -227,17 +233,18 @@ public class ColumnValueProcessor {
 	public static Object convertToMe(ODLColumnType convertToMe, Object other, ODLColumnType otherType) {
 		return convertToMe(convertToMe, other, otherType, false);
 	}
-	
+
 	/**
-	 * Does the string start with 00, 01, 02, ... , 09?
-	 * Useful for detecting French zip codes which are 5 digit, starting with 0 sometimes
-	 * and should not be converted to numeric. 
+	 * Does the string start with 00, 01, 02, ... , 09? Useful for detecting
+	 * French zip codes which are 5 digit, starting with 0 sometimes and should
+	 * not be converted to numeric.
+	 * 
 	 * @param s
 	 * @return
 	 */
-	private static boolean startsWith0AndOtherDigit(String s){
-		String stdVal = Strings.std(s);	
-		if(stdVal.length()>=2 && stdVal.charAt(0)=='0' && Character.isDigit(stdVal.charAt(1))){
+	private static boolean startsWith0AndOtherDigit(String s) {
+		String stdVal = Strings.std(s);
+		if (stdVal.length() >= 2 && stdVal.charAt(0) == '0' && Character.isDigit(stdVal.charAt(1))) {
 			return true;
 		}
 		return false;
@@ -253,18 +260,38 @@ public class ColumnValueProcessor {
 			return null;
 		}
 
-		// NOTE - the automatic type identification when loading an excel without a schema
-		// uses this convertToMe, so we shouldn't return default values for unparsable strings
+		// NOTE - the automatic type identification when loading an excel
+		// without a schema
+		// uses this convertToMe, so we shouldn't return default values for
+		// unparsable strings
 		switch (convertToMe) {
+		case DATE:
+			try {
+				switch (otherType) {
+				case LONG:
+				case DOUBLE:
+					return LocalDate.ofEpochDay(((Number) other).longValue());
+
+				case STRING:
+					return LocalDate.parse(((String)other).trim());
+
+				default:
+					return null;
+				}
+			} catch (Exception e) {
+				return null;
+			}
+
 		case GEOM:
-			// conversion to geom only supported from wkt string or shapefilelink
+			// conversion to geom only supported from wkt string or
+			// shapefilelink
 			try {
 				ShapefileLink link = ShapefileLink.parse(other.toString());
 				if (link != null) {
 					return new ODLShapefileLinkGeom(link);
 				}
 				Geometry geometry = wktReader.read(other.toString());
-				return geometry!=null? new ODLLoadedGeometry(geometry): null;
+				return geometry != null ? new ODLLoadedGeometry(geometry) : null;
 			} catch (Throwable e) {
 				return null;
 			}
@@ -284,7 +311,7 @@ public class ColumnValueProcessor {
 					return ret;
 				}
 				if (sOther.startsWith("#") == false) {
-					if(onlyConvertStringIfFormatMatches){
+					if (onlyConvertStringIfFormatMatches) {
 						// must start with # in this case...
 						return null;
 					}
@@ -309,27 +336,32 @@ public class ColumnValueProcessor {
 			case TIME:
 				return ((Number) other).doubleValue();
 
+			case DATE:
+				return (double)((LocalDate)other).toEpochDay();
+				
 			case STRING:
 				// Always trim whitespace
 				String sOther = ((String) other).trim();
 
-				if(onlyConvertStringIfFormatMatches && (startsWith0AndOtherDigit((String)other) || STRICT_DOUBLE_TESTER.matcher(sOther).matches())){
+				if (onlyConvertStringIfFormatMatches && (startsWith0AndOtherDigit((String) other) || STRICT_DOUBLE_TESTER.matcher(sOther).matches())) {
 					return null;
 				}
-				
+
 				try {
 
-					// Test if we have a . in the number and if so, use java's parsedouble which always uses .
-					double number=0;
-					if(sOther.indexOf(".")!=-1){
+					// Test if we have a . in the number and if so, use java's
+					// parsedouble which always uses .
+					double number = 0;
+					if (sOther.indexOf(".") != -1) {
 						number = Double.parseDouble(sOther);
-					}else{
-						// If not, use the number format which takes account of localisation and will use commas in the correct country.	
+					} else {
+						// If not, use the number format which takes account of
+						// localisation and will use commas in the correct
+						// country.
 						NumberFormat nf = NumberFormat.getInstance();
 						number = nf.parse((String) sOther).doubleValue();
-						return number;	
+						return number;
 					}
-					
 
 					return number;
 				} catch (Throwable e) {
@@ -349,11 +381,21 @@ public class ColumnValueProcessor {
 			case TIME:
 				return ((Number) other).longValue();
 
+			case DATE:
+				return ((LocalDate)other).toEpochDay();
+				
 			case STRING:
-				if(onlyConvertStringIfFormatMatches && startsWith0AndOtherDigit((String)other)){
-					return null;
+				if (onlyConvertStringIfFormatMatches) {
+					if(startsWith0AndOtherDigit((String) other)){
+						return null;						
+					}else{
+						// use our more strict conversion
+						return Numbers.toLong((String) other, true);
+					}
 				}
-				return Numbers.toLong((String) other, onlyConvertStringIfFormatMatches);
+				
+				// use our more lenient conversion which also tests for "true", "yes" etc...
+				return Numbers.toLong( other, false);
 
 			default:
 				return null;
@@ -466,11 +508,18 @@ public class ColumnValueProcessor {
 		return diff;
 	}
 
+	/**
+	 * Check if 2 values are equal when they're the same type
+	 * @param type
+	 * @param val1
+	 * @param val2
+	 * @return
+	 */
 	public static boolean isEqualSameType(ODLColumnType type, Object val1, Object val2) {
-		if(val1 == val2){
+		if (val1 == val2) {
 			return true;
 		}
-		
+
 		if (NullComparer.compare(val1, val2) != 0) {
 			return false;
 		}
@@ -482,6 +531,7 @@ public class ColumnValueProcessor {
 			case STRING:
 			case COLOUR:
 			case TIME:
+			case DATE:
 				if (val1.equals(val2) == false) {
 					return false;
 				}
@@ -501,7 +551,7 @@ public class ColumnValueProcessor {
 	public static boolean isEqual(Object a, Object b) {
 		return isEqual(a, b, null);
 	}
-	
+
 	public static boolean isEqual(Object a, Object b, StandardisedCache stdCache) {
 		boolean equals = false;
 		if (a == null && b == null) {
@@ -547,11 +597,11 @@ public class ColumnValueProcessor {
 		boolean empty2 = isEmpty(val2);
 		diff = Boolean.compare(empty1, empty2);
 
-		// if both empty then return 0 
-		if(diff==0 && empty1){
+		// if both empty then return 0
+		if (diff == 0 && empty1) {
 			return 0;
 		}
-		
+
 		if (diff == 0 && val1 != null) {
 			if (isNumeric) {
 				Double d1 = (Double) ColumnValueProcessor.convertToMe(ODLColumnType.DOUBLE, val1);
@@ -570,7 +620,8 @@ public class ColumnValueProcessor {
 	}
 
 	public static void main(String[] args) {
-		for (String s : new String[] { "07:52:200", "07:87:12", "31:01:02", "09:01:02", "1", "2days3:42", "2 day 3:42", "-1 day 12:05", "12:78:12", "12:23:23.121", "12:23:23.001", "12:23:23.021", "12days 12:23:23.021" }) {
+		for (String s : new String[] { "07:52:200", "07:87:12", "31:01:02", "09:01:02", "1", "2days3:42", "2 day 3:42", "-1 day 12:05", "12:78:12", "12:23:23.121", "12:23:23.001", "12:23:23.021",
+				"12days 12:23:23.021" }) {
 			ODLTime parsed = parseTime(s);
 			String stringed = null;
 			ODLTime reparsed = null;

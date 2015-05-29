@@ -7,6 +7,7 @@
 package com.opendoorlogistics.core.tables.beans;
 
 import java.awt.Color;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -194,6 +195,16 @@ final public class BeanTypeConversion {
 		}));
 		
 		types.add(new SupportedType(ODLTime.class, ODLColumnType.TIME, new ODLTypeToExternalJavaType() {
+			
+			@Override
+			public Object convertOdlTypeToExternalJavaType(Object odlType) {
+				// no actual conversion
+				return odlType;
+			}
+		}));
+
+		
+		types.add(new SupportedType(LocalDate.class, ODLColumnType.DATE, new ODLTypeToExternalJavaType() {
 			
 			@Override
 			public Object convertOdlTypeToExternalJavaType(Object odlType) {

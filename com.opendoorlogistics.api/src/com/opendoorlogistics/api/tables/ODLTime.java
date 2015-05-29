@@ -26,6 +26,8 @@ public class ODLTime extends Number implements Comparable<ODLTime> {
 
 	private final long value;
 
+	public static final ODLTime ZERO = new ODLTime(0);
+	
 	public long getValue() {
 		return value;
 	}
