@@ -2385,7 +2385,7 @@ public class Functions {
 			}
 			
 			try {
-				Pattern pattern = Pattern.compile(regExp);	
+				Pattern pattern = Pattern.compile(regExp, Pattern.CASE_INSENSITIVE);	
 				Matcher matcher = pattern.matcher(str);
 				return execute(parameters,childs, matcher);
 			} catch (Exception e) {
@@ -2397,28 +2397,28 @@ public class Functions {
 		
 	}
 	
-	public static final class FmRegExpMatchedText extends FmAbstractRegExp{
-
-		public FmRegExpMatchedText(Function regExp, Function str) {
-			super(regExp, str);
-		}
-
-		@Override
-		public Function deepCopy() {
-			return new FmRegExpMatches(child(0).deepCopy(), child(1).deepCopy());
-		}
-
-		@Override
-		protected Object execute(FunctionParameters parameters,Object [] childs, Matcher matcher){
-			if( matcher.matches() ){
-				return matcher.group();
-			}
-			else{
-				return null;
-			}
-		}
-		
-	}
+//	public static final class FmRegExpMatchedText extends FmAbstractRegExp{
+//
+//		public FmRegExpMatchedText(Function regExp, Function str) {
+//			super(regExp, str);
+//		}
+//
+//		@Override
+//		public Function deepCopy() {
+//			return new FmRegExpMatches(child(0).deepCopy(), child(1).deepCopy());
+//		}
+//
+//		@Override
+//		protected Object execute(FunctionParameters parameters,Object [] childs, Matcher matcher){
+//			if( matcher.find() ){
+//				return matcher.group();
+//			}
+//			else{
+//				return null;
+//			}
+//		}
+//		
+//	}
 	
 	public static final class FmRegExpMatchedGroup extends FmAbstractRegExp{
 
@@ -2473,7 +2473,7 @@ public class Functions {
 	
 	public static final class FmPostcodeUk extends FmSingleString {
 
-		private static final Pattern unit = Pattern.compile("(" + UKPostcodes.allUnit + ")", Pattern.CASE_INSENSITIVE);
+		private static final Pattern unit = UKPostcodes.unitWithWithoutSpaceGroupedForSpace; // Pattern.compile("(" + UKPostcodes.allUnit + ")", Pattern.CASE_INSENSITIVE);
 		private static final Pattern sector = Pattern.compile("(" + UKPostcodes.allSector + ")", Pattern.CASE_INSENSITIVE);
 		private static final Pattern district = Pattern.compile("(" + UKPostcodes.allDistrict + ")", Pattern.CASE_INSENSITIVE);
 		private static final Pattern area = Pattern.compile("(" + UKPostcodes.area + ")", Pattern.CASE_INSENSITIVE);

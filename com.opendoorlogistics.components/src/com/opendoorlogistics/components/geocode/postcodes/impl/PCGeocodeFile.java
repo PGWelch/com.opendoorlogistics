@@ -188,6 +188,7 @@ final public class PCGeocodeFile {
 	 */
 	public PCFindResult find(String postcode) {
 		// try splitting input
+		postcode = processor.standardisePostcode(postcode);
 		List<String> split = processor.splitByLevels(postcode, true);
 		assert split == null || split.size() == processor.nbLevels();
 
