@@ -40,7 +40,7 @@ final public class SynchronousRenderer {
 	//private final TileFactoryInfo info;
 	private final DatastoreRenderer renderer = new DatastoreRenderer();
 	private final RecentImageCache recentImageCache = new RecentImageCache(RecentImageCache.ZipType.PNG);
-
+	private boolean offlineBackgroundSynchronousRenderingOnly=false;
 
 
 	/**
@@ -160,6 +160,10 @@ final public class SynchronousRenderer {
 	}
 
 	protected void drawMapTiles(Graphics g, int zoom, Rectangle viewportBounds) {
+		if(offlineBackgroundSynchronousRenderingOnly && !BackgroundTileFactorySingleton.getFactory().isRenderedOffline()){
+			throw new RuntimeException("Cannot render background tiles as they are not produced by an offline source - e.g. Mapsforge");
+		}
+		
 		int size = info().getTileSize(zoom);
 
 		// calculate the "visible" viewport area in tiles
@@ -364,6 +368,15 @@ final public class SynchronousRenderer {
 		double scalingFactor = dotsPerCM / config.OSMDotsPerCM;
 		uposm.converter = new UpscalerLatLongToPixelPosition(unscaledConverter, scalingFactor);
 		return uposm;
+	}
+
+	public boolean isOfflineBackgroundSynchronousRenderingOnly() {
+		return offlineBackgroundSynchronousRenderingOnly;
+	}
+
+	public void setOfflineBackgroundSynchronousRenderingOnly(
+			boolean offlineBackgroundSynchronousRenderingOnly) {
+		this.offlineBackgroundSynchronousRenderingOnly = offlineBackgroundSynchronousRenderingOnly;
 	}
 
 }
