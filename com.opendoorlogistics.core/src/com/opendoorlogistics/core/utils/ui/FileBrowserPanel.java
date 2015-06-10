@@ -57,7 +57,7 @@ public class FileBrowserPanel extends JPanel {
 		}
 	}
 
-	public FileBrowserPanel(int indentWidth, String label,
+	private FileBrowserPanel(int indentWidth, String label,
 			String initialFilename,
 			final FilenameChangeListener filenameChangeListener,
 			final boolean directoriesOnly,
@@ -134,12 +134,12 @@ public class FileBrowserPanel extends JPanel {
 		return textField;
 	}
 
-	protected static File processSelectedFile(File selected) {
-		String workingDir = System.getProperty("user.dir");
-		String relative = RelativeFiles.getFilenameToSaveInLink(selected,
-				workingDir);
-		return new File(relative);
-	}
+//	protected static File processSelectedFile(File selected) {
+//		String workingDir = System.getProperty("user.dir");
+//		String relative = RelativeFiles.getFilenameToSaveInLink(selected,
+//				workingDir);
+//		return new File(relative);
+//	}
 
 	private static boolean matchesFilter(FileNameExtensionFilter filter,
 			String path) {
@@ -230,8 +230,8 @@ public class FileBrowserPanel extends JPanel {
 				}
 
 				if (chooser.showDialog(textField, browserApproveButtonText) == JFileChooser.APPROVE_OPTION) {
-					File selected = processSelectedFile(chooser
-							.getSelectedFile());
+					//File selected = processSelectedFile(chooser.getSelectedFile());
+					File selected = chooser.getSelectedFile();
 
 					String path = selected.getPath();
 					FileFilter filter = chooser.getFileFilter();
