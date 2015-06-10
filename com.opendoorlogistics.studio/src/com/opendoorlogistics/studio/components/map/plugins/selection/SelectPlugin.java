@@ -47,7 +47,7 @@ import com.opendoorlogistics.studio.tables.grid.PreferredColumnWidths;
 import com.opendoorlogistics.utils.ui.Icons;
 
 public class SelectPlugin implements MapPlugin {
-	private final static long NEEDS_FLAGS = TableFlags.UI_SET_ALLOWED;
+	public final static long NEEDS_FLAGS = TableFlags.UI_SET_ALLOWED;
 	private static final ImageIcon SELECTION_TOOLS_ICON = Icons.loadFromStandardPath("select-options.png");
 	private static final ImageIcon SHOW_ALL_ICON = Icons.loadFromStandardPath("show-all-objects.png");
 	private static final ImageIcon SHOW_SEL_ONLY = Icons.loadFromStandardPath("show-selected-objects-only.png");

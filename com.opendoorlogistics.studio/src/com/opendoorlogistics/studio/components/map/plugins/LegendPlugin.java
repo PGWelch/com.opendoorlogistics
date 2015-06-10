@@ -40,6 +40,7 @@ import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
 import com.opendoorlogistics.studio.components.map.FindDrawableTables;
+import com.opendoorlogistics.studio.components.map.plugins.selection.SelectPlugin;
 import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils;
 import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckBoxItem;
@@ -233,6 +234,12 @@ public class LegendPlugin implements MapPlugin {
 				api.setViewToBestFit(copy);				
 			}
 			else if(buttonColumn == 1){
+				ODLTableReadOnly drawables = api.getMapDataApi().getUnfilteredActiveTable(); 
+				if(drawables==null || ( (drawables.getFlags() & SelectPlugin.NEEDS_FLAGS)!=SelectPlugin.NEEDS_FLAGS)){
+					// check we can select things
+					return;
+				}
+				
 				// select the items
 				final TLongHashSet ids = new TLongHashSet();
 				new ParseLegendItems() {
