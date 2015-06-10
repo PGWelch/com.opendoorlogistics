@@ -759,10 +759,10 @@ public final class FormulaParser {
 		lib.build();
 		
 		List<UserFormula> userFormulae = new ArrayList<UserFormula>();
-		userFormulae.add(new UserFormula("add2(a,b) = a + b"));
-		userFormulae.add(new UserFormula("ten() = 10"));
+	//	userFormulae.add(new UserFormula("add2(a,b) = a + b"));
+		//userFormulae.add(new UserFormula("ten() = 10"));
 		FormulaParser loader = new FormulaParser(null, lib, userFormulae);
-		Function formula = loader.parse(" 2 | 5");
+		Function formula = loader.parse("left(\"hello\",2.1");
 		System.out.println(formula.execute(null));
 	}
 	

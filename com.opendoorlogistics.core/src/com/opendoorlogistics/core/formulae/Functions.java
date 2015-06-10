@@ -940,7 +940,7 @@ public class Functions {
 
 			String sa = (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, a);
 
-			Long l = Numbers.toLong(b);
+			Double l = Numbers.toDouble(b);
 			if (l == null) {
 				return EXECUTION_ERROR;
 			}
