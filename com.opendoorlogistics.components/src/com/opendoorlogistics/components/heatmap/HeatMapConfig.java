@@ -8,9 +8,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class HeatMapConfig implements Serializable {
 	private String EPSG;
-	private double pointRadius = 0.1;
-	private int nbContourLevels = 25;
-	private int resolution = 1000;
+	private double pointRadius = 0.2;
+	private int nbContourLevels = 15;
+	private int resolution = 500;
 	
 	public String getEPSG() {
 		return EPSG;

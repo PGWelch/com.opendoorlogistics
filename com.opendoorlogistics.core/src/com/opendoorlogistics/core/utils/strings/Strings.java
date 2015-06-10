@@ -379,9 +379,10 @@ final public class Strings {
 	}
 
 	private static class StdStringComparer {
-		final private String notNumberGroup = "([^0-9]*)";
+		final private String notNumberGroup1 = "([^0-9]*)";
+		final private String notNumberGroup2 = "([^0-9]*.*)";
 		final private String number = "(\\d+)";
-		final private Pattern pattern = Pattern.compile(notNumberGroup + number + notNumberGroup);
+		final private Pattern pattern = Pattern.compile(notNumberGroup1+ "\\s*" + number + "\\s*" + notNumberGroup2 + "(.*)");
 		final private static StdStringComparer singleton = new StdStringComparer();
 
 		private class StringComponents implements Comparable<StringComponents> {

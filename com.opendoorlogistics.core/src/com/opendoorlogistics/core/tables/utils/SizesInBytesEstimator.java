@@ -9,6 +9,7 @@
 package com.opendoorlogistics.core.tables.utils;
 
 import java.awt.image.RenderedImage;
+import java.time.LocalDate;
 
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -68,6 +69,10 @@ public class SizesInBytesEstimator {
 					if(geom!=null){
 						ret += ((ODLGeomImpl)geom).getEstimatedSizeInBytes();
 					}
+					break;
+					
+				case DATE:
+					ret += 12;
 					break;
 					
 				default:

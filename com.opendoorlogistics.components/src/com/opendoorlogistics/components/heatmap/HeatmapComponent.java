@@ -1,12 +1,11 @@
 package com.opendoorlogistics.components.heatmap;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
-import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.ODLApi;
@@ -14,7 +13,12 @@ import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.components.ComponentConfigurationEditorAPI;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.scripts.ScriptAdapter;
+import com.opendoorlogistics.api.scripts.ScriptAdapterTable;
+import com.opendoorlogistics.api.scripts.ScriptInstruction;
+import com.opendoorlogistics.api.scripts.ScriptOption;
 import com.opendoorlogistics.api.scripts.ScriptTemplatesBuilder;
+import com.opendoorlogistics.api.standardcomponents.Maps;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -42,7 +46,6 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.Polygon;
 
 public class HeatmapComponent implements ODLComponent {
 	private static final Icon ICON = Icons.loadFromStandardPath("heatmap.png");
@@ -75,7 +78,7 @@ public class HeatmapComponent implements ODLComponent {
 		table.addColumn(-1, "Min", ODLColumnType.DOUBLE, 0);
 		table.addColumn(-1, "Max", ODLColumnType.DOUBLE, 0);
 		table.addColumn(-1, "Colour", ODLColumnType.COLOUR, 0);
-		table.addColumn(-1, "Geom", ODLColumnType.GEOM, 0);
+		table.addColumn(-1, "Geometry", ODLColumnType.GEOM, 0);
 		return ds;
 	}
 
@@ -92,7 +95,7 @@ public class HeatmapComponent implements ODLComponent {
 		
 		// get input points array
 		ODLTableReadOnly table = ioDs.getTableAt(0);
-		LargeList<InputPoint> points = new LargeList<InputPoint>();
+		List<InputPoint> points = new ArrayList<InputPoint>();
 		Envelope envelope = new Envelope();
 		int n = table.getRowCount();
 		for(int i =0 ; i < n ; i++){
@@ -126,6 +129,7 @@ public class HeatmapComponent implements ODLComponent {
 		double maxDim = Math.max(envelope.getHeight(), envelope.getWidth());
 		double cellLength = maxDim / c.getResolution();
 		
+
 		// create result
 		HeatMapResult result = HeatmapGenerator.build(points, c.getPointRadius(), envelope, cellLength, c.getNbContourLevels(),api);
 		if(api.isCancelled()){
@@ -234,7 +238,52 @@ public class HeatmapComponent implements ODLComponent {
 
 	@Override
 	public void registerScriptTemplates(ScriptTemplatesBuilder templatesApi) {
-		templatesApi.registerTemplate("Heatmap", getName(), "Generate heatmap contour polygons from input points with weights.",getIODsDefinition(templatesApi.getApi(), new HeatMapConfig()), new HeatMapConfig());		
+		templatesApi.registerTemplate("Heatmap", getName(),
+				"Generate heatmap contour polygons from input points with weights.",getIODsDefinition(templatesApi.getApi(), new HeatMapConfig()), 
+			new ScriptTemplatesBuilder.BuildScriptCallback() {
+				
+				@Override
+				public void buildScript(ScriptOption builder) {
+					ODLApi api = templatesApi.getApi();
+					
+					// Add instruction to generate the heatmap
+					HeatMapConfig config  = new HeatMapConfig();
+					ScriptAdapter input = builder.addDataAdapterLinkedToInputTables("heatmapinput", getIODsDefinition(api, config));
+					ScriptInstruction instruction = builder.addInstruction(input.getAdapterId(), getId(), ODLComponent.MODE_DEFAULT, config);
+					instruction.setOutputDatastoreId(builder.createUniqueDatastoreId("CountourPolygons"));
+					
+					// add showmap option
+					ScriptOption showMapOption = builder.addOption("Show heatmap", "Show heatmap"); 
+					showMapOption.setSynced(false);
+					ODLTableDefinition heatmapOutTable= getOutputDsDefinition(api, ODLComponent.MODE_DEFAULT, config).getTableAt(0);
+					ScriptAdapter mapInput = showMapOption.addDataAdapter("Heatmap map");
+					Maps maps = api.standardComponents().map();
+					ScriptAdapterTable drawableTable = mapInput.addSourcelessTable(maps.getDrawableTableDefinition());
+					drawableTable.setSourceTable(instruction.getOutputDatastoreId(), heatmapOutTable.getName());
+					drawableTable.setSourceColumn("geometry", "Geometry");
+					drawableTable.setSourceColumn("colour", "Colour");
+					//drawableTable.setSourceColumn("legendKey", "Level");
+					String legendFormula ="c(\"Level \") & Level & \" (\" & stringformat(\"%.3f\", min) & \"-\" & stringformat(\"%.3f\", max) & \")\"";// "level & " = "min & \" <= density < \" & max";
+					drawableTable.setFormula("legendKey",legendFormula);
+					drawableTable.setFormula("tooltip", legendFormula);
+					drawableTable.setFormula("nonOverlappingPolygonLayerGroupKey", "\"yes\"");
+					drawableTable.setFormula("opaque", "0.35");
+					Serializable mapConfig;
+					try {
+						mapConfig = maps.getConfigClass().newInstance();
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+					maps.setCustomTooltips(true, mapConfig);
+					showMapOption.addInstruction(mapInput.getAdapterId(), maps.getId(), ODLComponent.MODE_DEFAULT, mapConfig);
+						
+					// add export option
+					ScriptOption exportOutput = builder.addOption("Export contour polygons", "Export contour polygons");
+					String outTableName =  heatmapOutTable.getName();
+					exportOutput.addCopyTable(instruction.getOutputDatastoreId(), outTableName, ScriptOption.OutputType.REPLACE_CONTENTS_OF_EXISTING_TABLE, outTableName);
+					exportOutput.setSynced(false);
+				}
+			});		
 	}
 
 }

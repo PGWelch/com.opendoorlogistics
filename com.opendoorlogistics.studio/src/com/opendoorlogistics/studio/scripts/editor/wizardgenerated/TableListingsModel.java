@@ -71,7 +71,7 @@ class TableListingsModel extends AbstractTableModel {
 			return (Strings.isEmpty(opt.getName()) ? opt.getOptionId() : opt.getName());
 
 		case 1:
-			return tn.getDatastore();
+			return tn.getDatastore()!=null ? tn.getDatastore().getDatastoreId() : "";
 
 		case 2:
 			return tn.getTableName();

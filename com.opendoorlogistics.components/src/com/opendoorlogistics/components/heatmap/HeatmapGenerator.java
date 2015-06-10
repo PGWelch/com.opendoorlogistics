@@ -122,15 +122,8 @@ public class HeatmapGenerator {
 		SingleContourGroup(int index) {
 			this.index = index;
 		}
-		//LargeList<LineString> rawEdges = new LargeList<LineString>();
 		Geometry geometry;
-		//List<Polygon> rawPolygons;
 		int level;
-//		TLongHashSet boundaryCells = new TLongHashSet();
-//		TIntHashSet bordersGroups = new TIntHashSet();
-//		TIntHashSet containsGroups = new TIntHashSet();
-//		HashSet<LineString> outerRing = new HashSet<LineString>();
-//		TIntObjectHashMap<HashSet<LineString> > innerRings = new TIntObjectHashMap<HashSet<LineString>>();
 		
 	}
 	
@@ -140,116 +133,6 @@ public class HeatmapGenerator {
 		double [] levelUpperLimits;
 	}
 	
-//	private static class Edge{
-//		LineString ls;
-//		int group1=-1;
-//		int group2=-1;
-//	}
-	
-//	private static class GridEdge2{
-//		int x;
-//		int y;
-//		boolean isVertical;	
-//		
-//		int getCellXIndex(int cellNb){
-//			if(isVertical){
-//				if (cellNb==0){
-//					return x-1;
-//				}
-//				if(cellNb==1){
-//					return x;
-//				}
-//			}
-//			return -1;
-//		}
-//	}
-	
-//	private static class GridEdge{
-//		final long cell1;
-//		final long cell2;
-//		
-////		public GridEdge(int cellx1, int celly1 , EdgeType type) {
-////			
-////		}
-//		
-//		GridEdge(int cellx1, int celly1, int cellx2, int celly2) {
-//			this(getXYAsLong(cellx1, celly1), getXYAsLong(cellx2, celly2));
-//		}
-//		
-//		GridEdge(long la, long lb){
-//			if(la < lb){
-//				cell1 = la;
-//				cell2 = lb;
-//			}else{
-//				cell1 = lb;
-//				cell2 = la;
-//			}
-//		}
-//		
-//		static GridEdge create(int cellx, int celly , EdgeType edgeType){
-//			Offset offset = Offset.findOffset(edgeType);
-//			return new GridEdge(cellx, celly, cellx + offset.dx, celly + offset.dy);
-//		}
-//
-//		int cellX1(){
-//			return getXFromLong(cell1);
-//		}
-//		
-//		int cellX2(){
-//			return getXFromLong(cell2);
-//		}
-//		
-//		int cellY1(){
-//			return getYFromLong(cell1);
-//		}
-//		
-//		int cellY2(){
-//			return getYFromLong(cell2);
-//		}
-//		
-//		boolean isVertical(){
-//			return cellY1() == cellY2();
-//		}
-//		
-//		void fetchCoords(java.awt.Point start, java.awt.Point end){
-//			boolean vert = isVertical();
-//			if(vert){
-//				start.y = cellY1();
-//				end.y = start.y+1;
-//				start.x = Math.max(cellX1(), cellX2());
-//				end.x = start.x;
-//			}else{
-//				
-//			}
-//		}
-//		
-//		@Override
-//		public int hashCode() {
-//			final int prime = 31;
-//			int result = 1;
-//			result = prime * result + (int) (cell1 ^ (cell1 >>> 32));
-//			result = prime * result + (int) (cell2 ^ (cell2 >>> 32));
-//			return result;
-//		}
-//
-//
-//		@Override
-//		public boolean equals(Object obj) {
-//			if (this == obj)
-//				return true;
-//			if (obj == null)
-//				return false;
-//			if (getClass() != obj.getClass())
-//				return false;
-//			GridEdge other = (GridEdge) obj;
-//			if (cell1 != other.cell1)
-//				return false;
-//			if (cell2 != other.cell2)
-//				return false;
-//			return true;
-//		}
-//		
-//	}
 	
 	/**
 	 * A trace coord is a combination of an edge (defined by its
@@ -409,10 +292,10 @@ public class HeatmapGenerator {
 		int getLevel(int x, int y);
 	}
 	
-	private static class TraceResult{
-		Geometry polygon;
-		boolean isHole;
-	}
+//	private static class TraceResult{
+//		Geometry polygon;
+//		boolean isHole;
+//	}
 	
 	private static class Tracer{
 		final TraceCoord testEdge = new TraceCoord();
@@ -611,172 +494,174 @@ public class HeatmapGenerator {
 			});
 		}
 		
-		synchronized void traceAll(GeometryFactory factory, List<SingleContourGroup> result){
-			HashSet<Object> tracedEdges = new HashSet<Object>();
-			
-			TIntObjectHashMap<List<Geometry>> polygonsByLevel = new TIntObjectHashMap<List<Geometry>>();
-			TIntObjectHashMap<List<Geometry>> holesByLevel = new TIntObjectHashMap<List<Geometry>>();
-			
-			if(LOG_TO_CONSOLE){
-				logLevelsToConsole();
-				System.out.println();
-			}
-			
-			// loop over each cell
-			java.awt.Point cell = new java.awt.Point();
-			java.awt.Point otherCell = new java.awt.Point();
-			for(cell.x =0 ; cell.x<coordsSys.xDim ; cell.x++){
-				for(cell.y = 0 ; cell.y < coordsSys.yDim ; cell.y++){
-					
-					int level = levelAccessor.getLevel(cell);
-					if(level==-1){
-						continue;
-					}
-					
-					// and each edge of the cell
-					for(Offset offset : Offset.NGBS4){
-						offset.addTo(cell, otherCell);
-						int otherLevel = levelAccessor.getLevel(otherCell);
-						if(level!=otherLevel){
-							// This is a boundary!!!
-							
-							// define the edge
-							TraceCoord startCoord = new TraceCoord(cell, offset);
-							if(tracedEdges.contains(startCoord.createDirectionIndependentIdentifer())){
-								continue;
-							}
-							
-							// trace to create the polygon
-							TraceResult traceResult= traceSingleRing(startCoord, tracedEdges, factory);
-					
-							TIntObjectHashMap<List<Geometry>> map = traceResult.isHole ? holesByLevel:polygonsByLevel;
-						
-							List<Geometry> list = map.get(level);
-							if(list==null){
-								list = new ArrayList<Geometry>();
-								map.put(level, list);
-							}
-							list.add(traceResult.polygon);
-						}
-					}
-				}
-				
-				if(api.isCancelled()){
-					return;
-				}
-			}
-			
-			api.postStatusMessage("Removing holes from polygons");
-			
-			polygonsByLevel.forEachEntry(new TIntObjectProcedure<List<Geometry>>() {
-
-				@Override
-				public boolean execute(int level, List<Geometry> polygons) {
-					// build up a quadtree of holes
-					List<Geometry> holes = holesByLevel.get(level);
-					Quadtree quadtree = new Quadtree();
-					if(holes!=null){
-						for(Geometry hole : holes){
-							quadtree.insert(hole.getEnvelopeInternal(), hole);
-						}
-					}
-					
-					for(Geometry p : polygons){
-						// remove all holes
-						List<?> intersectingHoles = quadtree.query(p.getEnvelopeInternal());
-						for(Object o : intersectingHoles){
-							// Remove the hole if (and only if) its contained by the geometry;
-							// otherwise we remove non-holes which are contained within holes.
-							if(p.contains((Geometry)o)){
-								p = p.difference((Geometry)o);								
-							}
-						}
-						
-						// we now have the final geometry
-						if(p!=null && p.isEmpty()==false){
-							
-							// Simplify by a tiny tolerance that just removes unneeded points
-							Geometry simplified = TopologyPreservingSimplifier.simplify(p, coordsSys.cellLength * 0.0000000001);
-							if(LOG_TO_CONSOLE){
-								System.out.println("Simplified, reduced " + p.getNumPoints() + " down to " + simplified.getNumPoints());
-							}
-							
-							SingleContourGroup singleContourGroup = new SingleContourGroup(result.size());
-							singleContourGroup.geometry = simplified;
-							singleContourGroup.level = level;
-							result.add(singleContourGroup);
-						}
-						
-					}
-					return true;
-				}
-			});
-		}
+//		synchronized void traceAll(GeometryFactory factory, List<SingleContourGroup> result){
+//			HashSet<Object> tracedEdges = new HashSet<Object>();
+//			
+//			TIntObjectHashMap<List<Geometry>> polygonsByLevel = new TIntObjectHashMap<List<Geometry>>();
+//			TIntObjectHashMap<List<Geometry>> holesByLevel = new TIntObjectHashMap<List<Geometry>>();
+//			
+//			if(LOG_TO_CONSOLE){
+//				logLevelsToConsole();
+//				System.out.println();
+//			}
+//			
+//			// loop over each cell
+//			java.awt.Point cell = new java.awt.Point();
+//			java.awt.Point otherCell = new java.awt.Point();
+//			for(cell.x =0 ; cell.x<coordsSys.xDim ; cell.x++){
+//				for(cell.y = 0 ; cell.y < coordsSys.yDim ; cell.y++){
+//					
+//					int level = levelAccessor.getLevel(cell);
+//					if(level==-1){
+//						continue;
+//					}
+//					
+//					// and each edge of the cell
+//					for(Offset offset : Offset.NGBS4){
+//						offset.addTo(cell, otherCell);
+//						int otherLevel = levelAccessor.getLevel(otherCell);
+//						if(level!=otherLevel){
+//							// This is a boundary!!!
+//							
+//							// define the edge
+//							TraceCoord startCoord = new TraceCoord(cell, offset);
+//							if(tracedEdges.contains(startCoord.createDirectionIndependentIdentifer())){
+//								continue;
+//							}
+//							
+//							// trace to create the polygon
+//							TraceResult traceResult= traceSingleRing(startCoord, tracedEdges, factory);
+//					
+//							TIntObjectHashMap<List<Geometry>> map = traceResult.isHole ? holesByLevel:polygonsByLevel;
+//						
+//							List<Geometry> list = map.get(level);
+//							if(list==null){
+//								list = new ArrayList<Geometry>();
+//								map.put(level, list);
+//							}
+//							list.add(traceResult.polygon);
+//						}
+//					}
+//				}
+//				
+//				if(api.isCancelled()){
+//					return;
+//				}
+//			}
+//			
+//			api.postStatusMessage("Removing holes from polygons");
+//			
+//			polygonsByLevel.forEachEntry(new TIntObjectProcedure<List<Geometry>>() {
+//
+//				@Override
+//				public boolean execute(int level, List<Geometry> polygons) {
+//					// build up a quadtree of holes
+//					List<Geometry> holes = holesByLevel.get(level);
+//					Quadtree quadtree = new Quadtree();
+//					if(holes!=null){
+//						for(Geometry hole : holes){
+//							quadtree.insert(hole.getEnvelopeInternal(), hole);
+//						}
+//					}
+//					
+//					for(Geometry p : polygons){
+//						// remove all holes
+//						List<?> intersectingHoles = quadtree.query(p.getEnvelopeInternal());
+//						for(Object o : intersectingHoles){
+//							// Remove the hole if (and only if) its contained by the geometry;
+//							// otherwise we remove non-holes which are contained within holes.
+//							if(p.contains((Geometry)o)){
+//								p = p.difference((Geometry)o);								
+//							}
+//						}
+//						
+//						// we now have the final geometry
+//						if(p!=null && p.isEmpty()==false){
+//							
+//							// Simplify by a tiny tolerance that just removes unneeded points
+//							Geometry simplified = TopologyPreservingSimplifier.simplify(p, coordsSys.cellLength * 0.0000000001);
+//							if(LOG_TO_CONSOLE){
+//								System.out.println("Simplified, reduced " + p.getNumPoints() + " down to " + simplified.getNumPoints());
+//							}
+//							
+//							SingleContourGroup singleContourGroup = new SingleContourGroup(result.size());
+//							singleContourGroup.geometry = simplified;
+//							singleContourGroup.level = level;
+//							result.add(singleContourGroup);
+//						}
+//						
+//					}
+//					return true;
+//				}
+//			});
+//		}
 		
 		private RuntimeException createTraceFailureException(String extra){
 			return new RuntimeException("Failed to trace heatmap contour." + (extra !=null ? " "+ extra : ""));
 		}
-		/**
-		 * Trace polygon from start position
-		 * @param startPosition
-		 * @param factory
-		 * @return
-		 */
-		synchronized TraceResult traceSingleRing(TraceCoord startPosition,HashSet<Object> tracedEdges, GeometryFactory factory){
-			class Points{
-				LargeList<java.awt.Point> ordered = new LargeList<java.awt.Point>();				
-				HashSet<java.awt.Point> set = new HashSet<java.awt.Point>();
-				
-				void add(java.awt.Point pnt){
-					// take copy
-					pnt = new java.awt.Point(pnt);
-					ordered.add(pnt);
-					set.add(pnt);
-				}
-			}
-			Points points = new Points();
-			
-			points.add(startPosition.edgeStart);
-			points.add(startPosition.edgeEnd);
-			tracedEdges.add(startPosition.createDirectionIndependentIdentifer());
-			
-			TraceCoord current = new TraceCoord();
-			current.set(startPosition);
-			boolean reachedStart=false;
-			while(!reachedStart){
-				traceNext(current);
-								
-				// check for reaching start again
-				reachedStart=current.edgeEnd.equals(startPosition.edgeStart);
-					
-				// check we've not already traced this edge (can happen when multiple rings are traced in succession)
-				Object ident = current.createDirectionIndependentIdentifer();
-				if(!reachedStart && tracedEdges.contains(ident)){
-					return null;
-				}
-				tracedEdges.add(ident);
-				
-				// add new edge end
-				points.add(current.edgeEnd);
-				
-			}
-			
-			// Test if the central position of the original cell is inside or outside the polygon
-			// This determines if its a hole or not. Do this before creating diagonals (as diagonals break this test)
-			Coordinate cellCentre = new Coordinate(coordsSys.getCellXCentre(startPosition.cell.x), coordsSys.getCellYCentre(startPosition.cell.y), 0);
-			List<java.awt.Point> orderedPoints = points.ordered;
-			Geometry rawPolygon = createPolygonFromTracedPoints(orderedPoints, false, factory);
-			TraceResult result = new TraceResult();
-			result.isHole = !rawPolygon.contains(factory.createPoint(cellCentre));
-
-			// Now create the final polygon with diagonals
-			result.polygon= createPolygonFromTracedPoints(orderedPoints,true, factory);
-			
-			// Turn off diagonal creation for the moment as its not reliable
-		//	result.polygon = rawPolygon;
-			return result;
-	
-		}
+		
+		
+//		/**
+//		 * Trace polygon from start position
+//		 * @param startPosition
+//		 * @param factory
+//		 * @return
+//		 */
+//		synchronized TraceResult traceSingleRing(TraceCoord startPosition,HashSet<Object> tracedEdges, GeometryFactory factory){
+//			class Points{
+//				LargeList<java.awt.Point> ordered = new LargeList<java.awt.Point>();				
+//				HashSet<java.awt.Point> set = new HashSet<java.awt.Point>();
+//				
+//				void add(java.awt.Point pnt){
+//					// take copy
+//					pnt = new java.awt.Point(pnt);
+//					ordered.add(pnt);
+//					set.add(pnt);
+//				}
+//			}
+//			Points points = new Points();
+//			
+//			points.add(startPosition.edgeStart);
+//			points.add(startPosition.edgeEnd);
+//			tracedEdges.add(startPosition.createDirectionIndependentIdentifer());
+//			
+//			TraceCoord current = new TraceCoord();
+//			current.set(startPosition);
+//			boolean reachedStart=false;
+//			while(!reachedStart){
+//				traceNext(current);
+//								
+//				// check for reaching start again
+//				reachedStart=current.edgeEnd.equals(startPosition.edgeStart);
+//					
+//				// check we've not already traced this edge (can happen when multiple rings are traced in succession)
+//				Object ident = current.createDirectionIndependentIdentifer();
+//				if(!reachedStart && tracedEdges.contains(ident)){
+//					return null;
+//				}
+//				tracedEdges.add(ident);
+//				
+//				// add new edge end
+//				points.add(current.edgeEnd);
+//				
+//			}
+//			
+//			// Test if the central position of the original cell is inside or outside the polygon
+//			// This determines if its a hole or not. Do this before creating diagonals (as diagonals break this test)
+//			Coordinate cellCentre = new Coordinate(coordsSys.getCellXCentre(startPosition.cell.x), coordsSys.getCellYCentre(startPosition.cell.y), 0);
+//			List<java.awt.Point> orderedPoints = points.ordered;
+//			Geometry rawPolygon = createPolygonFromTracedPoints(orderedPoints, false, factory);
+//			TraceResult result = new TraceResult();
+//			result.isHole = !rawPolygon.contains(factory.createPoint(cellCentre));
+//
+//			// Now create the final polygon with diagonals
+//			result.polygon= createPolygonFromTracedPoints(orderedPoints,true, factory);
+//			
+//			// Turn off diagonal creation for the moment as its not reliable
+//		//	result.polygon = rawPolygon;
+//			return result;
+//	
+//		}
 
 		private Geometry createPolygonFromTracedPoints(List<java.awt.Point> orderedPoints, boolean createDiagonals,GeometryFactory factory) {
 			int n = orderedPoints.size();
@@ -1185,15 +1070,15 @@ public class HeatmapGenerator {
 		return (((long)x) << 32) | (y & 0xffffffffL);
 	}
 	
-	private static int getXFromLong(long l){
-		return (int)(l >> 32);
-	}
-	
-	
-	private static int getYFromLong(long l){
-		return (int)l;
-	}
-	
+//	private static int getXFromLong(long l){
+//		return (int)(l >> 32);
+//	}
+//	
+//	
+//	private static int getYFromLong(long l){
+//		return (int)l;
+//	}
+//	
 
 	private static class Gaussian{
 		final double cutoff;
@@ -1216,35 +1101,48 @@ public class HeatmapGenerator {
 		}
 	}
 	
-//	private double value(Coordinate coordinate, Gaussian g){
-//
-//		class Result{
-//			double r;
-//		}
-//		Result r= new Result();
-//		
-//		quadtree.query(new Envelope(coordinate), new ItemVisitor() {
-//			
-//			@Override
-//			public void visitItem(Object item) {
-//				InputPoint pnt = (InputPoint)item;
-//				double dist = pnt.point.getCoordinate().distance(coordinate);
-//				if(dist < g.cutoff){
-//					r.r += pnt.weight * g.value(dist);
-//				}
-//			}
-//		});
-//		return r.r;
-//	}
-	
-	static class InputPoint{
+	public static class InputPoint{
 		final Point point;
-		double weight;
+		final double weight;
 		
 		InputPoint(Point point, double weight) {
 			super();
 			this.point = point;
 			this.weight = weight;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((point == null) ? 0 : point.hashCode());
+			long temp;
+			temp = Double.doubleToLongBits(weight);
+			result = prime * result + (int) (temp ^ (temp >>> 32));
+			return result;
+		}
+
+		public long sizeInBytes(){
+			return 8*4 + 8 + 8;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			InputPoint other = (InputPoint) obj;
+			if (point == null) {
+				if (other.point != null)
+					return false;
+			} else if (!point.equals(other.point))
+				return false;
+			if (Double.doubleToLongBits(weight) != Double.doubleToLongBits(other.weight))
+				return false;
+			return true;
 		}
 		
 	}
