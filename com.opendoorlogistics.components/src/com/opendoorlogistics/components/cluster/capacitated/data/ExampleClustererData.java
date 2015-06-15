@@ -12,12 +12,14 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
 
+import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.components.cluster.capacitated.solver.ContinueCallback;
 import com.opendoorlogistics.components.cluster.capacitated.solver.EvaluatedSolution;
 import com.opendoorlogistics.components.cluster.capacitated.solver.FilterCallbackEvents;
 import com.opendoorlogistics.components.cluster.capacitated.solver.Problem;
 import com.opendoorlogistics.components.cluster.capacitated.solver.Solver;
 import com.opendoorlogistics.components.cluster.capacitated.solver.Solver.HeuristicType;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 final public class ExampleClustererData {
@@ -69,7 +71,7 @@ final public class ExampleClustererData {
 		return ret;
 	}
 
-	public Problem createProblem(int nbLocations, int nbClusters, double percentageUsedCapacity) {
+	public Problem createProblem(ODLApi api,int nbLocations, int nbClusters, double percentageUsedCapacity) {
 		double totalCapacity = 1000;
 		double usedCapacity = totalCapacity * percentageUsedCapacity / 100.0;
 		double capacityPerCluster = totalCapacity / nbClusters;
@@ -129,7 +131,7 @@ final public class ExampleClustererData {
 					locations.add(location);
 					
 					// set cluster to use it
-					clusters[i].setFixedLocation(true);
+					clusters[i].setFixedLocation(1);
 					clusters[i].setLocationKey(location.getId());
 				}
 			}
@@ -151,7 +153,7 @@ final public class ExampleClustererData {
 				travel[indx++] = trv;
 			}
 		}
-		return new Problem(locations, Arrays.asList(clusters),Arrays.asList(travel));
+		return new Problem(api,locations, Arrays.asList(clusters),Arrays.asList(travel));
 
 	}
 
@@ -184,7 +186,7 @@ final public class ExampleClustererData {
 		ExampleClustererData exampleClustererData = new ExampleClustererData(true);
 		// exampleClustererData.testLimitedCandidates = true;
 		exampleClustererData.setFixedClusterSubset(true);
-		Problem problem = exampleClustererData.createProblem(100, 10, 90);
+		Problem problem = exampleClustererData.createProblem(new ODLApiImpl(),100, 10, 90);
 
 		final FilterCallbackEvents filter = new FilterCallbackEvents();
 

@@ -6,7 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.cluster.capacitated.data;
 
-import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.components.cluster.BasicCluster;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnDescription;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
@@ -17,7 +16,7 @@ import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
 
 final public class Cluster extends BasicCluster {
 	private double capacity=1;
-	private boolean fixedLocation=false;
+	private long fixedLocation=0;
 	
 	private String locationKey=null;
 	
@@ -36,7 +35,7 @@ final public class Cluster extends BasicCluster {
 		this.capacity = capacity;
 	}
 	
-	public boolean isFixedLocation() {
+	public long getFixedLocation() {
 		return fixedLocation;
 	}
 	
@@ -44,7 +43,7 @@ final public class Cluster extends BasicCluster {
 	@ODLDefaultLongValue(0)
 	@ODLColumnDescription("Set to true if you want the location to be fixed, otherwise algorithm may change it.")
 	@ODLColumnName("is-fixed-location")			
-	public void setFixedLocation(boolean fixedLocation) {
+	public void setFixedLocation(long fixedLocation) {
 		this.fixedLocation = fixedLocation;
 	}
 	

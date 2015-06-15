@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.components.cluster.capacitated.data.Cluster;
 import com.opendoorlogistics.components.cluster.capacitated.data.Location;
 import com.opendoorlogistics.components.cluster.capacitated.data.Travel;
@@ -39,24 +40,24 @@ final public class Problem {
 		return clusters;
 	}
 	
-	/**
-	 * Create problem, automatically creating the clusters
-	 * @param customers
-	 * @param travel
-	 * @param nbClusters
-	 * @param capacity
-	 */
-	public Problem(Iterable<Location> locations, Iterable<Travel>travel,int nbClusters, double capacity){
-		this(locations, createClusters(nbClusters, capacity), travel);
-	}
-	
+//	/**
+//	 * Create problem, automatically creating the clusters
+//	 * @param customers
+//	 * @param travel
+//	 * @param nbClusters
+//	 * @param capacity
+//	 */
+//	public Problem(Iterable<Location> locations, Iterable<Travel>travel,int nbClusters, double capacity){
+//		this(locations, createClusters(nbClusters, capacity), travel);
+//	}
+//	
 	/**
 	 * Create problem passing the available customers
 	 * @param customers
 	 * @param clusters
 	 * @param travel
 	 */
-	public Problem(Iterable<Location> customers,Iterable<Cluster> clusters,Iterable<Travel> travel){
+	public Problem(ODLApi api,Iterable<Location> customers,Iterable<Cluster> clusters,Iterable<Travel> travel){
 		this.locations= IteratorUtils.toList(customers);
 		this.clusters = IteratorUtils.toList(clusters);
 		this.fixedClusterIndexByLocationIndex  = new int[locations.size()];
@@ -85,7 +86,7 @@ final public class Problem {
 		Arrays.fill(fixedClusterLocations, -1);
 		for(int i =0 ; i<nc ; i++){
 			Cluster cluster = this.clusters.get(i);
-			if(cluster.isFixedLocation()){
+			if(api.values().isTrue(cluster.getFixedLocation())){
 				String loc = cluster.getLocationKey();
 				if(loc==null){
 					throw new RuntimeException("Found cluster with fixed location but with null location key.");

@@ -21,4 +21,11 @@ public interface Values {
 	
 	boolean equalsStandardised(String a, String b);
 	String standardise(String s);
+	
+	/**
+	 * We currently use long for booleans, so this method encapsulates the convention
+	 * @param l
+	 * @return true if l ==1
+	 */
+	boolean isTrue(long l);
 }

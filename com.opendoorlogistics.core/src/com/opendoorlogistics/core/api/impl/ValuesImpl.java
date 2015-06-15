@@ -38,4 +38,9 @@ public class ValuesImpl implements Values{
 		return (String)ColumnValueProcessor.convertToMe(ODLColumnType.STRING, value);
 	}
 
+	@Override
+	public boolean isTrue(long l) {
+		return l==1;
+	}
+
 }

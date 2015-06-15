@@ -108,7 +108,7 @@ final public class CapClusterComponent implements ODLComponent {
 			for(int i =0 ; i<clusters.length; i++){
 				Cluster cluster = clusters[i];
 				originalLocationIds[i] = cluster.getLocationKey();
-				if(cluster.isFixedLocation()){
+				if(reporter.getApi().values().isTrue(cluster.getFixedLocation())){
 					// add dummy location object
 					Location dummy = new Location();
 					dummy.setGlobalRowId(-1);
@@ -150,7 +150,7 @@ final public class CapClusterComponent implements ODLComponent {
 		
 		// create problem object
 		reporter.postStatusMessage("Initialising clusterer");
-		Problem problem = new Problem(locations, Arrays.asList(clusters), travel);
+		Problem problem = new Problem(reporter.getApi(),locations, Arrays.asList(clusters), travel);
 		if(reporter.isCancelled()){
 			return;
 		}
@@ -204,9 +204,9 @@ final public class CapClusterComponent implements ODLComponent {
 				int centreIndx = sol.getClusterCentre(i);
 				
 				// write location info
-				if(cluster.isFixedLocation()==false){
+				if(reporter.getApi().values().isTrue(cluster.getFixedLocation())==false){
 					if(centreIndx!=-1){
-						Location centre = locations.get(i);
+						Location centre = locations.get(centreIndx);
 						cluster.setLatitude(centre.getLatitude());
 						cluster.setLongitude(centre.getLongitude());
 						cluster.setLocationKey(centre.getId());
@@ -222,7 +222,7 @@ final public class CapClusterComponent implements ODLComponent {
 				cluster.setAssignedTravelCost(sol.getClusterCost(i).getTravel());
 				cluster.setAssignedCapacityViolation(sol.getClusterCost(i).getCapacityViolation());
 				cluster.setAssignedLocationsCount(sol.getClusterLocationCount(i));
-				if(cluster.isFixedLocation()){
+				if(reporter.getApi().values().isTrue(cluster.getFixedLocation())){
 					// minus 1 location for the dummy created..
 					cluster.setAssignedLocationsCount(cluster.getAssignedLocationsCount()-1);
 				}
