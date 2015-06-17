@@ -10,7 +10,6 @@ package com.opendoorlogistics.core.gis.map.background;
 
 import gnu.trove.map.hash.TByteIntHashMap;
 import gnu.trove.map.hash.TIntByteHashMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -28,15 +27,12 @@ import java.util.concurrent.ThreadFactory;
 import org.mapsforge.core.graphics.Canvas;
 import org.mapsforge.core.graphics.TileBitmap;
 import org.mapsforge.map.awt.AwtGraphicFactory;
-import org.mapsforge.map.layer.cache.FileSystemTileCache;
-import org.mapsforge.map.layer.cache.InMemoryTileCache;
 import org.mapsforge.map.layer.cache.TileCache;
-import org.mapsforge.map.layer.cache.TwoLevelTileCache;
 import org.mapsforge.map.layer.queue.Job;
 import org.mapsforge.map.layer.renderer.DatabaseRenderer;
 import org.mapsforge.map.layer.renderer.RendererJob;
 import org.mapsforge.map.model.DisplayModel;
-import org.mapsforge.map.reader.MapFile;
+import org.mapsforge.map.reader.MapDataStore;
 import org.mapsforge.map.rendertheme.ExternalRenderTheme;
 import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.mapsforge.map.rendertheme.XmlRenderTheme;
@@ -50,7 +46,6 @@ import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
-import com.opendoorlogistics.core.utils.images.ImageUtils;
 import com.opendoorlogistics.core.utils.io.RelativeFiles;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
@@ -58,12 +53,11 @@ class MapsforgeTileFactory extends TileFactory {
 	private static final int TILE_SIZE = 256;
 	private static final float TEXT_SCALE = 1.0f;
 
-	private final MapFile mapDatabase;
+	private final MapDataStore mapDatabase;
 	private final LinkedList<Tile> toCreate = new LinkedList<>();
 	private final DatabaseRenderer databaseRenderer;
 	private final XmlRenderTheme renderTheme;
 	private final DisplayModel model;
-	private final File mapFile;
 	private final Color fadeColour;
 	private final ZoomLevelConverter zoomLevelConverter;
 	private ExecutorService service;
@@ -82,7 +76,7 @@ class MapsforgeTileFactory extends TileFactory {
 		return InternalRenderTheme.OSMARENDER;
 	}
 	
-	MapsforgeTileFactory(TileFactoryInfo info, File mapFile, String xmlRenderThemeFilename,MapFile mapDatabase, Color fadeColour) {
+	MapsforgeTileFactory(TileFactoryInfo info, String xmlRenderThemeFilename,MapDataStore mapDatabase, Color fadeColour) {
 		super(info);
 		this.fadeColour =fadeColour;
 		this.mapDatabase = mapDatabase;
@@ -94,7 +88,6 @@ class MapsforgeTileFactory extends TileFactory {
 		model = new DisplayModel();
 		model.setFixedTileSize(TILE_SIZE);
 		model.setBackgroundColor(backgroundMapColour().getRGB());
-		this.mapFile = mapFile;
 
 		// use single thread at the moment as DatabaseRenderer is probably single threaded
 		service = Executors.newFixedThreadPool(1, new ThreadFactory() {

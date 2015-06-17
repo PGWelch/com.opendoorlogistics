@@ -14,7 +14,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.apache.commons.io.FilenameUtils;
+import org.mapsforge.map.reader.MapDataStore;
 import org.mapsforge.map.reader.MapFile;
+import org.mapsforge.map.reader.MultiMapDataStore;
+import org.mapsforge.map.reader.MultiMapDataStore.DataPolicy;
 
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.OSMTileFactoryInfo;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.Tile;
@@ -148,9 +152,9 @@ public final class BackgroundTileFactorySingleton {
 		BackgroundType type = config.getType();
 
 		if (type == BackgroundType.MAPSFORGE) {
-			Pair<File, MapFile> result = openMapsforgeDb(config.getMapsforgeFilename());
+			MapDataStore result = openMapsforgeDb(config.getMapsforgeFilename());
 			if (result != null) {
-				return new MapsforgeTileFactory(info, result.getFirst(), config.getMapsforgeXMLRenderTheme(),result.getSecond(), config.getFade());
+				return new MapsforgeTileFactory(info,  config.getMapsforgeXMLRenderTheme(),result, config.getFade());
 			}
 			type = BackgroundType.EMPTY;
 		}
@@ -164,25 +168,42 @@ public final class BackgroundTileFactorySingleton {
 
 	}
 
-	private static Pair<File, MapFile> openMapsforgeDb(String filename) {
+	private static MapDataStore openMapsforgeDb(String filename) {
+		File file = null;
 		if (Strings.isEmpty(filename)) {
-			return null;
+			// to do.. assume loading all files in the mapsforge directory
+			file = new File(AppConstants.MAPSFORGE_DIRECTORY).getAbsoluteFile();
+		}else{
+			file = RelativeFiles.validateRelativeFiles(filename, AppConstants.MAPSFORGE_DIRECTORY);			
 		}
 
-		File file = RelativeFiles.validateRelativeFiles(filename, AppConstants.MAPSFORGE_DIRECTORY);
-		if (file == null) {
+		if (file == null || !file.exists()) {
 			return null;
 		}
 		
-
-
-		try {
-			MapFile mf= new MapFile(file);
-			return new Pair<File, MapFile>(file, mf);	
-		} catch (Exception e) {
+		// if its a directory, load all the ones from the directory
+		MultiMapDataStore ret = new MultiMapDataStore(DataPolicy.RETURN_ALL);
+		if(file.isDirectory()){
+			for(File child : file.listFiles()){
+				String ext = FilenameUtils.getExtension(child.getAbsolutePath());
+				if(ext!=null && ext.toLowerCase().equals("map")){
+					try {
+						MapFile mf= new MapFile(child);
+						ret.addMapDataStore(mf, false, false);
+					} catch (Exception e) {
+					}			
+				}
+			}
+		}
+		else{
+			try {
+				MapFile mf= new MapFile(file);
+				ret.addMapDataStore(mf, false, false);
+			} catch (Exception e) {
+			}			
 		}
 
-		return null;
+		return ret;
 	}
 	// public static void main(String[]args){
 	// System.out.println(BackgroundTileFactorySingleton.getFactory());
