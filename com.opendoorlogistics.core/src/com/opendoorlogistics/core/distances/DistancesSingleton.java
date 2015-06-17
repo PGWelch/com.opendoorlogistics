@@ -112,7 +112,9 @@ public final class DistancesSingleton implements Closeable{
 		final StringBuilder statusMessage = new StringBuilder();
 		statusMessage.append ("Loaded the graph " + new File(request.getGraphhopperConfig().getGraphDirectory()).getAbsolutePath());				
 		statusMessage.append(System.lineSeparator() + "Calculating " + points.size() + "x" + points.size() + " matrix using Graphhopper road network distances.");
-		processingApi.postStatusMessage(statusMessage.toString());
+		if(processingApi!=null){
+			processingApi.postStatusMessage(statusMessage.toString());			
+		}
 
 		// check for user cancellation
 		if(processingApi!=null && processingApi.isCancelled()){
@@ -129,13 +131,13 @@ public final class DistancesSingleton implements Closeable{
 		}
 		
 		// calculate the matrix 
-		MatrixResult result = lastCHGraph.calculateMatrix(ghPoints, new ProcessingApiDecorator(processingApi) {
+		MatrixResult result = lastCHGraph.calculateMatrix(ghPoints,processingApi!=null? new ProcessingApiDecorator(processingApi) {
 				
 			@Override
 			public void postStatusMessage(String s) {
 				processingApi.postStatusMessage(statusMessage.toString() + System.lineSeparator() + s);
 			}
-		});
+		}:null);
 		if(processingApi!=null && processingApi.isCancelled()){
 			return null;
 		}
@@ -203,7 +205,9 @@ public final class DistancesSingleton implements Closeable{
 	}
 
 	private ODLCostMatrix calculateGreatCircle(DistancesConfiguration request, StandardisedStringTreeMap<LatLong> points, ProcessingApi processingApi) {
-		processingApi.postStatusMessage("Calculating " + points.size() + "x" + (points.size() + " matrix using great circle distance (i.e. straight line)"));
+		if(processingApi!=null){
+			processingApi.postStatusMessage("Calculating " + points.size() + "x" + (points.size() + " matrix using great circle distance (i.e. straight line)"));			
+		}
 		
 		List<Map.Entry<String, LatLong>> list = IteratorUtils.toList(points.entrySet());
 		ODLCostMatrixImpl output = createEmptyMatrix(list);
@@ -224,7 +228,7 @@ public final class DistancesSingleton implements Closeable{
 				setOutputValues(ifrom, ito, distanceMetres, timeSecs, request.getOutputConfig(), output);
 
 				// check for user cancellation
-				if (processingApi.isCancelled()) {
+				if (processingApi!=null && processingApi.isCancelled()) {
 					break;
 				}
 
@@ -236,9 +240,9 @@ public final class DistancesSingleton implements Closeable{
 
 	private void setOutputValues(int ifrom, int ito, double distanceMetres, double timeSecs, DistancesOutputConfiguration outputConfig, ODLCostMatrixImpl output) {
 		double value = processOutput(distanceMetres, timeSecs, outputConfig);
-		output.set(value, ifrom, ito, 0);
-		output.set(processedDistance(distanceMetres, outputConfig), ifrom, ito, 1);
-		output.set(processedTime(timeSecs, outputConfig), ifrom, ito, 2);
+		output.set(value, ifrom, ito, ODLCostMatrix.COST_MATRIX_INDEX_COST);
+		output.set(processedDistance(distanceMetres, outputConfig), ifrom, ito, ODLCostMatrix.COST_MATRIX_INDEX_DISTANCE);
+		output.set(processedTime(timeSecs, outputConfig), ifrom, ito, ODLCostMatrix.COST_MATRIX_INDEX_TIME);
 	}
 
 	private ODLCostMatrixImpl createEmptyMatrix(List<Map.Entry<String, LatLong>> list) {

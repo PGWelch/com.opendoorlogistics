@@ -235,7 +235,9 @@ public class CHMatrixGeneration implements Disposable {
 		if (outputText) {
 			System.out.println("Creating query graph");
 		}
-		processingApi.postStatusMessage("Querying positions against graph");
+		if(processingApi!=null){
+			processingApi.postStatusMessage("Querying positions against graph");			
+		}
 		final QueryGraph queryGraph = new QueryGraph(hopper.getGraph());
 		queryGraph.lookup(validResults);
 		if(processingApi!=null && processingApi.isCancelled()){
@@ -245,7 +247,9 @@ public class CHMatrixGeneration implements Disposable {
 		// run the search forward individually from each point
 		final SearchResult[] forwardTrees = new SearchResult[points.length];
 		final TIntObjectHashMap<List<FromIndexEdge>> visitedByNodeId = new TIntObjectHashMap<>();
-		processingApi.postStatusMessage("Performing forward search");		
+		if(processingApi!=null){
+			processingApi.postStatusMessage("Performing forward search");					
+		}
 		searchAllForward(queryResults, queryGraph, forwardTrees, visitedByNodeId, processingApi);
 		if(processingApi!=null && processingApi.isCancelled()){
 			return null;
