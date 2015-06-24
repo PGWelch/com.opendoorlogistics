@@ -1,2 +1,6 @@
 com.opendoorlogistics.studio/plugins/jsprit.jar
 com.opendoorlogistics.studio/data
+odl-geotools-fat-jar/target/dependency-reduced-pom.xml
+odl-geotools-fat-jar/target/maven-archiver/pom.properties
+odl-geotools-fat-jar/target/odl-geotools-fat-jar-1.1.jar
+odl-geotools-fat-jar/target/original-odl-geotools-fat-jar-1.1.jar
