@@ -6,6 +6,7 @@ import java.awt.event.KeyEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.KeyStroke;
 
@@ -31,15 +32,7 @@ public class MenuFactory {
 			mnHelp.add(helpsite);
 		}
 
-		mnHelp.add(new AbstractAction("About ODL Studio") {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				final AboutBoxDialog dlg = new AboutBoxDialog(appFrame, false);
-				dlg.setLocationRelativeTo(appFrame);
-				dlg.setVisible(true);
-			}
-		});
+		mnHelp.add(createAbout(appFrame));
 
 		mnHelp.add(new AbstractAction("List of data adapter functions") {
 
@@ -62,6 +55,33 @@ public class MenuFactory {
 		return mnHelp;
 	}
 
+	public AbstractAction createAbout(AbstractAppFrame appFrame) {
+		return new AbstractAction("About ODL Studio") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				placeAbout(appFrame, new AboutBoxDialog(appFrame, false));
+			}
+
+		};
+	}
+
+
+	private void placeAbout(AbstractAppFrame appFrame, final AboutBoxDialog dlg) {
+		dlg.setLocationRelativeTo(appFrame);
+		dlg.setVisible(true);
+	}
+	
+	public AbstractAction createAbout(AbstractAppFrame appFrame, String title, String text) {
+		return new AbstractAction(title) {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				placeAbout(appFrame, new AboutBoxDialog(appFrame, title,text));
+			}
+		};
+	}
+	
 	public JMenu createWindowsMenu(DesktopAppFrame appFrame) {
 		JMenu mnWindow = new JMenu("Window");
 		mnWindow.setMnemonic('W');

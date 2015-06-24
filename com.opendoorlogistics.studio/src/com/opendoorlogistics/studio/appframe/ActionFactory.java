@@ -54,7 +54,15 @@ public class ActionFactory {
 	}
 	
 	public SimpleAction createGotoWebsiteAction(JFrame parent) {
-		return new SimpleAction("Go to help website", "Go to www.opendoorlogistics for help", "help 16x16.png", "help 32x32.png") {
+		String shortDescription ="Go to help website";
+		String longDescription ="Go to www.opendoorlogistics for help";
+		String website = "http://www.opendoorlogistics.com";
+		
+		return createGotoWebsiteAction(parent, shortDescription, longDescription, website);
+	}
+
+	private SimpleAction createGotoWebsiteAction(JFrame parent, String shortDescription, String longDescription, String website) {
+		return new SimpleAction(shortDescription,longDescription, "help 16x16.png", "help 32x32.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -62,7 +70,7 @@ public class ActionFactory {
 					Desktop desktop = Desktop.getDesktop();
 					ExecutionReportImpl report = new ExecutionReportImpl();
 					try {
-						desktop.browse(java.net.URI.create("www.opendoorlogistics.com"));
+						desktop.browse(java.net.URI.create(website));
 					} catch (Exception e2) {
 						report.setFailed(e2);
 						ExecutionReportDialog.show(parent, "Failed to open website", report);

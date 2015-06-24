@@ -34,6 +34,7 @@ import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.LayoutUtils;
+import com.opendoorlogistics.core.utils.ui.SwingUtils;
 import com.opendoorlogistics.studio.PreferencesManager;
 import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
@@ -83,10 +84,19 @@ public abstract class DesktopAppFrame extends AbstractAppFrame{
 
 		initWindowPosition();
 		
-		SwingWorker<BufferedImage, BufferedImage> createBackground = new SwingWorker<BufferedImage, BufferedImage>() {
+		initBackgroundImage();
+		
+		desktopScrollPane = new DesktopScrollPane(desktopPane);
+
+		windowToolBar = new ODLScrollableToolbar();
+
+	}
+
+	protected void initBackgroundImage() {
+		SwingWorker<Void, Void> createBackground = new SwingWorker<Void, Void>() {
 
 			@Override
-			protected BufferedImage doInBackground() throws Exception {
+			protected Void doInBackground() throws Exception {
 				// background = new AppBackground().create();
 				AppBackground ab = new AppBackground();
 
@@ -97,35 +107,18 @@ public abstract class DesktopAppFrame extends AbstractAppFrame{
 					ab.doStep();
 					long current = System.currentTimeMillis();
 					if (current - lastTime > 100 && lastRendered != ab.getNbRendered()) {
-						background = ImageUtils.deepCopy(ab.getImage());
-						publish(background);
+						setBackgroundImage( ImageUtils.deepCopy(ab.getImage()));
 						lastTime = current;
 						lastRendered = ab.getNbRendered();
 					}
 				}
 
 				ab.finish();
-
-				background = ab.getImage();
-				return background;
-			}
-
-			@Override
-			protected void process(List<BufferedImage> chunks) {
-				repaint();
-			}
-
-			@Override
-			public void done() {
-				DesktopAppFrame.this.repaint();
+				setBackgroundImage( ab.getImage());				
+				return null;
 			}
 		};
 		createBackground.execute();
-		
-		desktopScrollPane = new DesktopScrollPane(desktopPane);
-
-		windowToolBar = new ODLScrollableToolbar();
-
 	}
 	
 	@Override
@@ -374,5 +367,14 @@ public abstract class DesktopAppFrame extends AbstractAppFrame{
 	}
 
 
-
+	protected void setBackgroundImage(BufferedImage img){
+		this.background = img;
+		SwingUtils.invokeLaterOnEDT(new Runnable() {
+			
+			@Override
+			public void run() {
+				repaint();
+			}
+		});
+	}
 }
