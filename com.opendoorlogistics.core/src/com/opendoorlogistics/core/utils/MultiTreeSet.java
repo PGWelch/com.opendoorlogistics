@@ -47,4 +47,9 @@ public class MultiTreeSet<T> {
 		}
 		return null;
 	}
+	
+	public void clear(){
+		map.clear();
+		size=0;
+	}
 }
