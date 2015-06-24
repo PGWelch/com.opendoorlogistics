@@ -15,4 +15,6 @@ public interface HasInternalFrames {
 		CENTRAL_RANDOMISED,
 	}
 	void addInternalFrame(JInternalFrame frame, FramePlacement placement);
+	
+	public JInternalFrame[] getInternalFrames();
 }

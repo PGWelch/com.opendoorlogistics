@@ -28,7 +28,7 @@ import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
-import com.opendoorlogistics.studio.AppFrame;
+import com.opendoorlogistics.studio.appframe.AppFrame;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames.FramePlacement;
 import com.opendoorlogistics.studio.scripts.editor.ScriptWizardActions;
 import com.opendoorlogistics.studio.scripts.editor.adapters.QueryAvailableData;
@@ -282,11 +282,11 @@ final public class ScriptUIManagerImpl implements ScriptUIManager, ODLListener {
 	}
 
 	protected ScriptsRunner getScriptRunner() {
-		return appframe.getLoaded().getRunner();
+		return appframe.getLoadedDatastore().getRunner();
 	}
 
 	protected ODLDatastoreUndoable<ODLTableAlterable> getDs() {
-		return appframe.getLoaded() != null ? appframe.getLoaded().getDs() : null;
+		return appframe.getLoadedDatastore() != null ? appframe.getLoadedDatastore().getDs() : null;
 	}
 
 	protected void showMessage(String text, boolean scrollableDlg) {

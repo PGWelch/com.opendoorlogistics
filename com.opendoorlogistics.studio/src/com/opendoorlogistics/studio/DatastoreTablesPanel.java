@@ -51,6 +51,7 @@ import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.strings.Strings.DoesStringExist;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
+import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.ODLAction;
 import com.opendoorlogistics.utils.ui.SimpleAction;
@@ -58,7 +59,7 @@ import com.opendoorlogistics.utils.ui.SimpleAction;
 final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 	private ODLDatastoreAlterable<? extends ODLTableAlterable> ds;
 	private final JList<ODLTableDefinition> list;
-	private final AppFrame appFrame;
+	private final AbstractAppFrame appFrame;
 	private final List<MyAction> actions;
 	private final List<ODLAction> wizardActions;
 	private final DropDownMenuButton wizardsMenuButton;
@@ -143,7 +144,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 	/**
 	 * Create the panel.
 	 */
-	public DatastoreTablesPanel(AppFrame launcher) {
+	public DatastoreTablesPanel(AbstractAppFrame launcher) {
 		this.appFrame = launcher;
 		setLayout(new BorderLayout(0, 0));
 

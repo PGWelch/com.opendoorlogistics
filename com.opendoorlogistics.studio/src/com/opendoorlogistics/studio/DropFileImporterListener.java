@@ -14,11 +14,12 @@ import org.apache.commons.io.FilenameUtils;
 
 import com.opendoorlogistics.core.tables.io.SupportedFileType;
 import com.opendoorlogistics.core.utils.strings.Strings;
+import com.opendoorlogistics.studio.appframe.AppFrame;
 
 public class DropFileImporterListener  implements DropTargetListener {
 	private final AppFrame appFrame;
 	
-    DropFileImporterListener(AppFrame appFrame) {
+    public DropFileImporterListener(AppFrame appFrame) {
 		this.appFrame = appFrame;
 	}
 
@@ -51,7 +52,7 @@ public class DropFileImporterListener  implements DropTargetListener {
                     	// just import first file.. multiple not supported at the moment
                     	String ext = FilenameUtils.getExtension(file.getName());
                     	if(Strings.equalsStd(ext, "xls") || Strings.equalsStd(ext, "xlsx")){
-                    		if(appFrame.getLoaded()==null){
+                    		if(appFrame.getLoadedDatastore()==null){
                         		appFrame.openFile(file);
                     		}else{
                         		appFrame.importFile(file, SupportedFileType.EXCEL);                    			

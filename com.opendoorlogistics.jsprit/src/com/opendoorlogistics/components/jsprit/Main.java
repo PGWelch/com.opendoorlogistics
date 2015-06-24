@@ -26,7 +26,7 @@ public class Main {
 		ClassLoader cl = new URLClassLoader(urls);
 
 		// find appframe class
-		Class<?> appFrameCls = cl.loadClass("com.opendoorlogistics.studio.AppFrame");
+		Class<?> appFrameCls = cl.loadClass("com.opendoorlogistics.studio.appframe.AppFrame");
 		
 		// and start appframe giving it the vehicle routing component
 		Method start = appFrameCls.getMethod("startWithComponents", ODLComponent[].class);

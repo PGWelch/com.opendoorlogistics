@@ -32,7 +32,8 @@ import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
-import com.opendoorlogistics.studio.AppFrame;
+import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
+import com.opendoorlogistics.studio.appframe.AppFrame;
 
 /**
  * The script runner exists only whilst the current spreadsheet is open. It is closed when the spreadsheet is closed.
@@ -125,7 +126,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 		}
 		
 	}
-	private final AppFrame appFrame;
+	private final AbstractAppFrame appFrame;
 	private final ExecutorService executorService;
 	private final ODLDatastoreUndoable<ODLTableAlterable> ds;
 	private final RefreshQueue reportRefreshQueue = new RefreshQueue(this);
@@ -164,7 +165,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 //	}
 
 
-	public ScriptsRunner(AppFrame parentFrame, ODLDatastoreUndoable<ODLTableAlterable> ds) {
+	public ScriptsRunner(AbstractAppFrame parentFrame, ODLDatastoreUndoable<ODLTableAlterable> ds) {
 		this.appFrame = parentFrame;
 		this.ds = ds;
 		
@@ -331,7 +332,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 		return finishedTester;
 	}
 	
-	AppFrame getAppFrame() {
+	AbstractAppFrame getAppFrame() {
 		return appFrame;
 	}
 	
