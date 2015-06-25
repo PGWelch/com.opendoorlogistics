@@ -42,67 +42,102 @@ class ScriptsTree implements HasScriptsProvider{
 	final private JScrollPane listScrollPane;
 	private ScriptNode[] items;
 	final private JTree tree;
-	final private TreeNode rootNode;
+	final private TreeNode rootNode = new RootNode();
 	private TreeMap<ScriptEditorType, ArrayList<File>> byType;
 	final private ScriptUIManager scriptUIManager;
 	
-	ScriptsTree(final ScriptUIManager scriptUIManager,final JPopupMenu popup) {
-		this.scriptUIManager = scriptUIManager;
-		rootNode = new TreeNode() {
+	private class RootNode implements TreeNode{
+		@Override
+		public boolean isLeaf() {
+			return false;
+		}
 
-			@Override
-			public boolean isLeaf() {
-				return false;
+		@Override
+		public TreeNode getParent() {
+			return null;
+		}
+
+		@Override
+		public int getIndex(TreeNode node) {
+			if(isSingleNodeMode()){
+				for(int i =0 ; i < items[0].getChildCount() ; i++){
+					if(items[0].getChildAt(i) == node){
+						return i;
+					}
+				}
 			}
-
-			@Override
-			public TreeNode getParent() {
-				return null;
-			}
-
-			@Override
-			public int getIndex(TreeNode node) {
+			else{
 				for (int i = 0; items != null && i < items.length; i++) {
 					if (items[i] == node) {
 						return i;
 					}
+				}	
+			}
+
+			return -1;
+		}
+
+		@Override
+		public int getChildCount() {
+			if(isSingleNodeMode()){
+				return items[0].getChildCount();
+			}else{
+				return items != null ? items.length : 0;				
+			}
+		}
+
+		@Override
+		public TreeNode getChildAt(int childIndex) {
+			if(isSingleNodeMode()){
+				return items[0].getChildAt(childIndex);
+			}else{
+				return items[childIndex];				
+			}
+		}
+
+		@Override
+		public boolean getAllowsChildren() {
+			return true;
+		}
+
+		@Override
+		public Enumeration children() {
+			return new Enumeration<TreeNode>() {
+				int index = -1;
+
+				@Override
+				public TreeNode nextElement() {
+					return getChildAt(++index);
 				}
-				return -1;
+
+				@Override
+				public boolean hasMoreElements() {
+					return (index + 1) < getChildCount();
+				}
+			};
+
+		}
+		
+		private boolean isSingleNodeMode(){
+			if(!scriptUIManager.getAppPermissions().isScriptDirectoryLocked()){
+				return false;
 			}
-
-			@Override
-			public int getChildCount() {
-				return items != null ? items.length : 0;
+			
+			if(items==null || items.length!=1){
+				return false;
 			}
-
-			@Override
-			public TreeNode getChildAt(int childIndex) {
-				return items[childIndex];
+			
+			ScriptNode node = items[0];
+			if(node.isRunnable() || node.getChildCount()==0){
+				return false;
 			}
-
-			@Override
-			public boolean getAllowsChildren() {
-				return true;
-			}
-
-			@Override
-			public Enumeration children() {
-				return new Enumeration<TreeNode>() {
-					int index = -1;
-
-					@Override
-					public TreeNode nextElement() {
-						return getChildAt(++index);
-					}
-
-					@Override
-					public boolean hasMoreElements() {
-						return (index + 1) < getChildCount();
-					}
-				};
-
-			}
-		};
+			
+			return true;
+		}
+	}
+	
+	ScriptsTree(final ScriptUIManager scriptUIManager,final JPopupMenu popup) {
+		this.scriptUIManager = scriptUIManager;
 
 		tree = new JTree(rootNode) {
 			@Override
@@ -278,7 +313,7 @@ class ScriptsTree implements HasScriptsProvider{
 	}
 	
 	void setFiles(File[] files) {
-		// save expanded state
+		// save expanded state of the current trees
 		HashMap<File, SaveExpandedState> state = SaveExpandedState.save(this);
 	//	System.out.println("1:" + state);
 		

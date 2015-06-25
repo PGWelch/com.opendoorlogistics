@@ -39,6 +39,7 @@ import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
 import com.opendoorlogistics.core.utils.ui.LayoutUtils;
 import com.opendoorlogistics.studio.PreferencesManager;
 import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
+import com.opendoorlogistics.studio.appframe.AppPermissions;
 import com.opendoorlogistics.studio.scripts.componentwizard.SetupComponentWizard;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
 import com.opendoorlogistics.studio.utils.SwingFriendlyDirectoryChangedListener;
@@ -51,15 +52,13 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 	private final ScriptUIManager scriptUIManager;
 	private final JPopupMenu popup;
 	private final ODLApi api;
-	private final FileBrowserPanel dirChooser ;
+	private final FileBrowserPanel dirChooser;
 	private File directory;
 	private WatchSingleDirectory watcher;
 
-	
-
-//	public boolean isRunnable(ScriptNode node) {
-//		return node != null && launchScriptEditor.hasLoadedData() && node.isAvailable() && node.isRunnable();
-//	}
+	// public boolean isRunnable(ScriptNode node) {
+	// return node != null && launchScriptEditor.hasLoadedData() && node.isAvailable() && node.isRunnable();
+	// }
 
 	private abstract class MyAction extends SimpleAction {
 		private final boolean needsLoadedData;
@@ -95,10 +94,10 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 	/**
 	 * Create the panel.
 	 */
-	public ScriptsPanel(ODLApi api,File directory, ScriptUIManager launchScriptEditor) {
+	public ScriptsPanel(ODLApi api, File directory, ScriptUIManager launchScriptEditor) {
 		this.scriptUIManager = launchScriptEditor;
 		this.api = api;
-		
+
 		// find a sensible directory
 		if (directory == null) {
 			directory = new File(ScriptConstants.DIRECTORY);
@@ -112,36 +111,41 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 		// Add directory browser and label at the top in their own panel.
 		// Label is wrapped in a panel because alignment is being ignored and this at least makes it properly centred.
 		// See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4275005
-		JLabel lblLabel = new JLabel("Scripts directory");
-		JPanel labelPanel = new JPanel(new BorderLayout());
-		labelPanel.add(lblLabel, BorderLayout.CENTER);
-		labelPanel.setMaximumSize(lblLabel.getMinimumSize());
-		dirChooser = new FileBrowserPanel(directory.getAbsolutePath(), new FilenameChangeListener() {
+		boolean lockedDir = scriptUIManager.getAppPermissions().isScriptDirectoryLocked();
+		if (!lockedDir) {
+			JLabel lblLabel = new JLabel("Scripts directory");
+			JPanel labelPanel = new JPanel(new BorderLayout());
+			labelPanel.add(lblLabel, BorderLayout.CENTER);
+			labelPanel.setMaximumSize(lblLabel.getMinimumSize());
+			dirChooser = new FileBrowserPanel(directory.getAbsolutePath(), new FilenameChangeListener() {
 
-			@Override
-			public void filenameChanged(String newFilename) {
-				ScriptsPanel.this.directory = new File(newFilename);
-				onDirectoryChanged(ScriptsPanel.this.directory);
-			}
-		}, true, "Select");
-		JPanel topPanel = LayoutUtils.createVerticalBoxLayout(labelPanel, dirChooser);
-		add(topPanel, BorderLayout.NORTH);
+				@Override
+				public void filenameChanged(String newFilename) {
+					ScriptsPanel.this.directory = new File(newFilename);
+					onDirectoryChanged(ScriptsPanel.this.directory);
+				}
+			}, true, "Select");
+			JPanel topPanel = LayoutUtils.createVerticalBoxLayout(labelPanel, dirChooser);
+			add(topPanel, BorderLayout.NORTH);
+		} else {
+			dirChooser = null;
+		}
 
 		// add toolbar at the bottom
 		JToolBar toolBar = new JToolBar();
 		toolBar.setFloatable(false);
 		add(toolBar, BorderLayout.SOUTH);
-		
+
 		// create all actions and add as buttons and menu items
 		popup = new JPopupMenu();
-		actions = createActions();
+		actions = createActions(launchScriptEditor.getAppPermissions());
 		for (Action action : actions) {
 			toolBar.add(action);
 			popup.add(action);
 		}
-		
+
 		// add list in the centre
-		scriptsTree = new ScriptsTree(scriptUIManager,popup);
+		scriptsTree = new ScriptsTree(scriptUIManager, popup);
 		scriptsTree.addTreeSelectionListener(new TreeSelectionListener() {
 
 			@Override
@@ -160,8 +164,6 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 		// }
 		// });
 
-
-
 		// finally file the list
 		onDirectoryChanged(directory);
 
@@ -175,89 +177,96 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 		return directory != null && directory.isDirectory() && directory.exists();
 	}
 
-	private List<MyAction> createActions() {
+	private List<MyAction> createActions(AppPermissions appPermissions) {
 		ArrayList<MyAction> ret = new ArrayList<>();
 
-		ret.add(new MyAction(SimpleActionConfig.addItem.setItemName("script"), false, false, false) {
+		if (appPermissions.isScriptEditingAllowed()) {
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				
-				Script script = new SetupComponentWizard(SwingUtilities.getWindowAncestor(ScriptsPanel.this), api, scriptUIManager.getAvailableFieldsQuery()).showModal();
-//				Script script =new ScriptWizardActions(api,SwingUtilities.getWindowAncestor(ScriptsPanel.this)).promptUser();
-				if (script != null) {
-					scriptUIManager.launchScriptEditor(script,null, isOkDirectory() ? directory : null);
-				}
-			}
-		});
+			ret.add(new MyAction(SimpleActionConfig.addItem.setItemName("script"), false, false, false) {
 
-		ret.add(new MyAction(SimpleActionConfig.editItem.setItemName("script"), false, false, true) {
+				@Override
+				public void actionPerformed(ActionEvent e) {
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				ScriptNode node = scriptsTree.getSelectedValue();
-				if (node != null && node.isAvailable()) {
-					ScriptsPanel.this.scriptUIManager.launchScriptEditor(node.getFile(),node.getLaunchEditorId());
-				}
-			}
-		});
-
-		ret.add(new MyAction(SimpleActionConfig.deleteItem.setItemName("script"), false, false, false) {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				ScriptNode node = scriptsTree.getSelectedValue();
-				if (node == null) {
-					return;
-				}
-				if (JOptionPane.showConfirmDialog(ScriptsPanel.this, "Really delete script " + node.getFile().getName() + " from disk?", "Delete script", JOptionPane.YES_NO_OPTION) == JOptionPane.OK_OPTION) {
-					if (!node.getFile().delete()) {
-						JOptionPane.showMessageDialog(ScriptsPanel.this, "Could not delete file");
-					} else {
-						onDirectoryChanged(directory);
+					Script script = new SetupComponentWizard(SwingUtilities.getWindowAncestor(ScriptsPanel.this), api, scriptUIManager
+							.getAvailableFieldsQuery()).showModal();
+					// Script script =new ScriptWizardActions(api,SwingUtilities.getWindowAncestor(ScriptsPanel.this)).promptUser();
+					if (script != null) {
+						scriptUIManager.launchScriptEditor(script, null, isOkDirectory() ? directory : null);
 					}
 				}
-			}
-			
-			@Override
-			public void updateEnabled() {
-				ScriptNode selected = scriptsTree.getSelectedValue();
-				boolean enabled=true;
-				if(selected==null){
-					enabled = false;
-				}
-				if(enabled && selected.isScriptRoot()==false){
-					// can only delete the root
-					enabled = false;
-				}
-				setEnabled(enabled);
-			}
-		});
+			});
 
-		ret.add(new MyAction(SimpleActionConfig.testCompileScript, true, false, true) {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				ScriptNode node = scriptsTree.getSelectedValue();
-				if (node != null) {
-					scriptUIManager.testCompileScript(node.getFile(), node.getLaunchExecutorId());
-				}
-			}
-		});
+			ret.add(new MyAction(SimpleActionConfig.editItem.setItemName("script"), false, false, true) {
 
-		ret.add(new MyAction(SimpleActionConfig.runScript, true, true, true) {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				ScriptNode node = scriptsTree.getSelectedValue();
-				if (node != null) {
-					scriptUIManager.executeScript(node.getFile(),node.getLaunchExecutorId());
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					ScriptNode node = scriptsTree.getSelectedValue();
+					if (node != null && node.isAvailable()) {
+						ScriptsPanel.this.scriptUIManager.launchScriptEditor(node.getFile(), node.getLaunchEditorId());
+					}
 				}
-			}
+			});
 
-			@Override
-			public void updateEnabled() {
-				setEnabled(ScriptNode.isRunnable(scriptsTree.getSelectedValue(),scriptUIManager));
-			}
-		});
+			ret.add(new MyAction(SimpleActionConfig.deleteItem.setItemName("script"), false, false, false) {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					ScriptNode node = scriptsTree.getSelectedValue();
+					if (node == null) {
+						return;
+					}
+					if (JOptionPane.showConfirmDialog(ScriptsPanel.this, "Really delete script " + node.getFile().getName() + " from disk?", "Delete script",
+							JOptionPane.YES_NO_OPTION) == JOptionPane.OK_OPTION) {
+						if (!node.getFile().delete()) {
+							JOptionPane.showMessageDialog(ScriptsPanel.this, "Could not delete file");
+						} else {
+							onDirectoryChanged(directory);
+						}
+					}
+				}
+
+				@Override
+				public void updateEnabled() {
+					ScriptNode selected = scriptsTree.getSelectedValue();
+					boolean enabled = true;
+					if (selected == null) {
+						enabled = false;
+					}
+					if (enabled && selected.isScriptRoot() == false) {
+						// can only delete the root
+						enabled = false;
+					}
+					setEnabled(enabled);
+				}
+			});
+
+			ret.add(new MyAction(SimpleActionConfig.testCompileScript, true, false, true) {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					ScriptNode node = scriptsTree.getSelectedValue();
+					if (node != null) {
+						scriptUIManager.testCompileScript(node.getFile(), node.getLaunchExecutorId());
+					}
+				}
+			});
+
+			ret.add(new MyAction(SimpleActionConfig.runScript, true, true, true) {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					ScriptNode node = scriptsTree.getSelectedValue();
+					if (node != null) {
+						scriptUIManager.executeScript(node.getFile(), node.getLaunchExecutorId());
+					}
+				}
+
+				@Override
+				public void updateEnabled() {
+					setEnabled(ScriptNode.isRunnable(scriptsTree.getSelectedValue(), scriptUIManager));
+				}
+			});
+
+		}
+
 		return ret;
 	}
 
@@ -337,26 +346,26 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 	// }
 
 	@Override
-	public void dispose() {
-		// kill watcher thread
+	public synchronized void dispose() {
+		if (watcher != null) {
+			watcher.shutdown();
+			watcher = null;
+		}
 	}
 
 	public ScriptNode[] getScripts() {
 		return scriptsTree.getScriptNodes();
-	}
-	
-	ScriptUIManager getScriptUIManager(){
-		return scriptUIManager;
 	}
 
 	@Override
 	public ScriptsProvider getScriptsProvider() {
 		return scriptsTree.getScriptsProvider();
 	}
-	
-	public void setScriptsDirectory(File directory)
-	{
-		dirChooser.setFilename(directory.getAbsolutePath());
+
+	public void setScriptsDirectory(File directory) {
+		if (dirChooser != null) {
+			dirChooser.setFilename(directory.getAbsolutePath());
+		}
 		onDirectoryChanged(directory);
 	}
 }

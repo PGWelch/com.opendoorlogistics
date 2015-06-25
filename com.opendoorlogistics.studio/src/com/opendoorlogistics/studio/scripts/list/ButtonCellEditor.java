@@ -73,7 +73,7 @@ public class ButtonCellEditor extends AbstractCellEditor implements TreeCellEdit
 	}
 
 	void processLaunchScriptEditor(MouseEvent e) {
-		if (e.getClickCount() == 2 && lastEdited != null && lastEdited.isAvailable()) {
+		if (e.getClickCount() == 2 && lastEdited != null && lastEdited.isAvailable() && uiManager.getAppPermissions().isScriptEditingAllowed()) {
 			uiManager.launchScriptEditor(lastEdited.getFile(), lastEdited.getLaunchEditorId());
 		}
 	}

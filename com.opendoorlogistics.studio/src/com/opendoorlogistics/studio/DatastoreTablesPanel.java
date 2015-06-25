@@ -62,7 +62,6 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 	private final AbstractAppFrame appFrame;
 	private final List<MyAction> actions;
 	private final List<ODLAction> wizardActions;
-	private final DropDownMenuButton wizardsMenuButton;
 	private final JLabel tablesLabel;
 
 	public DatastoreTablesPanel() {
@@ -168,47 +167,12 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 			@Override
 			public void setSelectionInterval(int index0, int index1) {
 				super.setSelectionInterval(index0, index1);
-				
-				// Comment out code do the deselection at the moment as it's a bit confusing in the UI; offer a unselect all action instead.
-//				// if we only have one element selected and we've just clicked on it, deselect it
-//				if (index0 == index1 && isSelectedIndex(index0) && getMinSelectionIndex() == index0 && getMaxSelectionIndex() == index1) {
-//					removeSelectionInterval(index0, index1);
-//				} else {
-//					super.setSelectionInterval(index0, index1);
-//				}
+
 			}
 		};
 		selectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		list.setSelectionModel(selectionModel);
 
-		// See
-		// http://stackoverflow.com/questions/2528344/jlist-deselect-when-clicking-an-already-selected-item
-		// Allows multiple selection and toggling of selected.
-		// list.setSelectionModel(new DefaultListSelectionModel() {
-		// private static final long serialVersionUID = 1L;
-		//
-		// boolean gestureStarted = false;
-		//
-		// @Override
-		// public void setSelectionInterval(int index0, int index1) {
-		// if(!gestureStarted){
-		// if (isSelectedIndex(index0)) {
-		// super.removeSelectionInterval(index0, index1);
-		// } else {
-		// super.addSelectionInterval(index0, index1);
-		// }
-		// }
-		// gestureStarted = true;
-		// }
-		//
-		// @Override
-		// public void setValueIsAdjusting(boolean isAdjusting) {
-		// if (isAdjusting == false) {
-		// gestureStarted = false;
-		// }
-		// }
-		//
-		// });
 
 		JScrollPane listScrollPane = new JScrollPane();
 		listScrollPane.setViewportView(list);
@@ -231,11 +195,6 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 				// launch the popup menu
 				popup.show(me.getComponent(), me.getX(), me.getY());
 			}
-			// public void mouseReleased(MouseEvent Me) {
-			// if (Me.isPopupTrigger()) {
-			// popup.show(Me.getComponent(), Me.getX(), Me.getY());
-			// }
-			// }
 		});
 		list.addListSelectionListener(new ListSelectionListener() {
 
@@ -267,23 +226,28 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		}
 
 		// add wizard for single table script types
-		wizardActions = createLaunchScriptWizardActions();
-		final JPopupMenu wizardsPopupMenu = new JPopupMenu();
-		JMenu wizardsMenu = new JMenu("Component wizard...");
-		for (ODLAction action : wizardActions) {
-			wizardsPopupMenu.add(action);
-			wizardsMenu.add(action);
-		}
-		wizardsMenuButton = new DropDownMenuButton(Icons.loadFromStandardPath("tools-wizard-2.png")) {
-
-			@Override
-			protected JPopupMenu getPopupMenu() {
-				return wizardsPopupMenu;
+		if(appFrame.getAppPermissions().isScriptEditingAllowed()){
+			wizardActions = createLaunchScriptWizardActions();
+			final JPopupMenu wizardsPopupMenu = new JPopupMenu();
+			JMenu wizardsMenu = new JMenu("Component wizard...");
+			for (ODLAction action : wizardActions) {
+				wizardsPopupMenu.add(action);
+				wizardsMenu.add(action);
 			}
-		};
-		wizardsMenuButton.setToolTipText("Run the component wizard");
-		toolBar.add(wizardsMenuButton);
-		popup.add(wizardsMenu);
+			DropDownMenuButton wizardsMenuButton = new DropDownMenuButton(Icons.loadFromStandardPath("tools-wizard-2.png")) {
+
+				@Override
+				protected JPopupMenu getPopupMenu() {
+					return wizardsPopupMenu;
+				}
+			};
+			wizardsMenuButton.setToolTipText("Run the component wizard");
+			toolBar.add(wizardsMenuButton);
+			popup.add(wizardsMenu);			
+		}else{
+			wizardActions = null;
+		}
+
 
 		tablesLabel = new JLabel("Tables");
 		tablesLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -528,9 +492,13 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		for (MyAction action : actions) {
 			action.updateEnabled();
 		}
-		for (ODLAction action : wizardActions) {
-			action.updateEnabled();
+		
+		if(wizardActions!=null){
+			for (ODLAction action : wizardActions) {
+				action.updateEnabled();
+			}			
 		}
+		
 		list.setEnabled(ds != null);
 		// wizardsMenuButton.setEnabled(ds!=null);
 

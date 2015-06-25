@@ -68,4 +68,5 @@ public abstract class AbstractAppFrame extends JFrame implements HasInternalFram
 		
 	}
 
+	public abstract AppPermissions getAppPermissions();
 }

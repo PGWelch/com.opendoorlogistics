@@ -140,6 +140,7 @@ public class AppFrame extends DesktopAppFrame{
 	private final JToolBar mainToolbar = new JToolBar(SwingConstants.VERTICAL);
 	private final ODLApi api = new ODLApiImpl();
 	private final List<ODLAction> allActions = new ArrayList<ODLAction>();
+	private final AppPermissions appPermissions;
 	private JMenu mnScripts;
 	private LoadedDatastore loaded;
 
@@ -163,20 +164,42 @@ public class AppFrame extends DesktopAppFrame{
 	}
 	
 	public AppFrame() {
-		this(new ActionFactory(), new MenuFactory(),null);
+		this(new ActionFactory(), new MenuFactory(),null,null);
 	}
 
-	public AppFrame(ActionFactory actionFactory, MenuFactory menuFactory, Image appIcon) {
+	public AppFrame(ActionFactory actionFactory, MenuFactory menuFactory, Image appIcon, AppPermissions permissions) {
 		if(appIcon==null){
 			appIcon = Icons.loadFromStandardPath("App logo.png").getImage()	;		
 		}
+		
+		if(permissions==null){
+			permissions = new AppPermissions() {
+				
+				@Override
+				public boolean isScriptEditingAllowed() {
+					return true;
+				}
+				
+				@Override
+				public boolean isScriptDirectoryLocked() {
+					return true;
+				}
+			};
+		}
+		this.appPermissions = permissions;
 		
 		// then create other objects which might use the components
 		tables = new DatastoreTablesPanel(this);
 
 		// create scripts panel after registering components
 		scriptManager = new ScriptUIManagerImpl(this);
-		scriptsPanel = new ScriptsPanel(getApi(), PreferencesManager.getSingleton().getScriptsDirectory(), scriptManager);
+		File scriptDir;
+		if(appPermissions.isScriptDirectoryLocked()){
+			scriptDir = new File(AppConstants.SCRIPTS_DIRECTORY).getAbsoluteFile();
+		}else{
+			scriptDir = PreferencesManager.getSingleton().getScriptsDirectory();
+		}
+		scriptsPanel = new ScriptsPanel(getApi(), scriptDir, scriptManager);
 
 		// set my icon
 		if(appIcon!=null){
@@ -315,43 +338,41 @@ public class AppFrame extends DesktopAppFrame{
 		}
 
 		// add run scripts menu (hidden until a datastore is loaded)
-		mnScripts = new JMenu("Run script");
+		mnScripts = new JMenu(appPermissions.isScriptEditingAllowed() ? "Run script" : "Run");
 		mnScripts.setMnemonic('R');
 		mnScripts.setVisible(false);
 		mnScripts.addMenuListener(new MenuListener() {
 
+			private void addScriptNode(JMenu parentMenu,boolean usePopupForChildren, ScriptNode node){
+				if (node.isAvailable() == false) {
+					return;
+				}
+				if (node.isRunnable()) {
+					parentMenu.add(new AbstractAction(node.getDisplayName(), node.getIcon()) {
+
+						@Override
+						public void actionPerformed(ActionEvent e) {
+							executeScript(node.getFile(), node.getLaunchExecutorId());
+						}
+					});
+				} else if (node.getChildCount() > 0) {
+					JMenu newParent = parentMenu;
+					if(usePopupForChildren){
+						newParent= new JMenu(node.getDisplayName());
+						parentMenu.add(newParent);						
+					};
+					for (int i = 0; i < node.getChildCount(); i++) {
+						addScriptNode(newParent, true,(ScriptNode) node.getChildAt(i));
+					}
+				}
+			}
+			
 			@Override
 			public void menuSelected(MenuEvent e) {
 				mnScripts.removeAll();
-				for (final ScriptNode item : scriptsPanel.getScripts()) {
-					if (item.isAvailable() == false) {
-						continue;
-					}
-					if (item.isRunnable()) {
-						mnScripts.add(new AbstractAction(item.getDisplayName(), item.getIcon()) {
-
-							@Override
-							public void actionPerformed(ActionEvent e) {
-								executeScript(item.getFile(), item.getLaunchExecutorId());
-							}
-						});
-					} else if (item.getChildCount() > 0) {
-						JMenu popup = new JMenu(item.getDisplayName());
-						mnScripts.add(popup);
-						for (int i = 0; i < item.getChildCount(); i++) {
-							final ScriptNode child = (ScriptNode) item.getChildAt(i);
-							if (child.isRunnable()) {
-								popup.add(new AbstractAction(child.getDisplayName(), child.getIcon()) {
-
-									@Override
-									public void actionPerformed(ActionEvent e) {
-										executeScript(child.getFile(), child.getLaunchExecutorId());
-									}
-								});
-							}
-
-						}
-					}
+				ScriptNode [] scripts = scriptsPanel.getScripts();
+				for (final ScriptNode item : scripts) {
+					addScriptNode(mnScripts, scripts.length>1,item);
 				}
 				mnScripts.validate();
 			}
@@ -368,11 +389,13 @@ public class AppFrame extends DesktopAppFrame{
 		addSpace.add();
 
 		// add create script menu
-		JMenu scriptsMenu = menuBuilder.createScriptCreationMenu(this, scriptManager);
-		if(scriptsMenu!=null){
-			menuBar.add(scriptsMenu);			
+		if(appPermissions.isScriptEditingAllowed()){
+			JMenu scriptsMenu = menuBuilder.createScriptCreationMenu(this, scriptManager);
+			if(scriptsMenu!=null){
+				menuBar.add(scriptsMenu);			
+			}
+			addSpace.add();			
 		}
-		addSpace.add();
 
 		// tools menu 
 		JMenu tools = new JMenu("Tools");
@@ -818,6 +841,8 @@ public class AppFrame extends DesktopAppFrame{
 
 		DisposeCore.dispose();
 
+		scriptsPanel.dispose();
+		
 		super.dispose();
 	}
 
@@ -1004,6 +1029,11 @@ public class AppFrame extends DesktopAppFrame{
 
 	public void setHaltJVMOnDispose(boolean haltJVMOnDispose) {
 		this.haltJVMOnDispose = haltJVMOnDispose;
+	}
+
+	@Override
+	public AppPermissions getAppPermissions() {
+		return appPermissions;
 	}
 	
 	
