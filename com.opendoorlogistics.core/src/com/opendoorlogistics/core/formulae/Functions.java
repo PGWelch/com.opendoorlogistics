@@ -2494,6 +2494,16 @@ public class Functions {
 			if (s == null) {
 				return null;
 			}
+			
+			// try cleaning to readd to the space first if not already unit
+			if(level != UKPostcodeLevel.Unit){
+				s = Strings.std(s);
+				Matcher ukUnit = unit.matcher(s);
+				if(ukUnit.matches()){
+					s = ukUnit.group(1) + " " + ukUnit.group(2);
+				}
+				s = s.toUpperCase();
+			}
 
 			Pattern pattern = null;
 			switch (level) {
