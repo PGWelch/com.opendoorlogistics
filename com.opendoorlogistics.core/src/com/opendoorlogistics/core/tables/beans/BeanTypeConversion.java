@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
@@ -191,6 +192,14 @@ final public class BeanTypeConversion {
 			@Override
 			public Object convertOdlTypeToExternalJavaType(Object odlType) {
 				return ((ODLGeomImpl)odlType).getJTSGeometry();
+			}
+		}));
+
+		types.add(new SupportedType(ODLGeom.class, ODLColumnType.GEOM, new ODLTypeToExternalJavaType() {
+
+			@Override
+			public Object convertOdlTypeToExternalJavaType(Object odlType) {
+				return odlType;
 			}
 		}));
 		
