@@ -14,6 +14,7 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.core.scripts.elements.Script;
+import com.opendoorlogistics.studio.appframe.AppPermissions;
 import com.opendoorlogistics.studio.scripts.editor.adapters.QueryAvailableData;
 
 public interface ScriptUIManager {
@@ -43,4 +44,6 @@ public interface ScriptUIManager {
 	void removerDatastoreStructureChangedListener(ODLListener listener);
 	
 	ODLApi getApi();
+	
+	AppPermissions getAppPermissions();
 }

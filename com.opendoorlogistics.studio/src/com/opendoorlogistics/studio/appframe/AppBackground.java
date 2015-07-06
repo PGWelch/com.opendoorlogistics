@@ -4,7 +4,7 @@
  * are made available under the terms of the GNU Lesser Public License v3
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
-package com.opendoorlogistics.studio;
+package com.opendoorlogistics.studio.appframe;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -44,7 +44,7 @@ final public class AppBackground {
 	private int step=0;
 	private Graphics2D g;
 
-	static final Color BACKGROUND_COLOUR = new Color(230, 230, 230);
+	public static final Color BACKGROUND_COLOUR = new Color(230, 230, 230);
 
 	public AppBackground(){
 		this(1000, 1000);

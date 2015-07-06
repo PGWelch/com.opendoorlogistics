@@ -20,10 +20,11 @@ import com.opendoorlogistics.core.scripts.execution.dependencyinjection.Abstract
 import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.ui.ModalDialog;
-import com.opendoorlogistics.studio.AppFrame;
+import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
+import com.opendoorlogistics.studio.appframe.AppFrame;
 
 abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
-	private final AppFrame appFrame;
+	private final AbstractAppFrame appFrame;
 	private final ArrayList<RecordedLauncherCallback> controlLauncherCallbacks = new ArrayList<>();
 	private final StandardisedStringTreeMap<DataDependencies> dependenciesByInstructionId = new StandardisedStringTreeMap<>();
 
@@ -52,7 +53,7 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 		}
 	}
 
-	ScriptsDependencyInjector(AppFrame appFrame) {
+	ScriptsDependencyInjector(AbstractAppFrame appFrame) {
 		super(appFrame.getApi());
 		this.appFrame = appFrame;
 	}

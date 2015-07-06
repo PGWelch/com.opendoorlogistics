@@ -36,18 +36,14 @@ final public class AboutBoxDialog extends TextInformationDialog {
 	 * Create the dialog.
 	 */
 	public AboutBoxDialog(JFrame parent, boolean showLicenses) {
-		super(parent, "About " + AppConstants.ORG_NAME, info(showLicenses), true, false,true);
-		setPreferredSize(new Dimension(600, 300));
-	//	scrollToTop();
-		pack();
-		//scrollToTop();
+		this(parent, "About " + AppConstants.ORG_NAME, info(showLicenses));
 	}
-
-//	public void scrollToTop() {
-//		areaScrollPane.scrollRectToVisible(new Rectangle(0,0,areaScrollPane.getWidth(), areaScrollPane.getHeight()));
-//		areaScrollPane.getViewport().setViewPosition(new Point(0, 0));
-//		areaScrollPane.getVerticalScrollBar().setValue(areaScrollPane.getVerticalScrollBar().getMinimum());
-//	}
+	
+	public AboutBoxDialog(JFrame parent, String title, String text) {
+		super(parent,title, text, true, false,true);
+		setPreferredSize(new Dimension(600, 300));
+		pack();	
+	}
 
 	private static String info(boolean showLicenses) {
 
@@ -64,8 +60,12 @@ final public class AboutBoxDialog extends TextInformationDialog {
 		
 		String s = writer.toString();
 		
-		long maxMemoryMb = Runtime.getRuntime().maxMemory() / (1024*1024);
+		s = replaceVersionNumberTags(s);
+		return s;
+	}
 
+	public static String replaceVersionNumberTags(String s) {
+		long maxMemoryMb = Runtime.getRuntime().maxMemory() / (1024*1024);
 		s = s.replace("VERSION_NUMBER", AppConstants.getAppVersion().toString());
 		s = s.replace("JAVA_VERSION", System.getProperty("java.version") + ", max memory " + maxMemoryMb + " MB");
 		return s;

@@ -4,7 +4,7 @@
  * are made available under the terms of the GNU Lesser Public License v3
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
-package com.opendoorlogistics.studio;
+package com.opendoorlogistics.studio.appframe;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
@@ -61,6 +61,7 @@ import javax.swing.event.MenuListener;
 import org.apache.commons.io.FilenameUtils;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.HasApi;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -96,6 +97,11 @@ import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.LayoutUtils;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.TextInformationDialog;
+import com.opendoorlogistics.studio.DatastoreTablesPanel;
+import com.opendoorlogistics.studio.DropFileImporterListener;
+import com.opendoorlogistics.studio.InitialiseStudio;
+import com.opendoorlogistics.studio.LoadedDatastore;
+import com.opendoorlogistics.studio.PreferencesManager;
 import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
 import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.controls.buttontable.ButtonTableDialog;
@@ -124,62 +130,19 @@ import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.ODLAction;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 
-public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsProvider {
-	private BufferedImage background;
-	private final DesktopScrollPane desktopScrollPane;
-	private final JSplitPane splitterTablesScripts;
-	private final JSplitPane splitterLeftPanelMain;
-	private final ODLScrollableToolbar windowToolBar;
+public class AppFrame extends DesktopAppFrame{
+	private final JSplitPane splitterLeftSide;
+	private final JSplitPane splitterMain;
 	private boolean haltJVMOnDispose=true;
-	
-	private final JDesktopPane desktopPane = new JDesktopPane() {
-
-		@Override
-		protected void paintComponent(Graphics g) {
-			super.paintComponent(g);
-			Graphics2D g2d = (Graphics2D) g;
-			if (background != null) {
-				TexturePaint paint = new TexturePaint(background, new Rectangle(0, 0, background.getWidth(), background.getHeight()));
-
-				if (paint != null) {
-					g2d.setPaint(paint);
-					g2d.fill(g2d.getClip());
-				}
-			} else {
-				g2d.setColor(AppBackground.BACKGROUND_COLOUR);
-				g2d.fillRect(0, 0, (int) getSize().getWidth(), (int) getSize().getHeight());
-			}
-
-			// g.drawImage(image, 0, 0, this);
-		}
-	}
-
-	;
-
 	private final DatastoreTablesPanel tables;
 	private final ScriptUIManagerImpl scriptManager;
 	private final ScriptsPanel scriptsPanel;
 	private final JToolBar mainToolbar = new JToolBar(SwingConstants.VERTICAL);
-	private final List<MyAction> fileActions;
-	private final List<MyAction> editActions;
 	private final ODLApi api = new ODLApiImpl();
+	private final List<ODLAction> allActions = new ArrayList<ODLAction>();
+	private final AppPermissions appPermissions;
 	private JMenu mnScripts;
 	private LoadedDatastore loaded;
-
-	private abstract class MyAction extends SimpleAction {
-		private final boolean needsOpenFile;
-		private final KeyStroke accelerator;
-
-		public MyAction(String name, String tooltip, String smallIconPng, String largeIconPng, boolean needsOpenFile, KeyStroke accelerator) {
-			super(name, tooltip, smallIconPng, largeIconPng);
-			this.needsOpenFile = needsOpenFile;
-			this.accelerator = accelerator;
-		}
-
-		public void updateEnabled() {
-			setEnabled(needsOpenFile ? loaded != null : true);
-		}
-	}
 
 	/**
 	 * Start the appframe up and add the input components
@@ -200,90 +163,75 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		new AppFrame();
 	}
 	
-
-
 	public AppFrame() {
+		this(new ActionFactory(), new MenuFactory(),null,null);
+	}
 
-		// create frame with desktop pane
-		Container con = getContentPane();
-		con.setLayout(new BorderLayout());
-
-		SwingWorker<BufferedImage, BufferedImage> createBackground = new SwingWorker<BufferedImage, BufferedImage>() {
-
-			@Override
-			protected BufferedImage doInBackground() throws Exception {
-				// background = new AppBackground().create();
-				AppBackground ab = new AppBackground();
-
-				ab.start();
-				long lastTime = System.currentTimeMillis();
-				int lastRendered = 0;
-				while (ab.getNbConsecutiveFails() < 100) {
-					ab.doStep();
-					long current = System.currentTimeMillis();
-					if (current - lastTime > 100 && lastRendered != ab.getNbRendered()) {
-						background = ImageUtils.deepCopy(ab.getImage());
-						publish(background);
-						lastTime = current;
-						lastRendered = ab.getNbRendered();
-					}
+	public AppFrame(ActionFactory actionFactory, MenuFactory menuFactory, Image appIcon, AppPermissions permissions) {
+		if(appIcon==null){
+			appIcon = Icons.loadFromStandardPath("App logo.png").getImage()	;		
+		}
+		
+		if(permissions==null){
+			permissions = new AppPermissions() {
+				
+				@Override
+				public boolean isScriptEditingAllowed() {
+					return true;
 				}
-
-				ab.finish();
-
-				background = ab.getImage();
-				return background;
-			}
-
-			@Override
-			protected void process(List<BufferedImage> chunks) {
-				repaint();
-			}
-
-			@Override
-			public void done() {
-				AppFrame.this.repaint();
-			}
-		};
-		createBackground.execute();
-
-		initWindowPosition();
-
-
+				
+				@Override
+				public boolean isScriptDirectoryLocked() {
+					return true;
+				}
+			};
+		}
+		this.appPermissions = permissions;
+		
 		// then create other objects which might use the components
 		tables = new DatastoreTablesPanel(this);
 
 		// create scripts panel after registering components
 		scriptManager = new ScriptUIManagerImpl(this);
-		scriptsPanel = new ScriptsPanel(getApi(), PreferencesManager.getSingleton().getScriptsDirectory(), scriptManager);
+		File scriptDir;
+		if(appPermissions.isScriptDirectoryLocked()){
+			scriptDir = new File(AppConstants.SCRIPTS_DIRECTORY).getAbsoluteFile();
+		}else{
+			scriptDir = PreferencesManager.getSingleton().getScriptsDirectory();
+		}
+		scriptsPanel = new ScriptsPanel(getApi(), scriptDir, scriptManager);
 
 		// set my icon
-		setIconImage(Icons.loadFromStandardPath("App logo.png").getImage());
+		if(appIcon!=null){
+			setIconImage(appIcon);			
+		}
 
 		// create actions
-		fileActions = initFileActions();
-		editActions = initEditActions();
+		List<AppFrameAction> fileActions = actionFactory.createFileActions(this);
+		allActions.addAll(fileActions);
+		List<AppFrameAction> editActions = new ArrayList<AppFrameAction>();
+		editActions.add(actionFactory.createUndo(this));
+		editActions.add(actionFactory.createRedo(this));
+		allActions.addAll(editActions);
 
 		// create left-hand panel with scripts and tables
-		splitterTablesScripts = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tables, scriptsPanel);
-		splitterTablesScripts.setPreferredSize(new Dimension(200, splitterTablesScripts.getPreferredSize().height));
-		splitterTablesScripts.setResizeWeight(0.5);
+		splitterLeftSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tables, scriptsPanel);
+		splitterLeftSide.setPreferredSize(new Dimension(200, splitterLeftSide.getPreferredSize().height));
+		splitterLeftSide.setResizeWeight(0.5);
 
 		// split center part into tables/scripts browser on the left and desktop
 		// pane on the right
-		desktopScrollPane = new DesktopScrollPane(desktopPane);
 		JPanel rightPane = new JPanel();
 		rightPane.setLayout(new BorderLayout());
-		rightPane.add(desktopPane, BorderLayout.CENTER);
-		windowToolBar = new ODLScrollableToolbar();
-		rightPane.add(windowToolBar,BorderLayout.SOUTH);
-		splitterLeftPanelMain = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitterTablesScripts, rightPane);
-		con.add(splitterLeftPanelMain, BorderLayout.CENTER);
+		rightPane.add(getDesktopPane(), BorderLayout.CENTER);
+		rightPane.add(getWindowToolBar(),BorderLayout.SOUTH);
+		splitterMain = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitterLeftSide, rightPane);
+		getContentPane().add(splitterMain, BorderLayout.CENTER);
 
 		// add toolbar
-		initToolbar(con);
+		initToolbar(actionFactory,fileActions,editActions);
 
-		initMenus();
+		initMenus(actionFactory, menuFactory,fileActions, editActions);
 
 		// control close operation to stop changed being lost
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -307,105 +255,12 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 
 	}
 
-	private void updateWindowsToolbar(){
-		windowToolBar.getToolBar().removeAll();
-		
-		// get all internal frames, adding progress frames first
-		List<ODLInternalFrame> frames =new ArrayList<ODLInternalFrame>();
-		boolean hasProgress=false;
-		for(JInternalFrame frame : desktopPane.getAllFrames()){
-			if(ODLInternalFrame.class.isInstance(frame)){
-				if(ProgressFrame.class.isInstance(frame)){
-					frames.add(0,(ODLInternalFrame)frame);
-					hasProgress = true;
-				}else{
-					frames.add((ODLInternalFrame)frame);					
-				}
-			}
-		}
-		
-		for (final ODLInternalFrame frame : frames) {
-	
-			// get the title
-			String title = frame.getTitle();
-			if(ScriptEditor.class.isInstance(frame)){
-				File file = ((ScriptEditor)frame).getFile();
-				if(file!=null){
-					title = file.getName();
-					title = Strings.caseInsensitiveReplace(title,"."+ ScriptConstants.FILE_EXT, "");
-				}
-			}
-			if(title!=null){
-				int maxchar = 20;
-				if(title.length()>maxchar){
-					title = title.substring(0, maxchar) + "...";						
-				}
-			}
-			
-			// get an icon if we can
-			Icon icon = null;
-			if(ReporterFrame.class.isInstance(frame)){
-				ReporterFrame<?> rf = (ReporterFrame<?>)frame;
-				if(rf.getComponent()!=null){
-					icon = rf.getComponent().getIcon(getApi(), ODLComponent.MODE_DEFAULT);
-				}
-			}
-			else if(GridFrame.class.isInstance(frame)){
-				icon = Icons.loadFromStandardPath("table-window-toolbar-icon.png");
-			}
-			else if(TableSchemaEditor.class.isInstance(frame)){
-				icon = Icons.loadFromStandardPath("table-edit.png");
-			}
-			else if (ScriptEditor.class.isInstance(frame)){
-				icon = Icons.loadFromStandardPath("script-window-toolbar.png");
-			}else if (ProgressFrame.class.isInstance(frame)){
-				icon = ProgressFrame.ANIMATED_ICON;
-			}
-			
-			// create the button
-			JButton button =null;
-			if(icon!=null){
-				button = new JButton(title, icon);
-			}else{
-				button = new JButton(title);
-			}
-			button.addActionListener(new ActionListener() {
-				
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					if(frame.isIcon()){
-						try {
-							frame.setIcon(false);
-						} catch (PropertyVetoException e1) {
-						
-						}
-					}
-					frame.toFront();
-				}
-			});
-			button.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createSoftBevelBorder(BevelBorder.RAISED), BorderFactory.createEmptyBorder(2, 2, 2, 2))) ;
-			windowToolBar.getToolBar().add(button);
-		
-		}
-		
-		
-		windowToolBar.repaint();
-		
-		// need updateUI here otherwise toolbar sometimes disappears!
-		windowToolBar.updateUI();
-		
-		if(hasProgress){
-			// ensure progress are shown
-			windowToolBar.setScrollViewToInitialPosition();
-		}
-	}
 
 
-
-	private void initToolbar(Container con) {
-		con.add(mainToolbar, BorderLayout.WEST);
+	private void initToolbar( ActionFactory actionBuilder, List<AppFrameAction> fileActions,List<AppFrameAction> editActions) {
+		getContentPane().add(mainToolbar, BorderLayout.WEST);
 		mainToolbar.setFloatable(false);
-		for (MyAction action : fileActions) {
+		for (AppFrameAction action : fileActions) {
 			if (action != null && action.getConfig().getLargeicon() != null) {
 				mainToolbar.add(action);
 			}
@@ -416,60 +271,23 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 			}
 		}
 
-		mainToolbar.add(initGotoWebsiteAction());
 
-	}
-
-	private SimpleAction initGotoWebsiteAction() {
-		return new SimpleAction("Go to help website", "Go to www.opendoorlogistics for help", "help 16x16.png", "help 32x32.png") {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (Desktop.isDesktopSupported() && Desktop.getDesktop() != null) {
-					Desktop desktop = Desktop.getDesktop();
-					ExecutionReportImpl report = new ExecutionReportImpl();
-					try {
-						desktop.browse(java.net.URI.create("www.opendoorlogistics.com"));
-					} catch (Exception e2) {
-						report.setFailed(e2);
-						ExecutionReportDialog.show(AppFrame.this, "Failed to open website", report);
-					}
-
-				}
-			}
-		};
-	}
-
-	private void initWindowPosition() {
-		WindowState screenState = PreferencesManager.getSingleton().getScreenState();
-		boolean boundsSet = false;
-		GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-		if (screenState != null) {
-			setExtendedState(screenState.getExtendedState());
-			int safety = 20;
-			int screenWidth = gd.getDisplayMode().getWidth();
-			int screenHeight = gd.getDisplayMode().getHeight();
-			if (getExtendedState() == JFrame.NORMAL && screenState.getX() < (screenWidth - safety) && (screenState.getY() < screenHeight - safety && screenState.getWidth() <= screenWidth && screenState.getHeight() <= screenHeight)) {
-				boundsSet = true;
-				setBounds(screenState.getX(), screenState.getY(), screenState.getWidth(), screenState.getHeight());
-			}
+		Action helpsite = actionBuilder.createGotoWebsiteAction(this);
+		if(helpsite!=null){
+			mainToolbar.add(helpsite);		
 		}
 
-		// make a fraction of the screen size by default
-		if (!boundsSet && gd != null && getExtendedState() == JFrame.NORMAL) {
-			int screenWidth = gd.getDisplayMode().getWidth();
-			int screenHeight = gd.getDisplayMode().getHeight();
-			setSize(3 * screenWidth / 4, 3 * screenHeight / 4);
-		}
 	}
 
-	public LoadedDatastore getLoaded() {
+
+
+	@Override
+	public LoadedDatastore getLoadedDatastore() {
 		return loaded;
 	}
 
 
-	
-	private void initMenus() {
+	private void initMenus(ActionFactory actionBuilder, MenuFactory menuBuilder,List<AppFrameAction> fileActions,List<AppFrameAction> editActions) {
 		final JMenuBar menuBar = new JMenuBar();
 		class AddSpace {
 			void add() {
@@ -488,7 +306,7 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 
 			@Override
 			public void menuSelected(MenuEvent e) {
-				initFileMenu(mnFile);
+				initFileMenu(mnFile,fileActions,actionBuilder, menuBuilder);
 			}
 
 			@Override
@@ -503,7 +321,7 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 
 			}
 		});
-		initFileMenu(mnFile);
+		initFileMenu(mnFile,fileActions,actionBuilder,menuBuilder);
 		menuBar.add(mnFile);
 		addSpace.add();
 
@@ -512,7 +330,7 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		mnEdit.setMnemonic('E');
 		menuBar.add(mnEdit);
 		addSpace.add();
-		for (MyAction action : editActions) {
+		for (AppFrameAction action : editActions) {
 			JMenuItem item = mnEdit.add(action);
 			if (action.accelerator != null) {
 				item.setAccelerator(action.accelerator);
@@ -520,43 +338,41 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		}
 
 		// add run scripts menu (hidden until a datastore is loaded)
-		mnScripts = new JMenu("Run script");
+		mnScripts = new JMenu(appPermissions.isScriptEditingAllowed() ? "Run script" : "Run");
 		mnScripts.setMnemonic('R');
 		mnScripts.setVisible(false);
 		mnScripts.addMenuListener(new MenuListener() {
 
+			private void addScriptNode(JMenu parentMenu,boolean usePopupForChildren, ScriptNode node){
+				if (node.isAvailable() == false) {
+					return;
+				}
+				if (node.isRunnable()) {
+					parentMenu.add(new AbstractAction(node.getDisplayName(), node.getIcon()) {
+
+						@Override
+						public void actionPerformed(ActionEvent e) {
+							executeScript(node.getFile(), node.getLaunchExecutorId());
+						}
+					});
+				} else if (node.getChildCount() > 0) {
+					JMenu newParent = parentMenu;
+					if(usePopupForChildren){
+						newParent= new JMenu(node.getDisplayName());
+						parentMenu.add(newParent);						
+					};
+					for (int i = 0; i < node.getChildCount(); i++) {
+						addScriptNode(newParent, true,(ScriptNode) node.getChildAt(i));
+					}
+				}
+			}
+			
 			@Override
 			public void menuSelected(MenuEvent e) {
 				mnScripts.removeAll();
-				for (final ScriptNode item : scriptsPanel.getScripts()) {
-					if (item.isAvailable() == false) {
-						continue;
-					}
-					if (item.isRunnable()) {
-						mnScripts.add(new AbstractAction(item.getDisplayName(), item.getIcon()) {
-
-							@Override
-							public void actionPerformed(ActionEvent e) {
-								executeScript(item.getFile(), item.getLaunchExecutorId());
-							}
-						});
-					} else if (item.getChildCount() > 0) {
-						JMenu popup = new JMenu(item.getDisplayName());
-						mnScripts.add(popup);
-						for (int i = 0; i < item.getChildCount(); i++) {
-							final ScriptNode child = (ScriptNode) item.getChildAt(i);
-							if (child.isRunnable()) {
-								popup.add(new AbstractAction(child.getDisplayName(), child.getIcon()) {
-
-									@Override
-									public void actionPerformed(ActionEvent e) {
-										executeScript(child.getFile(), child.getLaunchExecutorId());
-									}
-								});
-							}
-
-						}
-					}
+				ScriptNode [] scripts = scriptsPanel.getScripts();
+				for (final ScriptNode item : scripts) {
+					addScriptNode(mnScripts, scripts.length>1,item);
 				}
 				mnScripts.validate();
 			}
@@ -573,8 +389,13 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		addSpace.add();
 
 		// add create script menu
-		menuBar.add(initCreateScriptsMenu());
-		addSpace.add();
+		if(appPermissions.isScriptEditingAllowed()){
+			JMenu scriptsMenu = menuBuilder.createScriptCreationMenu(this, scriptManager);
+			if(scriptsMenu!=null){
+				menuBar.add(scriptsMenu);			
+			}
+			addSpace.add();			
+		}
 
 		// tools menu 
 		JMenu tools = new JMenu("Tools");
@@ -601,106 +422,7 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		addSpace.add();
 		
 		// add window menu
-		JMenu mnWindow = new JMenu("Window");
-		mnWindow.setMnemonic('W');
-		menuBar.add(mnWindow);
-		addSpace.add();
-		initWindowMenus(mnWindow);
-
-		menuBar.add(initHelpMenu());
-
-		addSpace.add();
-
-	}
-
-	public Future<Void> executeScript(File file , String [] optionIds){
-		return scriptManager.executeScript(file, optionIds);
-	}
-	
-	private JMenu initCreateScriptsMenu() {
-		JMenu mnCreateScript = new JMenu("Create script");
-		mnCreateScript.setMnemonic('C');
-		for (ODLAction action : new ScriptWizardActions(getApi(), this, scriptManager.getAvailableFieldsQuery()).createComponentActions(new WizardActionsCallback() {
-
-			@Override
-			public void onNewScript(Script script) {
-				scriptManager.launchScriptEditor(script, null, null);
-			}
-		})) {
-			mnCreateScript.add(action);
-		}
-		return mnCreateScript;
-	}
-
-	private JMenu initHelpMenu() {
-		JMenu mnHelp = new JMenu("Help");
-		mnHelp.setMnemonic('H');
-
-		mnHelp.add(initGotoWebsiteAction());
-
-		mnHelp.add(new AbstractAction("About ODL Studio") {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				final AboutBoxDialog dlg = new AboutBoxDialog(AppFrame.this, false);
-				dlg.setLocationRelativeTo(AppFrame.this);
-				dlg.setVisible(true);
-			}
-		});
-
-		mnHelp.add(new AbstractAction("List of data adapter functions") {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				addInternalFrame(FunctionsListPanel.createFrame(), FramePlacement.AUTOMATIC);
-			}
-		});
-
-		mnHelp.add(new AbstractAction("List of 3rd party data & libraries") {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				final AboutBoxDialog dlg = new AboutBoxDialog(AppFrame.this, true);
-				dlg.setTitle("3rd party data & libs used in ODL Studio");
-				dlg.setLocationRelativeTo(AppFrame.this);
-				dlg.setVisible(true);
-			}
-		});
-		return mnHelp;
-	}
-
-	private void initWindowMenus(JMenu mnWindow) {
-		mnWindow.add(new AbstractAction("Tile open windows") {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				tileWindows();
-			}
-		}).setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, Event.CTRL_MASK));
-		mnWindow.add(new AbstractAction("Cascade open windows") {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				cascadeWindows();
-			}
-		}).setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D, Event.CTRL_MASK));
-
-		mnWindow.add(new AbstractAction("Close all open windows") {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				closeWindows();
-			}
-		});
-
-		mnWindow.add(new AbstractAction("Minimise all open windows") {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				minimiseWindows();
-			}
-		}).setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, Event.CTRL_MASK));
-
+		JMenu mnWindow = menuBuilder.createWindowsMenu(this);
 		mnWindow.add(new AbstractAction("Show all tables") {
 
 			@Override
@@ -717,15 +439,28 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 				public void actionPerformed(ActionEvent e) {
 					// set standard layout
 					setSize(size[0], size[1]);
-					splitterLeftPanelMain.setDividerLocation(0.175);
-					splitterTablesScripts.setDividerLocation(0.3);
+					splitterMain.setDividerLocation(0.175);
+					splitterLeftSide.setDividerLocation(0.3);
 				}
 			});
 		}
-		mnWindow.add(mnResizeTo);
+		mnWindow.add(mnResizeTo);		
+		addSpace.add();
+
+		menuBar.add(menuBuilder.createHelpMenu(actionBuilder, this));
+
+		addSpace.add();
+
 	}
 
-	private void importFile(final SupportedFileType option) {
+	public Future<Void> executeScript(File file , String [] optionIds){
+		return scriptManager.executeScript(file, optionIds);
+	}
+	
+
+
+	@Override
+	public void importFile(final SupportedFileType option) {
 
 		final JFileChooser chooser = option.createFileChooser();
 		IOUtils.setFile(PreferencesManager.getSingleton().getLastImportFile(option), chooser);
@@ -796,16 +531,21 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		});
 	}
 
-	void updateAppearance() {
-		for (MyAction action : fileActions) {
+	@Override
+	public void updateAppearance() {
+		for (ODLAction action : allActions) {
 			if (action != null) {
 				action.updateEnabled();
 			}
 		}
-		for (MyAction action : editActions) {
-			action.updateEnabled();
-		}
 
+		setTitle(calculateTitle());
+		tables.setEnabled(loaded != null);
+		mnScripts.setVisible(loaded != null);
+		scriptsPanel.updateAppearance();
+	}
+
+	protected String calculateTitle() {
 		String title = AppConstants.WEBSITE;
 		if (loaded != null) {
 			title += " - ";
@@ -815,13 +555,11 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 				title += "untitled";
 			}
 		}
-		setTitle(title);
-		tables.setEnabled(loaded != null);
-		mnScripts.setVisible(loaded != null);
-		scriptsPanel.updateAppearance();
+		return title;
 	}
 
-	private void openDatastoreWithUserPrompt() {
+	@Override
+	public void openDatastoreWithUserPrompt() {
 		if (!canCloseDatastore()) {
 			return;
 		}
@@ -840,7 +578,8 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		updateAppearance();
 	}
 
-	void openFile(final File file) {
+	@Override
+	public void openFile(final File file) {
 
 		String message = "Loading " + file;
 		final ProgressDialog<ODLDatastoreAlterable<ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, message, false,true);
@@ -876,7 +615,8 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		});
 	}
 
-	protected boolean canCloseDatastore() {
+	@Override
+	public boolean canCloseDatastore() {
 		if (loaded == null) {
 			return true;
 		}
@@ -890,7 +630,8 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		return true;
 	}
 
-	private void closeDatastore() {
+	@Override
+	public void closeDatastore() {
 		setTitle("");
 		tables.onDatastoreClosed();
 		if (loaded != null) {
@@ -898,7 +639,7 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 			loaded.dispose();
 			loaded = null;
 		}
-		for (JInternalFrame frame : desktopPane.getAllFrames()) {
+		for (JInternalFrame frame : getInternalFrames()) {
 
 			if (ProgressFrame.class.isInstance(frame)) {
 				// cancel running operations...
@@ -911,17 +652,9 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		updateAppearance();
 	}
 
-	private void closeWindows() {
-		for (JInternalFrame frame : desktopPane.getAllFrames()) {
-			if (ScriptEditor.class.isInstance(frame)) {
-				((ScriptEditor) frame).disposeWithSavePrompt();
-			} else {
-				frame.dispose();
-			}
-		}
-	}
 
-	private void createNewDatastore() {
+	@Override
+	public void createNewDatastore() {
 		if (!canCloseDatastore()) {
 			return;
 		}
@@ -997,7 +730,8 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 
 	}
 
-	private void saveDatastoreWithoutUserPrompt(File file) {
+	@Override
+	public void saveDatastoreWithoutUserPrompt(File file) {
 		String ext = FilenameUtils.getExtension(file.getAbsolutePath()).toLowerCase();
 
 		// ensure we have spreadsheet extension
@@ -1073,8 +807,10 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 
 					@Override
 					public void run() {
-						for (MyAction action : editActions) {
-							action.updateEnabled();
+						for (ODLAction action : allActions) {
+							if(action!=null){
+								action.updateEnabled();								
+							}
 						}
 					}
 				};
@@ -1092,38 +828,21 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 
 	}
 
-	/**
-	 * Based on http://www.javalobby.org/forums/thread.jspa?threadID=15690&tstart=0
-	 */
-	private void cascadeWindows() {
-		JInternalFrame[] frames = desktopPane.getAllFrames();
-		Rectangle dBounds = desktopPane.getBounds();
-		int separation = 40;
 
-		// make standard size which is 2/3 of available width
-		int width = Math.max(100, 2 * dBounds.width / 3);
-		int height = Math.max(100, 2 * dBounds.width / 3);
-		for (int i = 0; i < frames.length; i++) {
-			try {
-				frames[i].setIcon(false);
-			} catch (PropertyVetoException e) {
-			}
-			frames[i].setBounds(i * separation, i * separation, width, height);
-			frames[i].toFront();
-		}
-	}
 
 	@Override
 	public void dispose() {
 		PreferencesManager.getSingleton().setScreenState(new WindowState(this));
 
 		// dispose all child windows to save their screen state
-		for (JInternalFrame frame : desktopPane.getAllFrames()) {
+		for (JInternalFrame frame : getInternalFrames()) {
 			frame.dispose();
 		}
 
 		DisposeCore.dispose();
 
+		scriptsPanel.dispose();
+		
 		super.dispose();
 	}
 
@@ -1138,196 +857,20 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 				}
 			}
 
-			TileInternalFrames.tile(desktopPane, frames.toArray(new JInternalFrame[frames.size()]));
+			tileVisibleFrames(frames.toArray(new JInternalFrame[frames.size()]));
 		}
 	}
 
-	private void minimiseWindows() {
-		for (JInternalFrame frame : desktopPane.getAllFrames()) {
-			try {
-				frame.setIcon(true);
-			} catch (PropertyVetoException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
 
-	// Based on http://www.javalobby.org/java/forums/t15696.html
-	private void tileWindows() {
-		JInternalFrame[] frames = desktopPane.getAllFrames();
-		if (frames.length == 0) {
-			return;
-		}
 
-		TileInternalFrames.tile(desktopPane, frames);
-	}
 
-	private List<MyAction> initEditActions() {
-		ArrayList<MyAction> ret = new ArrayList<>();
-		ret.add(new MyAction("Undo", "Undo last action", null, "edit-undo-7-32x32.png", true, KeyStroke.getKeyStroke(KeyEvent.VK_Z, Event.CTRL_MASK)) {
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				loaded.getDs().undo();
-			}
 
-			@Override
-			public void updateEnabled() {
-				setEnabled(loaded != null && loaded.getDs().hasUndo());
-			}
-		});
-
-		ret.add(new MyAction("Redo", "Redo last undone action", null, "edit-redo-7-32x32.png", true, KeyStroke.getKeyStroke(KeyEvent.VK_Y, Event.CTRL_MASK)) {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				loaded.getDs().redo();
-			}
-
-			@Override
-			public void updateEnabled() {
-				setEnabled(loaded != null && loaded.getDs().hasRedo());
-			}
-		});
-
-		return ret;
-	}
-
-	@SuppressWarnings("serial")
-	private List<MyAction> initFileActions() {
-		ArrayList<MyAction> ret = new ArrayList<>();
-		ret.add(new MyAction("New", "Create new file", null, "document-new-6.png", false, KeyStroke.getKeyStroke(KeyEvent.VK_N, Event.CTRL_MASK)) {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				createNewDatastore();
-			}
-		});
-
-		ret.add(new MyAction("Open", "Open file", null, "document-open-3.png", false, KeyStroke.getKeyStroke(KeyEvent.VK_O, java.awt.Event.CTRL_MASK)) {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				openDatastoreWithUserPrompt();
-			}
-		});
-
-		ret.add(null);
-
-		ret.add(new MyAction("Close", "Close file", null, "document-close-4.png", true, KeyStroke.getKeyStroke(KeyEvent.VK_W, java.awt.Event.CTRL_MASK)) {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (!canCloseDatastore()) {
-					return;
-				}
-				closeDatastore();
-			}
-		});
-
-		ret.add(null);
-
-		ret.add(new MyAction("Save", "Save file", null, "document-save-2.png", true, KeyStroke.getKeyStroke(KeyEvent.VK_S, Event.CTRL_MASK)) {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				saveDatastoreWithoutUserPrompt(loaded.getLastFile());
-			}
-
-			@Override
-			public void updateEnabled() {
-
-				setEnabled(loaded != null && loaded.getLastFile() != null);
-			}
-
-		});
-		ret.add(new MyAction("Save as", "Save file as", null, "document-save-as-2.png", true, KeyStroke.getKeyStroke(KeyEvent.VK_S, Event.CTRL_MASK | Event.ALT_MASK)) {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				JFileChooser chooser = SupportedFileType.EXCEL.createFileChooser();
-				if (loaded.getLastFile() != null) {
-					chooser.setSelectedFile(loaded.getLastFile());
-				} else {
-					File file = PreferencesManager.getSingleton().getFile(PrefKey.LAST_IO_DIR);
-					IOUtils.setFile(file, chooser);
-				}
-				if (chooser.showSaveDialog(AppFrame.this) == JFileChooser.APPROVE_OPTION) {
-					saveDatastoreWithoutUserPrompt(chooser.getSelectedFile());
-				}
-
-			}
-		});
-
-		return ret;
-	}
-
-	public JInternalFrame[] getInternalFrames() {
-		return desktopPane.getAllFrames();
-	}
 
 	@Override
-	public void addInternalFrame(JInternalFrame frame, FramePlacement placement) {
-		desktopPane.add(frame);
-		frame.pack();
-		frame.setVisible(true);
-
-		// if(ScriptEditor.class.isInstance(frame)){
-		// try {
-		// frame.setMaximum(true);
-		// } catch (PropertyVetoException e) {
-		// }
-		// }
-		// else{
-
-		// WindowState state = PreferencesManager.getSingleton().getWindowState(frame)
-		if (placement == FramePlacement.AUTOMATIC) {
-			boolean placed = false;
-			if (ODLInternalFrame.class.isInstance(frame)) {
-				ODLInternalFrame odlFrame = (ODLInternalFrame) frame;
-				placed = odlFrame.placeInLastPosition(desktopScrollPane.getViewport().getBounds());
-			}
-
-			if (!placed) {
-				LayoutUtils.placeInternalFrame(desktopPane, frame);
-			}
-		} else if (placement == FramePlacement.CENTRAL) {
-			Dimension desktopSize = desktopPane.getSize();
-			Dimension frameSize = frame.getSize();
-			int x = (desktopSize.width - frameSize.width) / 2;
-			int y = (desktopSize.height - frameSize.height) / 2;
-			frame.setLocation(x, y);
-		} else if (placement == FramePlacement.CENTRAL_RANDOMISED) {
-			Dimension desktopSize = desktopPane.getSize();
-			Dimension frameSize = frame.getSize();
-			Dimension remaining = new Dimension(Math.max(0, desktopSize.width - frameSize.width), Math.max(0, desktopSize.height - frameSize.height));
-			Dimension halfRemaining = new Dimension(remaining.width / 2, remaining.height / 2);
-			Random random = new Random();
-			int x = remaining.width / 4 + (halfRemaining.width>0 ?random.nextInt(halfRemaining.width):0);
-			int y = remaining.height / 4 + (halfRemaining.height>0?random.nextInt(halfRemaining.height):0);
-			frame.setLocation(x, y);
-		}
-		
-		
-		if(ODLInternalFrame.class.isInstance(frame)){
-			ODLInternalFrame odlf = (ODLInternalFrame)frame;
-			odlf.setChangedListener(new FramesChangedListener() {
-				
-				@Override
-				public void internalFrameChange(ODLInternalFrame f) {
-					updateWindowsToolbar();
-				}
-			});
-		}
-		
-		frame.toFront();
-		updateWindowsToolbar();
-	}
-
-	void launchTableSchemaEditor(int tableId) {
+	public void launchTableSchemaEditor(int tableId) {
 		if (loaded != null) {
-			for (JInternalFrame frame : desktopPane.getAllFrames()) {
+			for (JInternalFrame frame : getInternalFrames()) {
 				if (TableSchemaEditor.class.isInstance(frame) && ((TableSchemaEditor) frame).getTableId() == tableId) {
 					frame.setVisible(true);
 					frame.moveToFront();
@@ -1345,9 +888,10 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		}
 	}
 
-	JComponent launchTableGrid(int tableId) {
+	@Override
+	public JComponent launchTableGrid(int tableId) {
 		if (loaded != null) {
-			for (JInternalFrame frame : desktopPane.getAllFrames()) {
+			for (JInternalFrame frame : getInternalFrames()) {
 				if (ODLGridFrame.class.isInstance(frame) && ((ODLGridFrame) frame).getTableId() == tableId) {
 					frame.setVisible(true);
 					frame.moveToFront();
@@ -1371,7 +915,8 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		return null;
 	}
 
-	void launchScriptWizard(final int tableIds[], final ODLComponent component) {
+	@Override
+	public void launchScriptWizard(final int tableIds[], final ODLComponent component) {
 		// final ODLTableDefinition dfn = (tableId != -1 && loaded != null) ? loaded.getDs().getTableByImmutableId(tableId) : null;
 
 		// create button to launch the wizard
@@ -1404,6 +949,7 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 
 	}
 
+	@Override
 	public void openEmptyDatastore() {
 		onOpenedDatastore(ODLDatastoreImpl.alterableFactory.create(), null);
 	}
@@ -1412,11 +958,11 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 		return scriptManager;
 	}
 
-	private void initFileMenu(JMenu mnFile) {
+	private void initFileMenu(JMenu mnFile,List<AppFrameAction> fileActions,ActionFactory actionFactory, MenuFactory menuBuilder) {
 		mnFile.removeAll();
 
 		// non-dynamic
-		for (MyAction action : fileActions) {
+		for (AppFrameAction action : fileActions) {
 			if (action == null) {
 				mnFile.addSeparator();
 			} else {
@@ -1429,58 +975,19 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 
 		// import (not in action list as doesn't appear on toolbar)
 		mnFile.addSeparator();
-		JMenu mnImport = new JMenu("Import");
+		JMenu mnImport =menuBuilder.createImportMenu(this);
 		mnFile.add(mnImport);
-
-		class ImportPair {
-			String menuString;
-			SupportedFileType type;
-
-			public ImportPair(String menuString, SupportedFileType type) {
-				super();
-				this.menuString = menuString;
-				this.type = type;
-			}
-		}
-		for (final ImportPair type : new ImportPair[] { new ImportPair("Comma separated (CSV) text", SupportedFileType.CSV), new ImportPair("Tab separated text", SupportedFileType.TAB), new ImportPair("Excel", SupportedFileType.EXCEL),
-				new ImportPair("Shapefile (link geometry to original file)", SupportedFileType.SHAPEFILE_LINKED_GEOM), new ImportPair("Shapefile (copy geometry into spreadsheet)", SupportedFileType.SHAPEFILE_COPIED_GEOM), }) {
-			mnImport.add(new AbstractAction(type.menuString) {
-
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					importFile(type.type);
-				}
-			});
-		}
 
 		// dynamic
 		mnFile.addSeparator();
-		List<File> recent = PreferencesManager.getSingleton().getRecentFiles();
-		for (int i = 0; i < recent.size(); i++) {
-			final File file = recent.get(i);
-			String s = Integer.toString(i + 1) + ". " + file.getAbsolutePath();
-			int maxLen = 100;
-			if (s.length() > maxLen) {
-				s = s.substring(0, maxLen) + "...";
-			}
-			mnFile.add(new MyAction(s, "Load file " + file.getAbsolutePath(), null, null, false, null) {
-
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					if (!canCloseDatastore()) {
-						return;
-					}
-
-					openFile(file);
-					updateAppearance();
-				}
-
-			});
+		for(AppFrameAction action : actionFactory.createLoadRecentFilesActions(this)){
+			mnFile.add(action);
 		}
+
 
 		// clear recent
 		mnFile.addSeparator();
-		mnFile.add(new MyAction("Clear recent files", "Clear recent files", null, null, false, null) {
+		mnFile.add(new AppFrameAction("Clear recent files", "Clear recent files", null, null, false, null, this) {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -1490,7 +997,7 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 
 		// finally exit
 		mnFile.addSeparator();
-		JMenuItem item = mnFile.add(new MyAction("Exit", "Exit", null, null, false, KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Q, java.awt.Event.CTRL_MASK)) {
+		JMenuItem item = mnFile.add(new AppFrameAction("Exit", "Exit", null, null, false, KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Q, java.awt.Event.CTRL_MASK), this) {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -1498,10 +1005,11 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 				System.exit(0);
 			}
 		});
-		item.setAccelerator(((MyAction) item.getAction()).accelerator);
+		item.setAccelerator(((AppFrameAction) item.getAction()).accelerator);
 		mnFile.validate();
 	}
 
+	@Override
 	public ODLApi getApi() {
 		return api;
 	}
@@ -1521,6 +1029,11 @@ public class AppFrame extends JFrame implements HasInternalFrames, HasScriptsPro
 
 	public void setHaltJVMOnDispose(boolean haltJVMOnDispose) {
 		this.haltJVMOnDispose = haltJVMOnDispose;
+	}
+
+	@Override
+	public AppPermissions getAppPermissions() {
+		return appPermissions;
 	}
 	
 	

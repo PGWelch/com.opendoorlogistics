@@ -426,7 +426,7 @@ class ScriptExecutionTask {
 					}
 					frameTitle = adder.add(frameTitle , scriptName);
 					
-					frame = new ReporterFrame<T>(panel, id, frameTitle,cb.getComponent(), refreshMode, runner.getAppFrame().getLoaded());
+					frame = new ReporterFrame<T>(panel, id, frameTitle,cb.getComponent(), refreshMode, runner.getAppFrame().getLoadedDatastore());
 					frames.add(frame);
 					runner.getAppFrame().addInternalFrame(frame, FramePlacement.AUTOMATIC);
 				}
@@ -500,12 +500,12 @@ class ScriptExecutionTask {
 
 			@Override
 			public ODLDatastoreUndoable<? extends ODLTableAlterable> getGlobalDatastore() {
-				return runner.getAppFrame().getLoaded()!=null?runner.getAppFrame().getLoaded().getDs():null;
+				return runner.getAppFrame().getLoadedDatastore()!=null?runner.getAppFrame().getLoadedDatastore().getDs():null;
 			}
 
 			@Override
 			public MapSelectionListRegister getMapSelectionListRegister() {
-				return runner.getAppFrame().getLoaded();
+				return runner.getAppFrame().getLoadedDatastore();
 			}
 		};
 	}
