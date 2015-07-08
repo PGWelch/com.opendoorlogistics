@@ -6,9 +6,9 @@
 	<classpathentry exported="true" kind="lib" path="libs/httpcore-4.3.jar"/>
 	<classpathentry kind="lib" path="libs/jcommon-1.0.20.jar"/>
 	<classpathentry kind="lib" path="libs/jfreechart-1.0.16.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/mapdb.jar"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/com.opendoorlogistics.codefromweb"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/com.opendoorlogistics.api"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry exported="true" kind="lib" path="libs/mapdb-1.0.7.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

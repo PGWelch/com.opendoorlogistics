@@ -7,39 +7,23 @@
 package com.opendoorlogistics.studio.appframe;
 
 import java.awt.BorderLayout;
-import java.awt.Container;
-import java.awt.Desktop;
 import java.awt.Dimension;
-import java.awt.Event;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
 import java.awt.Image;
-import java.awt.Rectangle;
-import java.awt.TexturePaint;
 import java.awt.dnd.DropTarget;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
-import java.beans.PropertyVetoException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JDesktopPane;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JInternalFrame;
@@ -53,15 +37,12 @@ import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
-import javax.swing.border.BevelBorder;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 
 import org.apache.commons.io.FilenameUtils;
 
 import com.opendoorlogistics.api.ExecutionReport;
-import com.opendoorlogistics.api.HasApi;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -70,19 +51,16 @@ import com.opendoorlogistics.api.tables.ODLDatastoreUndoable.UndoStateChangedLis
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
-import com.opendoorlogistics.codefromweb.DesktopScrollPane;
 import com.opendoorlogistics.codefromweb.IconToImage;
-import com.opendoorlogistics.codefromweb.TileInternalFrames;
 import com.opendoorlogistics.core.AppConstants;
+import com.opendoorlogistics.core.CommandLineInterface;
 import com.opendoorlogistics.core.DisposeCore;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptTemplatesImpl;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.components.ODLWizardTemplateConfig;
-import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.ScriptsProvider;
-import com.opendoorlogistics.core.scripts.ScriptsProvider.HasScriptsProvider;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.tables.io.PoiIO;
@@ -91,10 +69,8 @@ import com.opendoorlogistics.core.tables.io.TableIOUtils;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.IOUtils;
-import com.opendoorlogistics.core.utils.images.ImageUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
-import com.opendoorlogistics.core.utils.ui.LayoutUtils;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.TextInformationDialog;
 import com.opendoorlogistics.studio.DatastoreTablesPanel;
@@ -103,32 +79,22 @@ import com.opendoorlogistics.studio.InitialiseStudio;
 import com.opendoorlogistics.studio.LoadedDatastore;
 import com.opendoorlogistics.studio.PreferencesManager;
 import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
-import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.controls.buttontable.ButtonTableDialog;
-import com.opendoorlogistics.studio.dialogs.AboutBoxDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog.OnFinishedSwingThreadCB;
-import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
-import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
-import com.opendoorlogistics.studio.internalframes.ODLInternalFrame.FramesChangedListener;
 import com.opendoorlogistics.studio.internalframes.ProgressFrame;
-import com.opendoorlogistics.studio.panels.FunctionsListPanel;
 import com.opendoorlogistics.studio.panels.ProgressPanel;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.editor.ScriptWizardActions;
-import com.opendoorlogistics.studio.scripts.editor.ScriptWizardActions.WizardActionsCallback;
-import com.opendoorlogistics.studio.scripts.execution.ReporterFrame;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManagerImpl;
 import com.opendoorlogistics.studio.scripts.list.ScriptNode;
 import com.opendoorlogistics.studio.scripts.list.ScriptsPanel;
-import com.opendoorlogistics.studio.tables.grid.GridFrame;
 import com.opendoorlogistics.studio.tables.grid.ODLGridFrame;
 import com.opendoorlogistics.studio.tables.schema.TableSchemaEditor;
 import com.opendoorlogistics.studio.utils.WindowState;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.ODLAction;
-import com.opendoorlogistics.utils.ui.SimpleAction;
 
 public class AppFrame extends DesktopAppFrame{
 	private final JSplitPane splitterLeftSide;
@@ -159,8 +125,9 @@ public class AppFrame extends DesktopAppFrame{
 
 	public static void main(String[] args) {
 		InitialiseStudio.initialise(true);
-	//	loadComponentFromEclipseProject("C:\\Users\\Phil\\Dropbox\\Business\\DevelopmentSpace\\Github\\com.opendoorlogistics\\com.opendoorlogistics.jsprit", "com.opendoorlogistics.components.jsprit.VRPComponent");
-		new AppFrame();
+		if(!CommandLineInterface.process(args)){
+			new AppFrame();			
+		}
 	}
 	
 	public AppFrame() {
@@ -182,7 +149,7 @@ public class AppFrame extends DesktopAppFrame{
 				
 				@Override
 				public boolean isScriptDirectoryLocked() {
-					return true;
+					return false;
 				}
 			};
 		}
