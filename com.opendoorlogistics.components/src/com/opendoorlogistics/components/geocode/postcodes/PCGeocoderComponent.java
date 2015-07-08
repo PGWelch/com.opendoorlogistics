@@ -35,15 +35,75 @@ import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.components.geocode.Countries.Country;
+import com.opendoorlogistics.components.geocode.postcodes.builder.GDFFileBuilder;
+import com.opendoorlogistics.components.geocode.postcodes.builder.CodePointOpen2GeonamesFormat;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCConstants;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCGeocodeFile;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCGeocodeFile.PCFindResult;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCRecord;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCRecord.StrField;
+import com.opendoorlogistics.core.CommandLineInterface;
+import com.opendoorlogistics.core.CommandLineInterface.Command;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
+import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.utils.ui.Icons;
 
 public class PCGeocoderComponent implements ODLComponent {
+	static{
+		// register the builder commands lines
+		CommandLineInterface.registerCommand(new Command() {
+			
+			@Override
+			public String[] getKeywords() {
+				return new String[]{"cp2Geonames"};
+			}
+			
+			@Override
+			public String getDescription() {
+				return "Convert a directory of CodePoint postcode files to a single Geonames format file. Usage -cp2Geonames inputDirectory outputFileName";
+			}
+			
+			@Override
+			public boolean execute(String[] args) {
+				if(args.length!=2){
+					System.out.println("Expected two arguments");
+					return false;
+				}
+				
+				CodePointOpen2GeonamesFormat.process(args[0], args[1]);
+				return true;
+			}
+		});
+		
+		CommandLineInterface.registerCommand(new Command() {
+			
+			@Override
+			public String[] getKeywords() {
+				return new String[]{"buildgdf"};
+			}
+			
+			@Override
+			public String getDescription() {
+				return "Build one or more postcode geocoding data files from the input Geonames format file. Usage -buildgdf inputfile outputdirectory";
+			}
+			
+			@Override
+			public boolean execute(String[] args) {
+				if(args.length!=2){
+					System.out.println("Expected two arguments");
+					return false;
+				}				
+				try {
+					new GDFFileBuilder().buildFromGeonamesFile(args[0], new String[]{}, true, args[1]);
+					return true;
+				} catch (Exception e) {
+					System.out.println(Strings.getExceptionMessagesAsSingleStr(e));
+					return false;
+				}
+			}
+		});
+	}
+	
 	@Override
 	public String getId() {
 		return "com.opendoorlogistics.components.geocode.postcodegeocoder";
@@ -261,11 +321,6 @@ public class PCGeocoderComponent implements ODLComponent {
 	}
 
 
-//	@Override
-//	public ComponentType getComponentType() {
-//		return ComponentType.PROCESS;
-//	}
-	
 	@Override
 	public Icon getIcon(ODLApi api,int mode) {
 		return Icons.loadFromStandardPath("postcode-geocode.png");
