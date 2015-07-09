@@ -585,13 +585,21 @@ public class CHMatrixGeneration implements Disposable {
 	}
 	
 	public static void main(String[]args){
-//		CHMatrixGeneration gen = new CHMatrixGeneration("C:\\Demo\\Graphhopper");
-//		GHPoint a = new GHPoint(52.407995203838	,-1.50572174886011);
-//		GHPoint b = new GHPoint(52.	,-1.3);
-//		MatrixResult result = gen.calculateMatrixOneByOne(new GHPoint[]{a,b});
-//		System.out.println(result);
+		CHMatrixGeneration gen = new CHMatrixGeneration("C:\\Demo\\Graphhopper");
+		int n = 1000;
+		GHPoint a = new GHPoint(52.407995203838	,-1.50572174886011);
+		GHPoint b = new GHPoint(52.	,0.3);
+		GHPoint [] array = new GHPoint[]{a,b};
+		gen.calculateMatrixOneByOne(array);			
+		long startMillis = System.currentTimeMillis();
+		for(int i=0 ; i < n ; i++){
+			gen.calculateMatrixOneByOne(array);			
+		}
+		long endMillis = System.currentTimeMillis();
+		System.out.println("Time for " + n + " calculations:" + (endMillis - startMillis) + " milliseconds");
+	//	System.out.println(result);
 		
-		noRouteExample();
+		//noRouteExample();
 	}
 	
 	public static void noRouteExample(){
@@ -605,7 +613,7 @@ public class CHMatrixGeneration implements Disposable {
 		hopper.setInMemory(true);
 		
 		
-		hopper.setGraphHopperLocation("C:\\large_data\\graphhopper\\graphhopper\\europe_great-britain-gh");
+		hopper.setGraphHopperLocation("C:\\data\\graphhopper\\graphhopper\\europe_great-britain-gh");
 //		hopper.setGraphHopperLocation("C:\\Demo\\Graphhopper");
 		hopper.importOrLoad();
 		
