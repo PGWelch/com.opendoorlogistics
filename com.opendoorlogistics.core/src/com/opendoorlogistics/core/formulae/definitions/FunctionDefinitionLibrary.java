@@ -55,6 +55,8 @@ import com.opendoorlogistics.core.formulae.Functions.FmLerp;
 import com.opendoorlogistics.core.formulae.Functions.FmLessThan;
 import com.opendoorlogistics.core.formulae.Functions.FmLessThanEqualTo;
 import com.opendoorlogistics.core.formulae.Functions.FmLighten;
+import com.opendoorlogistics.core.formulae.Functions.FmLineStringEnd;
+import com.opendoorlogistics.core.formulae.Functions.FmLineStringFraction;
 import com.opendoorlogistics.core.formulae.Functions.FmLn;
 import com.opendoorlogistics.core.formulae.Functions.FmLog10;
 import com.opendoorlogistics.core.formulae.Functions.FmLower;
@@ -256,6 +258,9 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmGeomBorder.class, "geomborder", "Return the borders of the geometry as lines.", "geometry", "include_holes");
 		addStandardFunction(FmGeomContains.class, "geomcontains", "Return whether the geometry contains the point, using the input EPSG grid projection.", "geometry", "latitude", "longitude", "EPSG");
 		addStandardFunction(FmGeomContains.class, "geomcontains", "Return whether the geometry contains the point, using a WGS84 latitude-longitude projection.", "geometry", "latitude", "longitude");
+		addStandardFunction(FmLineStringFraction.class, "linestringfraction", "Return a fraction (0 to 1) of the input linestring.", "linestring", "fraction");
+		addStandardFunction(FmLineStringEnd.class, "linestringend", "Return the end of a linestring (as another geometry).", "linestring");
+		
 		
 		addStandardFunction(FmDecimalHours.class, "decimalHours", "Return the number of decimal hours in a time.","time");
 

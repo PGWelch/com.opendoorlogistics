@@ -23,9 +23,12 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
+import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
+import com.opendoorlogistics.core.geometry.operations.LinestringFraction;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.postcodes.UKPostcodes;
 import com.opendoorlogistics.core.gis.postcodes.UKPostcodes.UKPostcodeLevel;
@@ -35,7 +38,10 @@ import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
 
 public class Functions {
 	public static final Object EXECUTION_ERROR = new Object() {
@@ -2559,4 +2565,75 @@ public class Functions {
 			return new FmStringDateTimeStamp();
 		}		
 	}
+	
+	public static class FmLineStringFraction extends FunctionImpl{
+		public FmLineStringFraction(Function geom, Function fraction) {
+			super(geom,fraction);
+		}
+		
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object []vals = executeChildFormulae(parameters, true);
+			if(vals==null){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			ODLGeom geom = (ODLGeom)ColumnValueProcessor.convertToMe(ODLColumnType.GEOM, vals[0]);
+			Double fraction = (Double)ColumnValueProcessor.convertToMe(ODLColumnType.DOUBLE, vals[1]);
+			if(geom== null || fraction == null){
+				return Functions.EXECUTION_ERROR;				
+			}
+			
+			ODLGeomImpl geomImpl = (ODLGeomImpl)geom;
+			Geometry jtsGeometry = geomImpl.getJTSGeometry();
+			if(jtsGeometry!=null && LineString.class.isInstance(jtsGeometry)){
+				return new ODLLoadedGeometry(LinestringFraction.calculateFraction((LineString)jtsGeometry, fraction));
+			}
+			return null;
+			
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmLineStringFraction(child(0).deepCopy(), child(1).deepCopy());
+		}
+		
+	}
+	
+	public static class FmLineStringEnd extends FunctionImpl{
+		public FmLineStringEnd(Function geom) {
+			super(geom);
+		}
+		
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object val = child(0).execute(parameters);
+			if(val==null){
+				return null;
+			}
+			
+			ODLGeom geom = (ODLGeom)ColumnValueProcessor.convertToMe(ODLColumnType.GEOM, val);
+			if(geom== null ){
+				return null;				
+			}
+			
+			ODLGeomImpl geomImpl = (ODLGeomImpl)geom;
+			Geometry jtsGeometry = geomImpl.getJTSGeometry();
+			if(jtsGeometry!=null && LineString.class.isInstance(jtsGeometry)){
+				LineString ls = (LineString)jtsGeometry;
+				Coordinate coord = ls.getCoordinateN(ls.getNumPoints()-1);
+				Geometry pnt = new GeometryFactory().createPoint(coord);
+				return new ODLLoadedGeometry(pnt);
+			}
+			return null;
+			
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmLineStringFraction(child(0).deepCopy(), child(1).deepCopy());
+		}
+		
+	}
+	
 }
