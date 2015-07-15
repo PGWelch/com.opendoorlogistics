@@ -13,7 +13,6 @@ import java.io.StringReader;
 import java.util.Properties;
 import java.util.logging.Logger;
 
-import com.opendoorlogistics.core.AppProperties;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 public class PropertiesUtils {
