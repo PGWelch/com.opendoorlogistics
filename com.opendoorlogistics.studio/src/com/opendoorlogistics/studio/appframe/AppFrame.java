@@ -107,6 +107,7 @@ public class AppFrame extends DesktopAppFrame{
 	private final ODLApi api = new ODLApiImpl();
 	private final List<ODLAction> allActions = new ArrayList<ODLAction>();
 	private final AppPermissions appPermissions;
+	private List<NewDatastoreProvider> newDatastoreProviders = NewDatastoreProvider.createDefaults();
 	private JMenu mnScripts;
 	private LoadedDatastore loaded;
 
@@ -620,6 +621,7 @@ public class AppFrame extends DesktopAppFrame{
 	}
 
 
+	@SuppressWarnings("serial")
 	@Override
 	public void createNewDatastore() {
 		if (!canCloseDatastore()) {
@@ -628,57 +630,20 @@ public class AppFrame extends DesktopAppFrame{
 
 		ArrayList<JButton> buttons = new ArrayList<>();
 
-		buttons.add(new JButton(new AbstractAction("Create empty datastore") {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				openEmptyDatastore();
-			}
-		}));
-
-		// buttons.add(new JButton(new AbstractAction("Create example datastore") {
-		//
-		// @Override
-		// public void actionPerformed(ActionEvent e) {
-		// onOpenedDatastore(ExampleData.createExampleDatastore(false), null, null);
-		// }
-		// }));
-
-		for (final String exampleDs : new String[] { "Customers"
-		// , "Sales territories" // disable sales territories for the moment as it takes 30 seconds to load!
-		}) {
-			buttons.add(new JButton(new AbstractAction("Create example " + exampleDs + " datastore") {
+		for(NewDatastoreProvider ndp : newDatastoreProviders){
+			buttons.add(new JButton(new AbstractAction(ndp.name()) {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					onOpenedDatastore(TableIOUtils.importExampleDatastore(exampleDs + ".xlsx", null), null);
+					ODLDatastoreAlterable<? extends ODLTableAlterable> ds = ndp.create();
+					if(ds==null){
+						JOptionPane.showMessageDialog(AppFrame.this, "Failed to create new datastore");
+					}else{
+						onOpenedDatastore(ds, null);						
+					}
 				}
-			}));
+			}));			
 		}
-
-		// buttons.add(new JButton(new AbstractAction("Run datastore creation script wizard") {
-		//
-		// @Override
-		// public void actionPerformed(ActionEvent e) {
-		// Script script = WizardUtils.createTableCreationScript();
-		// scriptManager.launchScriptEditor(script, null);
-		// }
-		// }));
-
-		// for (final File file : scriptsPanel.getScriptsByType(ScriptType.CREATE_TABLES)) {
-		// buttons.add(new JButton(new AbstractAction("Run script \"" + file.getName() + "\"") {
-		//
-		// @Override
-		// public void actionPerformed(ActionEvent e) {
-		// openEmptyDatastore();
-		//
-		// // run script
-		// scriptManager.executeScript(file);
-		//
-		// }
-		// }));
-		//
-		// }
 
 		launchButtonsListDialog("Create new spreadsheet", "Choose creation option:", null, buttons);
 	}
