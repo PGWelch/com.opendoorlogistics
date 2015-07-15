@@ -412,7 +412,8 @@ public class AppFrame extends DesktopAppFrame{
 				}
 			});
 		}
-		mnWindow.add(mnResizeTo);		
+		mnWindow.add(mnResizeTo);
+		menuBar.add(mnWindow);
 		addSpace.add();
 
 		menuBar.add(menuBuilder.createHelpMenu(actionBuilder, this));
@@ -635,12 +636,33 @@ public class AppFrame extends DesktopAppFrame{
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					ODLDatastoreAlterable<? extends ODLTableAlterable> ds = ndp.create();
-					if(ds==null){
-						JOptionPane.showMessageDialog(AppFrame.this, "Failed to create new datastore");
-					}else{
-						onOpenedDatastore(ds, null);						
-					}
+					
+					final ProgressDialog<ODLDatastoreAlterable<? extends ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, "Creating new datastore", false,false);
+					pd.setLocationRelativeTo(AppFrame.this);
+					pd.setText("Creating new datastore, please wait.");
+					pd.start(new Callable<ODLDatastoreAlterable<? extends ODLTableAlterable>>() {
+
+						@Override
+						public ODLDatastoreAlterable<? extends ODLTableAlterable> call() throws Exception {
+							try {
+								return ndp.create();
+							} catch (Throwable e) {
+								return null;
+							}
+
+						}
+					}, new OnFinishedSwingThreadCB<ODLDatastoreAlterable<? extends ODLTableAlterable> >() {
+
+						@Override
+						public void onFinished(ODLDatastoreAlterable<? extends ODLTableAlterable>  result, boolean userCancelled, boolean userFinishedNow) {
+
+							if(result!=null){
+								onOpenedDatastore(result, null);														
+							}else{
+								JOptionPane.showMessageDialog(AppFrame.this, "Failed to create new datastore");								
+							}
+						}
+					});					
 				}
 			}));			
 		}
@@ -966,6 +988,14 @@ public class AppFrame extends DesktopAppFrame{
 	@Override
 	public AppPermissions getAppPermissions() {
 		return appPermissions;
+	}
+
+	public List<NewDatastoreProvider> getNewDatastoreProviders() {
+		return newDatastoreProviders;
+	}
+
+	public void setNewDatastoreProviders(List<NewDatastoreProvider> newDatastoreProviders) {
+		this.newDatastoreProviders = newDatastoreProviders;
 	}
 	
 	
