@@ -308,7 +308,10 @@ final public class FunctionsBuilder {
 							toProcess.fieldnameFunctions = fieldNameFunctions.toArray(new Function[fieldNameFunctions.size()]);
 							ProcessedLookupReferences processed = processLookupReferenceNames(lookupType.getFormulaKeyword(), datastores,
 									defaultDatastoreIndex, toProcess, result);
-
+							if(result.isFailed()){
+								return null;
+							}
+							
 							// Get the return column index and other column indices
 							int returnColumnIndex=-1;
 							int [] otherColIndices = processed.columnIndices;

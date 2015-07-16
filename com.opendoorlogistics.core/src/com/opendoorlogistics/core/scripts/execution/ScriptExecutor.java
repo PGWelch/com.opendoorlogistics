@@ -818,7 +818,7 @@ final public class ScriptExecutor {
 			internalExecutionApi.postStatusMessage("Building data adapter: " + (id!=null ? id : "<no id>"));
 			AdapterBuilder builder = new AdapterBuilder(id, new StandardisedStringSet(), env, internalExecutionApi, new BuiltAdapters());
 			ds = builder.build();
-			if (ds != null) {
+			if (!env.isFailed() && ds != null) {
 				return ds;
 			}
 		}

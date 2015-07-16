@@ -708,7 +708,7 @@ final public class AdapterBuilder {
 						FunctionParameters parameters = new TableParameters(datasources, tableRef.dsIndex, srcTable.getImmutableId(), srcTable.getRowId(row),row,null);
 						Object exec = formula.execute(parameters);
 						if (exec == Functions.EXECUTION_ERROR) {
-							env.setFailed("Failed to execute filter formula: " + filterFormula);
+							env.setFailed("Failed to execute filter formula on row number " + (row+1)+"/" + nbRows + " of table " + srcTable.getName() +": " + filterFormula);
 							return null;
 						}
 	
