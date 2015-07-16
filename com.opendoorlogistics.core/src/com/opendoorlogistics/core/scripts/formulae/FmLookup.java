@@ -99,6 +99,11 @@ public class FmLookup extends FunctionImpl {
 			return null;
 		}
 		
+		// do optimisation for lookupcount() ... i.e. table size
+		if(type == LookupType.COUNT && nbLookups==0){
+			return (long)table.getRowCount();
+		}
+		
 		// find matching value(s)
 		long count = 0;
 		long selCount=0;
