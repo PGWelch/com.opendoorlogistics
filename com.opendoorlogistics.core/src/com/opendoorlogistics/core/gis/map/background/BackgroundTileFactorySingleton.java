@@ -93,7 +93,7 @@ public final class BackgroundTileFactorySingleton {
 		
 		EmptyTileFactory(TileFactoryInfo info, BackgroundMapConfig config) {
 			super(info);
-			blankImage = ImageUtils.createBlankImage(256, 256, BufferedImage.TYPE_INT_ARGB, Colours.lerp(Color.WHITE, config.getFade(), config.getFade().getAlpha() / 255.0));
+			blankImage = ImageUtils.createBlankImage(256, 256, BufferedImage.TYPE_INT_ARGB, Colours.lerp(Color.WHITE, config.getFade().getColour(), config.getFade().getColour().getAlpha() / 255.0));
 		}
 
 

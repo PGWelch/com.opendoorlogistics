@@ -16,14 +16,14 @@ import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 class BackgroundMapConfig {
-	private Color fade;
+	private static final Color DEFAULT_FADE_COLOUR =new Color(255, 255, 255, 100); 
+	private FadeConfig fade = new FadeConfig(DEFAULT_FADE_COLOUR , 0);
 	private String tileserverUrl;
 	private BackgroundType type;
 	private String mapsforgeFilename;
 	private String mapsforgeXMLRenderTheme;
 
 	public BackgroundMapConfig() {
-		fade = new Color(255, 255, 255, 100);
 		tileserverUrl = "http://tile.openstreetmap.org";
 		type = BackgroundType.OSMTILESERVER;
 	}
@@ -34,8 +34,8 @@ class BackgroundMapConfig {
 
 		if (properties != null) {
 			StandardisedStringTreeMap<String> map = StandardisedStringTreeMap.fromProperties(properties);
-			fade = new Color(getInt(map, "fade.r", fade.getRed()), getInt(map, "fade.g", fade.getGreen()), getInt(map, "fade.b", fade.getBlue()), getInt(map, "fade.a", fade.getAlpha()));
-
+			fade.setColour( new Color(getInt(map, "fade.r", DEFAULT_FADE_COLOUR.getRed()), getInt(map, "fade.g", DEFAULT_FADE_COLOUR.getGreen()), getInt(map, "fade.b", DEFAULT_FADE_COLOUR.getBlue()), getInt(map, "fade.a", DEFAULT_FADE_COLOUR.getAlpha())));
+			fade.setGreyscale(getDbl(map, "greyscale", 0));
 			tileserverUrl = getStr(map, "tileserver.url", tileserverUrl);
 
 			// get mapsforge filename and remove any speech marks
@@ -77,6 +77,14 @@ class BackgroundMapConfig {
 		return defaultValue;
 	}
 
+	private static double getDbl(StandardisedStringTreeMap<String> map, String key, double defaultValue) {
+		Double d = Numbers.toDouble(map.get(key));
+		if (d != null) {
+			return d;
+		}
+		return defaultValue;
+	}
+	
 	public enum BackgroundType {
 		EMPTY, OSMTILESERVER, MAPSFORGE
 	}
@@ -105,11 +113,11 @@ class BackgroundMapConfig {
 		this.mapsforgeFilename = mapsforgeFilename;
 	}
 
-	public Color getFade() {
+	public FadeConfig getFade() {
 		return fade;
 	}
 
-	public void setFade(Color fade) {
+	public void setFade(FadeConfig fade) {
 		this.fade = fade;
 	}
 
