@@ -1093,13 +1093,13 @@ public class Functions {
 	}
 	
 	/**
-	 * Base class for all comparisons.
+	 * Base class for all comparisons, e.g. <, <=, >, >=
 	 * 
 	 * @author Phil
 	 * 
 	 */
-	public static abstract class FmComparisonBase extends FunctionImpl {
-		public FmComparisonBase(Function a, Function b) {
+	public static abstract class FmRelativeComparisonBase extends FunctionImpl {
+		public FmRelativeComparisonBase(Function a, Function b) {
 			super(a, b);
 		}
 
@@ -1116,7 +1116,8 @@ public class Functions {
 			Double da = Numbers.toDouble(a);
 			Double db = Numbers.toDouble(b);
 			if (da == null || db == null) {
-				return EXECUTION_ERROR;
+				// comparing nulls always gives false
+				return false;
 			}
 
 			return compare(da, db);
@@ -1486,7 +1487,7 @@ public class Functions {
 
 	}
 	
-	public static final class FmGreaterThan extends FmComparisonBase {
+	public static final class FmGreaterThan extends FmRelativeComparisonBase {
 
 		public FmGreaterThan(Function a, Function b) {
 			super(a, b);
@@ -1508,7 +1509,7 @@ public class Functions {
 		}
 	}
 
-	public static final class FmGreaterThanEqualTo extends FmComparisonBase {
+	public static final class FmGreaterThanEqualTo extends FmRelativeComparisonBase {
 
 		public FmGreaterThanEqualTo(Function a, Function b) {
 			super(a, b);
@@ -1572,7 +1573,7 @@ public class Functions {
 		}
 	}
 
-	public static final class FmLessThan extends FmComparisonBase {
+	public static final class FmLessThan extends FmRelativeComparisonBase {
 
 		public FmLessThan(Function a, Function b) {
 			super(a, b);
@@ -1594,7 +1595,7 @@ public class Functions {
 		}
 	}
 
-	public static final class FmLessThanEqualTo extends FmComparisonBase {
+	public static final class FmLessThanEqualTo extends FmRelativeComparisonBase {
 
 		public FmLessThanEqualTo(Function a, Function b) {
 			super(a, b);

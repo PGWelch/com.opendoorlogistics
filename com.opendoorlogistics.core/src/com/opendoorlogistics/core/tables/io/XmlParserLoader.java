@@ -450,16 +450,26 @@ public class XmlParserLoader {
 			throw new RuntimeException("Excel file does not exist: " + file.getAbsolutePath());
 		}
 		
-		try (OPCPackage pkg =OPCPackage.open(file)){
+		OPCPackage pkg = null;
+		try {
+			pkg =OPCPackage.open(file);
 			importOPCPackage(pkg);
-		
+			
+			// revert for read-only closing
+			pkg.revert();
+			
 			if(processingApi!=null){
 				processingApi.postStatusMessage("Finished loading, now opening file...");
 			}
 		} catch (Exception e) {
+			if(pkg!=null){
+				// revert for read-only closing
+				pkg.revert();
+			}
 			report.setFailed(e);
 			throw new RuntimeException(e);
 		}
+
 
 	}
 

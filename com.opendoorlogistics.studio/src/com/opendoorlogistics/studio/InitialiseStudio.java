@@ -108,7 +108,7 @@ final public class InitialiseStudio {
 						com.opendoorlogistics.core.formulae.Functions.FmAsin.class, com.opendoorlogistics.core.formulae.Functions.FmAtan.class,
 						com.opendoorlogistics.core.formulae.Functions.FmCeil.class, com.opendoorlogistics.core.formulae.Functions.FmColour.class,
 						com.opendoorlogistics.core.formulae.Functions.FmColourImage.class, com.opendoorlogistics.core.formulae.Functions.FmColourMultiply.class,
-						com.opendoorlogistics.core.formulae.Functions.FmComparisonBase.class, com.opendoorlogistics.core.formulae.Functions.FmConcatenate.class,
+						com.opendoorlogistics.core.formulae.Functions.FmRelativeComparisonBase.class, com.opendoorlogistics.core.formulae.Functions.FmConcatenate.class,
 						com.opendoorlogistics.core.formulae.Functions.FmConst.class, com.opendoorlogistics.core.formulae.Functions.FmContains.class,
 						com.opendoorlogistics.core.formulae.Functions.FmCos.class, com.opendoorlogistics.core.formulae.Functions.FmDecimalFormat.class,
 						com.opendoorlogistics.core.formulae.Functions.FmDivide.class, com.opendoorlogistics.core.formulae.Functions.FmEquals.class,

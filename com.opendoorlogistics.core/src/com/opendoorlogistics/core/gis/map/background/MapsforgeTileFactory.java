@@ -58,7 +58,7 @@ class MapsforgeTileFactory extends TileFactory {
 	private final DatabaseRenderer databaseRenderer;
 	private final XmlRenderTheme renderTheme;
 	private final DisplayModel model;
-	private final Color fadeColour;
+	private final FadeConfig fadeColour;
 	private final ZoomLevelConverter zoomLevelConverter;
 	private ExecutorService service;
 
@@ -76,7 +76,7 @@ class MapsforgeTileFactory extends TileFactory {
 		return InternalRenderTheme.OSMARENDER;
 	}
 	
-	MapsforgeTileFactory(TileFactoryInfo info, String xmlRenderThemeFilename,MapDataStore mapDatabase, Color fadeColour) {
+	MapsforgeTileFactory(TileFactoryInfo info, String xmlRenderThemeFilename,MapDataStore mapDatabase, FadeConfig fadeColour) {
 		super(info);
 		this.fadeColour =fadeColour;
 		this.mapDatabase = mapDatabase;
@@ -316,9 +316,10 @@ class MapsforgeTileFactory extends TileFactory {
 			g.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
 			Canvas canvas = (Canvas) AwtGraphicFactory.createGraphicContext(g);
 			canvas.drawBitmap(bitmap, 0, 0);
-			BackgroundMapUtils.renderFade(g,fadeColour);
+			BackgroundMapUtils.renderFade(g,fadeColour.getColour());
 			
 			g.dispose();
+			image = BackgroundMapUtils.greyscale(image, fadeColour.getGreyscale());
 			
 			// TEST save to file
 		//	ImageUtils.toPNGFile(image, new File("C:\\temp\\MapsforgeOutput\\" + System.currentTimeMillis() + ".png"));

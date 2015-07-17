@@ -203,6 +203,20 @@ class ScriptExecutionTask {
 
 			@Override
 			protected ModalDialogResult showModal(ModalDialog md) {
+				class MyRunnable implements Runnable{
+					volatile ModalDialogResult result; 
+					@Override
+					public void run() {
+						result = showModalOnEDT(md);
+					}
+					
+				}
+				MyRunnable runnable = new MyRunnable();
+				SwingUtils.runAndWaitOnEDT(runnable);
+				return runnable.result;
+			}
+
+			private ModalDialogResult showModalOnEDT(ModalDialog md) {
 				ExecutionUtils.throwIfNotOnEDT();
 				ModalDialogResult result = null;
 				showingModalPanel = true;

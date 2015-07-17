@@ -41,30 +41,33 @@ public abstract class DynamicComboBox<T> extends EditableComboBox<T> {
 			getEditor().setItem(initialValue);			
 		}
 
-		addPopupMenuListener(new BoundsPopupMenuListener(true,false));
-		
+		// Initialise listeners ensuring called in correct order, so bounds popup only
+		// called after updating the items...
+		BoundsPopupMenuListener bpml = new BoundsPopupMenuListener(true,false);
 		if (addPopupListener) {
 			addPopupMenuListener(new PopupMenuListener() {
 
 				@Override
 				public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
 					updateMenu();
+					bpml.popupMenuWillBecomeVisible(e);
 				//	ComboBoxWithWiderPopup.adjustPopupWidth(DynamicComboBox.this, null);
 				}
 
 				@Override
 				public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-					// TODO Auto-generated method stub
-
+					bpml.popupMenuWillBecomeInvisible(e);
 				}
 
 				@Override
 				public void popupMenuCanceled(PopupMenuEvent e) {
-					// TODO Auto-generated method stub
-
+					bpml.popupMenuCanceled(e);
 				}
 			});
+		}else{			
+			addPopupMenuListener(bpml);
 		}
+
 
 
 		final JLabel firstLine = new JLabel();

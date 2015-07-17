@@ -102,18 +102,23 @@ public class CHMatrixGeneration implements Disposable {
 
 	private static GraphHopper createHopper(){
 		String config = AppProperties.getValue("graphhopper.config");
+		GraphHopper ret = null;
 		if(Strings.equalsStd(config, "mobile")){
-			return new GraphHopper().forMobile();
+			ret = new GraphHopper().forMobile();
 		}
 		else if(Strings.equalsStd(config, "server")){
-			return new GraphHopper().forServer();
+			ret= new GraphHopper().forServer();
 		}
 		else if(Strings.equalsStd(config, "desktop")){
-			return new GraphHopper().forDesktop();
+			ret= new GraphHopper().forDesktop();
 		}	
 		
 		System.err.println("Unidentified grapphopper config, defaulting to desktop.");
-		return new GraphHopper().forDesktop();
+		ret= new GraphHopper().forDesktop();
+		
+		// don't need to write so disable the lock file (allows us to run out of program files)
+		ret.setAllowWrites(false);
+		return ret;
 	}
 	
 	public CHMatrixGeneration(String graphFolder) {

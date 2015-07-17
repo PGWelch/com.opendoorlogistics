@@ -228,7 +228,11 @@ public class FillPlugin implements MapPlugin {
 					return fillSuggestedValues.getSuggestions(tableCol.getFirst(), tableCol.getSecond(), PluginUtils.toDrawables(api.getMapDataApi().getUnfilteredActiveTable()));
 				}
 			};
-
+			
+			// setPrototypeDisplayValue stops the resize of the combobox based on contents size,
+			// which can cause the dropdown arrow to disappear
+			text.setPrototypeDisplayValue("XXXXXXXXX");
+			
 			VerticalLayoutPanel vlp = new VerticalLayoutPanel();
 			vlp.addLine(new JLabel("Set fill value:"));
 			vlp.addLine(text);

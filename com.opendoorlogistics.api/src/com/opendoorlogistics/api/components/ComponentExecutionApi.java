@@ -7,6 +7,7 @@
 package com.opendoorlogistics.api.components;
 
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.Func;
 import com.opendoorlogistics.api.HasApi;
@@ -38,7 +39,7 @@ public interface ComponentExecutionApi extends ProcessingApi, HasApi{
 	public enum ModalDialogResult {
 		OK, CANCEL, YES, NO, APPLY, EXIT, FINISH;
 	}
-	
+
 	ModalDialogResult showModalPanel(JPanel panel,String title, ModalDialogResult ...buttons);
 	
 	/**

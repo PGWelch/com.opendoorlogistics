@@ -31,9 +31,9 @@ import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
 
 class ODLWebTileFactory extends AbstractTileFactory  {
-	private final Color fadeColor;
+	private final FadeConfig fadeColor;
 	
-	public ODLWebTileFactory(TileFactoryInfo info, Color fadeColor) {
+	public ODLWebTileFactory(TileFactoryInfo info, FadeConfig fadeColor) {
 		super(info);
 		setThreadPoolSize(2);
 		this.fadeColor = fadeColor;
@@ -129,15 +129,18 @@ class ODLWebTileFactory extends AbstractTileFactory  {
 			g = workImg.createGraphics();
 			g.setClip(0, 0, bimg.getWidth(), bimg.getHeight());
 			g.drawImage(bimg, 0, 0, null);
-			BackgroundMapUtils.renderFade(g, fadeColor);
+			BackgroundMapUtils.renderFade(g, fadeColor.getColour());
 		} catch (Exception e) {
 			// TODO: handle exception
 		}
 		finally{
 			if(g!=null){
+				g.dispose();
 				g = null;
 			}
 		}
+		
+		workImg = BackgroundMapUtils.greyscale(workImg, fadeColor.getGreyscale());
 		return workImg;
 	}
 	
