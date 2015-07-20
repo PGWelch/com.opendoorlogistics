@@ -398,6 +398,8 @@ public final class FunctionDefinitionLibrary {
 		
 		// map flag labels
 		addConstant("mfAlwaysShowLabel", new FmConst(UserRenderFlags.ALWAYS_SHOW_LABEL), "Flag which forces the map to always show a label even if it overlaps others.");
+		addConstant("mfDotDashLine", new FmConst(UserRenderFlags.DOT_DASH_LINE), "Flag which forces lines to be drawn with dots and dashes _ . _ . _ .");
+		addConstant("mfDottedLine", new FmConst(UserRenderFlags.DOTTED_LINE), "Flag which forces lines to be drawn with dots. . . . . .");
 		
 		return this;
 	}

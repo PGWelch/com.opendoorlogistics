@@ -48,6 +48,7 @@ import com.opendoorlogistics.core.gis.map.OnscreenGeometry.CachedGeomKey;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
+import com.opendoorlogistics.core.gis.map.data.UserRenderFlags;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.IntUtils;
 import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
@@ -74,7 +75,23 @@ public class DatastoreRenderer implements ObjectRenderer{
 	private final SimpleSoftReferenceMap<DrawnSymbol, DrawnSymbol> circleImageCache = new SimpleSoftReferenceMap<>();
 	private static final Symbols symbols = new Symbols();
 
+	private static class LineDashConfig{
+		final long flag;
+		final float [] dash;
+		final float phase;
+		LineDashConfig(long flag, float[] dash, float phase) {
+			super();
+			this.flag = flag;
+			this.dash = dash;
+			this.phase = phase;
+		}
+		
+	}
 
+	private static final LineDashConfig [] DASH_CONFIGS = new LineDashConfig[]{
+		new LineDashConfig(UserRenderFlags.DOT_DASH_LINE, new float[]{3,9,21,9}, 0),
+		new LineDashConfig(UserRenderFlags.DOTTED_LINE, new float[]{3,9}, 0),
+	};
 	/**
 	 * Remove small gaps between polygons by detecting any 0-alpha pixel surrounded by a majority of non 0-alpha pixels
 	 * 
@@ -783,8 +800,21 @@ public class DatastoreRenderer implements ObjectRenderer{
 					if (LineString.class.isInstance(geometry)) {
 						if(!bordersOnly){
 							
+							
+							// search for a dash config
+							float [] dash=null;
+							float dashPhase=0;
+							for(LineDashConfig dc : DASH_CONFIGS){
+								if((obj.getFlags() & dc.flag)==dc.flag){
+									dash = dc.dash;
+									dashPhase = dc.phase;
+								}
+							}
+				
 							Shape path = new LiteShape(geometry,transform, false);
-							BasicStroke stroke = new BasicStroke(obj.getPixelWidth(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+			
+							BasicStroke stroke = new BasicStroke(obj.getPixelWidth(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,10.0f, dash, dashPhase);
+							
 							g.setStroke(stroke);
 							if (hitTestOnScreen == null) {
 								g.draw(path);
