@@ -81,5 +81,13 @@ public interface StringConventions {
 	Set<String> createStandardisedSet();
 	
 	List<String> tokenise(String s);
+	
+	/**
+	 * Get a multi-line string containing message from the exception
+	 * and whatever exceptions cause it.
+	 * @param t
+	 * @return
+	 */
+	String getExceptionReport(Throwable t);
 }
 

@@ -6,13 +6,11 @@ import java.awt.event.KeyEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.KeyStroke;
 
-import com.opendoorlogistics.api.HasApi;
+import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.core.scripts.elements.Script;
-import com.opendoorlogistics.core.tables.io.SupportedFileType;
 import com.opendoorlogistics.studio.dialogs.AboutBoxDialog;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames.FramePlacement;
 import com.opendoorlogistics.studio.panels.FunctionsListPanel;
@@ -126,16 +124,16 @@ public class MenuFactory {
 
 		class ImportPair {
 			String menuString;
-			SupportedFileType type;
+			ImportFileType type;
 
-			public ImportPair(String menuString, SupportedFileType type) {
+			public ImportPair(String menuString, ImportFileType type) {
 				super();
 				this.menuString = menuString;
 				this.type = type;
 			}
 		}
-		for (final ImportPair type : new ImportPair[] { new ImportPair("Comma separated (CSV) text", SupportedFileType.CSV), new ImportPair("Tab separated text", SupportedFileType.TAB), new ImportPair("Excel", SupportedFileType.EXCEL),
-				new ImportPair("Shapefile (link geometry to original file)", SupportedFileType.SHAPEFILE_LINKED_GEOM), new ImportPair("Shapefile (copy geometry into spreadsheet)", SupportedFileType.SHAPEFILE_COPIED_GEOM), }) {
+		for (final ImportPair type : new ImportPair[] { new ImportPair("Comma separated (CSV) text", ImportFileType.CSV), new ImportPair("Tab separated text", ImportFileType.TAB), new ImportPair("Excel", ImportFileType.EXCEL),
+				new ImportPair("Shapefile (link geometry to original file)", ImportFileType.SHAPEFILE_LINKED_GEOM), new ImportPair("Shapefile (copy geometry into spreadsheet)", ImportFileType.SHAPEFILE_COPIED_GEOM), }) {
 			mnImport.add(new AbstractAction(type.menuString) {
 
 				@Override

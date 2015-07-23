@@ -12,7 +12,7 @@ import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
 
-import com.opendoorlogistics.core.tables.io.SupportedFileType;
+import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.appframe.AppFrame;
 
@@ -55,12 +55,12 @@ public class DropFileImporterListener  implements DropTargetListener {
                     		if(appFrame.getLoadedDatastore()==null){
                         		appFrame.openFile(file);
                     		}else{
-                        		appFrame.importFile(file, SupportedFileType.EXCEL);                    			
+                        		appFrame.importFile(file, ImportFileType.EXCEL);                    			
                     		}
                         	break;                    		
                     	}
                     	else if(Strings.equalsStd(ext, "csv")) {
-                    		appFrame.importFile(file, SupportedFileType.CSV);                    		
+                    		appFrame.importFile(file, ImportFileType.CSV);                    		
                     	}
                     }
 

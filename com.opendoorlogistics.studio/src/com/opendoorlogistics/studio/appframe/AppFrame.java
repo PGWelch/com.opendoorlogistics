@@ -44,7 +44,9 @@ import org.apache.commons.io.FilenameUtils;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.app.ODLApp;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable.UndoStateChangedListener;
@@ -64,7 +66,6 @@ import com.opendoorlogistics.core.scripts.ScriptsProvider;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.tables.io.PoiIO;
-import com.opendoorlogistics.core.tables.io.SupportedFileType;
 import com.opendoorlogistics.core.tables.io.TableIOUtils;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -96,10 +97,10 @@ import com.opendoorlogistics.studio.utils.WindowState;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.ODLAction;
 
-public class AppFrame extends DesktopAppFrame{
+public class AppFrame extends DesktopAppFrame  {
 	private final JSplitPane splitterLeftSide;
 	private final JSplitPane splitterMain;
-	private boolean haltJVMOnDispose=true;
+	private volatile boolean haltJVMOnDispose = true;
 	private final DatastoreTablesPanel tables;
 	private final ScriptUIManagerImpl scriptManager;
 	private final ScriptsPanel scriptsPanel;
@@ -110,6 +111,7 @@ public class AppFrame extends DesktopAppFrame{
 	private List<NewDatastoreProvider> newDatastoreProviders = NewDatastoreProvider.createDefaults();
 	private JMenu mnScripts;
 	private LoadedDatastore loaded;
+	private boolean datastoreCloseNeedsUseConfirmation = true;
 
 	/**
 	 * Start the appframe up and add the input components
@@ -126,28 +128,28 @@ public class AppFrame extends DesktopAppFrame{
 
 	public static void main(String[] args) {
 		InitialiseStudio.initialise(true);
-		if(!CommandLineInterface.process(args)){
-			new AppFrame();			
+		if (!CommandLineInterface.process(args)) {
+			new AppFrame();
 		}
 	}
-	
+
 	public AppFrame() {
-		this(new ActionFactory(), new MenuFactory(),null,null);
+		this(new ActionFactory(), new MenuFactory(), null, null);
 	}
 
 	public AppFrame(ActionFactory actionFactory, MenuFactory menuFactory, Image appIcon, AppPermissions permissions) {
-		if(appIcon==null){
-			appIcon = Icons.loadFromStandardPath("App logo.png").getImage()	;		
+		if (appIcon == null) {
+			appIcon = Icons.loadFromStandardPath("App logo.png").getImage();
 		}
-		
-		if(permissions==null){
+
+		if (permissions == null) {
 			permissions = new AppPermissions() {
-				
+
 				@Override
 				public boolean isScriptEditingAllowed() {
 					return true;
 				}
-				
+
 				@Override
 				public boolean isScriptDirectoryLocked() {
 					return false;
@@ -155,23 +157,23 @@ public class AppFrame extends DesktopAppFrame{
 			};
 		}
 		this.appPermissions = permissions;
-		
+
 		// then create other objects which might use the components
 		tables = new DatastoreTablesPanel(this);
 
 		// create scripts panel after registering components
 		scriptManager = new ScriptUIManagerImpl(this);
 		File scriptDir;
-		if(appPermissions.isScriptDirectoryLocked()){
+		if (appPermissions.isScriptDirectoryLocked()) {
 			scriptDir = new File(AppConstants.SCRIPTS_DIRECTORY).getAbsoluteFile();
-		}else{
+		} else {
 			scriptDir = PreferencesManager.getSingleton().getScriptsDirectory();
 		}
 		scriptsPanel = new ScriptsPanel(getApi(), scriptDir, scriptManager);
 
 		// set my icon
-		if(appIcon!=null){
-			setIconImage(appIcon);			
+		if (appIcon != null) {
+			setIconImage(appIcon);
 		}
 
 		// create actions
@@ -192,14 +194,14 @@ public class AppFrame extends DesktopAppFrame{
 		JPanel rightPane = new JPanel();
 		rightPane.setLayout(new BorderLayout());
 		rightPane.add(getDesktopPane(), BorderLayout.CENTER);
-		rightPane.add(getWindowToolBar(),BorderLayout.SOUTH);
+		rightPane.add(getWindowToolBar(), BorderLayout.SOUTH);
 		splitterMain = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitterLeftSide, rightPane);
 		getContentPane().add(splitterMain, BorderLayout.CENTER);
 
 		// add toolbar
-		initToolbar(actionFactory,fileActions,editActions);
+		initToolbar(actionFactory, fileActions, editActions);
 
-		initMenus(actionFactory, menuFactory,fileActions, editActions);
+		initMenus(actionFactory, menuFactory, fileActions, editActions);
 
 		// control close operation to stop changed being lost
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -208,8 +210,8 @@ public class AppFrame extends DesktopAppFrame{
 			public void windowClosing(WindowEvent e) {
 				if (canCloseDatastore()) {
 					dispose();
-					if(haltJVMOnDispose){
-						System.exit(0);						
+					if (haltJVMOnDispose) {
+						System.exit(0);
 					}
 				}
 			}
@@ -217,15 +219,13 @@ public class AppFrame extends DesktopAppFrame{
 
 		// add myself as a drop target for importing excels etc from file
 		new DropTarget(this, new DropFileImporterListener(this));
-		
+
 		setVisible(true);
 		updateAppearance();
 
 	}
 
-
-
-	private void initToolbar( ActionFactory actionBuilder, List<AppFrameAction> fileActions,List<AppFrameAction> editActions) {
+	private void initToolbar(ActionFactory actionBuilder, List<AppFrameAction> fileActions, List<AppFrameAction> editActions) {
 		getContentPane().add(mainToolbar, BorderLayout.WEST);
 		mainToolbar.setFloatable(false);
 		for (AppFrameAction action : fileActions) {
@@ -239,23 +239,19 @@ public class AppFrame extends DesktopAppFrame{
 			}
 		}
 
-
 		Action helpsite = actionBuilder.createGotoWebsiteAction(this);
-		if(helpsite!=null){
-			mainToolbar.add(helpsite);		
+		if (helpsite != null) {
+			mainToolbar.add(helpsite);
 		}
 
 	}
-
-
 
 	@Override
 	public LoadedDatastore getLoadedDatastore() {
 		return loaded;
 	}
 
-
-	private void initMenus(ActionFactory actionBuilder, MenuFactory menuBuilder,List<AppFrameAction> fileActions,List<AppFrameAction> editActions) {
+	private void initMenus(ActionFactory actionBuilder, MenuFactory menuBuilder, List<AppFrameAction> fileActions, List<AppFrameAction> editActions) {
 		final JMenuBar menuBar = new JMenuBar();
 		class AddSpace {
 			void add() {
@@ -274,7 +270,7 @@ public class AppFrame extends DesktopAppFrame{
 
 			@Override
 			public void menuSelected(MenuEvent e) {
-				initFileMenu(mnFile,fileActions,actionBuilder, menuBuilder);
+				initFileMenu(mnFile, fileActions, actionBuilder, menuBuilder);
 			}
 
 			@Override
@@ -289,7 +285,7 @@ public class AppFrame extends DesktopAppFrame{
 
 			}
 		});
-		initFileMenu(mnFile,fileActions,actionBuilder,menuBuilder);
+		initFileMenu(mnFile, fileActions, actionBuilder, menuBuilder);
 		menuBar.add(mnFile);
 		addSpace.add();
 
@@ -311,7 +307,7 @@ public class AppFrame extends DesktopAppFrame{
 		mnScripts.setVisible(false);
 		mnScripts.addMenuListener(new MenuListener() {
 
-			private void addScriptNode(JMenu parentMenu,boolean usePopupForChildren, ScriptNode node){
+			private void addScriptNode(JMenu parentMenu, boolean usePopupForChildren, ScriptNode node) {
 				if (node.isAvailable() == false) {
 					return;
 				}
@@ -320,27 +316,28 @@ public class AppFrame extends DesktopAppFrame{
 
 						@Override
 						public void actionPerformed(ActionEvent e) {
-							executeScript(node.getFile(), node.getLaunchExecutorId());
+							postScriptExecution(node.getFile(), node.getLaunchExecutorId());
 						}
 					});
 				} else if (node.getChildCount() > 0) {
 					JMenu newParent = parentMenu;
-					if(usePopupForChildren){
-						newParent= new JMenu(node.getDisplayName());
-						parentMenu.add(newParent);						
-					};
+					if (usePopupForChildren) {
+						newParent = new JMenu(node.getDisplayName());
+						parentMenu.add(newParent);
+					}
+					;
 					for (int i = 0; i < node.getChildCount(); i++) {
-						addScriptNode(newParent, true,(ScriptNode) node.getChildAt(i));
+						addScriptNode(newParent, true, (ScriptNode) node.getChildAt(i));
 					}
 				}
 			}
-			
+
 			@Override
 			public void menuSelected(MenuEvent e) {
 				mnScripts.removeAll();
-				ScriptNode [] scripts = scriptsPanel.getScripts();
+				ScriptNode[] scripts = scriptsPanel.getScripts();
 				for (final ScriptNode item : scripts) {
-					addScriptNode(mnScripts, scripts.length>1,item);
+					addScriptNode(mnScripts, scripts.length > 1, item);
 				}
 				mnScripts.validate();
 			}
@@ -357,21 +354,21 @@ public class AppFrame extends DesktopAppFrame{
 		addSpace.add();
 
 		// add create script menu
-		if(appPermissions.isScriptEditingAllowed()){
+		if (appPermissions.isScriptEditingAllowed()) {
 			JMenu scriptsMenu = menuBuilder.createScriptCreationMenu(this, scriptManager);
-			if(scriptsMenu!=null){
-				menuBar.add(scriptsMenu);			
+			if (scriptsMenu != null) {
+				menuBar.add(scriptsMenu);
 			}
-			addSpace.add();			
+			addSpace.add();
 		}
 
-		// tools menu 
+		// tools menu
 		JMenu tools = new JMenu("Tools");
 		menuBar.add(tools);
 		JMenu memoryCache = new JMenu("Memory cache");
 		tools.add(memoryCache);
 		memoryCache.add(new AbstractAction("View cache statistics") {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				TextInformationDialog dlg = new TextInformationDialog(AppFrame.this, "Memory cache statistics", ApplicationCache.singleton().getUsageReport());
@@ -381,14 +378,14 @@ public class AppFrame extends DesktopAppFrame{
 			}
 		});
 		memoryCache.add(new AbstractAction("Clear memory cache") {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				ApplicationCache.singleton().clearCache();
 			}
 		});
 		addSpace.add();
-		
+
 		// add window menu
 		JMenu mnWindow = menuBuilder.createWindowsMenu(this);
 		mnWindow.add(new AbstractAction("Show all tables") {
@@ -422,16 +419,26 @@ public class AppFrame extends DesktopAppFrame{
 
 	}
 
-	public Future<Void> executeScript(File file , String [] optionIds){
-		return scriptManager.executeScript(file, optionIds);
-	}
-	
+	@Override
+	public PendingScriptExecution postScriptExecution(File file, String[] optionIds) {
+		Future<Void> future = scriptManager.executeScript(file, optionIds);
 
+		return new PendingScriptExecution() {
+
+			@Override
+			public boolean isDone() {
+				return future.isDone();
+			}
+
+		};
+	}
 
 	@Override
-	public void importFile(final SupportedFileType option) {
+	public void importFile(final ImportFileType option) {
 
-		final JFileChooser chooser = option.createFileChooser();
+		JFileChooser chooser = new JFileChooser();
+		chooser.setFileFilter(option.getFilter());
+
 		IOUtils.setFile(PreferencesManager.getSingleton().getLastImportFile(option), chooser);
 		if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
 			return;
@@ -444,7 +451,8 @@ public class AppFrame extends DesktopAppFrame{
 
 	}
 
-	public void importFile(final File file, final SupportedFileType option) {
+	@Override
+	public void importFile(final File file, final ImportFileType option) {
 		final ExecutionReport report = new ExecutionReportImpl();
 
 		// open the datastore if we don't have it open
@@ -453,7 +461,7 @@ public class AppFrame extends DesktopAppFrame{
 		}
 
 		String message = "Importing " + file;
-		final ProgressDialog<ODLDatastoreAlterable<ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, message, false,true);
+		final ProgressDialog<ODLDatastoreAlterable<ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, message, false, true);
 		pd.setLocationRelativeTo(this);
 		pd.setText("Importing file, please wait.");
 		pd.start(new Callable<ODLDatastoreAlterable<ODLTableAlterable>>() {
@@ -461,7 +469,8 @@ public class AppFrame extends DesktopAppFrame{
 			@Override
 			public ODLDatastoreAlterable<ODLTableAlterable> call() throws Exception {
 				try {
-					ODLDatastoreAlterable<ODLTableAlterable> imported = TableIOUtils.importFile(file, option, ProgressPanel.createProcessingApi(getApi(), pd), report);
+					ODLDatastoreAlterable<ODLTableAlterable> imported = TableIOUtils.importFile(file, option, ProgressPanel.createProcessingApi(getApi(), pd),
+							report);
 					return imported;
 				} catch (Throwable e) {
 					report.setFailed(e);
@@ -483,7 +492,8 @@ public class AppFrame extends DesktopAppFrame{
 				if (result != null) {
 					for (int i = 0; i < result.getTableCount(); i++) {
 						ODLTableReadOnly table = result.getTableAt(i);
-						report.log("Imported table \"" + table.getName() + "\" with " + table.getRowCount() + " rows and " + table.getColumnCount() + " columns.");
+						report.log("Imported table \"" + table.getName() + "\" with " + table.getRowCount() + " rows and " + table.getColumnCount()
+								+ " columns.");
 					}
 					report.log("Imported " + result.getTableCount() + " tables.");
 
@@ -531,9 +541,11 @@ public class AppFrame extends DesktopAppFrame{
 	public void openDatastoreWithUserPrompt() {
 		if (!canCloseDatastore()) {
 			return;
-		}
 
-		JFileChooser chooser = SupportedFileType.EXCEL.createFileChooser();
+		}
+		JFileChooser chooser = new JFileChooser();
+		chooser.setFileFilter(ImportFileType.EXCEL.getFilter());
+
 		File defaultDir = PreferencesManager.getSingleton().getFile(PrefKey.LAST_IO_DIR);
 		if (defaultDir != null) {
 			IOUtils.setFile(defaultDir, chooser);
@@ -551,7 +563,7 @@ public class AppFrame extends DesktopAppFrame{
 	public void openFile(final File file) {
 
 		String message = "Loading " + file;
-		final ProgressDialog<ODLDatastoreAlterable<ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, message, false,true);
+		final ProgressDialog<ODLDatastoreAlterable<ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, message, false, true);
 		pd.setLocationRelativeTo(this);
 		pd.setText("Loading file, please wait.");
 		final ExecutionReport report = new ExecutionReportImpl();
@@ -573,7 +585,7 @@ public class AppFrame extends DesktopAppFrame{
 			public void onFinished(ODLDatastoreAlterable<ODLTableAlterable> result, boolean userCancelled, boolean userFinishedNow) {
 
 				if (result != null) {
-					onOpenedDatastore(result, file);
+					setDatastore(result, file);
 					PreferencesManager.getSingleton().addRecentFile(file);
 					PreferencesManager.getSingleton().setDirectory(PrefKey.LAST_IO_DIR, file);
 				} else {
@@ -590,11 +602,13 @@ public class AppFrame extends DesktopAppFrame{
 			return true;
 		}
 
-	//	if (loaded.isModified()) {
+		// if (loaded.isModified()) {
+		if (datastoreCloseNeedsUseConfirmation) {
 			if (JOptionPane.showConfirmDialog(this, "Any unsaved work will be lost. Do you want to exit?", "Confirm exit", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) {
 				return false;
 			}
-	//	}
+		}
+		// }
 
 		return true;
 	}
@@ -621,7 +635,6 @@ public class AppFrame extends DesktopAppFrame{
 		updateAppearance();
 	}
 
-
 	@SuppressWarnings("serial")
 	@Override
 	public void createNewDatastore() {
@@ -631,13 +644,14 @@ public class AppFrame extends DesktopAppFrame{
 
 		ArrayList<JButton> buttons = new ArrayList<>();
 
-		for(NewDatastoreProvider ndp : newDatastoreProviders){
+		for (NewDatastoreProvider ndp : newDatastoreProviders) {
 			buttons.add(new JButton(new AbstractAction(ndp.name()) {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					
-					final ProgressDialog<ODLDatastoreAlterable<? extends ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, "Creating new datastore", false,false);
+
+					final ProgressDialog<ODLDatastoreAlterable<? extends ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, "Creating new datastore",
+							false, false);
 					pd.setLocationRelativeTo(AppFrame.this);
 					pd.setText("Creating new datastore, please wait.");
 					pd.start(new Callable<ODLDatastoreAlterable<? extends ODLTableAlterable>>() {
@@ -651,20 +665,20 @@ public class AppFrame extends DesktopAppFrame{
 							}
 
 						}
-					}, new OnFinishedSwingThreadCB<ODLDatastoreAlterable<? extends ODLTableAlterable> >() {
+					}, new OnFinishedSwingThreadCB<ODLDatastoreAlterable<? extends ODLTableAlterable>>() {
 
 						@Override
-						public void onFinished(ODLDatastoreAlterable<? extends ODLTableAlterable>  result, boolean userCancelled, boolean userFinishedNow) {
+						public void onFinished(ODLDatastoreAlterable<? extends ODLTableAlterable> result, boolean userCancelled, boolean userFinishedNow) {
 
-							if(result!=null){
-								onOpenedDatastore(result, null);														
-							}else{
-								JOptionPane.showMessageDialog(AppFrame.this, "Failed to create new datastore");								
+							if (result != null) {
+								setDatastore(result, null);
+							} else {
+								JOptionPane.showMessageDialog(AppFrame.this, "Failed to create new datastore");
 							}
 						}
-					});					
+					});
 				}
-			}));			
+			}));
 		}
 
 		launchButtonsListDialog("Create new spreadsheet", "Choose creation option:", null, buttons);
@@ -699,7 +713,7 @@ public class AppFrame extends DesktopAppFrame{
 		final String finalExt = ext;
 
 		String message = "Saving " + file;
-		final ProgressDialog<Boolean> pd = new ProgressDialog<>(AppFrame.this, message, false,true);
+		final ProgressDialog<Boolean> pd = new ProgressDialog<>(AppFrame.this, message, false, true);
 		pd.setLocationRelativeTo(this);
 		pd.setText("Saving file, please wait.");
 		final ExecutionReport report = new ExecutionReportImpl();
@@ -710,7 +724,7 @@ public class AppFrame extends DesktopAppFrame{
 				// return PoiIO.export(loaded.getDs(), finalFile,
 				// finalExt.equals("xlsx"));
 				try {
-					return loaded.save(finalFile, finalExt.equals("xlsx"),ProgressPanel.createProcessingApi(getApi(), pd), report);
+					return loaded.save(finalFile, finalExt.equals("xlsx"), ProgressPanel.createProcessingApi(getApi(), pd), report);
 				} catch (Throwable e) {
 					report.setFailed(e);
 					return false;
@@ -741,12 +755,12 @@ public class AppFrame extends DesktopAppFrame{
 
 	}
 
-	public void onOpenedDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> newDs, File file) {
+	public void setDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> newDs, File sourceFile) {
 		if (loaded != null) {
 			closeDatastore();
 		}
 
-		loaded = new LoadedDatastore(newDs, file, this);
+		loaded = new LoadedDatastore(newDs, sourceFile, this);
 
 		tables.setDatastore(loaded.getDs());
 
@@ -762,8 +776,8 @@ public class AppFrame extends DesktopAppFrame{
 					@Override
 					public void run() {
 						for (ODLAction action : allActions) {
-							if(action!=null){
-								action.updateEnabled();								
+							if (action != null) {
+								action.updateEnabled();
 							}
 						}
 					}
@@ -782,8 +796,6 @@ public class AppFrame extends DesktopAppFrame{
 
 	}
 
-
-
 	@Override
 	public void dispose() {
 		PreferencesManager.getSingleton().setScreenState(new WindowState(this));
@@ -793,10 +805,14 @@ public class AppFrame extends DesktopAppFrame{
 			frame.dispose();
 		}
 
-		DisposeCore.dispose();
 
 		scriptsPanel.dispose();
-		
+
+		if(haltJVMOnDispose){
+			DisposeCore.dispose();			
+		}
+
+		// call super last as it calls the listeners
 		super.dispose();
 	}
 
@@ -814,12 +830,6 @@ public class AppFrame extends DesktopAppFrame{
 			tileVisibleFrames(frames.toArray(new JInternalFrame[frames.size()]));
 		}
 	}
-
-
-
-
-
-
 
 	@Override
 	public void launchTableSchemaEditor(int tableId) {
@@ -880,7 +890,8 @@ public class AppFrame extends DesktopAppFrame{
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					Script script = ScriptWizardActions.createScriptFromMasterComponent(getApi(), AppFrame.this, component, config, loaded != null ? loaded.getDs() : null, tableIds);
+					Script script = ScriptWizardActions.createScriptFromMasterComponent(getApi(), AppFrame.this, component, config,
+							loaded != null ? loaded.getDs() : null, tableIds);
 					if (script != null) {
 						// ScriptEditor dlg = new ScriptEditorWizardGenerated(script, null, getScriptUIManager());
 						// AppFrame.this.addInternalFrame(dlg);
@@ -895,7 +906,8 @@ public class AppFrame extends DesktopAppFrame{
 
 		// launch dialog to select the option
 		if (buttons.size() > 1) {
-			launchButtonsListDialog(component.getName(), "Choose \"" + component.getName() + "\" option:", component.getIcon(getApi(), ODLComponent.MODE_DEFAULT), buttons);
+			launchButtonsListDialog(component.getName(), "Choose \"" + component.getName() + "\" option:",
+					component.getIcon(getApi(), ODLComponent.MODE_DEFAULT), buttons);
 		} else {
 			// pick the only option...
 			buttons.get(0).doClick();
@@ -905,14 +917,14 @@ public class AppFrame extends DesktopAppFrame{
 
 	@Override
 	public void openEmptyDatastore() {
-		onOpenedDatastore(ODLDatastoreImpl.alterableFactory.create(), null);
+		setDatastore(ODLDatastoreImpl.alterableFactory.create(), null);
 	}
 
 	public ScriptUIManager getScriptUIManager() {
 		return scriptManager;
 	}
 
-	private void initFileMenu(JMenu mnFile,List<AppFrameAction> fileActions,ActionFactory actionFactory, MenuFactory menuBuilder) {
+	private void initFileMenu(JMenu mnFile, List<AppFrameAction> fileActions, ActionFactory actionFactory, MenuFactory menuBuilder) {
 		mnFile.removeAll();
 
 		// non-dynamic
@@ -929,15 +941,14 @@ public class AppFrame extends DesktopAppFrame{
 
 		// import (not in action list as doesn't appear on toolbar)
 		mnFile.addSeparator();
-		JMenu mnImport =menuBuilder.createImportMenu(this);
+		JMenu mnImport = menuBuilder.createImportMenu(this);
 		mnFile.add(mnImport);
 
 		// dynamic
 		mnFile.addSeparator();
-		for(AppFrameAction action : actionFactory.createLoadRecentFilesActions(this)){
+		for (AppFrameAction action : actionFactory.createLoadRecentFilesActions(this)) {
 			mnFile.add(action);
 		}
-
 
 		// clear recent
 		mnFile.addSeparator();
@@ -951,7 +962,8 @@ public class AppFrame extends DesktopAppFrame{
 
 		// finally exit
 		mnFile.addSeparator();
-		JMenuItem item = mnFile.add(new AppFrameAction("Exit", "Exit", null, null, false, KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Q, java.awt.Event.CTRL_MASK), this) {
+		JMenuItem item = mnFile.add(new AppFrameAction("Exit", "Exit", null, null, false, KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Q,
+				java.awt.Event.CTRL_MASK), this) {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -972,8 +984,8 @@ public class AppFrame extends DesktopAppFrame{
 	public ScriptsProvider getScriptsProvider() {
 		return scriptsPanel.getScriptsProvider();
 	}
-	
-	public void setScriptsDirectory(File directory){
+
+	public void setScriptsDirectory(File directory) {
 		scriptsPanel.setScriptsDirectory(directory);
 	}
 
@@ -981,6 +993,7 @@ public class AppFrame extends DesktopAppFrame{
 		return haltJVMOnDispose;
 	}
 
+	@Override
 	public void setHaltJVMOnDispose(boolean haltJVMOnDispose) {
 		this.haltJVMOnDispose = haltJVMOnDispose;
 	}
@@ -997,6 +1010,10 @@ public class AppFrame extends DesktopAppFrame{
 	public void setNewDatastoreProviders(List<NewDatastoreProvider> newDatastoreProviders) {
 		this.newDatastoreProviders = newDatastoreProviders;
 	}
-	
-	
+
+	@Override
+	public void setDatastoreCloseNeedsUseConfirmation(boolean needsUserConfirmation) {
+		this.datastoreCloseNeedsUseConfirmation = needsUserConfirmation;
+	}
+
 }

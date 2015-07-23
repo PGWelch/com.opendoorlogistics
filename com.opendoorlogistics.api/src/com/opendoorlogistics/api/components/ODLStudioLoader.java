@@ -2,10 +2,14 @@ package com.opendoorlogistics.api.components;
 
 import java.io.File;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
 import javax.swing.JOptionPane;
+
+import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.app.ODLApp;
 
 /**
  * A class which allows a component to be debugged without adding ODL Studio to its project as a library
@@ -18,34 +22,59 @@ import javax.swing.JOptionPane;
  * @author Phil
  *
  */
-public class ODLStudioLoader {
-	public static void load(String[] commandLineArguments, ODLComponent ...components)  {
-		if(commandLineArguments.length==0){
-			JOptionPane.showMessageDialog(null, "Expected a command line argument with path to com.opendoorlogistics.studio.jar");
-		}
-		
-		// load the ODL Studio jar by reflection
-		String trimmed = commandLineArguments[0].replaceAll("\"", "");
-		File file = new File(trimmed);
-		load(file, components);
+public interface ODLStudioLoader {
+
+
+//	public static void load(File odlstudiojarfile, ODLComponent... components)  {
+//		try {
+//			findLoader(odlstudiojarfile).startStudio(components);		
+//		} catch (Exception e) {
+//			throw new RuntimeException(e);
+//		}
+//	}
+
+	/**
+	 * Start ODL Studio
+	 * @param components Additional components to add.
+	 * @return
+	 */
+	public ODLApp startStudio(ODLComponent ... components);
+	
+	/**
+	 * Create an ODL Api
+	 * @return
+	 */
+	public ODLApi createApi();
+	
+	public static final String LOADER_IMPLEMENTATION_NAME = "com.opendoorlogistics.studio.InitialiseStudio";
+	
+
+	
+	/**
+	 * Find the loader implementation in the input jar file using reflection.
+	 * @param odlStudioJar Jar file containing ODL Studio
+	 * @return
+	 * @throws ClassNotFoundException
+	 * @throws MalformedURLException
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 */
+	public static ODLStudioLoader findLoader(File odlStudioJar) throws ClassNotFoundException, MalformedURLException, InstantiationException, IllegalAccessException{
+		URL url = odlStudioJar.toURI().toURL();
+		URL[] urls = new URL[] { url };
+		@SuppressWarnings("resource")
+		ClassLoader cl = new URLClassLoader(urls);
+
+		// find appframe class
+		Class<?> loaderCls = cl.loadClass(LOADER_IMPLEMENTATION_NAME);
+		return (ODLStudioLoader)loaderCls.newInstance();
 	}
-
-	public static void load(File odlstudiojarfile, ODLComponent... components)  {
-		try {
-			URL url = odlstudiojarfile.toURI().toURL();
-			URL[] urls = new URL[] { url };
-			@SuppressWarnings("resource")
-			ClassLoader cl = new URLClassLoader(urls);
-
-			// find appframe class
-			Class<?> appFrameCls = cl.loadClass("com.opendoorlogistics.studio.appframe.AppFrame");
-			
-			// and start appframe giving it the vehicle routing component
-			Method start = appFrameCls.getMethod("startWithComponents", ODLComponent[].class);
-			start.invoke(null, new Object[]{ components});			
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+	
+	/*
+	 * Find the loader using the current classpath
+	 */
+	public static ODLStudioLoader findLoader() throws ClassNotFoundException, InstantiationException, IllegalAccessException{
+		Class<?> loaderCls = ODLStudioLoader.class.getClassLoader().loadClass(LOADER_IMPLEMENTATION_NAME);
+		return (ODLStudioLoader)loaderCls.newInstance();
 	}
-
 }

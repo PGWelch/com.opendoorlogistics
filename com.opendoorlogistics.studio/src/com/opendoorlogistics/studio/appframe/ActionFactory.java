@@ -12,12 +12,12 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.KeyStroke;
 
+import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
-import com.opendoorlogistics.core.tables.io.SupportedFileType;
 import com.opendoorlogistics.core.utils.IOUtils;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
-import com.opendoorlogistics.studio.PreferencesManager;
 import com.opendoorlogistics.studio.LoadedDatastore.HasLoadedDatastore;
+import com.opendoorlogistics.studio.PreferencesManager;
 import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 
@@ -132,7 +132,8 @@ public class ActionFactory {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JFileChooser chooser = SupportedFileType.EXCEL.createFileChooser();
+				JFileChooser chooser =new JFileChooser();
+				chooser.setFileFilter( ImportFileType.EXCEL.getFilter());
 				if (appFrame.getLoadedDatastore().getLastFile() != null) {
 					chooser.setSelectedFile(appFrame.getLoadedDatastore().getLastFile());
 				} else {

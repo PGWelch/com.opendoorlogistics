@@ -11,6 +11,7 @@ import java.io.InputStream;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.components.ProcessingApi;
+import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.core.geometry.ImportShapefile;
@@ -18,7 +19,7 @@ import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.utils.io.TextIO;
 
 final public class TableIOUtils {
-	public static ODLDatastoreAlterable<ODLTableAlterable> importFile(File file, SupportedFileType type,ProcessingApi processingApi, ExecutionReport report){
+	public static ODLDatastoreAlterable<ODLTableAlterable> importFile(File file, ImportFileType type,ProcessingApi processingApi, ExecutionReport report){
 		switch(type){
 		case CSV:
 			return TextIO.importCSV(file);

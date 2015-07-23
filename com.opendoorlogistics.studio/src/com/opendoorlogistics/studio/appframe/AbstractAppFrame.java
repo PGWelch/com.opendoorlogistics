@@ -4,20 +4,16 @@ import java.io.File;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JInternalFrame;
-import javax.swing.JOptionPane;
 
 import com.opendoorlogistics.api.HasApi;
+import com.opendoorlogistics.api.app.ODLApp;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.core.scripts.ScriptsProvider.HasScriptsProvider;
-import com.opendoorlogistics.core.tables.io.SupportedFileType;
-import com.opendoorlogistics.studio.LoadedDatastore;
 import com.opendoorlogistics.studio.LoadedDatastore.HasLoadedDatastore;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
-import com.opendoorlogistics.studio.internalframes.ProgressFrame;
-import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 
-public abstract class AbstractAppFrame extends JFrame implements HasInternalFrames, HasScriptsProvider,HasLoadedDatastore, HasApi {
+public abstract class AbstractAppFrame extends JFrame implements HasInternalFrames, HasScriptsProvider,HasLoadedDatastore, HasApi, ODLApp {
 	public void updateAppearance(){
 		
 	}
@@ -60,7 +56,7 @@ public abstract class AbstractAppFrame extends JFrame implements HasInternalFram
 
 	}
 
-	public void importFile(final SupportedFileType option) {
+	public void importFile(final ImportFileType option) {
 		
 	}
 	

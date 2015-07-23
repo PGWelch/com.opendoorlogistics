@@ -8,6 +8,7 @@ package com.opendoorlogistics.api;
 
 import com.opendoorlogistics.api.components.ODLComponentProvider;
 import com.opendoorlogistics.api.geometry.Geometry;
+import com.opendoorlogistics.api.scripts.Scripts;
 import com.opendoorlogistics.api.ui.UIFactory;
 
 
@@ -20,6 +21,8 @@ public interface ODLApi {
 	Values values();
 	UIFactory uiFactory();
 	Functions functions();
+	Scripts scripts();
 	IO io();
 	
+	//ODLApp createODLStudio(boolean haltJVMOnDispose);
 }

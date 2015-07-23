@@ -49,6 +49,7 @@ public final class ODLGlobalComponents {
 		pm.addPluginsFrom(dir.toURI());
 		PluginManagerUtil pmu = new PluginManagerUtil(pm);		
 		for(ODLComponent component : pmu.getPlugins(ODLComponent.class)){
+			logger.info("Found component " + component.getId() + " in directory " + dir.getAbsolutePath());
 			register(component);
 		}
 		return pmu;

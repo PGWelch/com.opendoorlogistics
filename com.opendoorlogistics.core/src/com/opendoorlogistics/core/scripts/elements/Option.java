@@ -6,7 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.scripts.elements;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 

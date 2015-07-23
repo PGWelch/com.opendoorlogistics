@@ -6,24 +6,19 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
-import java.io.File;
-
 import com.opendoorlogistics.api.Functions;
 import com.opendoorlogistics.api.IO;
-import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.StandardComponents;
+import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.Values;
 import com.opendoorlogistics.api.components.ODLComponentProvider;
 import com.opendoorlogistics.api.geometry.Geometry;
-import com.opendoorlogistics.api.standardcomponents.Maps;
-import com.opendoorlogistics.api.tables.ODLDatastore;
-import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.api.scripts.Scripts;
 import com.opendoorlogistics.api.ui.UIFactory;
-import com.opendoorlogistics.core.AppConstants;
+import com.opendoorlogistics.core.api.impl.scripts.ScriptsImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
-import com.opendoorlogistics.core.tables.utils.TableUtils;
 
 public class ODLApiImpl implements ODLApi{
 	private StringConventions conventions;
@@ -34,6 +29,7 @@ public class ODLApiImpl implements ODLApi{
 	private UIFactory uiFactory;
 	private Functions functions;
 	private IO io;
+	private Scripts scripts;
 
 	@Override
 	public Values values() {
@@ -106,27 +102,18 @@ public class ODLApiImpl implements ODLApi{
 	@Override
 	public IO io() {
 		if(io == null){
-			io = new IO() {
-				
-				@Override
-				public File getStandardDataDirectory() {
-					return getAbsFile(AppConstants.DATA_DIRECTORY);
-				}
-
-				private File getAbsFile(String s) {
-					File ret = new File(s);
-					ret = ret.getAbsoluteFile();
-					return ret;
-				}
-
-				@Override
-				public File getStandardConfigDirectory() {
-					return getAbsFile(AppConstants.ODL_CONFIG_DIR);
-				}
-			};
+			io = new IOImpl();
 		}
 		
 		return io;
+	}
+
+	@Override
+	public Scripts scripts() {
+		if(scripts == null){
+			scripts = new ScriptsImpl(this);
+		}
+		return scripts;
 	}
 
 

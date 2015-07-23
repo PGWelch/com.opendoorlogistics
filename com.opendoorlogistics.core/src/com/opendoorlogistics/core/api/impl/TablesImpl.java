@@ -6,7 +6,11 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
+import java.io.File;
+
+import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.Tables;
+import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -18,8 +22,10 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.beans.BeanTypeConversion;
+import com.opendoorlogistics.core.tables.io.PoiIO;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.ExampleData;
+import com.opendoorlogistics.core.tables.utils.ParametersTable;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 
 public class TablesImpl implements Tables {
@@ -136,5 +142,31 @@ public class TablesImpl implements Tables {
 	public void copyRowById(ODLTableReadOnly from, long rowId, ODLTable to) {
 		DatastoreCopier.copyRowById(from, rowId, to);
 	}
+
+	@Override
+	public void addTableDefinitions(ODLDatastore<? extends ODLTableDefinition> schema, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds,
+			boolean changeFieldTypes) {
+		DatastoreCopier.enforceSchema(schema, ds, changeFieldTypes);
+	}
+
+	@Override
+	public void addTablesWithData(ODLDatastore<? extends ODLTableReadOnly> source, ODLDatastoreAlterable<? extends ODLTableAlterable> destination) {
+		DatastoreCopier.mergeAll(source, destination);
+	}
+
+	@Override
+	public void addTableDefinition(ODLTableDefinition schema, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds, boolean changeFieldTypes) {
+		ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> tempDs = createAlterableDs();
+		DatastoreCopier.copyTableDefinition(schema, tempDs);
+		addTableDefinitions(tempDs, ds, changeFieldTypes);
+	}
+
+	@Override
+	public ODLTableDefinition createParametersTableDefinition() {
+		ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> tempDs = createAlterableDs();
+		DatastoreCopier.copyTableDefinition(ParametersTable.tableDefinition(), tempDs);
+		return tempDs.getTableAt(0);
+	}
+
 
 }

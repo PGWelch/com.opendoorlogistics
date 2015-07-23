@@ -35,6 +35,7 @@ import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentConfigurationEditorAPI;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.scripts.ScriptAdapter;
 import com.opendoorlogistics.api.scripts.ScriptAdapterTable;
 import com.opendoorlogistics.api.tables.ODLColumnType;
@@ -46,11 +47,11 @@ import com.opendoorlogistics.core.api.impl.scripts.ScriptOptionImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
+import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig.SortField;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.elements.InstructionConfig;
 import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.Script;
-import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig.SortField;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.execution.OptionsSubpath;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
@@ -60,11 +61,8 @@ import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser.SourcedTable;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils.OutputWindowSyncLevel;
 import com.opendoorlogistics.core.scripts.utils.TableId;
-import com.opendoorlogistics.core.tables.io.SupportedFileType;
-import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.PreferencesManager;
-import com.opendoorlogistics.studio.components.tables.TableControlComponent;
 import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
 import com.opendoorlogistics.studio.scripts.editor.adapters.QueryAvailableData;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
@@ -647,10 +645,10 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 				}
 
 				arrayList.add(ScriptConstants.SHAPEFILE_DS_NAME_PREFIX + "filename.shp");
-				arrayList.add(SupportedFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xls");
-				arrayList.add(SupportedFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xlsx");
-				arrayList.add(SupportedFileType.CSV.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.csv");
-				arrayList.add(SupportedFileType.TAB.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.tab");
+				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xls");
+				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xlsx");
+				arrayList.add(ImportFileType.CSV.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.csv");
+				arrayList.add(ImportFileType.TAB.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.tab");
 				
 				return arrayList.toArray(new String[arrayList.size()]);
 			}

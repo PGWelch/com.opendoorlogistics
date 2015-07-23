@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.UUID;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
@@ -356,10 +357,10 @@ final public class FunctionsBuilder {
 					int index = datastores.getIndex(ScriptConstants.EXTERNAL_DS_NAME);
 					ODLDatastore<? extends ODLTableDefinition> ds = datastores.getDatastore(index);
 					if(ds!=null){
-						ODLTableDefinition table = TableUtils.findTable(ds, ParametersTable.NAME, true);
+						ODLTableDefinition table = TableUtils.findTable(ds, PredefinedTags.PARAMETERS_TABLE_NAME, true);
 						if(table!=null){
-							int key = TableUtils.findColumnIndx(table, ParametersTable.KEY);
-							int value = TableUtils.findColumnIndx(table, ParametersTable.VALUE);
+							int key = TableUtils.findColumnIndx(table, PredefinedTags.PARAMETERS_TABLE_KEY);
+							int value = TableUtils.findColumnIndx(table, PredefinedTags.PARAMETERS_TABLE_VALUE);
 							if(key!=-1 && value!=-1){
 								return new FmParameter(children[0], index, table.getImmutableId(), key, value);
 							}

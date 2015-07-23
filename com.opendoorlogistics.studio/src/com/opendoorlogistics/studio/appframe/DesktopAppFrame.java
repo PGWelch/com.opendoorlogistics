@@ -15,6 +15,7 @@ import java.awt.image.BufferedImage;
 import java.beans.PropertyVetoException;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
@@ -27,6 +28,8 @@ import javax.swing.JInternalFrame;
 import javax.swing.SwingWorker;
 import javax.swing.border.BevelBorder;
 
+import com.opendoorlogistics.api.app.AppDisposedListener;
+import com.opendoorlogistics.api.app.ODLApp;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.codefromweb.DesktopScrollPane;
 import com.opendoorlogistics.codefromweb.TileInternalFrames;
@@ -52,10 +55,11 @@ import com.opendoorlogistics.utils.ui.Icons;
  * @author Phil
  *
  */
-public abstract class DesktopAppFrame extends AbstractAppFrame{
+public abstract class DesktopAppFrame extends AbstractAppFrame {
 	private volatile BufferedImage background;
 	private final DesktopScrollPane desktopScrollPane;
 	private final ODLScrollableToolbar windowToolBar;	
+	private final HashSet<AppDisposedListener> appDisposedListeners = new HashSet<AppDisposedListener>();
 	private final JDesktopPane desktopPane = new JDesktopPane() {
 
 		@Override
@@ -376,5 +380,19 @@ public abstract class DesktopAppFrame extends AbstractAppFrame{
 				repaint();
 			}
 		});
+	}
+	
+	public void addOnDisposedListener(AppDisposedListener listener){
+		appDisposedListeners.add(listener);
+	}
+
+	@Override
+	public void dispose() {
+		
+		for(AppDisposedListener adl : appDisposedListeners){
+			adl.onAppDisposed(this);
+		}
+		
+		super.dispose();
 	}
 }

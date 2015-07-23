@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.prefs.Preferences;
 
+import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
-import com.opendoorlogistics.core.tables.io.SupportedFileType;
 import com.opendoorlogistics.studio.utils.WindowState;
 
 final public class PreferencesManager {
@@ -21,7 +21,7 @@ final public class PreferencesManager {
 
 	private final Preferences userPreferences = Preferences.userNodeForPackage(getClass());
 
-	public synchronized File getLastImportFile(SupportedFileType fileType) {
+	public synchronized File getLastImportFile(ImportFileType fileType) {
 		String s = userPreferences.get("last-" + fileType.name(), null);
 		if (s == null) {
 			return null;
@@ -33,7 +33,7 @@ final public class PreferencesManager {
 		return userPreferences.node(id);
 	}
 	
-	public synchronized void setLastImportFile(File file, SupportedFileType fileType) {
+	public synchronized void setLastImportFile(File file, ImportFileType fileType) {
 		userPreferences.put("last-" + fileType.name(), file.getAbsolutePath());
 	}
 

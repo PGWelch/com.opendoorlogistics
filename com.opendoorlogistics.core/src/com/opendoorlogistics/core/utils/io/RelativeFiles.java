@@ -55,10 +55,22 @@ public class RelativeFiles {
 	 */
 	static public File validateRelativeFiles(String filename, String defaultDirectory){
 		File file = new File(filename);
+		File dataDirectory = new File(defaultDirectory);
 
+		return convertFileToValidatedAbsolute(filename, file, dataDirectory);
+		
+	}
+
+	/**
+	 * 
+	 * @param filename
+	 * @param file
+	 * @param dataDirectory
+	 * @return
+	 */
+	public static File convertFileToValidatedAbsolute(String filename, File file, File dataDirectory) {
 		// try to get the default data directory
 		if(!file.isAbsolute()){
-			File dataDirectory = new File(defaultDirectory);
 			if(dataDirectory.exists()==false){
 				return null;
 			}			
@@ -69,6 +81,5 @@ public class RelativeFiles {
 			return null;
 		}
 		return file;
-		
 	}
 }

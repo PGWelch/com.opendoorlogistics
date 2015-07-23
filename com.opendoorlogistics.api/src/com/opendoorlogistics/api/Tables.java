@@ -6,6 +6,9 @@
  ******************************************************************************/
 package com.opendoorlogistics.api;
 
+import java.io.File;
+
+import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -90,4 +93,31 @@ public interface Tables {
 	 */
 	int findTableIndex(ODLDatastore<? extends ODLTableDefinition> ds, String tableName);
 
+	/**
+	 * Add tables and fields if not already existing from the input schema
+	 * @param schema
+	 * @param ds
+	 * @param changeFieldTypes
+	 */
+	void addTableDefinitions(ODLDatastore<? extends ODLTableDefinition> schema, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds, boolean changeFieldTypes);
+
+	/**
+	 * Add table and fields if not already existing from the input schema
+	 * @param schema
+	 * @param ds
+	 * @param changeFieldTypes
+	 */
+	void addTableDefinition( ODLTableDefinition schema, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds, boolean changeFieldTypes);
+
+	/**
+	 * Merge the source datastore into the destination.
+	 * Fields and tables are added as needed.
+	 * @param source
+	 * @param destination
+	 */
+	void addTablesWithData(ODLDatastore<? extends ODLTableReadOnly> source, ODLDatastoreAlterable<? extends ODLTableAlterable> destination);
+	
+//	ODLDatastore<? extends ODLTableDefinition> createParametersTableD
+	
+	ODLTableDefinition createParametersTableDefinition();
 }

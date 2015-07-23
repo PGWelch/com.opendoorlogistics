@@ -131,6 +131,11 @@ public class StringConventionsImpl implements StringConventions{
 		}
 		return ret;
 	}
+
+	@Override
+	public String getExceptionReport(Throwable t) {
+		return Strings.getExceptionMessagesAsSingleStr(t);
+	}
 	
 	
 

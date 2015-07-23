@@ -91,6 +91,9 @@ final public class PredefinedTags {
 	public static final String WAITING_TIME = "waiting-time";
 	
 
-
+	public static final String PARAMETERS_TABLE_NAME = "Parameters"; 
+	public static final String PARAMETERS_TABLE_KEY = "Key"; 
+	public static final String PARAMETERS_TABLE_VALUE = "Value"; 
+	
 	private PredefinedTags(){}
 }

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.opendoorlogistics.api.components.ProcessingApi;
+import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -33,7 +34,6 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.formulae.FormulaParser;
 import com.opendoorlogistics.core.formulae.Function;
-import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.FunctionUtils;
 import com.opendoorlogistics.core.formulae.Functions;
@@ -57,13 +57,11 @@ import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator.AdapterMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.RowFilterDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.UnionDecorator;
-import com.opendoorlogistics.core.tables.io.SupportedFileType;
 import com.opendoorlogistics.core.tables.io.TableIOUtils;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.IntUtils;
-import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.UpdateTimer;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
@@ -131,7 +129,7 @@ final public class AdapterBuilder {
 				importedDs = Spatial.importAndCacheShapefile(new File(shapefilename));
 			}
 			
-			for(SupportedFileType ft : new SupportedFileType[]{SupportedFileType.CSV,SupportedFileType.EXCEL, SupportedFileType.TAB}){
+			for(ImportFileType ft : new ImportFileType[]{ImportFileType.CSV,ImportFileType.EXCEL, ImportFileType.TAB}){
 				String prefix = ft.name() + ScriptConstants.IMPORT_LINK_POSTFIX;
 				String filename = Strings.caseInsensitiveReplace(id, prefix, "");
 				if(filename.equals(id)==false){
