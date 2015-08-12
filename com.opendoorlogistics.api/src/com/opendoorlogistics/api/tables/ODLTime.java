@@ -204,4 +204,16 @@ public class ODLTime extends Number implements Comparable<ODLTime> {
 	public int compareTo(ODLTime o) {
 		return Long.compare(value, o.value);
 	}
+	
+	public ODLTime plus(ODLTime t){
+		return new ODLTime(value + t.value);
+	}
+	
+	public ODLTime minus(ODLTime t){
+		return new ODLTime(value - t.value);		
+	}
+	
+	public static ODLTime max(ODLTime a, ODLTime b){
+		return a.value > b.value ? a:b;
+	}
 }
