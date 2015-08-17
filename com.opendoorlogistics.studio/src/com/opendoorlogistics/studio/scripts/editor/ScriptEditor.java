@@ -644,11 +644,11 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 					arrayList.add( datastores.get(i).getDatastoreId());
 				}
 
-				arrayList.add(ScriptConstants.SHAPEFILE_DS_NAME_PREFIX + "filename.shp");
-				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xls");
-				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xlsx");
-				arrayList.add(ImportFileType.CSV.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.csv");
-				arrayList.add(ImportFileType.TAB.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.tab");
+//				arrayList.add(ScriptConstants.SHAPEFILE_DS_NAME_PREFIX + "filename.shp");
+//				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xls");
+//				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xlsx");
+//				arrayList.add(ImportFileType.CSV.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.csv");
+//				arrayList.add(ImportFileType.TAB.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.tab");
 				
 				return arrayList.toArray(new String[arrayList.size()]);
 			}

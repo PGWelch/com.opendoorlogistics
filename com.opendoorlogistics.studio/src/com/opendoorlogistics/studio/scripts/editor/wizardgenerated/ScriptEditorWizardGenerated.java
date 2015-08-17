@@ -71,7 +71,7 @@ import com.opendoorlogistics.core.scripts.elements.OutputConfig;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.elements.ScriptBaseElement;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
-import com.opendoorlogistics.core.scripts.utils.AdapterDestinationProvider;
+import com.opendoorlogistics.core.scripts.utils.AdapterExpectedStructureProvider;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser.SourcedDatastore;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
@@ -392,7 +392,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 				if (adapter.isUserCanEdit()) {
 
 					// build the object which provides the adapter's destination
-					AdapterDestinationProvider dfnProvider = ScriptUtils.buildAdapterDestinationDefinition(api, script, option, adapter.getId());
+					AdapterExpectedStructureProvider dfnProvider = ScriptUtils.createAdapterExpectedStructure(api, script, option, adapter.getId());
 
 					// show all flags for every adapter - even report key - even though they're not used on each one
 					long visibleColumnFlags = TableFlags.FLAG_IS_OPTIONAL | TableFlags.FLAG_IS_GROUP_BY_FIELD | TableFlags.FLAG_IS_BATCH_KEY | TableFlags.FLAG_IS_REPORT_KEYFIELD;

@@ -9,7 +9,12 @@ package com.opendoorlogistics.core.gis.map.data;
 import java.awt.Color;
 
 import com.opendoorlogistics.api.components.PredefinedTags;
+import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTableAlterable;
+import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.map.annotations.ImageFormulaKey;
@@ -25,6 +30,9 @@ import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultStringValue
 import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLTag;
+import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
+import com.opendoorlogistics.core.tables.memory.ODLTableImpl;
+import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 
 @ODLTableName(PredefinedTags.DRAWABLES)
 public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
@@ -50,8 +58,10 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	public static final int COL_LPO= COL_SELECTABLE + 1;
 	public static final int COL_LABEL_COLOUR= COL_LPO + 1;
 	public static final int COL_FLAGS= COL_LABEL_COLOUR + 1;
-
+	public static final int COL_MAX = COL_FLAGS;
+	
 	private static final BeanDatastoreMapping mapping;
+	public static final ODLDatastore<? extends ODLTableDefinition> ACTIVE_BACKGROUND_FOREGROUND_DS;
 	private static final double DEFAULT_OPAQUE = 1.0;
 	
 	static{
@@ -76,6 +86,18 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		};
 		
 		mapping.getTableMapping(0).setRowfilter(rowfilter);
+		
+		// Create datastore definition for active, inactive-background, inactive-foreground
+		ODLDatastoreImpl<ODLTableDefinitionAlterable> activeBackgroundForeground = new ODLDatastoreImpl<>(ODLTableImpl.ODLTableDefinitionAlterableFactory);
+		ODLTableDefinition drawablesTable = mapping.getDefinition().getTableAt(0);
+		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES, -1);				
+		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND, -1);				
+		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, -1);				
+		for(int tableIndx = 1 ; tableIndx<=2 ; tableIndx++){
+			ODLTableDefinitionAlterable alterable= activeBackgroundForeground.getTableAt(tableIndx);
+			alterable.setFlags(alterable.getFlags() | TableFlags.FLAG_IS_OPTIONAL);
+		}
+		ACTIVE_BACKGROUND_FOREGROUND_DS = activeBackgroundForeground;
 	}
 	
 	public static BeanDatastoreMapping getBeanMapping(){

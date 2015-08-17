@@ -42,9 +42,6 @@ import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.utils.ui.Icons;
 
 public abstract class AbstractMapViewerComponent implements Maps {
-	//public static final String ID = "com.opendoorlogistics.studio.uicomponents.map";
-	public static String INACTIVE_FOREGROUND = "inactive-foreground";
-	public static String INACTIVE_BACKGROUND = "inactive-background";
 	
 	@Override
 	public String getId() {
@@ -69,8 +66,8 @@ public abstract class AbstractMapViewerComponent implements Maps {
 		
 		// add the optional tables after the main one - certain parts of the logic assume main ones first
 		if(!activeOnly){
-			makeOptional(DatastoreCopier.copyTableDefinition(dfn, ret, INACTIVE_BACKGROUND));			
-			makeOptional(DatastoreCopier.copyTableDefinition(dfn, ret, INACTIVE_FOREGROUND));			
+			makeOptional(DatastoreCopier.copyTableDefinition(dfn, ret, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND));			
+			makeOptional(DatastoreCopier.copyTableDefinition(dfn, ret, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND));			
 		}
 				
 		return ret;		
@@ -132,8 +129,8 @@ public abstract class AbstractMapViewerComponent implements Maps {
 					ODLTableDefinition dest = inputTables.getTargetTable(i);
 					String dsid = inputTables.getSourceDatastoreId(i);
 					if(!Strings.equalsStd(dest.getName(), PredefinedTags.DRAWABLES)
-					&& !Strings.equalsStd(dest.getName(), INACTIVE_BACKGROUND)
-					&& !Strings.equalsStd(dest.getName(), INACTIVE_FOREGROUND)
+					&& !Strings.equalsStd(dest.getName(), PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND)
+					&& !Strings.equalsStd(dest.getName(), PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND)
 					){
 						continue;
 					}

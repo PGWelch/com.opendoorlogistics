@@ -33,6 +33,7 @@ import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.OutputConfig;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.elements.ScriptEditorType;
+import com.opendoorlogistics.core.scripts.execution.adapters.vls.VLSBuilder;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.wizard.ScriptGenerator;
 import com.opendoorlogistics.core.tables.ODLFactory;
@@ -1070,9 +1071,19 @@ final public class ScriptUtils {
 		return false;
 	}
 
-	public static AdapterDestinationProvider buildAdapterDestinationDefinition(final ODLApi api, final Option root, final Option optionContainingAdapter, final String adapterId) {
+	/**
+	 * Create a provider for the adapter's expected structure, based on whether its a VLS adapter or
+	 * the component which uses it. The expected structure is recreated dynamically on-the-fly,
+	 * so should always be up-to-date.
+	 * @param api
+	 * @param root
+	 * @param optionContainingAdapter
+	 * @param adapterId
+	 * @return
+	 */
+	public static AdapterExpectedStructureProvider createAdapterExpectedStructure(final ODLApi api, final Option root, final Option optionContainingAdapter, final String adapterId) {
 		// find the adapter
-		return new AdapterDestinationProvider() {
+		return new AdapterExpectedStructureProvider() {
 
 			@Override
 			public ODLDatastore<? extends ODLTableDefinition> getDatastoreDefinition() {
@@ -1080,6 +1091,15 @@ final public class ScriptUtils {
 
 				// Check if the adapter is drawable
 				AdapterConfig adapterConfig = getAdapterById(optionContainingAdapter, adapterId, false);
+				if(adapterConfig.isVls()){
+					// Add view-layer-style tables
+					api.tables().addTableDefinitions(VLSBuilder.getVLSTableDefinitions(), ret, false);
+					
+					ODLTableDefinition src = VLSBuilder.getSourceTableDefinition();
+					api.tables().addTableDefinition(src, ret, false);
+					return ret;
+				}
+				
 				if ((adapterConfig.getFlags() & TableFlags.FLAG_IS_DRAWABLES) == TableFlags.FLAG_IS_DRAWABLES) {
 					ODLDatastore<? extends ODLTableDefinition> drawables = api.standardComponents().map().getLayeredDrawablesDefinition();
 					for (int i = 0; i < drawables.getTableCount(); i++) {

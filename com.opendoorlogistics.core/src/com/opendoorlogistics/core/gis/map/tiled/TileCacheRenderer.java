@@ -367,27 +367,27 @@ final public class TileCacheRenderer implements Disposable {
 		// service.shutdown();
 	}
 
-	/**
-	 * Test if the geometry contains one or more polygons
-	 * 
-	 * @param geometry
-	 * @return
-	 */
-	private static boolean hasPolygon(Geometry geometry) {
-		if (geometry != null) {
-			if (GeometryCollection.class.isInstance(geometry)) {
-				int n = geometry.getNumGeometries();
-				for (int i = 0; i < n; i++) {
-					if (hasPolygon(geometry.getGeometryN(i))) {
-						return true;
-					}
-				}
-			} else {
-				return Polygon.class.isInstance(geometry);
-			}
-		}
-		return false;
-	}
+//	/**
+//	 * Test if the geometry contains one or more polygons
+//	 * 
+//	 * @param geometry
+//	 * @return
+//	 */
+//	private static boolean hasPolygon(Geometry geometry) {
+//		if (geometry != null) {
+//			if (GeometryCollection.class.isInstance(geometry)) {
+//				int n = geometry.getNumGeometries();
+//				for (int i = 0; i < n; i++) {
+//					if (hasPolygon(geometry.getGeometryN(i))) {
+//						return true;
+//					}
+//				}
+//			} else {
+//				return Polygon.class.isInstance(geometry);
+//			}
+//		}
+//		return false;
+//	}
 
 	public synchronized void setObjects(Iterable<? extends DrawableObject> pnts) {
 

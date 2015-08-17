@@ -504,6 +504,7 @@ final public class FmLookupNearest extends FunctionImpl {
 		for (final LCType type : LCType.values()) {
 
 			final FunctionDefinition dfn = new FunctionDefinition("lookupnearest" + type.name().toLowerCase());
+			dfn.setGroup("lookupNearest");
 			dfn.setDescription("Find the nearest object to the input value in the other table.");
 			if (type != LCType.LL) {
 				dfn.addArg("ESPG_SRID", ArgumentType.STRING_CONSTANT, 

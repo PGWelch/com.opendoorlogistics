@@ -7,6 +7,7 @@
 package com.opendoorlogistics.api.tables;
 
 
+
 public interface ODLTableReadOnly extends ODLTableDefinition {
 	int getRowCount();
 	Object getValueAt(int rowIndex, int columnIndex);
@@ -24,4 +25,6 @@ public interface ODLTableReadOnly extends ODLTableDefinition {
 	 * @return
 	 */
 	long[] find(int col, Object value);
+	
+	//ODLTableReadOnly findGeo(LatLong min, LatLong max, int zoom, int geomCol);
 }

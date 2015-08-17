@@ -176,6 +176,12 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 		}
 	}
 
+	public AdaptedDecorator(AdapterMapping mapping, ODLDatastore<? extends T> source) {
+		this.mapping = mapping;
+		this.sources = new ArrayList<ODLDatastore<? extends T>>(1);
+		this.sources.add(source);
+	}
+
 	public AdaptedDecorator(AdapterMapping mapping, List<ODLDatastore<? extends T>> sources) {
 		this.mapping = mapping;
 		this.sources = sources;

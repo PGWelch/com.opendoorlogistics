@@ -30,7 +30,7 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.Script;
-import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard;
+import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImpl;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
@@ -150,7 +150,7 @@ class ScriptExecutionTask {
 		ScriptExecutor executor = new ScriptExecutor(runner.getAppFrame().getApi(),false, guiFascade);
 		result = executor.execute(filtered, simple);
 		if (!result.isFailed()) {
-			wholeScriptDependencies = executor.extractDependencies((ScriptExecutionBlackboard) result);
+			wholeScriptDependencies = executor.extractDependencies((ScriptExecutionBlackboardImpl) result);
 		}
 
 		// Finish up on the EDT

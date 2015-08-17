@@ -296,4 +296,20 @@ final public class AdapterBuilderUtils {
 		}
 		return ret;
 	}
+	
+	/**
+	 * Get formula text or return null if the string isn't a formula
+	 * 
+	 * @param text
+	 * @return
+	 */
+	public static String getFormulaFromText(String text) {
+		if (text != null) {
+			text = text.trim();
+			if (text.startsWith(":=")) {
+				return text.substring(2, text.length());
+			}
+		}
+		return null;
+	}
 }

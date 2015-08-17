@@ -1119,12 +1119,12 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 			@Override
 			public ODLTable getUnfilteredInactiveForegroundTable() {
-				return TableUtils.findTable(mapDatastore, AbstractMapViewerComponent.INACTIVE_FOREGROUND);
+				return TableUtils.findTable(mapDatastore, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND);
 			}
 
 			@Override
 			public ODLTable getUnfilteredInactiveBackgroundTable() {
-				return TableUtils.findTable(mapDatastore, AbstractMapViewerComponent.INACTIVE_BACKGROUND);
+				return TableUtils.findTable(mapDatastore, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND);
 			}
 
 			@Override

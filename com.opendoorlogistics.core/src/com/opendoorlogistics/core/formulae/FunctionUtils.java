@@ -80,7 +80,7 @@ public final class FunctionUtils {
 	public static void main(String[] args) throws Exception {
 
 		FunctionDefinitionLibrary lib = new FunctionDefinitionLibrary();
-		lib.build();
+		lib.buildStd();
 		
 		FormulaParser loader = new FormulaParser(null, lib, null);
 		String function = "(2 && 5 && 7 && 2) + 1";

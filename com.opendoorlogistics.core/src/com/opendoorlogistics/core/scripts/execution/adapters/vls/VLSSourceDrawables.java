@@ -1,0 +1,76 @@
+package com.opendoorlogistics.core.scripts.execution.adapters.vls;
+
+import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
+import com.opendoorlogistics.core.tables.beans.BeanMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
+import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.core.tables.beans.annotations.ODLTableFlags;
+import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
+
+@ODLTableName(VLSSourceDrawables.SOURCE_PREFIX + "Your-Source-Name")
+
+/**
+ * Source drawables can take extra columns because additional columns required by the label formula such
+ * as quantities are passed this way. The table is optional because (a) it should be possible to define
+ * a VLS without sources (i.e. reading shapefiles instead) and (b) source tables names will be include their source name,
+ * and hence be different with only a common prefix.
+ * @author Phil
+ *
+ */
+@ODLTableFlags(TableFlags.FLAG_COLUMN_WILDCARD|TableFlags.FLAG_IS_OPTIONAL)
+public class VLSSourceDrawables extends DrawableObjectImpl{
+	public static final String SOURCE_PREFIX = "Source-";
+	
+	public static final BeanTableMapping BEAN_MAPPING = BeanMapping.buildTable(VLSSourceDrawables.class);
+	
+	private String VLSKey1;
+	private String VLSKey2;
+	private String VLSKey3;
+	private String VLSKey4;
+	
+	public static final int COL_VLSKEY1 = DrawableObjectImpl.COL_MAX+1;
+	public static final int COL_VLSKEY2 = COL_VLSKEY1+1;
+	public static final int COL_VLSKEY3 = COL_VLSKEY2+1;
+	public static final int COL_VLSKEY4 = COL_VLSKEY3+1;
+	
+	public String getVLSKey1() {
+		return VLSKey1;
+	}
+	
+	@ODLColumnOrder(COL_VLSKEY1)
+	@ODLColumnName("VLSKey1")
+	public void setVLSKey1(String vLSKey1) {
+		VLSKey1 = vLSKey1;
+	}
+	public String getVLSKey2() {
+		return VLSKey2;
+	}
+	
+	@ODLColumnName("VLSKey2")
+	@ODLColumnOrder(COL_VLSKEY2)
+	public void setVLSKey2(String vLSKey2) {
+		VLSKey2 = vLSKey2;
+	}
+	public String getVLSKey3() {
+		return VLSKey3;
+	}
+	
+	@ODLColumnName("VLSKey3")
+	@ODLColumnOrder(COL_VLSKEY3)
+	public void setVLSKey3(String vLSKey3) {
+		VLSKey3 = vLSKey3;
+	}
+	public String getVLSKey4() {
+		return VLSKey4;
+	}
+	
+	@ODLColumnName("VLSKey4")
+	@ODLColumnOrder(COL_VLSKEY4)
+	public void setVLSKey4(String vLSKey4) {
+		VLSKey4 = vLSKey4;
+	}
+	
+	
+}

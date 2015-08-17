@@ -48,7 +48,8 @@ import com.opendoorlogistics.core.scripts.elements.ScriptElementType;
 import com.opendoorlogistics.core.scripts.elements.UserFormula;
 import com.opendoorlogistics.core.scripts.io.XMLConversionHandler;
 import com.opendoorlogistics.core.scripts.io.XMLConversionHandlerImpl;
-import com.opendoorlogistics.core.scripts.utils.AdapterDestinationProvider;
+import com.opendoorlogistics.core.scripts.utils.AdapterExpectedStructureProvider;
+import com.opendoorlogistics.core.scripts.utils.AdapterExpectedStructureProvider;
 import com.opendoorlogistics.core.scripts.wizard.TableLinkerWizard;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
@@ -95,7 +96,7 @@ public class AdapterTablesTabControl extends JPanel {
 
 	}
 
-	public AdapterTablesTabControl(ODLApi api,final AdapterConfig config, long visibleTableFlags, long visibleFlags, QueryAvailableData availableOptionsQuery, AdapterDestinationProvider targetDatastore, ScriptUIManager uiManager) {
+	public AdapterTablesTabControl(ODLApi api,final AdapterConfig config, long visibleTableFlags, long visibleFlags, QueryAvailableData availableOptionsQuery, AdapterExpectedStructureProvider targetDatastore, ScriptUIManager uiManager) {
 		this.tabs = new JTabbedPane();
 		this.api = api;
 		this.tabs.setTransferHandler(new MyXMLTransferHandler());

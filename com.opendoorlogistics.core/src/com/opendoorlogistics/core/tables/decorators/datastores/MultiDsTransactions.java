@@ -9,6 +9,12 @@ package com.opendoorlogistics.core.tables.decorators.datastores;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 
+/**
+ * Helper class for using transactions with multiple datastores
+ * @author Phil
+ *
+ * @param <T>
+ */
 public class MultiDsTransactions<T extends ODLTableDefinition>  {
 	void rollbackTransaction(Iterable<ODLDatastore<? extends T>> stores) {
 		for(ODLDatastore<? extends T> ds:stores){

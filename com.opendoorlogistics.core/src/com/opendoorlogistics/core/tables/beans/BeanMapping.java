@@ -37,6 +37,7 @@ import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultLongValue;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultStringValue;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLIgnore;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
+import com.opendoorlogistics.core.tables.beans.annotations.ODLTableFlags;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLTag;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
@@ -78,7 +79,18 @@ final public class BeanMapping {
 			if(annotation!=null){
 				return annotation.value();
 			}
-			return getDescriptor().getName();
+			
+			// Capitalise the first letter of the name (looks better for field names)
+			String defaultName =getDescriptor().getName();
+			StringBuilder builder = new StringBuilder();
+			int len = defaultName.length();
+			if(len>0){
+				builder.append(Character.toUpperCase(defaultName.charAt(0)));
+			}
+			if(len>1){
+				builder.append(defaultName.substring(1, len));
+			}
+			return builder.toString();
 		}
 		
 		public int getTableColumnIndex() {
@@ -395,6 +407,7 @@ final public class BeanMapping {
 		}
 	}
 
+	@SafeVarargs
 	public static BeanDatastoreMapping buildDatastore(Class<? extends BeanMappedRow>... classes) {
 
 		ODLDatastoreAlterable<ODLTableDefinitionAlterable> ds = ODLFactory.createDefinition();
@@ -455,6 +468,12 @@ final public class BeanMapping {
 	}
 	
 	private static List<BeanColumnMapping> buildTable(Class<? extends BeanMappedRow> cls, ODLTableDefinitionAlterable outTable) {
+		
+		ODLTableFlags flags= cls.getAnnotation(ODLTableFlags.class);
+		if(flags!=null){
+			outTable.setFlags(outTable.getFlags() | flags.value());
+		}
+		
 		ArrayList<BeanColumnMapping> bcms = new ArrayList<>();
 		BeanInfo beanInfo = null;
 		try {

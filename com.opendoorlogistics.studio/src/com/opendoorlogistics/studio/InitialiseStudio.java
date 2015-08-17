@@ -29,7 +29,7 @@ import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.execution.OptionsSubpath;
-import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard;
+import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImpl;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilder;
 import com.opendoorlogistics.core.scripts.execution.adapters.FunctionsBuilder;
@@ -105,7 +105,7 @@ final public class InitialiseStudio implements ODLStudioLoader{
 				MapSelectionList.class, SuggestedFillValuesManager.class,
 				 MouseMotionListener.class, ScriptEditor.class, ScriptEditorWizardGenerated.class, AdaptedTableControl.class,
 				AdapterTableDefinitionGrid.class, AdapterTablesTabControl.class, QueryAvailableData.class, ScriptsRunner.class, ScriptUIManager.class, ScriptUIManagerImpl.class,
-				ScriptExecutor.class, ScriptExecutionBlackboard.class, ExecutionReportImpl.class, AdapterBuilder.class, FunctionsBuilder.class, OptionsSubpath.class,
+				ScriptExecutor.class, ScriptExecutionBlackboardImpl.class, ExecutionReportImpl.class, AdapterBuilder.class, FunctionsBuilder.class, OptionsSubpath.class,
 				AbstractDependencyInjector.class, DependencyInjector.class, DependencyInjectorDecorator.class, ProcessingApiDecorator.class,
 				com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStateListener.class, com.opendoorlogistics.api.distances.ODLCostMatrix.class,
 				com.opendoorlogistics.codefromweb.BlockingLifoQueue.class, com.opendoorlogistics.codefromweb.DesktopScrollPane.class,

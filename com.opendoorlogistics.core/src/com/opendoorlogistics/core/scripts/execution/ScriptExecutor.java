@@ -49,7 +49,7 @@ import com.opendoorlogistics.core.scripts.elements.InstructionConfig;
 import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.OutputConfig;
 import com.opendoorlogistics.core.scripts.elements.Script;
-import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard.SavedDatastore;
+import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImpl.SavedDatastore;
 import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilder;
 import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilderUtils;
 import com.opendoorlogistics.core.scripts.execution.adapters.BuiltAdapters;
@@ -99,7 +99,7 @@ final public class ScriptExecutor {
 	 * @return
 	 */
 	public ExecutionReport execute(Script script, ODLDatastoreAlterable<? extends ODLTableAlterable> externalDS) {
-		ScriptExecutionBlackboard bb = new ScriptExecutionBlackboard(compileOnly);
+		ScriptExecutionBlackboardImpl bb = new ScriptExecutionBlackboardImpl(compileOnly);
 
 		internalExecutionApi.postStatusMessage("Starting script execution...");
 		
@@ -143,7 +143,7 @@ final public class ScriptExecutor {
 	// return ret;
 	// }
 
-	private void executeAllInstructions(Option script, ScriptExecutionBlackboard result) {
+	private void executeAllInstructions(Option script, ScriptExecutionBlackboardImpl result) {
 		// execute all instructions
 		for (int i = 0; i < script.getInstructions().size(); i++) {
 			// check for cancelled
@@ -178,7 +178,7 @@ final public class ScriptExecutor {
 		}
 	}
 
-	private void executeUpdateQueryInstruction(Option root,InstructionConfig instruction, ScriptExecutionBlackboard result) {
+	private void executeUpdateQueryInstruction(Option root,InstructionConfig instruction, ScriptExecutionBlackboardImpl result) {
 		// check for buildable adapter
 		AdapterConfig adapterConfig = result.getAdapterConfig(instruction.getDatastore());
 		if (adapterConfig == null) {
@@ -234,7 +234,7 @@ final public class ScriptExecutor {
 		}
 	}
 
-	private void executeOutputs(Option script, ScriptExecutionBlackboard result) {
+	private void executeOutputs(Option script, ScriptExecutionBlackboardImpl result) {
 
 		// process outputs
 		for (int i = 0; i < script.getOutputs().size(); i++) {
@@ -260,7 +260,7 @@ final public class ScriptExecutor {
 		}
 	}
 
-	private void initialiseAdapterRecords(Option script, ScriptExecutionBlackboard result) {
+	private void initialiseAdapterRecords(Option script, ScriptExecutionBlackboardImpl result) {
 
 		// get lookup of all named adapters to ensure they're unique
 		for (AdapterConfig config : script.getAdapters()) {
@@ -299,7 +299,7 @@ final public class ScriptExecutor {
 	 * @param result
 	 * @return
 	 */
-	public DataDependencies extractDependencies(ScriptExecutionBlackboard result) {
+	public DataDependencies extractDependencies(ScriptExecutionBlackboardImpl result) {
 		DataDependencies ret = new DataDependencies();
 
 		// loop over each saved datastore
@@ -320,7 +320,7 @@ final public class ScriptExecutor {
 		return ret;
 	}
 
-	private void buildDatastores(ODLDatastoreAlterable<? extends ODLTableAlterable> externalDS, Option script, ScriptExecutionBlackboard result) {
+	private void buildDatastores(ODLDatastoreAlterable<? extends ODLTableAlterable> externalDS, Option script, ScriptExecutionBlackboardImpl result) {
 
 		// save external datastore wrapped in a data dependencies recorder
 		result.addDatastore(ScriptConstants.EXTERNAL_DS_NAME, null, new DataDependenciesRecorder<>(ODLTableAlterable.class, externalDS));
@@ -369,7 +369,7 @@ final public class ScriptExecutor {
 	 * @param instruction
 	 * @param result
 	 */
-	private void executeBatchedInstruction(Option root, InstructionConfig instruction, final ScriptExecutionBlackboard result) {
+	private void executeBatchedInstruction(Option root, InstructionConfig instruction, final ScriptExecutionBlackboardImpl result) {
 
 		// helper class to store information on the batch keys
 		class BatchKeyInformation {
@@ -505,7 +505,7 @@ final public class ScriptExecutor {
 	 * @param batchKey
 	 * @param result
 	 */
-	private void executeSingleInstruction(Option root,final InstructionConfig instruction, final ODLDatastore<? extends ODLTable> availableIODS, final String batchKey, final ScriptExecutionBlackboard result) {
+	private void executeSingleInstruction(Option root,final InstructionConfig instruction, final ODLDatastore<? extends ODLTable> availableIODS, final String batchKey, final ScriptExecutionBlackboardImpl result) {
 
 		// get the component
 		final ODLComponent component = getComponent(instruction, result);
@@ -649,7 +649,7 @@ final public class ScriptExecutor {
 		}
 	}
 
-	private ODLComponent getComponent(ComponentConfig instruction, ScriptExecutionBlackboard result) {
+	private ODLComponent getComponent(ComponentConfig instruction, ScriptExecutionBlackboardImpl result) {
 		// get the component
 		ODLComponent component = components.getComponent(instruction.getComponent());
 		if (component == null) {
@@ -668,7 +668,7 @@ final public class ScriptExecutor {
 	 * @param output
 	 * @param result
 	 */
-	private void executeOutput(final OutputConfig output, final ScriptExecutionBlackboard result) {
+	private void executeOutput(final OutputConfig output, final ScriptExecutionBlackboardImpl result) {
 		if (output.getType() == OutputType.DO_NOT_OUTPUT) {
 			return;
 		}
@@ -795,7 +795,7 @@ final public class ScriptExecutor {
 
 	}
 
-	private static ODLTableAlterable createEmptyOutputTable(ODLTableReadOnly inputTable, String outputTableName, ODLDatastoreAlterable<? extends ODLTableAlterable> externalDb, ScriptExecutionBlackboard result) {
+	private static ODLTableAlterable createEmptyOutputTable(ODLTableReadOnly inputTable, String outputTableName, ODLDatastoreAlterable<? extends ODLTableAlterable> externalDb, ScriptExecutionBlackboardImpl result) {
 		ODLTableAlterable outTable = externalDb.createTable(outputTableName, -1);
 		if (outTable == null) {
 			result.setFailed("Failed to create output table '" + outputTableName + "'.");
@@ -805,7 +805,7 @@ final public class ScriptExecutor {
 		return outTable;
 	}
 
-	private ODLDatastore<? extends ODLTable> findDatastoreOrAdapter(String id, ScriptExecutionBlackboard env) {
+	private ODLDatastore<? extends ODLTable> findDatastoreOrAdapter(String id, ScriptExecutionBlackboardImpl env) {
 		// check for datastores with this id
 		ODLDatastore<? extends ODLTable> ds = env.getDatastore(id);
 		if (ds != null) {
@@ -816,7 +816,7 @@ final public class ScriptExecutor {
 		AdapterConfig adapterConfig = env.getAdapterConfig(id);
 		if (adapterConfig != null) {
 			internalExecutionApi.postStatusMessage("Building data adapter: " + (id!=null ? id : "<no id>"));
-			AdapterBuilder builder = new AdapterBuilder(id, new StandardisedStringSet(), env, internalExecutionApi, new BuiltAdapters());
+			AdapterBuilder builder = new AdapterBuilder(adapterConfig, new StandardisedStringSet(), env, internalExecutionApi, new BuiltAdapters());
 			ds = builder.build();
 			if (!env.isFailed() && ds != null) {
 				return ds;
@@ -835,7 +835,7 @@ final public class ScriptExecutor {
 	 * @param result
 	 * @return
 	 */
-	private Func executeFunctionCompilationFromComponent(String formulaText, String sourceTableName, final ODLDatastore<? extends ODLTable> availableIODS, final ScriptExecutionBlackboard result) {
+	private Func executeFunctionCompilationFromComponent(String formulaText, String sourceTableName, final ODLDatastore<? extends ODLTable> availableIODS, final ScriptExecutionBlackboardImpl result) {
 		// find source table if set. use the availableiods?
 		final ODLTableReadOnly sourceTable ;
 		if(!Strings.isEmpty(sourceTableName)){

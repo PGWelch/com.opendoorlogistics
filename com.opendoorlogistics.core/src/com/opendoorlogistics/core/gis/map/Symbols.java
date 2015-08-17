@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.gis.map;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 
+import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.codefromweb.shapes.RegularPolygon;
 import com.opendoorlogistics.codefromweb.shapes.StarPolygon;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
@@ -18,7 +19,15 @@ public class Symbols {
 	private final int maxOutline;
 	
 	public enum SymbolType {
-		TRIANGLE("triangle" ,4 , 8), INVERTED_TRIANGLE("inverted-triangle", 4 ,8), DIAMOND("diamond", 4 , 8), SQUARE("square", 3 , 6), PENTAGON("pentagon",4,8), STAR("star", 7, 14), FAT_STAR("fat-star", 6, 10), HEXAGON("hexagon" ,3 , 6), CIRCLE("circle", 2 , 4);
+		TRIANGLE(PredefinedTags.TRIANGLE ,4 , 8), 
+		INVERTED_TRIANGLE(PredefinedTags.INVERTED_TRIANGLE, 4 ,8),
+		DIAMOND(PredefinedTags.DIAMOND, 4 , 8), 
+		SQUARE(PredefinedTags.SQUARE, 3 , 6), 
+		PENTAGON(PredefinedTags.PENTAGON,4,8), 
+		STAR(PredefinedTags.STAR, 7, 14),
+		FAT_STAR(PredefinedTags.FAT_STAR, 6, 10), 
+		HEXAGON(PredefinedTags.HEXAGON ,3 , 6), 
+		CIRCLE(PredefinedTags.CIRCLE, 2 , 4);
 		
 		private final String keyword;
 		private final int innerOutline;

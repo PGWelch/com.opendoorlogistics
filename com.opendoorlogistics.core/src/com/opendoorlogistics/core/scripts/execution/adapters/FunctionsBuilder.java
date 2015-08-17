@@ -41,13 +41,13 @@ import com.opendoorlogistics.core.scripts.formulae.FmLookup;
 import com.opendoorlogistics.core.scripts.formulae.FmLookup.LookupType;
 import com.opendoorlogistics.core.scripts.formulae.image.FmImage;
 import com.opendoorlogistics.core.scripts.formulae.image.ImageFormulaeCreator;
+import com.opendoorlogistics.core.scripts.formulae.rules.FmRuleLookup;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupGeomUnion;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupNearest;
 import com.opendoorlogistics.core.scripts.formulae.FmLookupWeightedCentroid;
 import com.opendoorlogistics.core.scripts.formulae.FmParameter;
 import com.opendoorlogistics.core.scripts.formulae.FmRow;
 import com.opendoorlogistics.core.scripts.formulae.FmRowId;
-import com.opendoorlogistics.core.scripts.formulae.FmRuleLookup;
 import com.opendoorlogistics.core.scripts.formulae.FmThis;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
 import com.opendoorlogistics.core.tables.utils.ParametersTable;
@@ -254,6 +254,7 @@ final public class FunctionsBuilder {
 			for(int lookupSize = 0 ; lookupSize <= 3 ; lookupSize++){
 				// create the function definition
 				FunctionDefinition dfn = new FunctionDefinition(lookupType.getFormulaKeyword());
+				dfn.setGroup(lookupType.getFormulaKeyword());
 				
 				for(int i = 1 ; i <=lookupSize ; i++){
 					dfn.addArg("search_value" + i, ArgumentType.GENERAL, "Value number " + i  + " to search for in the other table.");					
@@ -378,8 +379,7 @@ final public class FunctionsBuilder {
 
 	public static FunctionDefinitionLibrary getAllDefinitions() {
 
-		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
-		library.build();
+		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary(FunctionDefinitionLibrary.DEFAULT_LIB);
 		buildNonAggregateFormulae(library, null, -1, null,null,null);
 		buildGroupAggregates(library, null, -1, -1);
 		return library;

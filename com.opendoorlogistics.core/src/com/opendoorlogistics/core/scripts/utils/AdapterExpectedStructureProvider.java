@@ -13,7 +13,7 @@ import com.opendoorlogistics.core.tables.utils.ODLDatastoreDefinitionProvider;
  * @author Phil
  *
  */
-public interface AdapterDestinationProvider extends ODLDatastoreDefinitionProvider{
+public interface AdapterExpectedStructureProvider extends ODLDatastoreDefinitionProvider{
 
 }
 

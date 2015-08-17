@@ -1,6 +1,7 @@
-package com.opendoorlogistics.core.scripts.formulae;
+package com.opendoorlogistics.core.scripts.formulae.rules;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -32,49 +33,19 @@ import com.opendoorlogistics.core.utils.strings.Strings;
  * then selected for the input list. This function assumes the input table is
  * not modified after building.
  * 
+ * A rule lookup object is therefore built to return results from only a single
+ * column in a rule lookup table.
  * @author Phil
  *
  */
 public class FmRuleLookup extends FunctionImpl {
 	private final Object[] results;
 	private final int nc;
-	private final StandardisedCache standardisedCache = new StandardisedCache();
 	private final String[] selectorFieldNames;
 	
-	private class CascadeNode {
-		final int ruleNb;
-		final int colIndx;
-		final Object value;
-		ArrayList<CascadeNode> children;
-				
-		CascadeNode(int ruleNb, int colIndx, Object value) {
-			this.ruleNb = ruleNb;
-			this.colIndx = colIndx;
-			this.value = value;
-		}
+	private final RuleNode tree;
 
-		@Override
-		public String toString(){
-			StringBuilder b = new StringBuilder();
-			toString(b);
-			return b.toString();
-		}
-		
-		private void toString(StringBuilder b){
-			if(colIndx>=0){
-				b.append(Strings.repeat("\t", colIndx) + selectorFieldNames[colIndx] +" = " + value + (colIndx == nc-1? " (rule #" + ruleNb + ")":"") + System.lineSeparator());				
-			}
-			if(children!=null){
-				for(CascadeNode n:children){
-					n.toString(b);
-				}
-			}
-		}
-	}
-
-	private final CascadeNode tree;
-
-	private FmRuleLookup(Object[] results, int nc, String[] selectorFieldNames,CascadeNode tree) {
+	private FmRuleLookup(Object[] results, int nc, String[] selectorFieldNames,RuleNode tree) {
 		this.results = results;
 		this.nc = nc;
 		this.tree = tree;
@@ -95,50 +66,31 @@ public class FmRuleLookup extends FunctionImpl {
 		// Also for results
 		int resultCol = identifyFieldname(table, returnField);
 
-		// Build a lookup tree
+		// get matrix of selector values
 		int n = table.getRowCount();
-		results = new Object[n];
-		tree = new CascadeNode(-1,-1,null);
-		tree.children = new ArrayList<CascadeNode>();
+		List<List<Object>> selectorsMatrix = new ArrayList<List<Object>>();
 		for (int rule = 0; rule < n; rule++) {
-
-			CascadeNode parent = tree;
+			List<Object> selectors4Rule = new ArrayList<Object>();
+			selectorsMatrix.add(selectors4Rule);
 			for (int col = 0; col < nc; col++) {
-
-				// get selector value and ensure zero length is treated as null
 				Object s = table.getValueAt(rule, cols[col]);
-				if (s != null && s.toString().length() == 0) {
-					s = null;
-				}
-
-				// try to find the pre-existing node with this value
-				int nc = parent.children != null ? parent.children.size() : 0;
-				CascadeNode nextParent = null;
-				for (int k = 0; k < nc; k++) {
-					CascadeNode child = parent.children.get(k);
-					if (ColumnValueProcessor.isEqual(s, child.value, standardisedCache)) {
-						nextParent = child;
-						break;
-					}
-				}
-
-				// make a node if none exists, marking the rule number
-				if (nextParent == null) {
-					nextParent = new CascadeNode(rule, col, s);
-					
-					// add to parent
-					if (parent.children == null) {
-						parent.children = new ArrayList<CascadeNode>(3);
-					}
-					parent.children.add(nextParent);
-				}
-
-				parent = nextParent;
+				selectors4Rule.add(s);
 			}
-
+		}
+		
+		// Build a lookup tree
+		results = new Object[n];
+		RuleNode baseNode =RuleNode.buildTree(selectorsMatrix);
+		
+		tree = baseNode;
+		
+		// save results
+		for (int rule = 0; rule < n; rule++) {
 			results[rule] = table.getValueAt(rule, resultCol);
 		}
 	}
+
+
 
 	private int identifyFieldname(ODLTableReadOnly table, String fieldname) {
 		int col = TableUtils.findColumnIndx(table, fieldname);
@@ -148,31 +100,7 @@ public class FmRuleLookup extends FunctionImpl {
 		return col;
 	}
 
-	private void recurseMatch(Object[] values, CascadeNode node, int[] lowestRuleNumber) {
 
-		// record the rule if we're on the last one and its lower than the
-		// current lowest
-		if (node.colIndx == nc - 1) {
-			lowestRuleNumber[0] = Math.min(lowestRuleNumber[0], node.ruleNb);
-		} else {
-			// recurse to the next level if we find a null selector (which
-			// matches all) or we have a match
-			if (node.children != null) {
-				int nchildren = node.children.size();
-				for (int i = 0; i < nchildren; i++) {
-					CascadeNode childNode = node.children.get(i);
-					boolean recurse = childNode.value == null;
-					if (!recurse) {
-						recurse = ColumnValueProcessor.isEqual(values[childNode.colIndx], childNode.value, standardisedCache);
-					}
-
-					if (recurse) {
-						recurseMatch(values,  childNode, lowestRuleNumber);
-					}
-				}
-			}
-		}
-	}
 
 	@Override
 	public Object execute(FunctionParameters parameters) {
@@ -181,19 +109,16 @@ public class FmRuleLookup extends FunctionImpl {
 			return Functions.EXECUTION_ERROR;
 		}
 
-		// Find all matching rules
-		int[] lowestRuleNumber = new int[1];
-		lowestRuleNumber[0] = Integer.MAX_VALUE;
-
-		// Find the lowest matching rule number
-		recurseMatch(childexe, tree, lowestRuleNumber);
-		if (lowestRuleNumber[0] != Integer.MAX_VALUE) {
-			return results[lowestRuleNumber[0]];
+		int ruleNb = tree.findRuleNumber(childexe); 
+		if (ruleNb != -1) {
+			return results[ruleNb];
 		}
 
 		return null;
 
 	}
+
+
 
 	@Override
 	public Function deepCopy() {
@@ -204,7 +129,7 @@ public class FmRuleLookup extends FunctionImpl {
 	public static void buildRuleLookup(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTable> datastores,final int defaultDatastoreIndex, final ExecutionReport result) {
 		for (int lookupsize = 1; lookupsize <= 7; lookupsize++) {
 			FunctionDefinition dfn = new FunctionDefinition("rulelookup");
-
+			dfn.setGroup("rulelookup");
 			dfn.setDescription("A rule lookup is built from an input table which is comprised of one or more selector fields and one result field."
 					+ " Each row in the table is a rule and lower-index rules have higher priority."
 					+ " An input list of values (one per selector field) is given to the rule lookup." + "If a selector field is null it matches to anything. "

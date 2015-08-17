@@ -6,9 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.tables.decorators.datastores;
 
-import java.util.Set;
-
-import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLListener;

@@ -7,6 +7,7 @@
 package com.opendoorlogistics.core.tables.utils;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -355,9 +356,33 @@ final public class DatastoreCopier {
 		
 	}
 
-	public static boolean copyTableDefinitions(Iterable<? extends ODLTableDefinition> copyThese, ODLDatastoreAlterable<? extends ODLTableAlterable> copyTo){
+	public static boolean copyTableDefinitions(ODLDatastore<? extends ODLTableDefinition> copyThese, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> copyTo){
+
+		return copyTableDefinitions(new Iterable<ODLTableDefinition>() {
+			@Override
+			public Iterator<ODLTableDefinition> iterator() {
+				int n = copyThese.getTableCount();
+				return new Iterator<ODLTableDefinition>() {
+					int index=-1;
+					
+					@Override
+					public ODLTableDefinition next() {
+						return copyThese.getTableAt(index++);
+					}
+					
+					@Override
+					public boolean hasNext() {
+						return index< n;
+					}
+				};
+			}
+		}, copyTo);
+	}
+
+	
+	public static boolean copyTableDefinitions(Iterable<? extends ODLTableDefinition> copyThese, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> copyTo){
 		for(ODLTableDefinition table : copyThese){
-			ODLTableAlterable copyTable = copyTo.createTable(table.getName(), -1);
+			ODLTableDefinitionAlterable copyTable = copyTo.createTable(table.getName(), -1);
 			if(copyTable==null){
 				return false;
 			}

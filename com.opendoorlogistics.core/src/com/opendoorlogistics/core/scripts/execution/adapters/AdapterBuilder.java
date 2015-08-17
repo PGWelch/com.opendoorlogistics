@@ -32,6 +32,7 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.formulae.FormulaParser;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
@@ -49,6 +50,8 @@ import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig.SortField
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.elements.UserFormula;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard;
+import com.opendoorlogistics.core.scripts.execution.adapters.vls.VLSBuilder;
+import com.opendoorlogistics.core.scripts.execution.adapters.vls.VLSBuilder.VLSDependencyInjector;
 import com.opendoorlogistics.core.scripts.formulae.FmLocalElement;
 import com.opendoorlogistics.core.scripts.formulae.TableParameters;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
@@ -89,24 +92,20 @@ final public class AdapterBuilder {
 	private AdapterMapping mapping;
 	private AdapterConfig processedConfig;
 	private UUID adapterUUID = UUID.randomUUID();
+	private final ODLApiImpl api = new ODLApiImpl();
 
-	private AdapterBuilder(AdapterConfig adapterConfig, String id, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env,ProcessingApi continueCb, BuiltAdapters result) {
+	public AdapterBuilder(AdapterConfig adapterConfig, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env,ProcessingApi continueCb, BuiltAdapters result) {
 		this.inputConfig = adapterConfig;
-		this.id = id;
+		this.id = adapterConfig.getId();
 		this.env = env;
 		this.callerAdapters = callerAdapters;
 		this.builtAdapters = result;
 		this.continueCb = continueCb;
 	}
 	
-
-	public AdapterBuilder(String id, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env, ProcessingApi continueCb,BuiltAdapters result) {
-		this(env.getAdapterConfig(id), id, callerAdapters, env, continueCb,result);
-	}
-
-	public AdapterBuilder(AdapterConfig adapterConfig, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env, ProcessingApi continueCb,BuiltAdapters result) {
-		this(adapterConfig, adapterConfig.getId(), callerAdapters, env,continueCb, result);
-	}
+//	public AdapterBuilder(AdapterConfig adapterConfig, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env, ProcessingApi continueCb,BuiltAdapters result) {
+//		this(adapterConfig, adapterConfig.getId(), callerAdapters, env,continueCb, result);
+//	}
 
 	private void setFailed() {
 		env.setFailed("Failed to build adapter \"" + id + "\"");
@@ -119,30 +118,30 @@ final public class AdapterBuilder {
 			return null;
 		}
 		
-		// check for importing files
-		if(id!=null){	
-			// check for importing a shapefile...
-			ODLDatastore<? extends ODLTable> importedDs = null;
-			String shapefilename = Strings.caseInsensitiveReplace(id, ScriptConstants.SHAPEFILE_DS_NAME_PREFIX, "");
-			if(shapefilename.equals(id)==false){
-				shapefilename = shapefilename.trim();
-				importedDs = Spatial.importAndCacheShapefile(new File(shapefilename));
-			}
-			
-			for(ImportFileType ft : new ImportFileType[]{ImportFileType.CSV,ImportFileType.EXCEL, ImportFileType.TAB}){
-				String prefix = ft.name() + ScriptConstants.IMPORT_LINK_POSTFIX;
-				String filename = Strings.caseInsensitiveReplace(id, prefix, "");
-				if(filename.equals(id)==false){
-					filename = filename.trim();
-					importedDs = TableIOUtils.importFile(new File(filename), ft,continueCb, env);
-				}
-			}
-			
-			if(importedDs!=null){
-				builtAdapters.addAdapter(id, importedDs);	
-				return importedDs;
-			}
-		}
+//		// check for importing files
+//		if(id!=null){	
+//			// check for importing a shapefile...
+//			ODLDatastore<? extends ODLTable> importedDs = null;
+//			String shapefilename = Strings.caseInsensitiveReplace(id, ScriptConstants.SHAPEFILE_DS_NAME_PREFIX, "");
+//			if(shapefilename.equals(id)==false){
+//				shapefilename = shapefilename.trim();
+//				importedDs = Spatial.importAndCacheShapefile(new File(shapefilename));
+//			}
+//			
+//			for(ImportFileType ft : new ImportFileType[]{ImportFileType.CSV,ImportFileType.EXCEL, ImportFileType.TAB}){
+//				String prefix = ft.name() + ScriptConstants.IMPORT_LINK_POSTFIX;
+//				String filename = Strings.caseInsensitiveReplace(id, prefix, "");
+//				if(filename.equals(id)==false){
+//					filename = filename.trim();
+//					importedDs = TableIOUtils.importFile(new File(filename), ft,continueCb, env);
+//				}
+//			}
+//			
+//			if(importedDs!=null){
+//				builtAdapters.addAdapter(id, importedDs);	
+//				return importedDs;
+//			}
+//		}
 		
 		if (id != null) {
 			// check for cycles
@@ -162,6 +161,20 @@ final public class AdapterBuilder {
 			}
 		}
 
+		// check for a table formula
+		if(id!=null){
+			String formula = AdapterBuilderUtils.getFormulaFromText(id);
+			if(formula!=null){
+				ODLDatastore<? extends ODLTable> importedDs = TableFormulaBuilder.build(formula, env);
+				if(importedDs!=null){
+					builtAdapters.addAdapter(id, importedDs);	
+					return importedDs;
+				}		
+				return null;
+			}
+		}
+		
+		
 		// we should have an adapter config by this point...
 		if (inputConfig == null) {
 			env.setFailed("Cannot find datastore or adapter \"" + id + "\"");
@@ -169,6 +182,7 @@ final public class AdapterBuilder {
 
 		// process the adapter config; split unions off to process separately
 		processedConfig = new AdapterConfig(inputConfig.getId());
+		processedConfig.setVls(inputConfig.isVls());
 		int nt = inputConfig.getTableCount();
 		ArrayList<List<AdaptedTableConfig>> unionSourceAdapters = new ArrayList<>();
 		for (int i = 0; i < nt; i++) {
@@ -207,29 +221,78 @@ final public class AdapterBuilder {
 		// create a mapping with records for the destination tables and fields but no sources yet
 		mapping = AdapterMapping.createUnassignedMapping(destination);
 
-		// loop over each table, building union or non-union as needed
-		for (int destTableIndx = 0; destTableIndx < processedConfig.getTableCount() && env.isFailed() == false; destTableIndx++) {
-			List<AdaptedTableConfig> union = unionSourceAdapters.get(destTableIndx);
-			if (union == null) {
-				buildTable(destTableIndx);
-			} else {
-				buildUnionTable(union, destination.getTableAt(destTableIndx).getImmutableId());
+		// create the adapter (initally empty)
+		AdaptedDecorator<ODLTable> nonVLSAdapter = new AdaptedDecorator<ODLTable>(mapping, datasources);
+		ODLDatastore<? extends ODLTable> ret = nonVLSAdapter;
+		
+		// Add the tables to the adapter
+		if(processedConfig.isVls()){
+			// Build VLS instead, source tables are built on-command
+			ret = VLSBuilder.build(api, new VLSDependencyInjector() {
+				
+				@Override
+				public String getTableName(int i) {
+					return processedConfig.getTable(i).getName();
+				}
+				
+				@Override
+				public int getTableCount() {
+					return processedConfig.getTableCount();
+				}
+				
+				@Override
+				public ODLTable buildTable(int i) {
+					AdapterBuilder.this.buildTable(unionSourceAdapters, i);
+					return nonVLSAdapter.getTableAt(i);
+				}
+
+				@Override
+				public Function buildFormula(String formula,ODLTableDefinition table) {
+					return buildFormulaWithTableVariables(table, formula, -1, null, null);
+				}
+
+				@Override
+				public ODLTable buildTableFormula(String s) {
+					int index = recurseBuild(s);
+					if(index!=-1){
+						ODLDatastore<? extends ODLTable> tableFormulaDs = datasources.get(index);
+						if(tableFormulaDs!=null && tableFormulaDs.getTableCount()>0){
+							return tableFormulaDs.getTableAt(0);
+						}
+					}
+					return null;
+				}
+			}, env);
+			
+		}
+		else{
+			// Loop over each table, building union or non-union as needed.
+			for (int destTableIndx = 0; destTableIndx < processedConfig.getTableCount() && env.isFailed() == false; destTableIndx++) {
+				buildTable(unionSourceAdapters, destTableIndx);
 			}
 			
-			AdaptedTableConfig tableConfig = processedConfig.getTable(destTableIndx);
-			if(tableConfig.isLimitResults()){
-				processLimitResults(destTableIndx, tableConfig.getMaxNumberRows());
-			}
-			
-			if(env.isFailed()){
-				env.setFailed("Could not build data adapter table \"" + tableConfig.getName() + "\".");
-			}
 		}
 
-		// now create the adapter from the mapping giving it all the created datastores
-		AdaptedDecorator<ODLTable> ret = new AdaptedDecorator<ODLTable>(mapping, datasources);
 		builtAdapters.addAdapter(id, ret);
 		return ret;
+	}
+
+	private void buildTable(ArrayList<List<AdaptedTableConfig>> unionSourceAdapters, int destTableIndx) {
+		List<AdaptedTableConfig> union = unionSourceAdapters.get(destTableIndx);
+		if (union == null) {
+			buildNonUnionTable(destTableIndx);
+		} else {
+			buildUnionTable(union, destination.getTableAt(destTableIndx).getImmutableId());
+		}
+		
+		AdaptedTableConfig tableConfig = processedConfig.getTable(destTableIndx);
+		if(tableConfig.isLimitResults()){
+			processLimitResults(destTableIndx, tableConfig.getMaxNumberRows());
+		}
+		
+		if(env.isFailed()){
+			env.setFailed("Could not build data adapter table \"" + tableConfig.getName() + "\".");
+		}
 	}
 
 	private void processLimitResults(int tableIndx, int limit){
@@ -512,8 +575,7 @@ final public class AdapterBuilder {
 	private boolean isAlwaysFalseFilterFormula(String filter, List<UserFormula> userFormulae){
 
 		// build the function lib with the parameter function but nothing else, so row-level fields are not readable
-		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
-		library.build();
+		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary(FunctionDefinitionLibrary.DEFAULT_LIB);
 		FunctionsBuilder.buildParametersFormulae(library, createIndexDatastoresWrapper(), env);
 		if(env.isFailed()){
 			return false;
@@ -552,7 +614,7 @@ final public class AdapterBuilder {
 	 * 
 	 * @param destTableIndx
 	 */
-	private void buildTable(int destTableIndx) {
+	private void buildNonUnionTable(int destTableIndx) {
 
 		AdaptedTableConfig tableConfig = processedConfig.getTables().get(destTableIndx);
 				
@@ -577,7 +639,12 @@ final public class AdapterBuilder {
 		}
 
 		// find source table in the datasource
-		tableRef.tableIndex = TableUtils.findTableIndex(datasources.get(tableRef.dsIndex), tableConfig.getFromTable(), true);
+		ODLDatastore<? extends ODLTable> srcDs=datasources.get(tableRef.dsIndex);
+		tableRef.tableIndex = TableUtils.findTableIndex(srcDs, tableConfig.getFromTable(), true);
+		if(tableRef.tableIndex==-1 && srcDs!=null && srcDs.getTableCount()==1 && Strings.isEmpty(tableConfig.getFromTable())){
+			// If no table name available and we only have 1 table, match to that
+			tableRef.tableIndex=0;
+		}
 		if (tableRef.tableIndex == -1) {
 			env.setFailed("Could not find table \"" + tableConfig.getFromTable() + "\".");
 			setFailed();
@@ -1212,21 +1279,7 @@ final public class AdapterBuilder {
 			final int defaultDsIndx,List<UserFormula> userFormulae, ODLTableDefinition targetTableDefinition) {
 
 		// create variable provider for the formula parser. variables come from source table
-		UserVariableProvider uvp = new UserVariableProvider() {
-			@Override
-			public Function getVariable(String name) {
-				if(srcTable==null){
-					return null;
-				}
-				
-				int colIndx = TableUtils.findColumnIndx(srcTable, name, true);
-				if (colIndx == -1) {
-					return null;
-				}
-				return new FmLocalElement(colIndx, name);
-			}
-		};
-
+		UserVariableProvider uvp = FmLocalElement.createUserVariableProvider(srcTable);
 		FunctionDefinitionLibrary library = buildFunctionLibrary(defaultDsIndx, targetTableDefinition);
 		return buildFormula(formulaText, library, uvp,userFormulae, FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION);
 	}
@@ -1257,8 +1310,7 @@ final public class AdapterBuilder {
 	}
 
 	protected FunctionDefinitionLibrary buildFunctionLibrary(final int defaultDsIndx,ODLTableDefinition targetTableDefinition) {
-		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
-		library.build();
+		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary(FunctionDefinitionLibrary.DEFAULT_LIB);
 		FunctionsBuilder.buildNonAggregateFormulae(library, createIndexDatastoresWrapper(), defaultDsIndx,targetTableDefinition,adapterUUID, env);
 		return library;
 	}
@@ -1279,7 +1331,13 @@ final public class AdapterBuilder {
 			if (processedConfig.getId() != null) {
 				newSet.add(processedConfig.getId());
 			}
-			AdapterBuilder newBuilder = new AdapterBuilder(dsId, newSet, env,continueCb, builtAdapters);
+			
+			AdapterConfig recurseConfig = env.getAdapterConfig(dsId);
+			if(recurseConfig==null && AdapterBuilderUtils.getFormulaFromText(dsId)!=null){
+				// if we're using a formula then creare a dummy adapter config
+				recurseConfig = new AdapterConfig(dsId);
+			}
+			AdapterBuilder newBuilder = new AdapterBuilder(recurseConfig, newSet, env,continueCb, builtAdapters);
 			ODLDatastore<? extends ODLTable> selectedSrc = newBuilder.build();
 
 			if (selectedSrc == null) {
