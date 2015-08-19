@@ -168,5 +168,10 @@ public class TablesImpl implements Tables {
 		return tempDs.getTableAt(0);
 	}
 
+	@Override
+	public void copyColumnDefinition(ODLTableDefinition source, int sourceCol, ODLTableDefinitionAlterable destination) {
+		DatastoreCopier.copyColumnDefinition(source, destination, sourceCol, false);
+	}
+
 
 }

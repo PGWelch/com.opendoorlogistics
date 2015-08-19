@@ -1812,6 +1812,34 @@ public class Functions {
 		}
 	}
 
+	public static final class FmPow extends Fm2ParamBase {
+
+		public FmPow(Function a, Function b) {
+			super(a, b);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmMod(child(0).deepCopy(), child(1).deepCopy());
+		}
+
+		@Override
+		protected Object execute(Object a, Object b) {
+			Double da = Numbers.toDouble(a);
+			Double db = Numbers.toDouble(b);
+			if (da == null || db == null) {
+				return EXECUTION_ERROR;
+			}
+			return Math.pow(da, db);
+		}
+
+		@Override
+		public String toString() {
+			return toString("pow");
+		}
+	}
+
+	
 	public static final class FmMultiply extends FunctionImpl {
 
 		public FmMultiply(Function... formulae) {

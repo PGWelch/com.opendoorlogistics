@@ -42,10 +42,10 @@ import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.utils.ui.Icons;
 
 public abstract class AbstractMapViewerComponent implements Maps {
-	
+	public static final String COMPONENT_ID ="com.opendoorlogistics.studio.uicomponents.map"; 
 	@Override
 	public String getId() {
-		return "com.opendoorlogistics.studio.uicomponents.map";
+		return COMPONENT_ID;
 	}
 
 	@Override

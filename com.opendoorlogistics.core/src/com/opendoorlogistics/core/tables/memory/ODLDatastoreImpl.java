@@ -90,7 +90,7 @@ final public class ODLDatastoreImpl <T extends ODLTableDefinition> implements OD
 		}
 		
 		if(table.getImmutableId()==-1){
-			throw new RuntimeException("Invalid id");
+			throw new RuntimeException("Invalid table immutable id in table: " + table.getName());
 		}
 		
 		// we throw an exception if the id is already used because this will 

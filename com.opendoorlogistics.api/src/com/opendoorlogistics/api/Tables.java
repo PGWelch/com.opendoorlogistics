@@ -6,9 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.api;
 
-import java.io.File;
-
-import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -27,6 +24,8 @@ public interface Tables {
 	ODLTableDefinitionAlterable copyTableDefinition(ODLTableDefinition copyThis, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> copyTo);
 
 	ODLTableAlterable createTable(ODLTableDefinition tableDefinition);
+	
+	void copyColumnDefinition(ODLTableDefinition source, int sourceCol, ODLTableDefinitionAlterable destination);
 	
 	/**
 	 * Copy a row between identical tables

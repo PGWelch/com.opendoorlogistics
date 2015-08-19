@@ -16,6 +16,7 @@ import javax.swing.Icon;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
@@ -1091,7 +1092,7 @@ final public class ScriptUtils {
 
 				// Check if the adapter is drawable
 				AdapterConfig adapterConfig = getAdapterById(optionContainingAdapter, adapterId, false);
-				if(adapterConfig.isVls()){
+				if(adapterConfig.getAdapterType() == ScriptAdapterType.VLS){
 					// Add view-layer-style tables
 					api.tables().addTableDefinitions(VLSBuilder.getVLSTableDefinitions(), ret, false);
 					

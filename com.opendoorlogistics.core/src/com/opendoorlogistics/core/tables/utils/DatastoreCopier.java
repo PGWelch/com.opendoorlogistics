@@ -367,12 +367,12 @@ final public class DatastoreCopier {
 					
 					@Override
 					public ODLTableDefinition next() {
-						return copyThese.getTableAt(index++);
+						return copyThese.getTableAt(++index);
 					}
 					
 					@Override
 					public boolean hasNext() {
-						return index< n;
+						return (index+1)< n;
 					}
 				};
 			}

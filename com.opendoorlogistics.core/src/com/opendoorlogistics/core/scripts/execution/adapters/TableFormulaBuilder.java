@@ -1,7 +1,6 @@
 package com.opendoorlogistics.core.scripts.execution.adapters;
 
 import com.opendoorlogistics.api.ExecutionReport;
-import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.core.formulae.FormulaParser;
 import com.opendoorlogistics.core.formulae.Function;

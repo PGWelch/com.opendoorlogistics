@@ -8,7 +8,6 @@ package com.opendoorlogistics.core.formulae.definitions;
 
 import java.awt.Color;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,7 +15,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.core.distances.functions.FmDistance;
 import com.opendoorlogistics.core.distances.functions.FmDrivingDistance;
 import com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeom;
@@ -72,6 +70,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmNotEqual;
 import com.opendoorlogistics.core.formulae.Functions.FmOr;
 import com.opendoorlogistics.core.formulae.Functions.FmPostcodeUKFormatUnit;
 import com.opendoorlogistics.core.formulae.Functions.FmPostcodeUk;
+import com.opendoorlogistics.core.formulae.Functions.FmPow;
 import com.opendoorlogistics.core.formulae.Functions.FmRand;
 import com.opendoorlogistics.core.formulae.Functions.FmRandColour;
 import com.opendoorlogistics.core.formulae.Functions.FmRandData;
@@ -188,6 +187,7 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmAbs.class, "abs", "Get the absolute of the value","value");
 		addStandardFunction(FmCeil.class, "ceil","", "value");
 		addStandardFunction(FmFloor.class, "floor","Return the integer part of the number, e.g. 2.3 returns 2.", "value");
+		addStandardFunction(FmPow.class, "pow","Return the value of the 1st number raised to the power of the 2nd number.", "value1","value2");
 		addStandardFunction(FmRound.class, "round","Round to the nearest integer value.", "value");
 		for(String constName : new String[]{"const", "c"}){
 			addStandardFunction(FmConst.class, constName,"Create a constant string value from the input value. This is used to distinguish between string constants and source columns. For example, if your data adapter's source table has a column called \"name\" and you want to create a string constant also containing \"name\", you should use const(\"name\") as \"name\" on its own will automatically be converted to a source column reference.", "value");					

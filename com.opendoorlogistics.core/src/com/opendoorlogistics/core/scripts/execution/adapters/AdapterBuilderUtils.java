@@ -64,7 +64,11 @@ final public class AdapterBuilderUtils {
 		boolean isSourceFieldSet = Strings.isEmpty(destinationField.getFrom()) == false;
 		boolean missingSetOk = (mappingFlags & MAPPING_FLAGS_MISSING_SET_OPTIONAL_OK)==MAPPING_FLAGS_MISSING_SET_OPTIONAL_OK;
 		if (srcFieldIndx == -1 && (!isOptional || (isSourceFieldSet && !missingSetOk))) {
-			result.setFailed("Could not find source field \"" + destinationField.getFrom() + "\" required by field \"" + destinationField.getName() + "\".");
+			if(isSourceFieldSet){
+				result.setFailed("Could not find source field \"" + destinationField.getFrom() + "\" required by field \"" + destinationField.getName() + "\" within data adapter.");				
+			}else{
+				result.setFailed("The destination field \"" + destinationField.getName() + "\" within a data adapter does not have its source set.");				
+			}
 			return false;
 		}
 

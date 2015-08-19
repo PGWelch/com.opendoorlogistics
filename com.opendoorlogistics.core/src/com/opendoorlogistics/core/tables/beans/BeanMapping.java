@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -194,15 +195,38 @@ final public class BeanMapping {
 			return -1;
 		}
 
+		/**
+		 * Read object. If report is non-null then any failed read is logged as a failure in the report
+		 * @param inputTable
+		 * @param rowId
+		 * @param report
+		 * @return
+		 */
+		public <T extends BeanMappedRow> T readObjectFromTableById(ODLTableReadOnly inputTable, long rowId, ExecutionReport report) {
+			return readObjectFromTable(inputTable, -1, rowId,report);
+		}
+		
+		
+		/**
+		 * Read object. If report is non-null then any failed read is logged as a failure in the report
+		 * @param inputTable
+		 * @param rowId
+		 * @param report
+		 * @return
+		 */
+		public <T extends BeanMappedRow> T readObjectFromTableByRow(ODLTableReadOnly inputTable, int row, ExecutionReport report) {
+			return readObjectFromTable(inputTable, row, -1,report);
+		}
+		
+	
 		public <T extends BeanMappedRow> T readObjectFromTableById(ODLTableReadOnly inputTable, long rowId) {
-			return readObjectFromTable(inputTable, -1, rowId);
+			return readObjectFromTable(inputTable, -1, rowId,null);
 		}
 
 		public <T extends BeanMappedRow> T readObjectFromTableByRow(ODLTableReadOnly inputTable, int row) {
-			return readObjectFromTable(inputTable, row, -1);
+			return readObjectFromTable(inputTable, row, -1,null);
 		}
 		
-			
 		public ReadObjectFilter getRowfilter() {
 			return rowfilter;
 		}
@@ -219,7 +243,7 @@ final public class BeanMapping {
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
-		private <T extends BeanMappedRow> T readObjectFromTable(ODLTableReadOnly inputTable,int row, long rowId) {
+		private <T extends BeanMappedRow> T readObjectFromTable(ODLTableReadOnly inputTable,int row, long rowId, ExecutionReport report) {
 			// Commented out this datastore structure check as its slow and probably not needed...
 //			if (!DatastoreComparer.isSameStructure(this.table, inputTable, DatastoreComparer.ALLOW_EXTRA_COLUMNS_ON_SECOND_TABLE)) {
 //				throw new RuntimeException("Input table does not match expected structure.");
@@ -246,6 +270,9 @@ final public class BeanMapping {
 						
 					if(val==null && bcm.getAnnotation(ODLNullAllowed.class)==null){
 						// cannot read object
+						if(report!=null){
+							report.setFailed("Null values are not allowed on field " + bcm.getName() + " in table " + inputTable.getName() + ".");
+						}
 						return null;
 					}
 					
@@ -279,11 +306,15 @@ final public class BeanMapping {
 		}
 
 		public <T extends BeanMappedRow> List<T> readObjectsFromTable(ODLTableReadOnly inputTable) {
+			return readObjectsFromTable(inputTable, null);
+		}
+		
+		public <T extends BeanMappedRow> List<T> readObjectsFromTable(ODLTableReadOnly inputTable, ExecutionReport report) {
 	
 			int nr = inputTable.getRowCount();
 			ArrayList<T> ret = new ArrayList<>(nr);
 			for (int row = 0; row < nr; row++) {
-				T obj = readObjectFromTableByRow(inputTable, row);
+				T obj = readObjectFromTableByRow(inputTable, row,report);
 				if(obj!=null){
 					ret.add(obj);
 				}

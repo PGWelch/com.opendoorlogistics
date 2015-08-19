@@ -1318,6 +1318,8 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			}
 			
 		});
+		
+		ODLGlobalComponents.register(new ViewLayerStyleComponent());
 	}
 
 	private static List<MapPlugin> getPlugins(MapConfig config) {

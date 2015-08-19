@@ -4,11 +4,30 @@ import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.data.UserRenderFlags;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
+import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLIgnore;
+import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 
 @ODLTableName(Style.TABLE_NAME)
 public class Style extends BeanMappedRowImpl {
+	private static final int COL_LAYERID=0;
+	private static final int COL_KEY1=COL_LAYERID+1;
+	private static final int COL_KEY2=COL_KEY1+1;
+	private static final int COL_KEY3=COL_KEY2+1;
+	private static final int COL_KEY4=COL_KEY3+1;
+	private static final int COL_COLOUR=COL_KEY4+1;
+	private static final int COL_WIDTH =COL_COLOUR+1;
+	private static final int COL_SYMBOL=COL_WIDTH +1;
+	private static final int COL_OUTLINED=COL_SYMBOL+1;
+	private static final int COL_OPAQUE=COL_OUTLINED+1;
+	private static final int COL_LABEL=COL_OPAQUE+1;
+	private static final int COL_LABELALWAYSVISIBLE=COL_LABEL+1;
+	private static final int COL_LABELCOLOUR=COL_LABELALWAYSVISIBLE+1;
+	private static final int COL_LABELPOSITION =COL_LABELCOLOUR+1;
+	private static final int COL_LABELSIZE=COL_LABELPOSITION +1;
+	private static final int COL_LEGENDKEY=COL_LABELSIZE+1;
+	
 	public static final int NB_RULE_KEYS=4;
 	public static final String TABLE_NAME = "Styles";
 	private String layerId;
@@ -112,6 +131,9 @@ public class Style extends BeanMappedRowImpl {
 		case LABELSIZE:
 			return getLabelSize();
 			
+		case LEGENDKEY:
+			return getLegendKey();
+			
 		default:
 			throw new IllegalArgumentException();
 		}
@@ -122,6 +144,7 @@ public class Style extends BeanMappedRowImpl {
 		return layerId;
 	}
 
+	@ODLColumnOrder(COL_LAYERID)
 	public void setLayerId(String layerId) {
 		this.layerId = layerId;
 	}
@@ -130,6 +153,8 @@ public class Style extends BeanMappedRowImpl {
 		return key1;
 	}
 
+	@ODLColumnOrder(COL_KEY1)
+	@ODLNullAllowed
 	public void setKey1(String key1) {
 		this.key1 = key1;
 	}
@@ -138,6 +163,8 @@ public class Style extends BeanMappedRowImpl {
 		return key2;
 	}
 
+	@ODLColumnOrder(COL_KEY2)
+	@ODLNullAllowed	
 	public void setKey2(String key2) {
 		this.key2 = key2;
 	}
@@ -146,6 +173,8 @@ public class Style extends BeanMappedRowImpl {
 		return key3;
 	}
 
+	@ODLColumnOrder(COL_KEY3)
+	@ODLNullAllowed	
 	public void setKey3(String key3) {
 		this.key3 = key3;
 	}
@@ -154,6 +183,8 @@ public class Style extends BeanMappedRowImpl {
 		return key4;
 	}
 
+	@ODLColumnOrder(COL_KEY4)
+	@ODLNullAllowed	
 	public void setKey4(String key4) {
 		this.key4 = key4;
 	}
@@ -162,6 +193,8 @@ public class Style extends BeanMappedRowImpl {
 		return colour;
 	}
 
+	@ODLColumnOrder(COL_COLOUR)	
+	@ODLNullAllowed	
 	public void setColour(String colour) {
 		this.colour = colour;
 	}
@@ -169,7 +202,9 @@ public class Style extends BeanMappedRowImpl {
 	public String getWidth() {
 		return width;
 	}
-
+	
+	@ODLColumnOrder(COL_WIDTH)
+	@ODLNullAllowed	
 	public void setWidth(String width) {
 		this.width = width;
 	}
@@ -178,6 +213,8 @@ public class Style extends BeanMappedRowImpl {
 		return symbol;
 	}
 
+	@ODLColumnOrder(COL_SYMBOL)
+	@ODLNullAllowed	
 	public void setSymbol(String symbol) {
 		this.symbol = symbol;
 	}
@@ -186,6 +223,8 @@ public class Style extends BeanMappedRowImpl {
 		return outlined;
 	}
 
+	@ODLColumnOrder(COL_OUTLINED)	
+	@ODLNullAllowed	
 	public void setOutlined(String outlined) {
 		this.outlined = outlined;
 	}
@@ -194,6 +233,8 @@ public class Style extends BeanMappedRowImpl {
 		return opaque;
 	}
 
+	@ODLColumnOrder(COL_OPAQUE)
+	@ODLNullAllowed	
 	public void setOpaque(String opaque) {
 		this.opaque = opaque;
 	}
@@ -202,6 +243,8 @@ public class Style extends BeanMappedRowImpl {
 		return labelColour;
 	}
 
+	@ODLColumnOrder(COL_LABELCOLOUR)
+	@ODLNullAllowed	
 	public void setLabelColour(String labelColour) {
 		this.labelColour = labelColour;
 	}
@@ -210,6 +253,9 @@ public class Style extends BeanMappedRowImpl {
 		return label;
 	}
 
+	
+	@ODLColumnOrder(COL_LABEL)
+	@ODLNullAllowed	
 	public void setLabel(String label) {
 		this.label = label;
 	}
@@ -218,6 +264,9 @@ public class Style extends BeanMappedRowImpl {
 		return labelSize;
 	}
 
+	
+	@ODLColumnOrder(COL_LABELSIZE)
+	@ODLNullAllowed	
 	public void setLabelSize(String labelSize) {
 		this.labelSize = labelSize;
 	}
@@ -225,7 +274,9 @@ public class Style extends BeanMappedRowImpl {
 	public String getLabelAlwaysVisible() {
 		return labelAlwaysVisible;
 	}
-
+	
+	@ODLColumnOrder(COL_LABELALWAYSVISIBLE)
+	@ODLNullAllowed	
 	public void setLabelAlwaysVisible(String labelAlwaysVisible) {
 		this.labelAlwaysVisible = labelAlwaysVisible;
 	}
@@ -234,6 +285,8 @@ public class Style extends BeanMappedRowImpl {
 		return labelPosition;
 	}
 
+	@ODLColumnOrder(COL_LABELPOSITION)
+	@ODLNullAllowed	
 	public void setLabelPosition(String labelPosition) {
 		this.labelPosition = labelPosition;
 	}
@@ -242,10 +295,11 @@ public class Style extends BeanMappedRowImpl {
 		return legendKey;
 	}
 
+	@ODLColumnOrder(COL_LEGENDKEY)
+	@ODLNullAllowed	
 	public void setLegendKey(String legendKey) {
 		this.legendKey = legendKey;
 	}
 
-	
 	
 }

@@ -12,6 +12,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.swing.AbstractListModel;
@@ -44,6 +46,9 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.codefromweb.DropDownMenuButton;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptTemplatesImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
+import com.opendoorlogistics.core.scripts.execution.adapters.vls.Layer;
+import com.opendoorlogistics.core.scripts.execution.adapters.vls.Style;
+import com.opendoorlogistics.core.scripts.execution.adapters.vls.View;
 import com.opendoorlogistics.core.tables.decorators.tables.SimpleTableDefinitionDecorator;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -429,8 +434,8 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		this.ds = ds;
 		this.ds.addListener(this);
 
-		final List<ODLTableDefinition> tables = TableUtils.getAlphabeticallySortedTables(this.ds);
-
+		List<ODLTableDefinition> tables = getSortedTables(ds);
+		
 		// update list
 		list.setModel(new ListModel<ODLTableDefinition>() {
 
@@ -464,6 +469,45 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		});
 
 		updateAppearance();
+	}
+
+	/**
+	 * Sort tables, view-layer-style first and then any other table
+	 * @param ds
+	 * @return
+	 */
+	private List<ODLTableDefinition> getSortedTables(ODLDatastoreAlterable<? extends ODLTableAlterable> ds) {
+		// Get sorted table names
+		List<ODLTableDefinition> tables = new ArrayList<>(ds.getTableCount());
+		for(int i =0 ; i < ds.getTableCount() ; i++){
+			tables.add(ds.getTableAt(i));
+		}
+		Collections.sort(tables,new Comparator<ODLTableDefinition>(){
+			final String [] specials = new String[]{View.TABLE_NAME,Layer.TABLE_NAME,Style.TABLE_NAME};
+			@Override
+			public int compare(ODLTableDefinition o1, ODLTableDefinition o2) {
+
+				int i1 = getNameScore(o1);
+				int i2 = getNameScore(o2);
+				if(i1!=i2){
+					return Integer.compare(i1, i2);
+				}
+				return o1.getName().toLowerCase().compareTo(o2.getName().toLowerCase());
+			}
+			private int getNameScore(ODLTableDefinition o1) {
+				ODLTableDefinition t = o1;
+				int i =0 ;
+				while(i < specials.length){
+					if(Strings.equals(specials[i], t.getName())){
+						break;
+					}
+					i++;
+				}
+				return i;
+			}
+			
+		});
+		return tables;
 	}
 
 	public void onDatastoreClosed() {

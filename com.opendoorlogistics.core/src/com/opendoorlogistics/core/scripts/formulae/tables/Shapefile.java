@@ -3,6 +3,8 @@ package com.opendoorlogistics.core.scripts.formulae.tables;
 import java.io.File;
 
 import com.opendoorlogistics.api.tables.ODLColumnType;
+import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
@@ -26,7 +28,11 @@ public class Shapefile extends FunctionImpl implements TableFormula{
 		if(s==null){
 			return null;	
 		}
-		return Spatial.importAndCacheShapefile(new File(s));
+		ODLDatastore<? extends ODLTableAlterable> ds= Spatial.importAndCacheShapefile(new File(s));
+		if(ds!=null && ds.getTableCount()>0){
+			return ds.getTableAt(0);
+		}
+		return null;
 	}
 
 	@Override
