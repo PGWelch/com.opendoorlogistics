@@ -13,6 +13,7 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableQuery;
 
 /**
  * Abstract decorator class which separates its access of the decorated datatstore in writable
@@ -258,5 +259,12 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 		}
 	}
 
-	
+	@Override
+	protected ODLTableReadOnly query(int tableId, TableQuery query){
+		ODLTableReadOnly table = readOnlyTable(tableId);
+		if(table!=null){
+			return table.query(query);
+		}
+		return null;
+	}
 }

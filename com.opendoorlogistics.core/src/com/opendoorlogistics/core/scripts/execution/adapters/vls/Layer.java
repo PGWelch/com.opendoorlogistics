@@ -13,7 +13,7 @@ public class Layer extends BeanMappedRowImpl{
 	private String id;
 	private String source; // could be formula in the future
 	private String filter;
-	private long activeLayer; // only one allowed)
+	private String layerType;
 	private long minZoom;
 	private long maxZoom;
 	
@@ -21,8 +21,8 @@ public class Layer extends BeanMappedRowImpl{
 	private static final int COL_ID=COL_VIEW+1;
 	private static final int COL_SOURCE=COL_ID+1;
 	private static final int COL_FILTER=COL_SOURCE+1;
-	private static final int COL_ACTIVE_LAYER=COL_FILTER+1;
-	private static final int COL_MIN_ZOOM=COL_ACTIVE_LAYER+1;
+	private static final int COL_LAYER_TYPE=COL_FILTER+1;
+	private static final int COL_MIN_ZOOM=COL_LAYER_TYPE+1;
 	private static final int COL_MAX_ZOOM=COL_MIN_ZOOM+1;
 	
 	
@@ -50,15 +50,7 @@ public class Layer extends BeanMappedRowImpl{
 	public void setSource(String source) {
 		this.source = source;
 	}
-	public long getActiveLayer() {
-		return activeLayer;
-	}
-	
-	@ODLColumnOrder(COL_ACTIVE_LAYER)
-	@ODLDefaultLongValue(0)
-	public void setActiveLayer(long activeLayer) {
-		this.activeLayer = activeLayer;
-	}
+
 	public long getMinZoom() {
 		return minZoom;
 	}
@@ -87,7 +79,15 @@ public class Layer extends BeanMappedRowImpl{
 	public void setFilter(String filter) {
 		this.filter = filter;
 	}
-	
-	
-	
+
+	public String getLayerType() {
+		return layerType;
+	}
+
+	@ODLColumnOrder(COL_LAYER_TYPE)
+	@ODLNullAllowed
+	public void setLayerType(String layerType) {
+		this.layerType = layerType;
+	}
+
 }

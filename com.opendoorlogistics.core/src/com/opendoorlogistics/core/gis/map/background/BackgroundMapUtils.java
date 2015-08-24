@@ -33,11 +33,37 @@ class BackgroundMapUtils {
 	static void renderFade(Graphics2D g, Color fadeColour) {
 		if (fadeColour != null && fadeColour.getAlpha() > 0) {
 			Rectangle bounds = g.getClipBounds();
-			g.setColor(fadeColour);
-			g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+			if(bounds!=null){
+				g.setColor(fadeColour);
+				g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);				
+			}
 		}
 	}
+	
+	static BufferedImage renderFade(BufferedImage img, Color fadeColour){
+		// copy image so we don't modify the original
+		img = ImageUtils.deepCopy(img);
+		Graphics2D g=null;
+		try {
+			g = (Graphics2D)img.getGraphics();
+			g.setClip(0, 0, img.getWidth(), img.getHeight());
+			renderFade(g, fadeColour);
+		} catch (Exception e) {
+		}finally{
+			if(g!=null){
+				g.dispose();
+			}
+		}
+		return img;
+	}
 
+	static BufferedImage fadeWithGreyscale(BufferedImage img, FadeConfig config){
+		if(config==null){
+			return img;
+		}
+		return greyscale(renderFade(img, config.getColour()), config.getGreyscale());
+	}
+	
 	static BufferedImage greyscale(BufferedImage img, double greyFactor){
 		if(greyFactor<=0 || img==null){
 			return img;

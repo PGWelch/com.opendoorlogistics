@@ -11,6 +11,8 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableQuery;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.ODLTableFactory;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -348,6 +350,12 @@ final public class ODLTableImpl extends ODLTableDefinitionImpl implements ODLTab
 			return row.getLastModifiedMillisecs();
 		}
 		return 0;
+	}
+
+	@Override
+	public ODLTableReadOnly query(TableQuery query) {
+		// to do ... implement queries
+		throw new UnsupportedOperationException();
 	}
 
 }

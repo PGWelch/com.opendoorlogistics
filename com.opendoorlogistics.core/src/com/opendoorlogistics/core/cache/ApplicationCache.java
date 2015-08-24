@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.utils.Pair;
 
 /**
@@ -24,7 +25,7 @@ import com.opendoorlogistics.core.utils.Pair;
  * @author Phil
  *
  */
-public class ApplicationCache {
+public class ApplicationCache implements Disposable{
 	private static final ApplicationCache singleton = new ApplicationCache();
 	private final HashMap<String, RecentlyUsedCache> caches = new HashMap<>();
 	
@@ -141,5 +142,10 @@ public class ApplicationCache {
 			builder.append(pair.getSecond() + " estimated " + toMB.toMB(pair.getFirst()) + " MB" + System.lineSeparator());
 		}
 		return builder.toString();
+	}
+
+	@Override
+	public void dispose() {
+		
 	}
 }

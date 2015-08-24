@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -47,8 +48,8 @@ public class ExpiringOSMLocalResponseCache extends ResponseCache {
 
 	private boolean checkForUpdates;
 
-	private String baseURL;
-
+	private HashSet<String> acceptedBaseURLs = new HashSet<String>();
+	
 	/**
 	 * Private constructor to prevent instantiation.
 	 * 
@@ -59,8 +60,7 @@ public class ExpiringOSMLocalResponseCache extends ResponseCache {
 	 * @param checkForUpdates
 	 *            true if the URL is queried for newer versions of a file first
 	 */
-	private ExpiringOSMLocalResponseCache(String baseURL, File cacheDir, boolean checkForUpdates) {
-		this.baseURL = baseURL;
+	public ExpiringOSMLocalResponseCache( File cacheDir, boolean checkForUpdates) {
 		this.cacheDir = cacheDir;
 		this.checkForUpdates = checkForUpdates;
 
@@ -69,20 +69,25 @@ public class ExpiringOSMLocalResponseCache extends ResponseCache {
 		}
 	}
 
-	/**
-	 * Sets this cache as default response cache
-	 * 
-	 * @param baseURL
-	 *            the URL, the caching should be restricted to or <code>null</code> for none
-	 * @param cacheDir
-	 *            the cache directory
-	 * @param checkForUpdates
-	 *            true if the URL is queried for newer versions of a file first
-	 */
-	public static void installResponseCache(String baseURL, File cacheDir, boolean checkForUpdates) {
-		ResponseCache.setDefault(new ExpiringOSMLocalResponseCache(baseURL, cacheDir, checkForUpdates));
-	}
 
+	public void addAcceptedBasedURL(String s){
+		acceptedBaseURLs.add(s.trim().toLowerCase());
+	}
+	
+	protected boolean cacheURI(URI remoteUri){
+		if (acceptedBaseURLs.size()>0) {
+			String remote = remoteUri.toString();
+			remote = remote.trim().toLowerCase();
+			for(String accepted : acceptedBaseURLs){
+				if(remote.startsWith(accepted)){
+					return true;
+				}
+			}
+			return false;
+		}
+		return true;
+	}
+	
 	/**
 	 * Returns the local File corresponding to the given remote URI.
 	 * 
@@ -91,12 +96,8 @@ public class ExpiringOSMLocalResponseCache extends ResponseCache {
 	 * @return the corresponding local file
 	 */
 	private File getLocalFile(URI remoteUri) {
-		if (baseURL != null) {
-			String remote = remoteUri.toString();
-
-			if (!remote.startsWith(baseURL)) {
-				return null;
-			}
+		if(!cacheURI(remoteUri)){
+			return null;
 		}
 
 		StringBuilder sb = new StringBuilder();

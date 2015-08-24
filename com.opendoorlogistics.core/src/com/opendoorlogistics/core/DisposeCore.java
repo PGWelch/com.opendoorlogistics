@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.core;
 
+import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.distances.DistancesSingleton;
 import com.opendoorlogistics.core.geometry.rog.RogSingleton;
 import com.opendoorlogistics.core.gis.map.background.BackgroundTileFactorySingleton;
@@ -17,8 +18,8 @@ public class DisposeCore {
 		if(!disposed){
 			DistancesSingleton.singleton().close();
 			RogSingleton.singleton().close();
-			BackgroundTileFactorySingleton.getFactory().dispose();
-			
+			BackgroundTileFactorySingleton.dispose();
+			ApplicationCache.singleton().dispose();
 			disposed = true;
 		}
 	}

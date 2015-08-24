@@ -21,6 +21,7 @@ final public class PredefinedTags {
 	public static final String ARRIVAL_DISTANCE = "arrival-distance";
 	public static final String ARRIVAL_QUANTITY = "arrival-quantity";
 	public static final String ARRIVAL_TIME = "arrival-time";
+	public static final String BACKGROUND_IMAGE = "background-image";
 	public static final String CAPACITY = "capacity";
 	public static final String COUNTRY_CODE = "country-code";
 	public static final String DELIVERIES_COUNT = "deliveries-count";

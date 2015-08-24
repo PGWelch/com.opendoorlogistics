@@ -74,6 +74,7 @@ import com.opendoorlogistics.core.formulae.Functions.FmPow;
 import com.opendoorlogistics.core.formulae.Functions.FmRand;
 import com.opendoorlogistics.core.formulae.Functions.FmRandColour;
 import com.opendoorlogistics.core.formulae.Functions.FmRandData;
+import com.opendoorlogistics.core.formulae.Functions.FmTileFactory;
 import com.opendoorlogistics.core.formulae.Functions.FmRandData.RandDataType;
 import com.opendoorlogistics.core.formulae.Functions.FmRandPalletColour;
 import com.opendoorlogistics.core.formulae.Functions.FmRandomSymbol;
@@ -276,8 +277,7 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmGeomContains.class, "geomcontains", "Return whether the geometry contains the point, using a WGS84 latitude-longitude projection.", "geometry", "latitude", "longitude");
 		addStandardFunction(FmLineStringFraction.class, "linestringfraction", "Return a fraction (0 to 1) of the input linestring.", "linestring", "fraction");
 		addStandardFunction(FmLineStringEnd.class, "linestringend", "Return the end of a linestring (as another geometry).", "linestring");
-		
-		
+		addStandardFunction(FmTileFactory.class, "tileprovider", "Create a map tile provider", "String containing a comma-separated list of key-value pairs defining the background map - e.g. \"fade.r=255, type=MAPSFORGE\".");		
 		addStandardFunction(FmDecimalHours.class, "decimalHours", "Return the number of decimal hours in a time.","time");
 
 		// uk postcodes

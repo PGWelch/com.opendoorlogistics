@@ -69,6 +69,7 @@ import com.opendoorlogistics.core.gis.map.JXMapUtils;
 import com.opendoorlogistics.core.gis.map.MapUtils;
 import com.opendoorlogistics.core.gis.map.RenderProperties;
 import com.opendoorlogistics.core.gis.map.background.BackgroundTileFactorySingleton;
+import com.opendoorlogistics.core.gis.map.background.ODLTileFactory;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
@@ -109,8 +110,8 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	private MapMode defaultMode;
 	private TileCacheRenderer renderer;
 	private long renderFlags = RenderProperties.SHOW_ALL;
-	private FilteredTables filtered;
 	private MapMode mode;
+	private FilteredTables filtered;
 	private BeanMappedObjects objs;
 	private ODLDatastore<? extends ODLTable> mapDatastore;
 	private MeasureComponents lastMeasure;
@@ -349,7 +350,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	
 	private static class FilteredTables {
 		final FindDrawableTables unfilteredTables;
-		final Iterable<? extends DrawableObject> activeUnfiltered;
+	//	final Iterable<? extends DrawableObject> activeUnfiltered;
 		final Iterable<? extends DrawableObject> activeFiltered;
 		final LayeredDrawables allFiltered;
 		final MapApiImpl api;
@@ -363,7 +364,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			
 			unfilteredTables = new FindDrawableTables(mapDatastore);
 			ArrayList< DrawableObject> activeList = new ArrayList<DrawableObject>(unfilteredTables.activeTable!=null ? unfilteredTables.activeTable.getRowCount():0);
-			activeUnfiltered = activeList;
+		//	activeUnfiltered = activeList;
 			
 			activeFiltered = filter(1,unfilteredTables.activeTable,isFiltered, activeList);
 			allFiltered = new LayeredDrawables(filter(0,unfilteredTables.background,isFiltered,null), activeFiltered, filter(2,unfilteredTables.foreground,isFiltered,null));
@@ -570,6 +571,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			}
 		}
 
+		mapViewPanel.dispose();
 	}
 
 	@Override
@@ -815,7 +817,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 		}
 		Helper helper = new Helper();
-		TileFactory tileFactory = BackgroundTileFactorySingleton.getFactory();
+		ODLTileFactory tileFactory = BackgroundTileFactorySingleton.getFactory();
 		TileFactoryInfo info = tileFactory.getInfo();
 
 		Set<GeoPosition> positions = llbb.getCornerSet();
@@ -1187,6 +1189,11 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 			@Override
 			public ODLDatastore<? extends ODLTable> getMapDatastore() {
 				return mapDatastore;
+			}
+
+			@Override
+			public ODLTableReadOnly getBackgroundImagesTable() {
+				return TableUtils.findTable(mapDatastore, PredefinedTags.BACKGROUND_IMAGE);
 			}
 
 

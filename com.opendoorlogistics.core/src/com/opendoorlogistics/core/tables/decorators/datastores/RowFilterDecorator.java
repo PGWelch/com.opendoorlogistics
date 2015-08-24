@@ -17,14 +17,20 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 
+import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
+import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.api.tables.TableQuery;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.tables.decorators.listeners.ListenerRedirector;
+import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 
@@ -569,6 +575,38 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 		}
 
 	}
+	
+	@Override
+	protected ODLTableReadOnly query(int tableId, TableQuery query) {
+		FilteredTable filteredRowIds = tablesById.get(tableId);
+		if(filteredRowIds==null){
+			return null;
+		}
+		
+		ODLTableReadOnly src = getSourceTable(tableId);
+		if(src==null){
+			return null;
+		}
+		
+		// Do the query first as we assume it will be more efficient at paring down the data
+		ODLTableReadOnly queryResult = src.query(query);
+		if(queryResult==null){
+			return null;
+		}
+
+		// Now filter
+		ODLApiImpl api = new ODLApiImpl();
+		Tables tables = api.tables();
+		ODLDatastoreAlterable<? extends ODLTableAlterable > ds = tables.createAlterableDs();
+		ODLTableAlterable ret=(ODLTableAlterable)tables.copyTableDefinition(queryResult, ds);
+		int n = queryResult.getRowCount();
+		for(int row =0 ; row < n ; row++){
+			if(filteredRowIds.contains(queryResult.getRowId(row))){
+				tables.copyRow(queryResult, row, ret);
+			}
+		}
+		return ret;
+	}
 
 	@Override
 	protected long getRowFlags(int tableId, long rowId) {
@@ -620,6 +658,8 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 		throw new UnsupportedOperationException();
 
 	}
+
+
 
 
 

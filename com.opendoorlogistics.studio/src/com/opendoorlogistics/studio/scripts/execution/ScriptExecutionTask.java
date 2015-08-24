@@ -272,7 +272,7 @@ class ScriptExecutionTask {
 
 			// merge has a transaction so don't need to start one here
 			if (!MergeBranchedDatastore.merge(writeRecorder, runner.getDs())) {
-				result.setFailed("Failed to merge the script result with the primary datastore." + System.lineSeparator() + "This may happen if the data changes whilst a script is running.");
+				result.setFailed("Failed to merge the result of running the script with the datastore." + System.lineSeparator() + "This may happen if the data or tables change whilst a script is running.");
 			}
 		}
 

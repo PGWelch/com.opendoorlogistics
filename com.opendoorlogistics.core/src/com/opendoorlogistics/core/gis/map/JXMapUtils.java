@@ -19,18 +19,8 @@ import com.opendoorlogistics.core.utils.Pair;
 
 final public class JXMapUtils {
 	private JXMapUtils(){}
-	private static volatile boolean isInitialised=false;
-	
-	public static synchronized void initLocalFileCache(String baseTileServerUrl){
-		if(isInitialised==false){
-			// Setup local file cache
-			File cacheDir = new File(System.getProperty("user.home") + File.separator + ".jxmapviewer2");
-			ExpiringOSMLocalResponseCache.installResponseCache(baseTileServerUrl, cacheDir, false);
 
-			isInitialised = true;
-		}
-		
-	}
+
 	
 	/**
 	 * Find the zoom which would fit in the range of input lat and longs

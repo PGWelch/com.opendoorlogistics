@@ -113,7 +113,7 @@ final public class AdapterConfig extends ScriptBaseElementImpl implements HasStr
 		if (adapterType == ScriptAdapterType.VLS) {
 			// VLS adapters output drawables
 			ODLDatastoreImpl<ODLTableDefinitionAlterable> ret = new ODLDatastoreImpl<>(ODLTableImpl.ODLTableDefinitionAlterableFactory);
-			DatastoreCopier.copyTableDefinitions(DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_DS, ret);
+			DatastoreCopier.copyTableDefinitions(DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS, ret);
 			return ret;
 		} else {
 			return createNormalOutputDefinition();

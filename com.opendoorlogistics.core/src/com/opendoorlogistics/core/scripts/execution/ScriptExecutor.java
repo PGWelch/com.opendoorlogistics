@@ -67,6 +67,7 @@ import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.Data
 import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
+import com.opendoorlogistics.core.tables.utils.ParametersTable;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.UpdateTimer;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
@@ -325,6 +326,11 @@ final public class ScriptExecutor {
 		// save external datastore wrapped in a data dependencies recorder
 		result.addDatastore(ScriptConstants.EXTERNAL_DS_NAME, null, new DataDependenciesRecorder<>(ODLTableAlterable.class, externalDS));
 
+//		// create internal parameters datastore
+//		ODLDatastoreAlterable<? extends ODLTableAlterable> globalParamsDS = api.tables().createAlterableDs();
+//		api.tables().copyTableDefinition(ParametersTable.tableDefinition(), globalParamsDS);
+//		result.addDatastore(ScriptConstants.INTERNAL_GLOBAL_DS, null, new DataDependenciesRecorder<>(ODLTableAlterable.class, globalParamsDS));
+		
 		// Create output datastores
 		for (InstructionConfig instruction : script.getInstructions()) {
 			ODLComponent component = getComponent(instruction, result);

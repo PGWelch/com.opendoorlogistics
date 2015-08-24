@@ -11,6 +11,7 @@ public class FindDrawableTables extends ArrayList<ODLTable>{
 	final ODLTable background ;
 	final ODLTable activeTable ;
 	final ODLTable foreground ;
+	final ODLTable backgroundImage ;
 	
 	public FindDrawableTables(ODLDatastore<? extends ODLTable> mapDatastore){
 		background = TableUtils.findTable(mapDatastore, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND);
@@ -27,5 +28,11 @@ public class FindDrawableTables extends ArrayList<ODLTable>{
 		if(foreground!=null){
 			add(foreground);
 		}
+		
+		backgroundImage = TableUtils.findTable(mapDatastore, PredefinedTags.BACKGROUND_IMAGE);
+		if(backgroundImage!=null){
+			add(backgroundImage);
+		}
+		
 	}
 }

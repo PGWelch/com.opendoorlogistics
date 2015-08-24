@@ -61,7 +61,7 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	public static final int COL_MAX = COL_FLAGS;
 	
 	private static final BeanDatastoreMapping mapping;
-	public static final ODLDatastore<? extends ODLTableDefinition> ACTIVE_BACKGROUND_FOREGROUND_DS;
+	public static final ODLDatastore<? extends ODLTableDefinition> ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS;
 	private static final double DEFAULT_OPAQUE = 1.0;
 	
 	static{
@@ -93,11 +93,12 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES, -1);				
 		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND, -1);				
 		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, -1);				
-		for(int tableIndx = 1 ; tableIndx<=2 ; tableIndx++){
+		DatastoreCopier.copyTableDefinition(BackgroundImage.BEAN_MAPPING.getTableDefinition(), activeBackgroundForeground);				
+		for(int tableIndx = 1 ; tableIndx<=3 ; tableIndx++){
 			ODLTableDefinitionAlterable alterable= activeBackgroundForeground.getTableAt(tableIndx);
 			alterable.setFlags(alterable.getFlags() | TableFlags.FLAG_IS_OPTIONAL);
 		}
-		ACTIVE_BACKGROUND_FOREGROUND_DS = activeBackgroundForeground;
+		ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS = activeBackgroundForeground;
 	}
 	
 	public static BeanDatastoreMapping getBeanMapping(){

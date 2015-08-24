@@ -4,24 +4,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import javax.management.loading.MLet;
-
-import org.omg.CORBA.NVList;
-
-import com.fasterxml.jackson.core.JsonParser.NumberType;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.StringConventions;
-import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
-import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
-import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
@@ -31,7 +22,6 @@ import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.scripts.TargetIODsInterpreter;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
-import com.opendoorlogistics.core.scripts.elements.UserFormula;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImpl;
 import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilder;
 import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilderUtils;
@@ -46,12 +36,11 @@ import com.opendoorlogistics.core.tables.beans.BeanMapping;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator;
-import com.opendoorlogistics.core.tables.decorators.datastores.UnionDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator.AdapterMapping;
+import com.opendoorlogistics.core.tables.decorators.datastores.UnionDecorator;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.Numbers;
-import com.opendoorlogistics.core.utils.strings.Strings;
 
 public class VLSBuilder {
 
@@ -139,7 +128,7 @@ public class VLSBuilder {
 	}
 
 	private enum LayerType {
-		BACKGROUND(PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND), ACTIVE(PredefinedTags.DRAWABLES), FOREGROUND(PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND);
+		BACKGROUND_IMAGE(PredefinedTags.BACKGROUND_IMAGE), BACKGROUND(PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND), ACTIVE(PredefinedTags.DRAWABLES), FOREGROUND(PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND);
 
 		final String tablename;
 
@@ -261,7 +250,7 @@ public class VLSBuilder {
 	private AdaptedDecorator<ODLTable> createAdapter(List<MatchedLayer> matchedLayers, ExecutionReport report) {
 		// Now process all layers into the datastore adapter
 		ArrayList<MatchedLayer> layersInType = new ArrayList<VLSBuilder.MatchedLayer>(matchedLayers.size());
-		AdapterMapping mapping = AdapterMapping.createUnassignedMapping(DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_DS);
+		AdapterMapping mapping = AdapterMapping.createUnassignedMapping(DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS);
 		ArrayList<ODLDatastore<? extends ODLTable>> dsList = new ArrayList<ODLDatastore<? extends ODLTable>>(matchedLayers.size());
 		for (LayerType layerType : LayerType.values()) {
 
@@ -279,7 +268,7 @@ public class VLSBuilder {
 				continue;
 			}
 
-			ODLTableDefinition destinationTable = TableUtils.findTable(DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_DS, layerType.tablename);
+			ODLTableDefinition destinationTable = TableUtils.findTable(DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS, layerType.tablename);
 			if (nl == 1) {
 				// non-union - add directly
 				MatchedLayer ml = layersInType.get(0);

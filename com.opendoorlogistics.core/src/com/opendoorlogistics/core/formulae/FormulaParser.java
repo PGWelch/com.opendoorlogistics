@@ -762,7 +762,7 @@ public final class FormulaParser {
 	//	userFormulae.add(new UserFormula("add2(a,b) = a + b"));
 		//userFormulae.add(new UserFormula("ten() = 10"));
 		FormulaParser loader = new FormulaParser(null, lib, userFormulae);
-		Function formula = loader.parse("left(\"hello\",2.1");
+		Function formula = loader.parse("\"hello \"world\"\"");
 		System.out.println(formula.execute(null));
 	}
 	

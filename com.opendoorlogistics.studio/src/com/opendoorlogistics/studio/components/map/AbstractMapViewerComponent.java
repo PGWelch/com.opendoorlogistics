@@ -59,19 +59,18 @@ public abstract class AbstractMapViewerComponent implements Maps {
 	}
 
 	private ODLDatastore<? extends ODLTableDefinition> getIODsDefinition(boolean activeOnly) {
-		ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ret = ODLFactory.createDefinition();
-		ODLTableDefinition dfn = DrawableObjectImpl.getBeanMapping().getDefinition().getTableAt(0);
-		
-		DatastoreCopier.copyTableDefinition(dfn, ret);
-		
-		// add the optional tables after the main one - certain parts of the logic assume main ones first
-		if(!activeOnly){
-			makeOptional(DatastoreCopier.copyTableDefinition(dfn, ret, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND));			
-			makeOptional(DatastoreCopier.copyTableDefinition(dfn, ret, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND));			
+		if(activeOnly){
+			ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ret = ODLFactory.createDefinition();
+			ODLTableDefinition dfn = DrawableObjectImpl.getBeanMapping().getDefinition().getTableAt(0);
+			
+			DatastoreCopier.copyTableDefinition(dfn, ret);
+			return ret;		
+			
 		}
-				
-		return ret;		
-		//return MapUtils.createEmptyDatastore();
+		else{
+			return DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS;
+		}
+
 	}
 	
 	private static void makeOptional(ODLTableDefinitionAlterable alterable){
