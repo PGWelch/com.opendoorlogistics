@@ -142,6 +142,11 @@ public class MapViewPanel extends JPanel implements Disposable, MapTileLoadedLis
 				return currentZoom;
 			}
 
+			@Override
+			public int getZoomForObjectFiltering() {
+				return currentZoom;
+			}
+
 		};
 	}
 
@@ -223,9 +228,9 @@ public class MapViewPanel extends JPanel implements Disposable, MapTileLoadedLis
 		ArrayList<MapTileProvider> factories = new ArrayList<MapTileProvider>();
 		if (imagesTable != null) {
 			for (Object provider : BackgroundImage.BEAN_MAPPING.readObjectsFromTable(imagesTable)) {
-				MapTileProvider mtp = (MapTileProvider) provider;
-				if (mtp != null) {
-					factories.add(mtp);
+				BackgroundImage mtp = (BackgroundImage) provider;
+				if (mtp != null && mtp.getTileProvider()!=null) {
+					factories.add(mtp.getTileProvider());
 				}
 			}
 		}

@@ -258,6 +258,15 @@ public class ChangedObjectsCalculator {
 		if(!modified){
 			modified = oldObj.getFlags()!=newObj.getFlags();
 		}
+		
+		if(!modified){
+			modified = oldObj.getMinZoom()!=newObj.getMinZoom();
+		}
+		
+		if(!modified){
+			modified = oldObj.getMaxZoom()!=newObj.getMaxZoom();
+		}
+		
 		return modified;
 	}
 

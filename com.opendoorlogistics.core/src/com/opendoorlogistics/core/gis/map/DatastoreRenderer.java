@@ -296,6 +296,10 @@ public class DatastoreRenderer implements ObjectRenderer{
 		final LowLevelTextRenderer lowLevelRenderer = new LowLevelTextRenderer();
 		class TextDrawer {
 			void render(DrawableObject obj) {
+				if(!isVisibleAtZoom(obj, converter.getZoomForObjectFiltering())){
+					return;
+				}
+				
 				if (Strings.isEmpty(obj.getLabel()) == false) {
 					boolean visible = false;
 					if (obj.getGeometry() == null) {
@@ -443,6 +447,18 @@ public class DatastoreRenderer implements ObjectRenderer{
 		return ret;
 	}
 
+	static boolean isVisibleAtZoom(DrawableObject o, int zoom){
+		if(o.getMinZoom() > zoom){
+			return false;
+		}
+		
+		if(o.getMaxZoom() < zoom){
+			return false;
+		}
+		
+		return true;
+	}
+	
 	public static List<DrawableObject> getObjectsWithinRectangle(Iterable<? extends DrawableObject> pnts, LatLongToScreen converter, Rectangle selRectOnScreen, boolean filterUnselectable) {
 
 		List<DrawableObject> ret = new ArrayList<>();
@@ -465,6 +481,10 @@ public class DatastoreRenderer implements ObjectRenderer{
 			for (DrawableObject pnt : pnts) {
 				
 				if(filterUnselectable && pnt.getSelectable()==0){
+					continue;
+				}
+				
+				if(!isVisibleAtZoom(pnt, converter.getZoomForObjectFiltering())){
 					continue;
 				}
 				
@@ -899,6 +919,10 @@ public class DatastoreRenderer implements ObjectRenderer{
 	private boolean renderGeometry(Graphics2D g, final LatLongToScreen converter, DrawableObject pnt, boolean isSelected, long renderFlags) {
 		boolean rendered = false;
 
+		if(!isVisibleAtZoom(pnt, converter.getZoomForObjectFiltering())){
+			return false;
+		}
+		
 		ODLGeomImpl geom = pnt.getGeometry();
 		if (geom == null) {
 			return false;
@@ -1001,6 +1025,10 @@ public class DatastoreRenderer implements ObjectRenderer{
 	public boolean renderObject(Graphics2D g, LatLongToScreen converter, DrawableObject pnt, boolean isSelected, long renderFlags) {
 
 		boolean rendered = false;
+		if(!isVisibleAtZoom(pnt, converter.getZoomForObjectFiltering())){
+			return false;
+		}
+		
 		if (pnt.getGeometry() == null) {
 			// get on-screen position
 			if (hasValidLatLong(pnt)) {

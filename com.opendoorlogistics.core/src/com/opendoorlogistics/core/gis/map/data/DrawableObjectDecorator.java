@@ -137,5 +137,15 @@ public class DrawableObjectDecorator implements DrawableObject {
 		return decorated.getFlags();
 	}
 
+	@Override
+	public long getMinZoom() {
+		return decorated.getMinZoom();
+	}
+
+	@Override
+	public long getMaxZoom() {
+		return decorated.getMaxZoom();
+	}
+
 	
 }

@@ -58,5 +58,10 @@ public final class UpscalerLatLongToPixelPosition implements LatLongToScreen{
 		Rectangle2D.Double ret = new Rectangle2D.Double(rect.getX() * scalingFactor, rect.getY()*scalingFactor, rect.getWidth()*scalingFactor, rect.getHeight()*scalingFactor);
 		return ret;
 	}
+
+	@Override
+	public int getZoomForObjectFiltering() {
+		return original.getZoomForObjectFiltering();
+	}
 	
 }

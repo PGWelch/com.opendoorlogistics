@@ -93,6 +93,11 @@ class TilePosition {
 			public Object getZoomHashmapKey() {
 				return originalConverter.getZoomHashmapKey();
 			}
+
+			@Override
+			public int getZoomForObjectFiltering() {
+				return originalConverter.getZoomForObjectFiltering();
+			}
 		};
 		return converter;
 	}

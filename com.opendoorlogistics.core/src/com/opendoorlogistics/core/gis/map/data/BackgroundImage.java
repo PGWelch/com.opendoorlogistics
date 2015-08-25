@@ -14,7 +14,8 @@ import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 @ODLTableName(PredefinedTags.BACKGROUND_IMAGE)
 @ODLTableFlags(TableFlags.FLAG_IS_OPTIONAL)
 public class BackgroundImage extends BeanMappedRowImpl{
-	public static final BeanTableMapping BEAN_MAPPING = BeanMapping.buildTable(BackgroundImage.class);
+	// build with datastore builder so we get a valid table id...
+	public static final BeanTableMapping BEAN_MAPPING = BeanMapping.buildDatastore(BackgroundImage.class).getTableMapping(0);
 	
 	private MapTileProvider tileProvider;
 

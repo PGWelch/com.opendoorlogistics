@@ -61,4 +61,8 @@ public interface DrawableObject extends LatLong, HasGlobalRowId{
 	String getTooltip();
 	
 	long getFlags();
+	
+	long getMinZoom();
+	
+	long getMaxZoom();
 }

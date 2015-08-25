@@ -188,10 +188,13 @@ public class ColumnValueProcessor {
 			return null;
 		}
 
-		if (other.getClass() == ColumnValueProcessor.getJavaClass(convertToMe)) {
-			// check for same class
+		if(ColumnValueProcessor.getJavaClass(convertToMe).isAssignableFrom(other.getClass())){
 			return other;
 		}
+//		if (other.getClass() == ColumnValueProcessor.getJavaClass(convertToMe)) {
+//			// check for same class
+//			return other;
+//		}
 
 		if(convertToMe.isEngineType() ){
 			// no conversion between engine types

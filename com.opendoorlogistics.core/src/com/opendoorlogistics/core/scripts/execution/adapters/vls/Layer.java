@@ -65,7 +65,7 @@ public class Layer extends BeanMappedRowImpl{
 	}
 	
 	@ODLColumnOrder(COL_MAX_ZOOM)
-	@ODLDefaultLongValue(Long.MAX_VALUE)
+	@ODLDefaultLongValue(1000)
 	public void setMaxZoom(long maxZoom) {
 		this.maxZoom = maxZoom;
 	}

@@ -58,7 +58,9 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	public static final int COL_LPO= COL_SELECTABLE + 1;
 	public static final int COL_LABEL_COLOUR= COL_LPO + 1;
 	public static final int COL_FLAGS= COL_LABEL_COLOUR + 1;
-	public static final int COL_MAX = COL_FLAGS;
+	public static final int COL_MIN_ZOOM= COL_FLAGS + 1;
+	public static final int COL_MAX_ZOOM= COL_MIN_ZOOM + 1;
+	public static final int COL_MAX = COL_MAX_ZOOM;
 	
 	private static final BeanDatastoreMapping mapping;
 	public static final ODLDatastore<? extends ODLTableDefinition> ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS;
@@ -123,6 +125,8 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	private String labelPositioningOption;
 	private Color labelColor;
 	private long flags;
+	private long minZoom = 0;
+	private long maxZoom = 1000;
 	
 	public DrawableObjectImpl(){}
 	
@@ -152,6 +156,8 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		this.symbol  = copyThis.getSymbol();
 		this.tooltip = copyThis.getTooltip();
 		this.flags = copyThis.getFlags();
+		this.minZoom = copyThis.getMinZoom();
+		this.maxZoom = copyThis.getMaxZoom();
 	}
 	
 
@@ -415,4 +421,27 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		this.flags = f;
 	}
 
+	public long getMinZoom() {
+		return minZoom;
+	}
+
+	@ODLNullAllowed
+	@ODLDefaultLongValue(0)
+	@ODLColumnOrder(COL_MIN_ZOOM)
+	public void setMinZoom(long minZoom) {
+		this.minZoom = minZoom;
+	}
+
+	public long getMaxZoom() {
+		return maxZoom;
+	}
+
+	@ODLNullAllowed
+	@ODLDefaultLongValue(1000)
+	@ODLColumnOrder(COL_MAX_ZOOM)
+	public void setMaxZoom(long maxZoom) {
+		this.maxZoom = maxZoom;
+	}
+
+	
 }
