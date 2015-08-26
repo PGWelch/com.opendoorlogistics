@@ -45,4 +45,5 @@ public enum ODLColumnType {
 	public static ODLColumnType [] standardTypes(){
 		return STD_TYPES;
 	}
+	
 }

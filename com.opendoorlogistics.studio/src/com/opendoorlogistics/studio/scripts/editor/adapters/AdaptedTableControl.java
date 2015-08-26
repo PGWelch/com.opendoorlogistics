@@ -500,6 +500,18 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 				
 				AdaptedTableControl.this.fillToolbar(toolBar);
 				
+				toolBar.addSeparator();
+				
+				JCheckBox fetchSrc = new JCheckBox("Add src cols ", AdaptedTableControl.this.config.isFetchSourceFields());
+				fetchSrc.addActionListener(new ActionListener() {
+					
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						AdaptedTableControl.this.config.setFetchSourceFields(fetchSrc.isSelected());
+					}
+				});
+				toolBar.add(fetchSrc);
+				
 				// add limit results box
 				final JCheckBox limitBox = new JCheckBox("Limit results", AdaptedTableControl.this.config.isLimitResults());
 				limitBox.addActionListener(new ActionListener() {
@@ -517,10 +529,13 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 						AdaptedTableControl.this.config.setMaxNumberRows(newInt);
 					}
 				});
-				
-				toolBar.addSeparator();
+				limitNb.setPreferredTextboxWidth(50);
+					
+		
 				toolBar.add(limitBox);
 				toolBar.add(limitNb);
+				
+
 			}			
 
 			@Override

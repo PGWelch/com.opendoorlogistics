@@ -52,6 +52,7 @@ import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig.SortField
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.elements.UserFormula;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard;
+import com.opendoorlogistics.core.scripts.execution.adapters.TableFormulaBuilder.DependencyInjector;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.VLSBuilder;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.VLSBuilder.VLSDependencyInjector;
 import com.opendoorlogistics.core.scripts.formulae.FmLocalElement;
@@ -169,7 +170,17 @@ final public class AdapterBuilder {
 		if(id!=null){
 			String formula = AdapterBuilderUtils.getFormulaFromText(id);
 			if(formula!=null){
-				ODLDatastore<? extends ODLTable> importedDs = TableFormulaBuilder.build(formula, report);
+				ODLDatastore<? extends ODLTable> importedDs = TableFormulaBuilder.build(formula,new DependencyInjector() {
+					
+					@Override
+					public ODLDatastore<? extends ODLTable> buildAdapter(AdapterConfig config) {
+						int indx = recurseBuild(config);
+						if(indx!=-1){
+							return datasources.get(indx);							
+						}
+						return null;
+					}
+				}, report);
 				if(importedDs!=null){
 					builtAdapters.addAdapter(id, importedDs);	
 					return importedDs;
@@ -224,7 +235,7 @@ final public class AdapterBuilder {
 		destination = processedConfig.createNormalOutputDefinition();
 
 		// create a mapping with records for the destination tables and fields but no sources yet
-		mapping = AdapterMapping.createUnassignedMapping(destination);
+		mapping = AdapterMapping.createUnassignedMapping(destination, true);
 
 		// create the adapter (initally empty)
 		AdaptedDecorator<ODLTable> nonVLSAdapter = new AdaptedDecorator<ODLTable>(mapping, datasources);
@@ -622,7 +633,12 @@ final public class AdapterBuilder {
 	private void buildNonUnionTable(int destTableIndx) {
 
 		AdaptedTableConfig tableConfig = processedConfig.getTables().get(destTableIndx);
-				
+			
+		if(tableConfig.isJoin() && tableConfig.isFetchSourceFields()){
+			report.setFailed("Fetching source fields is not supported with join queries - see adapted table " + tableConfig.getName() + ".");
+			return;
+		}
+		
 		// Check for case where we have a filter formula based only on a parameter that's false and hence we can skip recurse building.
 		// Don't test if we're doing a join as we need the join table definition.
 		String filterFormula = tableConfig.getFilterFormula();
@@ -698,6 +714,7 @@ final public class AdapterBuilder {
 		mapping.setTableSourceId(destTable.getImmutableId(), tableRef.dsIndex, srcTable.getImmutableId());
 
 		// Process each of the destination fields
+		StandardisedStringSet destFieldNames = new StandardisedStringSet();
 		for (int destFieldIndx = 0; destFieldIndx < tableConfig.getColumnCount() && !report.isFailed(); destFieldIndx++) {
 			AdapterColumnConfig field = tableConfig.getColumn(destFieldIndx);
 			if (field.isUseFormula()) {
@@ -710,8 +727,22 @@ final public class AdapterBuilder {
 				AdapterBuilderUtils.mapSingleField(srcTable, destTable.getImmutableId(), field, destFieldIndx, mapping, 0, report);
 			}
 
+			if(field.getName()!=null){
+				destFieldNames.add(field.getName());				
+			}
 		}
 
+		// add source fields AFTER any declared fields so we don't mess up any expected column order
+		if(tableConfig.isFetchSourceFields() && srcTable!=null){
+			int nsrcFields = srcTable.getColumnCount();
+			for(int srcCol =0 ; srcCol < nsrcFields ; srcCol++){
+				String field = srcTable.getColumnName(srcCol);
+				if(!destFieldNames.contains(field)){
+					mapping.addMappedField(destTable.getImmutableId(), field, srcTable.getColumnType(srcCol), srcCol);
+					destFieldNames.add(field);
+				}
+			}
+		}
 	}
 
 	/**
@@ -1331,30 +1362,37 @@ final public class AdapterBuilder {
 			selectedDsIndx = indx;
 		} else {
 
-			// recursively build and save to the datastores in this builder
-			StandardisedStringSet newSet = callerAdapters!=null?new StandardisedStringSet(callerAdapters) : new StandardisedStringSet();
-			if (processedConfig.getId() != null) {
-				newSet.add(processedConfig.getId());
-			}
-			
 			AdapterConfig recurseConfig = env.getAdapterConfig(dsId);
 			if(recurseConfig==null){
 				recurseConfig = new AdapterConfig(dsId);
 			}
-			AdapterBuilder newBuilder = new AdapterBuilder(recurseConfig, newSet, env,continueCb, builtAdapters);
-			ODLDatastore<? extends ODLTable> selectedSrc = newBuilder.build();
-
-			if (selectedSrc == null) {
-				report.setFailed("Cannot find datastore or adapter with id \"" + dsId + "\"");
-			}
-			if (report.isFailed()) {
-				setFailed();
-				return -1;
-			}
-
-			selectedDsIndx = datasources.size();
-			addDatasource(dsId, selectedSrc);
+			
+			selectedDsIndx = recurseBuild(recurseConfig);
 		}
+		return selectedDsIndx;
+	}
+
+	private int recurseBuild(AdapterConfig recurseConfig) {
+		// recursively build and save to the datastores in this builder
+		StandardisedStringSet newSet = callerAdapters!=null?new StandardisedStringSet(callerAdapters) : new StandardisedStringSet();
+		if (processedConfig!=null && processedConfig.getId() != null) {
+			newSet.add(processedConfig.getId());
+		}
+		
+		AdapterBuilder newBuilder = new AdapterBuilder(recurseConfig, newSet, env,continueCb, builtAdapters);
+		ODLDatastore<? extends ODLTable> selectedSrc = newBuilder.build();
+
+		if (selectedSrc == null) {
+			report.setFailed("Cannot find datastore or adapter with id \"" + recurseConfig.getId() + "\"");
+		}
+		
+		if (report.isFailed()) {
+			return -1;
+		}
+
+		// add to datasources
+		int selectedDsIndx = datasources.size();
+		addDatasource(recurseConfig.getId(), selectedSrc);
 		return selectedDsIndx;
 	}
 

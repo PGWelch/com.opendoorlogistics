@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonParser.NumberType;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.StringConventions;
@@ -138,15 +139,14 @@ public class VLSBuilder {
 	}
 
 	private enum LayerType {
-		BACKGROUND_IMAGE(PredefinedTags.BACKGROUND_IMAGE,PredefinedTags.BACKGROUND_IMAGE), 
-		BACKGROUND(PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND,PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND),
-		ACTIVE(PredefinedTags.DRAWABLES, "active"), 
-		FOREGROUND(PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND,PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND);
+		BACKGROUND_IMAGE(PredefinedTags.BACKGROUND_IMAGE, PredefinedTags.BACKGROUND_IMAGE), BACKGROUND(PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND,
+				PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND), ACTIVE(PredefinedTags.DRAWABLES, "active"), FOREGROUND(
+				PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND);
 
 		final String tablename;
-		final String []keywords;
+		final String[] keywords;
 
-		private LayerType(String tablename, String ... keywords) {
+		private LayerType(String tablename, String... keywords) {
 			this.tablename = tablename;
 			this.keywords = keywords;
 		}
@@ -154,8 +154,8 @@ public class VLSBuilder {
 		private static final StandardisedStringTreeMap<LayerType> KEYWORD_MAP = new StandardisedStringTreeMap<VLSBuilder.LayerType>();
 		static {
 			for (LayerType type : LayerType.values()) {
-				for(String keyword:type.keywords){
-					KEYWORD_MAP.put(keyword, type);					
+				for (String keyword : type.keywords) {
+					KEYWORD_MAP.put(keyword, type);
 				}
 			}
 		}
@@ -308,18 +308,18 @@ public class VLSBuilder {
 
 			ODLTableDefinition destinationTable = TableUtils.findTable(DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS, layerType.tablename);
 			if (layerType == LayerType.BACKGROUND_IMAGE) {
-				
+
 				// Create a table containing all the map tile providers in-order
 				Tables tables = api.tables();
 				ODLDatastoreAlterable<? extends ODLTableAlterable> imgDs = tables.createAlterableDs();
-				ODLTable table = (ODLTable)tables.copyTableDefinition(BackgroundImage.BEAN_MAPPING.getTableDefinition(), imgDs);
+				ODLTable table = (ODLTable) tables.copyTableDefinition(BackgroundImage.BEAN_MAPPING.getTableDefinition(), imgDs);
 				mapping.setTableSourceId(destinationTable.getImmutableId(), dsList.size(), table.getImmutableId());
-				dsList.add(imgDs);				
+				dsList.add(imgDs);
 				for (int i = 0; i < table.getColumnCount(); i++) {
-					mapping.setFieldSourceIndx(destinationTable.getImmutableId(), i, i);	
+					mapping.setFieldSourceIndx(destinationTable.getImmutableId(), i, i);
 				}
-				for(MatchedLayer ml : layersInType){
-					if(ml.mapTileProvider!=null){
+				for (MatchedLayer ml : layersInType) {
+					if (ml.mapTileProvider != null) {
 						BackgroundImage bi = new BackgroundImage();
 						bi.setTileProvider(ml.mapTileProvider);
 						BackgroundImage.BEAN_MAPPING.writeObjectToTable(bi, table);
@@ -489,25 +489,20 @@ public class VLSBuilder {
 				matchedLayersMap.put(layer.getId(), ml);
 
 				// identify layer type, using position of the active layer to identify background and foreground if string is empty
+				if(Strings.isEmpty(layer.getLayerType())){
+					report.setFailed("Layer with id " + layer.getId() + " has empty layer type.");
+					return;					
+				}
+				
 				ml.layerType = LayerType.identify(layer.getLayerType());
-				if (!Strings.isEmpty(layer.getLayerType()) && ml.layerType == null) {
+				if (ml.layerType == null) {
 					report.setFailed("Unidentified layer type: " + layer.getLayerType());
 					return;
 				}
-				if (ml.layerType == null) {
-					if (layers.size() == 1) {
-						// assume active
-						ml.layerType = LayerType.ACTIVE;
-					} else if (countByLayerType[LayerType.ACTIVE.ordinal()] == 0) {
-						ml.layerType = LayerType.BACKGROUND;
-					} else {
-						ml.layerType = LayerType.FOREGROUND;
-					}
-				}
-
+				
 				// validate layer type order
 				if (ml.layerType == LayerType.ACTIVE && countByLayerType[ml.layerType.ordinal()] > 0) {
-					report.setFailed("Found more than one active layer in a view: " + layer.getId());
+					report.setFailed("Found more than one active layer in a view: " + ml.layer.getId());
 					return;
 				}
 				for (int i = 0; i < countByLayerType.length; i++) {
@@ -519,73 +514,129 @@ public class VLSBuilder {
 					}
 				}
 				countByLayerType[ml.layerType.ordinal()]++;
-
-				// process source - note this could be a formula pointing to a shapefile or similar in the future
-				if (strings.isEmptyString(layer.getSource())) {
-					report.setFailed("Empty or null source value found for the data source for row in layers table with layer id " + layer.getId() + ".");
-					return;
-				}
-
-				// see if source already processed, if not then process it
-				if (ml.layerType == LayerType.BACKGROUND_IMAGE) {
-					ml.mapTileProvider = fetchMapTileProvider(layer, report);
-				} else {
-					ml.source = fetchLayerSourceTable(layer, sourceTables, finder, report);
-				}
-				if (report.isFailed()) {
-					return;
-				}
 			}
+		}
+
+//		// Apply logic to identify layer types if not explicitly set.
+//		// Firstly find the active layer.
+//		int nml = matchedLayers.size();
+//		int activeLayerIndx=-1;
+//		for(int mli =0 ; mli < nml ; mli++){
+//			if(matchedLayers.get(mli).layerType == LayerType.ACTIVE){
+//				if(activeLayerIndx!=-1){
+//					report.setFailed("Found more than one active layer in a view: " + view.getId());
+//					return;	
+//				}else{
+//					activeLayerIndx = mli;
+//				}
+//			}
+//		}
+//		for(int mli =0 ; mli < nml ; mli++){
+//			MatchedLayer ml = matchedLayers.get(mli);
+//			
+//			if (ml.layerType == null) {
+//				// get previous and next
+//				LayerType previous=null;
+//				for(int j = mli-1 ; j>=0 &&previous==null; j--){
+//					previous = matchedLayers.get(j).layerType;
+//				}
+//				LayerType next=null;
+//				for(int j = mli+1 ; j<nml &&next==null; j++){
+//					next = matchedLayers.get(j).layerType;
+//				}
+//				
+//				if(previous == LayerType.ACTIVE){
+//					ml.layerType = LayerType.FOREGROUND;
+//				}
+//				else if (next == LayerType.ACTIVE){
+//					ml.layerType = LayerType.BACKGROUND;
+//				}
+//				
+//				
+//				if (layers.size() == 1) {
+//					// assume active
+//					ml.layerType = LayerType.ACTIVE;
+//				} else if (countByLayerType[LayerType.ACTIVE.ordinal()] == 0) {
+//					ml.layerType = LayerType.BACKGROUND;
+//				} else {
+//					ml.layerType = LayerType.FOREGROUND;
+//				}
+//			}
+//
+//
+//
+//		}
+		
+		// Process matched layer sources
+		for (MatchedLayer ml : matchedLayers) {
+			Layer layer = ml.layer;
+
+			// process source - note this could be a formula pointing to a shapefile or similar in the future
+			if (strings.isEmptyString(layer.getSource())) {
+				report.setFailed("Empty or null source value found for the data source for row in layers table with layer id " + layer.getId() + ".");
+				return;
+			}
+
+			// see if source already processed, if not then process it
+			if (ml.layerType == LayerType.BACKGROUND_IMAGE) {
+				ml.mapTileProvider = fetchMapTileProvider(layer, report);
+			} else {
+				ml.source = fetchLayerSourceTable(layer, sourceTables, finder, report);
+			}
+			if (report.isFailed()) {
+				return;
+			}
+
 		}
 	}
 
-	private MapTileProvider fetchMapTileProvider(Layer layer,ExecutionReport report){
+	private MapTileProvider fetchMapTileProvider(Layer layer, ExecutionReport report) {
 		String source = layer.getSource();
 		String sFormula = AdapterBuilderUtils.getFormulaFromText(source);
-		if(sFormula==null){
+		if (sFormula == null) {
 			report.setFailed("Background image layer with id " + layer.getId() + " found without a source formula; formula values begin with :=");
 			return null;
 		}
 
-		
-		Function function = null;	
-		if(sFormula!=null){
+		Function function = null;
+		if (sFormula != null) {
 			FormulaParser loader = new FormulaParser(null, FunctionDefinitionLibrary.DEFAULT_LIB, null);
 			try {
-				function = loader.parse(sFormula);				
+				function = loader.parse(sFormula);
 			} catch (Exception e) {
 				report.setFailed(e);
 			}
 		}
-		
-		if(function==null || report.isFailed()){
+
+		if (function == null || report.isFailed()) {
 			report.setFailed("Background image layer with id " + layer.getId() + " - failed to compile source formula.");
 			return null;
 		}
 
-		MapTileProvider provider=null;
-		boolean wrongType=false;
+		MapTileProvider provider = null;
+		boolean wrongType = false;
 		try {
 			Object exec = function.execute(null);
-			if(exec!=Functions.EXECUTION_ERROR){
-				if(exec!=null && exec instanceof MapTileProvider){
-					provider = (MapTileProvider)exec;					
-				}else{
+			if (exec != Functions.EXECUTION_ERROR) {
+				if (exec != null && exec instanceof MapTileProvider) {
+					provider = (MapTileProvider) exec;
+				} else {
 					wrongType = true;
 				}
 			}
 		} catch (Exception e) {
 		}
-		
-		if(provider==null){
-			//report.setFailed("Layer with type " + LayerType.BACKGROUND_IMAGE.keywords[0] + " had a problem executing the formula: " + source);
-			report.setFailed("Background image layer with id " + layer.getId() + " - failed to execute source formula." + (wrongType?" Result must be of type " + ODLColumnType.MAP_TILE_PROVIDER.name() +".": ""));			
+
+		if (provider == null) {
+			// report.setFailed("Layer with type " + LayerType.BACKGROUND_IMAGE.keywords[0] + " had a problem executing the formula: " + source);
+			report.setFailed("Background image layer with id " + layer.getId() + " - failed to execute source formula."
+					+ (wrongType ? " Result must be of type " + ODLColumnType.MAP_TILE_PROVIDER.name() + "." : ""));
 		}
-		
+
 		return provider;
 
 	}
-	
+
 	private View findView(SourceTable viewTable, ExecutionReport report) {
 		// Get the first view we find
 		if (viewTable.validated.getRowCount() == 0) {

@@ -65,6 +65,8 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	@XmlTransient
 	private String shortEditorUINote;
 
+	@XmlTransient
+	private boolean fetchSourceFields=false;
 	
 	public AdaptedTableConfig(){}
 
@@ -98,6 +100,7 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 		ret.setJoin(isJoin());
 		ret.setJoinDatastore(getJoinDatastore());
 		ret.setJoinTable(getJoinTable());
+		ret.setFetchSourceFields(isFetchSourceFields());
 		if(userFormulae!=null){
 			ret.userFormulae = new ArrayList<UserFormula>();
 			for(UserFormula uf : userFormulae){
@@ -332,6 +335,16 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	@XmlAttribute(name ="Join")
 	public void setJoin(boolean join) {
 		this.join = join;
+	}
+
+	public boolean isFetchSourceFields() {
+		return fetchSourceFields;
+	}
+
+
+	@XmlAttribute(name ="FetchSourceFields")
+	public void setFetchSourceFields(boolean fetchSourceFields) {
+		this.fetchSourceFields = fetchSourceFields;
 	}
 
 	

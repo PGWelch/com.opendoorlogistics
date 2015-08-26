@@ -258,7 +258,7 @@ public abstract class ODLAbstractTableDefinition<T extends ODLColumnDefinition> 
 		
 	}
 
-	protected int nextColumnId(){
+	public int nextColumnId(){
 		return columnIdGenerator.generateId();
 	}
 }
