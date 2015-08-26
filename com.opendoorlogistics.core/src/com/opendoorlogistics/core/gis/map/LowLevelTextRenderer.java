@@ -370,13 +370,15 @@ class LowLevelTextRenderer {
 	 * @param g
 	 * @param textQuadtree
 	 */
-	void renderInBottomRightCorner(String text, int fontSize,Graphics2D g,Quadtree textQuadtree){
+	void renderInBottomCorner(String text, int fontSize,Graphics2D g,Quadtree textQuadtree, boolean rightCorner){
+		// Measure text
 		Font font = getFont(fontSize);
 		TextLayout textLayout =createTextLayout(text, font, g.getFontRenderContext());
 		Point2D.Double size = getSize(textLayout);
 		
+		// Get bounds of the screen
 		Rectangle bounds = g.getClipBounds();
-		Point2D screenPos = new Point2D.Double(bounds.getWidth() - size.x - 0, bounds.getHeight() - size.y - 0);
+		Point2D screenPos = new Point2D.Double(rightCorner? bounds.getWidth() - size.x - 2:0, bounds.getHeight() - size.y - 0);
 		drawTextLayout(font, screenPos, textLayout, size, null,g, true, textQuadtree);
 	}
 	

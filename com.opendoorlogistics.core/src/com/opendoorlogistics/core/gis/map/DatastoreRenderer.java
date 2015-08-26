@@ -325,9 +325,10 @@ public class DatastoreRenderer implements ObjectRenderer{
 		}
 		TextDrawer drawer = new TextDrawer();
 
-		// Draw OSM copyright
+		// Draw OSM copyright (and zoom too if this is on)
 		if ((renderflags & RenderProperties.DRAW_OSM_COPYRIGHT) == RenderProperties.DRAW_OSM_COPYRIGHT) {
-			lowLevelRenderer.renderInBottomRightCorner(AppConstants.OSM_COPYRIGHT, 9, g, textQuadtree);
+			lowLevelRenderer.renderInBottomCorner(AppConstants.OSM_COPYRIGHT + ". Z" +  ZoomConverter.toExternal(converter.getZoomForObjectFiltering()), 9, g, textQuadtree, true);
+	//		lowLevelRenderer.renderInBottomCorner("Zoom " + converter.getZoomForObjectFiltering(), 9, g, textQuadtree, false);
 		}
 
 		// render groups first, rendering the winning object only
@@ -447,12 +448,13 @@ public class DatastoreRenderer implements ObjectRenderer{
 		return ret;
 	}
 
-	static boolean isVisibleAtZoom(DrawableObject o, int zoom){
-		if(o.getMinZoom() > zoom){
+	static boolean isVisibleAtZoom(DrawableObject o, int internalZoom){
+		int externalZoom = ZoomConverter.toExternal(internalZoom);
+		if(o.getMinZoom() > externalZoom){
 			return false;
 		}
 		
-		if(o.getMaxZoom() < zoom){
+		if(o.getMaxZoom() < externalZoom){
 			return false;
 		}
 		
@@ -1013,6 +1015,8 @@ public class DatastoreRenderer implements ObjectRenderer{
 		}
 		return transformed;
 	}
+	
+
 
 	static boolean hasValidLatLong(DrawableObject obj) {
 		if (Double.isNaN(obj.getLatitude()) || Double.isNaN(obj.getLongitude())) {
