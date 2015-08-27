@@ -9,10 +9,13 @@ import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStatusObservable;
+import com.opendoorlogistics.api.scripts.Parameters;
 import com.opendoorlogistics.api.scripts.ScriptOption;
 import com.opendoorlogistics.api.scripts.Scripts;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
+import com.opendoorlogistics.core.api.impl.scripts.parameters.ParametersImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
@@ -24,6 +27,7 @@ import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 
 public class ScriptsImpl implements Scripts {
 	private final ODLApi api;
+	private volatile Parameters parameters;
 	
 	public ScriptsImpl(ODLApi api) {
 		this.api = api;
@@ -79,7 +83,7 @@ public class ScriptsImpl implements Scripts {
 			}
 
 			@Override
-			public void submitControlLauncher(String instructionId, ODLComponent component, ControlLauncherCallback cb) {
+			public void submitControlLauncher(String instructionId, ODLComponent component, ODLTable parametersTableCopy,ControlLauncherCallback cb) {
 				// launch ODL Studio?
 			}
 
@@ -89,5 +93,14 @@ public class ScriptsImpl implements Scripts {
 
 				
 		return executionReport;
+	}
+
+
+	@Override
+	public Parameters parameters() {
+		if(parameters==null){
+			parameters = new ParametersImpl(api);
+		}
+		return parameters;
 	}
 }

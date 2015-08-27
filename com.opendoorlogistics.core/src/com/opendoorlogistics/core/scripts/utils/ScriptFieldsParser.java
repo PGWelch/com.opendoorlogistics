@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.scripts.Parameters;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
@@ -227,6 +228,10 @@ public class ScriptFieldsParser {
 			ret.add(new SourcedDatastore(ScriptConstants.EXTERNAL_DS_NAME, external, ScriptDataSourceType.EXTERNAL, -1, null));
 		}
 
+		// we should always have the internal parameters datastore
+		Parameters parameters = api.scripts().parameters();
+		ret.add(new SourcedDatastore(parameters.getDSId(), parameters.dsDefinition(), ScriptDataSourceType.INTERNAL_DATASOURCE, -1, null));
+		
 		// add adapters
 		if (option != null) {
 			for (AdapterConfig adapter : option.getAdapters()) {

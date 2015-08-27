@@ -26,8 +26,11 @@ import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList.MapSelectionListRegister;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImpl;
@@ -50,11 +53,13 @@ import com.opendoorlogistics.studio.scripts.execution.ReporterFrame.RefreshMode;
 import com.opendoorlogistics.studio.scripts.execution.ScriptsDependencyInjector.RecordedLauncherCallback;
 
 class ScriptExecutionTask {
+	private final ODLApi api = new ODLApiImpl();
 	private final ScriptsRunner runner;
 	private final Script unfiltered;
 	private final String[] optionIds;
 	private final String scriptName;
 	private final boolean isScriptRefresh;
+	private final ODLTableReadOnly parametersTable;
 	private volatile ExecutionReport result;
 	private volatile Script filtered;
 	private volatile ScriptsDependencyInjector guiFascade;
@@ -66,12 +71,13 @@ class ScriptExecutionTask {
 	private volatile DataDependencies wholeScriptDependencies;
 	private volatile boolean showingModalPanel = false;
 
-	ScriptExecutionTask(ScriptsRunner runner, final Script script, String[] optionIds, final String scriptName, boolean isScriptRefresh) {
+	ScriptExecutionTask(ScriptsRunner runner, final Script script, String[] optionIds, final String scriptName, boolean isScriptRefresh,ODLTableReadOnly parametersTable) {
 		this.runner = runner;
 		this.unfiltered = script;
 		this.optionIds = optionIds;
 		this.scriptName = scriptName;
 		this.isScriptRefresh = isScriptRefresh;
+		this.parametersTable = parametersTable;
 	}
 
 	private ReporterFrameIdentifier getReporterFrameId(String instructionId, String panelId) {
@@ -148,6 +154,10 @@ class ScriptExecutionTask {
 
 		// Execute and get all dependencies afterwards
 		ScriptExecutor executor = new ScriptExecutor(runner.getAppFrame().getApi(),false, guiFascade);
+		if(parametersTable!=null){
+			executor.setInitialParametersTable(parametersTable);
+		}
+		
 		result = executor.execute(filtered, simple);
 		if (!result.isFailed()) {
 			wholeScriptDependencies = executor.extractDependencies((ScriptExecutionBlackboardImpl) result);
@@ -305,7 +315,16 @@ class ScriptExecutionTask {
 					for (ReporterFrame<?> frame : frames) {
 						// set dependencies
 						DataDependencies dependencies = guiFascade.getDependenciesByInstructionId(cb.getInstructionId());
-						frame.setDependencies(runner.getDs(), unfiltered, dependencies);
+						
+						// give it a parameters table if we have one and can refresh
+						ODLTable parameters = cb.getDeepCopyParamsTable();
+						if(frame.getRefreshMode()!=RefreshMode.NEVER && parameters!=null){
+							parameters = api.tables().copyTable(parameters, api.tables().createAlterableDs());
+						}else{
+							parameters = null;
+						}
+						
+						frame.setDependencies(runner.getDs(), unfiltered, dependencies, parameters);
 						frame.setRefresherCB(runner);
 					}
 				}
@@ -393,7 +412,7 @@ class ScriptExecutionTask {
 				}
 				Option option = ScriptUtils.getOption(unfiltered, optId);
 
-				// work out the refresh mode
+				// work out the refresh mode (this can change between automatic and manual on updating a frame)
 				RefreshMode refreshMode;
 				if (refreshable && option.isSynchronised()) {
 					refreshMode = RefreshMode.AUTOMATIC;

@@ -21,15 +21,15 @@ import com.opendoorlogistics.core.api.impl.scripts.ScriptsImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 
 public class ODLApiImpl implements ODLApi{
-	private StringConventions conventions;
-	private StandardComponents standardComponents;
-	private Values conversionApi;
-	private Tables tables;
-	private Geometry geometry;
-	private UIFactory uiFactory;
-	private Functions functions;
-	private IO io;
-	private Scripts scripts;
+	private volatile StringConventions conventions;
+	private volatile StandardComponents standardComponents;
+	private volatile Values conversionApi;
+	private volatile Tables tables;
+	private volatile Geometry geometry;
+	private volatile UIFactory uiFactory;
+	private volatile Functions functions;
+	private volatile IO io;
+	private volatile Scripts scripts;
 
 	@Override
 	public Values values() {

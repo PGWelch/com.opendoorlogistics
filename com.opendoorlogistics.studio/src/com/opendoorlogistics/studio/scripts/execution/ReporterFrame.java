@@ -23,6 +23,7 @@ import javax.swing.border.Border;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLListener;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.scripts.elements.Script;
@@ -45,9 +46,10 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	private T userPanel;
 	private volatile boolean isDirty = false;
 	private OnRefreshReport refreshCB;
-	private ODLDatastore<? extends ODLTableReadOnly> ds;
+	private ODLDatastore<? extends ODLTableReadOnly> externalDs;
 	private DataDependencies dependencies;
 	private Script unfilteredScript;
+	private ODLTable parametersTable;
 	private HashSet<ODLListener> listeners = new HashSet<>();
 	private String title;
 
@@ -106,7 +108,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (refreshCB != null && unfilteredScript != null) {
-					refreshCB.postReportRefreshRequest(unfilteredScript,id, false);
+					refreshCB.postReportRefreshRequest(unfilteredScript,id, false, parametersTable);
 				}
 			}
 		});
@@ -218,21 +220,22 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	
 	private void runAutorefresh() {
 		if (refreshCB != null && unfilteredScript != null && isDirty) {
-			refreshCB.postReportRefreshRequest(unfilteredScript,id, true);
+			refreshCB.postReportRefreshRequest(unfilteredScript,id, true,parametersTable);
 		}
 	
 	}
 
-	public void setDependencies(ODLDatastore<? extends ODLTableReadOnly> ds, Script unfilteredScript, DataDependencies dependencies) {
+	public void setDependencies(ODLDatastore<? extends ODLTableReadOnly> ds, Script unfilteredScript, DataDependencies dependencies, ODLTable parametersTable) {
 		this.unfilteredScript = unfilteredScript;
 
 		// remove any listeners from the saved datastore
 		removeListeners();
 
 		if (ds != null && dependencies != null) {
-			this.ds = ds;
+			this.externalDs = ds;
 			this.dependencies = dependencies;
 
+			// Add listener for table structure
 			if (this.dependencies.isReadTableSet()) {
 				ODLListener listener = new ODLListener() {
 
@@ -257,6 +260,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 				ds.addListener(listener);
 			}
 
+			// Add listeners for read table data
 			int[] tableids = this.dependencies.getReadTableIds();
 			if (tableids.length > 0) {
 				ODLListener listener = new ODLListener() {
@@ -280,19 +284,21 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 				ds.addListener(listener, tableids);
 			}
 		}else{
-			this.ds=null;
+			this.externalDs=null;
 			this.dependencies = null;
 		}
 
+		this.parametersTable = parametersTable;
+		
 		// it is assumed the control is no longer dirty after a call to set dependencies
 		isDirty = false;
 		updateAppearance();
 	}
 
 	private void removeListeners() {
-		if (ds != null) {
+		if (externalDs != null) {
 			for (ODLListener listener : listeners) {
-				this.ds.removeListener(listener);
+				this.externalDs.removeListener(listener);
 			}
 			listeners.clear();
 		}
@@ -310,7 +316,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	}
 
 	public static interface OnRefreshReport {
-		void postReportRefreshRequest(Script unfilteredScript,ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh);
+		void postReportRefreshRequest(Script unfilteredScript,ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh, ODLTableReadOnly parametersTable);
 	}
 
 	@Override
@@ -323,8 +329,15 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	Script getUnfilteredScript(){
 		return unfilteredScript;
 	}
-	
+
+	public ODLTable getParametersTable() {
+		return parametersTable;
+	}
+
+
 //	public Script getScript(){
 //		return script;
 //	}
+	
+	
 }

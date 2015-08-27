@@ -17,6 +17,7 @@ import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.distances.ODLCostMatrix;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 
@@ -59,8 +60,8 @@ public class DependencyInjectorDecorator extends ProcessingApiDecorator implemen
 
 
 	@Override
-	public void submitControlLauncher(String instructionId,ODLComponent component, ControlLauncherCallback cb){
-		((DependencyInjector)decorated).submitControlLauncher(instructionId,component,cb);
+	public void submitControlLauncher(String instructionId,ODLComponent component, ODLTable parametersTableCopy,ControlLauncherCallback cb){
+		((DependencyInjector)decorated).submitControlLauncher(instructionId,component,parametersTableCopy,cb);
 	}
 
 	@Override

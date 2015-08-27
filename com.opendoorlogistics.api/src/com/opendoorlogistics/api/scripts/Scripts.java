@@ -28,4 +28,10 @@ public interface Scripts {
 	String findOptionIdByName(ScriptOption option, String optionName);
 	
 	ExecutionReport executeScript( ScriptOption option, String optionId,ODLDatastoreAlterable<? extends ODLTableAlterable> ds);
+	
+	/**
+	 * Get interface for dealing with script parameters
+	 * @return
+	 */
+	Parameters parameters();
 }

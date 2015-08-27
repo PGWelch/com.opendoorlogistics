@@ -20,6 +20,8 @@ public interface ScriptAdapterTable {
 	 * @param tableName
 	 */
 	void setFormula(String columnName, String formula);
+	
+	void setFormula(int columnIdx, String formula);
 
 	/**
 	 * Set source formulae on the adapter table
@@ -74,5 +76,7 @@ public interface ScriptAdapterTable {
 	}
 	
 	void setSortType(int col, ColumnSortType cst);
+	
+	void setFetchSourceField(boolean b);
 	
 }

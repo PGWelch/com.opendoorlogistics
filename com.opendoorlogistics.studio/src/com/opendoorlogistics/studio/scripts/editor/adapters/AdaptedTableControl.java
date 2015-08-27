@@ -150,10 +150,11 @@ public class AdaptedTableControl extends VerticalLayoutPanel {
 		
 		@Override
 		public boolean isImportLink(){
-			if(getValue()!=null){
-				return getValue().contains(ScriptConstants.IMPORT_LINK_POSTFIX);
-			}
-			return false;
+			return AdapterBuilderUtils.getFormulaFromText(getValue())!=null;
+//			if(getValue()!=null){
+//				return getValue().contains(ScriptConstants.IMPORT_LINK_POSTFIX);
+//			}
+//			return false;
 		}
 	}
 

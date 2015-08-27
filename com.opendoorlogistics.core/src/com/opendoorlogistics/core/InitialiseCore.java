@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
 
+import com.opendoorlogistics.core.api.impl.scripts.parameters.ScriptParameterCreatorComponent;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.components.UpdateQueryComponent;
 import com.opendoorlogistics.core.tables.io.PoiIO;
@@ -32,6 +33,7 @@ final public class InitialiseCore {
 				
 				logger.info("Searching for components");								
 				ODLGlobalComponents.register(new UpdateQueryComponent());
+				ODLGlobalComponents.register(new ScriptParameterCreatorComponent());
 				
 				logger.info("Initialising POI submodule");												
 				PoiIO.initPOI();

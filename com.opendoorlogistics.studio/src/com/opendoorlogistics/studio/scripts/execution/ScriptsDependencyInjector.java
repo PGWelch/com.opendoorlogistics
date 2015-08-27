@@ -11,17 +11,17 @@ import java.util.List;
 
 import javax.swing.JPanel;
 
-import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStateListener;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStatusObservable;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
+import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.AbstractDependencyInjector;
 import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.ui.ModalDialog;
 import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
-import com.opendoorlogistics.studio.appframe.AppFrame;
 
 abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 	private final AbstractAppFrame appFrame;
@@ -32,12 +32,14 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 		final private ControlLauncherCallback cb;
 		final private String instructionId;
 		final private ODLComponent callingComponent;
+		final private ODLTable deepCopyParamsTable;
 
-		public RecordedLauncherCallback(ControlLauncherCallback cb, String instructionId , ODLComponent callingComponent) {
+		public RecordedLauncherCallback(ControlLauncherCallback cb, String instructionId , ODLComponent callingComponent,ODLTable deepCopyParamsTable) {
 			super();
 			this.cb = cb;
 			this.instructionId = instructionId;
 			this.callingComponent = callingComponent;
+			this.deepCopyParamsTable = deepCopyParamsTable;
 		}
 
 		public ControlLauncherCallback getCb() {
@@ -51,6 +53,11 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 		public ODLComponent getComponent(){
 			return callingComponent;
 		}
+
+		public ODLTable getDeepCopyParamsTable() {
+			return deepCopyParamsTable;
+		}
+		
 	}
 
 	ScriptsDependencyInjector(AbstractAppFrame appFrame) {
@@ -133,8 +140,8 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 //	}
 
 	@Override
-	public void submitControlLauncher(String instructionId,ODLComponent component,  ControlLauncherCallback cb) {
-		controlLauncherCallbacks.add(new RecordedLauncherCallback(cb, instructionId,component));
+	public void submitControlLauncher(String instructionId,ODLComponent component, ODLTable parametersTableCopy, ControlLauncherCallback cb) {
+		controlLauncherCallbacks.add(new RecordedLauncherCallback(cb, instructionId,component,parametersTableCopy));
 	}
 
 	public List<RecordedLauncherCallback> getControlLauncherCallbacks() {

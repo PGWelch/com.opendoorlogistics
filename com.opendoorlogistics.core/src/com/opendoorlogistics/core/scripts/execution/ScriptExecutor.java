@@ -17,6 +17,7 @@ import javax.swing.JPanel;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.Func;
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.components.ODLComponent;
@@ -25,6 +26,7 @@ import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.distances.ODLCostMatrix;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
+import com.opendoorlogistics.api.scripts.Parameters;
 import com.opendoorlogistics.api.scripts.ScriptOption.OutputType;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -53,6 +55,7 @@ import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImp
 import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilder;
 import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilderUtils;
 import com.opendoorlogistics.core.scripts.execution.adapters.BuiltAdapters;
+import com.opendoorlogistics.core.scripts.execution.adapters.DatastoreFetcher;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.AbstractDependencyInjector;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.DependencyInjector;
 import com.opendoorlogistics.core.scripts.formulae.TableParameters;
@@ -67,7 +70,6 @@ import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.Data
 import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
-import com.opendoorlogistics.core.tables.utils.ParametersTable;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.UpdateTimer;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
@@ -79,6 +81,7 @@ final public class ScriptExecutor {
 	private final ODLComponentProvider components;
 	private final ODLApi api;
 	private boolean compileOnly = false;
+	private ODLTableReadOnly initialParametersTable;
 
 	private ScriptExecutor(ODLApi api ,ODLDatastoreAlterableFactory<ODLTableAlterable> datastoreFactory, ODLComponentProvider components, DependencyInjector guiFascade, boolean compileOnly) {
 		this.api = api;
@@ -326,10 +329,19 @@ final public class ScriptExecutor {
 		// save external datastore wrapped in a data dependencies recorder
 		result.addDatastore(ScriptConstants.EXTERNAL_DS_NAME, null, new DataDependenciesRecorder<>(ODLTableAlterable.class, externalDS));
 
-//		// create internal parameters datastore
-//		ODLDatastoreAlterable<? extends ODLTableAlterable> globalParamsDS = api.tables().createAlterableDs();
-//		api.tables().copyTableDefinition(ParametersTable.tableDefinition(), globalParamsDS);
-//		result.addDatastore(ScriptConstants.INTERNAL_GLOBAL_DS, null, new DataDependenciesRecorder<>(ODLTableAlterable.class, globalParamsDS));
+		// build the internal parameters datastore, wrapped in an undo / redo for operations requiring undoable datastore
+		Tables tables = api.tables();
+		ODLDatastoreAlterable<? extends ODLTableAlterable> internal = tables.createAlterableDs();
+		internal = new UndoRedoDecorator<>(ODLTableAlterable.class, internal);
+		if(initialParametersTable!=null){
+			// copy existing parameters
+			tables.copyTable(initialParametersTable, internal);
+		}else{
+			// create empty table
+			tables.copyTableDefinition(api.scripts().parameters().tableDefinition(), internal);			
+		}
+		result.addDatastore(api.scripts().parameters().getDSId(), null, new DataDependenciesRecorder<>(ODLTableAlterable.class, internal));
+
 		
 		// Create output datastores
 		for (InstructionConfig instruction : script.getInstructions()) {
@@ -502,6 +514,13 @@ final public class ScriptExecutor {
 
 	}
 
+	private ODLTable deepCopyScriptParametersTable(DatastoreFetcher dsFetcher){
+		Tables tables = api.tables();
+		Parameters parameters = api.scripts().parameters();
+		ODLDatastore<? extends ODLTableReadOnly> internalDs = dsFetcher.getDatastore(parameters.getDSId());
+		ODLTableReadOnly paramTable = TableUtils.findTable(internalDs, parameters.tableDefinition().getName());
+		return tables.copyTable(paramTable, tables.createAlterableDs());
+	}
 	/**
 	 * Execute a single instruction once for a single batch key
 	 * 
@@ -589,7 +608,7 @@ final public class ScriptExecutor {
 
 			@Override
 			public void submitControlLauncher(ControlLauncherCallback cb) {
-				internalExecutionApi.submitControlLauncher(instruction.getUuid(),component,cb);
+				internalExecutionApi.submitControlLauncher(instruction.getUuid(),component,deepCopyScriptParametersTable(result),cb);
 			}
 
 			@Override
@@ -884,4 +903,9 @@ final public class ScriptExecutor {
 		};
 	}
 
+	public void setInitialParametersTable(ODLTableReadOnly initialParametersTable) {
+		this.initialParametersTable = initialParametersTable;
+	}
+
+	
 }
