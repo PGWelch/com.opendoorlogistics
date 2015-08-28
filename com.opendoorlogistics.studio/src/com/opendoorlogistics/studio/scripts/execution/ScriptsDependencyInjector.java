@@ -16,6 +16,7 @@ import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStateLis
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStatusObservable;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.AbstractDependencyInjector;
 import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
@@ -32,9 +33,9 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 		final private ControlLauncherCallback cb;
 		final private String instructionId;
 		final private ODLComponent callingComponent;
-		final private ODLTable deepCopyParamsTable;
+		final private ODLDatastore<? extends ODLTable> deepCopyParamsTable;
 
-		public RecordedLauncherCallback(ControlLauncherCallback cb, String instructionId , ODLComponent callingComponent,ODLTable deepCopyParamsTable) {
+		public RecordedLauncherCallback(ControlLauncherCallback cb, String instructionId , ODLComponent callingComponent,ODLDatastore<? extends ODLTable> deepCopyParamsTable) {
 			super();
 			this.cb = cb;
 			this.instructionId = instructionId;
@@ -54,7 +55,7 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 			return callingComponent;
 		}
 
-		public ODLTable getDeepCopyParamsTable() {
+		public ODLDatastore<? extends ODLTable> getDeepCopyParamsTable() {
 			return deepCopyParamsTable;
 		}
 		
@@ -140,7 +141,7 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 //	}
 
 	@Override
-	public void submitControlLauncher(String instructionId,ODLComponent component, ODLTable parametersTableCopy, ControlLauncherCallback cb) {
+	public void submitControlLauncher(String instructionId,ODLComponent component, ODLDatastore<? extends ODLTable> parametersTableCopy, ControlLauncherCallback cb) {
 		controlLauncherCallbacks.add(new RecordedLauncherCallback(cb, instructionId,component,parametersTableCopy));
 	}
 

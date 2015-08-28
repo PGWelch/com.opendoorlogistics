@@ -20,13 +20,18 @@ import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 
+import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.scripts.parameters.ParametersControlFactory;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.ODLListener.ODLListenerType;
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.scripts.elements.Script;
+import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager.GlobalSelectionChangedCB;
@@ -40,6 +45,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	private final Border outOfDateBorder = BorderFactory.createLineBorder(Color.RED, 2);
 	private final RefreshMode refreshMode;
 	private final ODLComponent callingComponent;
+	private final JPanel parametersPanel;
 	//private JCheckBox autorefreshBox;
 	private JButton manualRefreshButton;
 	private JLabel refreshLabel;
@@ -49,7 +55,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	private ODLDatastore<? extends ODLTableReadOnly> externalDs;
 	private DataDependencies dependencies;
 	private Script unfilteredScript;
-	private ODLTable parametersTable;
+	private ODLDatastore<? extends ODLTable> parametersTable;
 	private HashSet<ODLListener> listeners = new HashSet<>();
 	private String title;
 
@@ -68,11 +74,14 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		this.refreshMode = refreshMode;
 		this.gsm = gmsrm;
 		this.callingComponent = component;
+		this.parametersPanel = new JPanel();
+		this.parametersPanel.setLayout(new BorderLayout());
 		
 		gsm.registerListener(this);
 		
 		setLayout(new BorderLayout());
 		add(userPanel, BorderLayout.CENTER);
+		add(parametersPanel,BorderLayout.NORTH);
 
 		if (refreshMode == RefreshMode.MANUAL) {
 			createRefreshToolbar();
@@ -225,7 +234,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	
 	}
 
-	public void setDependencies(ODLDatastore<? extends ODLTableReadOnly> ds, Script unfilteredScript, DataDependencies dependencies, ODLTable parametersTable) {
+	public void setDependencies(ODLDatastore<? extends ODLTableReadOnly> ds, Script unfilteredScript, DataDependencies dependencies, ODLDatastore<? extends ODLTable> parametersDs) {
 		this.unfilteredScript = unfilteredScript;
 
 		// remove any listeners from the saved datastore
@@ -288,8 +297,39 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 			this.dependencies = null;
 		}
 
-		this.parametersTable = parametersTable;
+		// handle parameters and show / update the panel as needed
+		this.parametersTable = parametersDs;
+		ODLApi api = new ODLApiImpl();
+		ParametersControlFactory pcf = api.scripts().parameters().getControlFactory();
+		parametersPanel.removeAll();
+		if(parametersDs!=null && pcf!=null){
+			ListenerDecorator<ODLTable> listenerDecorator =new ListenerDecorator<ODLTable>(ODLTable.class, parametersDs);
+			JPanel panel = pcf.createHorizontalPanel(api,parametersDs);
+			if(panel!=null){
+				parametersPanel.add(panel,BorderLayout.CENTER);
+				
+				listenerDecorator.addListener(new ODLListener() {
+					
+					@Override
+					public void tableChanged(int tableId, int firstRow, int lastRow) {
+						setDirty();
+					}
+					
+					@Override
+					public ODLListenerType getType() {
+						return ODLListenerType.TABLE_CHANGED;
+					}
+					
+					@Override
+					public void datastoreStructureChanged() {
+						setDirty();
+					}
+				}, new int[]{listenerDecorator.getTableAt(0).getImmutableId()});
+			}
+
+		}
 		
+
 		// it is assumed the control is no longer dirty after a call to set dependencies
 		isDirty = false;
 		updateAppearance();
@@ -316,7 +356,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	}
 
 	public static interface OnRefreshReport {
-		void postReportRefreshRequest(Script unfilteredScript,ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh, ODLTableReadOnly parametersTable);
+		void postReportRefreshRequest(Script unfilteredScript,ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh, ODLDatastore<? extends ODLTable> parametersTable);
 	}
 
 	@Override
@@ -330,7 +370,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		return unfilteredScript;
 	}
 
-	public ODLTable getParametersTable() {
+	public ODLDatastore<? extends ODLTable> getParametersTable() {
 		return parametersTable;
 	}
 

@@ -17,6 +17,7 @@ import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.distances.ODLCostMatrix;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
+import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.distances.DistancesSingleton;
@@ -112,7 +113,7 @@ public class AbstractDependencyInjector implements DependencyInjector{
 //	}
 
 	@Override
-	public void submitControlLauncher(String instructionId,ODLComponent component,ODLTable parametersTableCopy,ControlLauncherCallback cb) {
+	public void submitControlLauncher(String instructionId,ODLComponent component,ODLDatastore<? extends ODLTable> parametersTableCopy,ControlLauncherCallback cb) {
 		// TODO Auto-generated method stub
 		
 	}

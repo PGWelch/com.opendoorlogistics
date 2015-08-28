@@ -25,7 +25,9 @@ import javax.swing.SwingWorker;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
@@ -96,7 +98,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 				
 				// Check parameter tables are the same if we have them
 				if(!topNull){
-					if(!api.tables().isIdentical(top.getParametersTable(), item.getParametersTable())){
+					if(!api.tables().isIdentical(top.getParametersTable().getTableAt(0), item.getParametersTable().getTableAt(0))){
 						continue;
 					}
 				}
@@ -118,9 +120,9 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 			String[]optionIds = ScriptUtils.getOptionIdsByInstructionIds(top.getUnfilteredScript(), instructionIdsToRefresh);
 			
 			// take deep copy of parameters table if we have one, to avoid threading issues etc
-			ODLTableReadOnly parameters = top.getParametersTable();
+			ODLDatastore<? extends ODLTable>  parameters = top.getParametersTable();
 			if(parameters!=null){
-				parameters = api.tables().copyTable(parameters, api.tables().createAlterableDs());
+				parameters = api.tables().copyDs(parameters);
 			}
 			
 			// call execute which will run the script in the background
@@ -135,9 +137,9 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 		private final ReporterFrameIdentifier frameIdentifier;
 		private final boolean isAutomaticRefresh;
 		private final Script unfilteredScript;
-		private final ODLTableReadOnly parametersTable;
+		private final ODLDatastore<? extends ODLTable> parametersTable;
 		
-		public RefreshItem(Script script, ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh, ODLTableReadOnly parametersTable) {
+		public RefreshItem(Script script, ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh, ODLDatastore<? extends ODLTable> parametersTable) {
 			this.unfilteredScript = script;
 			this.frameIdentifier = frameIdentifier;
 			this.isAutomaticRefresh = isAutomaticRefresh;
@@ -156,7 +158,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 			return isAutomaticRefresh;
 		}
 
-		public ODLTableReadOnly getParametersTable() {
+		public ODLDatastore<? extends ODLTable> getParametersTable() {
 			return parametersTable;
 		}
 		
@@ -381,7 +383,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 	 * Post a report refresh to be processed by a separate single report update thread...
 	 */
 	@Override
-	public void postReportRefreshRequest(Script unfilteredScript,ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh,ODLTableReadOnly parametersTable) {
+	public void postReportRefreshRequest(Script unfilteredScript,ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh,ODLDatastore<? extends ODLTable> parametersTable) {
 		ExecutionUtils.throwIfNotOnEDT();
 		
 		// Post to the queue

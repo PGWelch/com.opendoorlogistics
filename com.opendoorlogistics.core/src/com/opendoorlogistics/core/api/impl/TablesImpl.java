@@ -179,5 +179,10 @@ public class TablesImpl implements Tables {
 		return DatastoreComparer.isSame(a, b, 0);
 	}
 
+	@Override
+	public ODLDatastoreAlterable<? extends ODLTableAlterable> copyDs(ODLDatastore<? extends ODLTableReadOnly> ds) {
+		return DatastoreCopier.copyAll(ds);
+	}
+
 
 }

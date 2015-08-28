@@ -15,9 +15,9 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
 
-import com.opendoorlogistics.core.api.impl.scripts.parameters.ScriptParameterCreatorComponent;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.components.UpdateQueryComponent;
+import com.opendoorlogistics.core.scripts.parameters.ScriptParameterCreatorComponent;
 import com.opendoorlogistics.core.tables.io.PoiIO;
 
 final public class InitialiseCore {

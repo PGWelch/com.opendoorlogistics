@@ -1,15 +1,10 @@
 package com.opendoorlogistics.studio.components.map;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 
-import jdk.nashorn.internal.objects.Global;
-import net.xeoh.plugins.base.PluginManager;
-import net.xeoh.plugins.base.impl.PluginManagerFactory;
-import net.xeoh.plugins.base.util.PluginManagerUtil;
-
 import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.studio.components.map.plugins.CreatePointPlugin;
 import com.opendoorlogistics.studio.components.map.plugins.FillPlugin;
@@ -38,11 +33,8 @@ public class GlobalMapPluginManager {
 		register(new MovePointPlugin());
 		register(new ViewSyncer());
 		
-		// register plugins from plugins directory
-		PluginManager pm = PluginManagerFactory.createPluginManager();
-		pm.addPluginsFrom(new File("." + File.separator + "plugins").toURI());
-		PluginManagerUtil pmu = new PluginManagerUtil(pm);		
-		for(MapPlugin plugin : pmu.getPlugins(MapPlugin.class)){
+		// register plugins from plugins directory	
+		for(MapPlugin plugin :new ODLApiImpl().loadPlugins(MapPlugin.class)){
 			register(plugin);
 		}			
 

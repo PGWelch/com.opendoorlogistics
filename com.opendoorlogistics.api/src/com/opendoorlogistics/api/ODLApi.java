@@ -6,6 +6,10 @@
  ******************************************************************************/
 package com.opendoorlogistics.api;
 
+import java.util.List;
+
+import net.xeoh.plugins.base.Plugin;
+
 import com.opendoorlogistics.api.components.ODLComponentProvider;
 import com.opendoorlogistics.api.geometry.Geometry;
 import com.opendoorlogistics.api.scripts.Scripts;
@@ -23,6 +27,15 @@ public interface ODLApi {
 	Functions functions();
 	Scripts scripts();
 	IO io();
+	
+	/**
+	 * Load all plugins of the input class from the plugins directory
+	 * @param cls
+	 * @return
+	 */
+	<T extends Plugin> List<T> loadPlugins(Class<T> cls);
+	
+		
 	
 	//ODLApp createODLStudio(boolean haltJVMOnDispose);
 }

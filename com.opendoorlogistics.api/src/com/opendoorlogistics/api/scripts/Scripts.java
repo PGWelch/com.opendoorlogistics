@@ -3,6 +3,7 @@ package com.opendoorlogistics.api.scripts;
 import java.io.File;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.scripts.parameters.Parameters;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 

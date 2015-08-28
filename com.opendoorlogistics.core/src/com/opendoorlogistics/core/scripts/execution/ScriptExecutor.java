@@ -26,8 +26,8 @@ import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.distances.ODLCostMatrix;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
-import com.opendoorlogistics.api.scripts.Parameters;
 import com.opendoorlogistics.api.scripts.ScriptOption.OutputType;
+import com.opendoorlogistics.api.scripts.parameters.Parameters;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -514,12 +514,14 @@ final public class ScriptExecutor {
 
 	}
 
-	private ODLTable deepCopyScriptParametersTable(DatastoreFetcher dsFetcher){
+	private ODLDatastoreAlterable<? extends ODLTableAlterable> deepCopyScriptParametersTable(DatastoreFetcher dsFetcher){
 		Tables tables = api.tables();
 		Parameters parameters = api.scripts().parameters();
 		ODLDatastore<? extends ODLTableReadOnly> internalDs = dsFetcher.getDatastore(parameters.getDSId());
 		ODLTableReadOnly paramTable = TableUtils.findTable(internalDs, parameters.tableDefinition().getName());
-		return tables.copyTable(paramTable, tables.createAlterableDs());
+		ODLDatastoreAlterable<? extends ODLTableAlterable> ret = tables.createAlterableDs();
+		tables.copyTable(paramTable, ret);
+		return ret;
 	}
 	/**
 	 * Execute a single instruction once for a single batch key

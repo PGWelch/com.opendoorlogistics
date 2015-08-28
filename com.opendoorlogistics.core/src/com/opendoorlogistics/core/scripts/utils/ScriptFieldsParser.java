@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.opendoorlogistics.api.ODLApi;
-import com.opendoorlogistics.api.scripts.Parameters;
+import com.opendoorlogistics.api.scripts.parameters.Parameters;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;

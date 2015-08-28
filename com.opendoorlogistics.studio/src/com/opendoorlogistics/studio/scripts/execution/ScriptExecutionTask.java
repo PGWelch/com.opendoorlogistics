@@ -59,7 +59,7 @@ class ScriptExecutionTask {
 	private final String[] optionIds;
 	private final String scriptName;
 	private final boolean isScriptRefresh;
-	private final ODLTableReadOnly parametersTable;
+	private final ODLDatastore<? extends ODLTable>  parametersTable;
 	private volatile ExecutionReport result;
 	private volatile Script filtered;
 	private volatile ScriptsDependencyInjector guiFascade;
@@ -71,7 +71,7 @@ class ScriptExecutionTask {
 	private volatile DataDependencies wholeScriptDependencies;
 	private volatile boolean showingModalPanel = false;
 
-	ScriptExecutionTask(ScriptsRunner runner, final Script script, String[] optionIds, final String scriptName, boolean isScriptRefresh,ODLTableReadOnly parametersTable) {
+	ScriptExecutionTask(ScriptsRunner runner, final Script script, String[] optionIds, final String scriptName, boolean isScriptRefresh,ODLDatastore<? extends ODLTable>  parametersTable) {
 		this.runner = runner;
 		this.unfiltered = script;
 		this.optionIds = optionIds;
@@ -155,7 +155,7 @@ class ScriptExecutionTask {
 		// Execute and get all dependencies afterwards
 		ScriptExecutor executor = new ScriptExecutor(runner.getAppFrame().getApi(),false, guiFascade);
 		if(parametersTable!=null){
-			executor.setInitialParametersTable(parametersTable);
+			executor.setInitialParametersTable(parametersTable.getTableAt(0));
 		}
 		
 		result = executor.execute(filtered, simple);
@@ -317,9 +317,9 @@ class ScriptExecutionTask {
 						DataDependencies dependencies = guiFascade.getDependenciesByInstructionId(cb.getInstructionId());
 						
 						// give it a parameters table if we have one and can refresh
-						ODLTable parameters = cb.getDeepCopyParamsTable();
+						ODLDatastore<? extends ODLTable> parameters = cb.getDeepCopyParamsTable();
 						if(frame.getRefreshMode()!=RefreshMode.NEVER && parameters!=null){
-							parameters = api.tables().copyTable(parameters, api.tables().createAlterableDs());
+							parameters = api.tables().copyDs(parameters);
 						}else{
 							parameters = null;
 						}
