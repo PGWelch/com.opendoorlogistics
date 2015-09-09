@@ -16,12 +16,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.TreeSet;
 
+import javax.swing.AbstractCellEditor;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
@@ -129,15 +131,43 @@ public class AdapterTableDefinitionGrid extends AbstractTableDefinitionGrid {
 		}
 	}
 
-	private class DynamicComboCellEditor extends DefaultCellEditor {
+//	private class DynamicComboCellEditor extends DefaultCellEditor {
+//
+//		public DynamicComboCellEditor(TableCellDynamicComboBox comboBox) {
+//			super(comboBox);
+//		}
+//
+//		@Override
+//		public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+//			TableCellDynamicComboBox combo = (TableCellDynamicComboBox) super.getTableCellEditorComponent(table, value, isSelected, row, column);
+//			combo.row = row;
+//			combo.col = column;
+//			if (value != null) {
+//				combo.getEditor().setItem(value.toString());
+//			} else {
+//				combo.getEditor().setItem("");
+//			}
+//			combo.updateMenu();
+//			return combo;
+//		}
+//	}
+	
 
-		public DynamicComboCellEditor(TableCellDynamicComboBox comboBox) {
-			super(comboBox);
+	private class DynamicComboCellEditorV2 extends AbstractCellEditor implements TableCellEditor{
+		private final TableCellDynamicComboBox combo;
+		
+		public DynamicComboCellEditorV2(TableCellDynamicComboBox comboBox) {
+			super();
+			this.combo = comboBox;
+		}
+
+		@Override
+		public Object getCellEditorValue() {
+			return combo.getEditor().getItem();	
 		}
 
 		@Override
 		public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-			TableCellDynamicComboBox combo = (TableCellDynamicComboBox) super.getTableCellEditorComponent(table, value, isSelected, row, column);
 			combo.row = row;
 			combo.col = column;
 			if (value != null) {
@@ -148,6 +178,7 @@ public class AdapterTableDefinitionGrid extends AbstractTableDefinitionGrid {
 			combo.updateMenu();
 			return combo;
 		}
+		
 	}
 
 //	/**
@@ -253,7 +284,7 @@ public class AdapterTableDefinitionGrid extends AbstractTableDefinitionGrid {
 
 		};
 		toFieldCombo.setEditable(true);
-		table.getColumnModel().getColumn(NAME_COL).setCellEditor(new DynamicComboCellEditor(toFieldCombo));
+		table.getColumnModel().getColumn(NAME_COL).setCellEditor(new DynamicComboCellEditorV2(toFieldCombo));
 
 		// add editable combo box for 'from' field
 		TableCellDynamicComboBox fromFieldCombo = new TableCellDynamicComboBox("", false) {
@@ -272,18 +303,20 @@ public class AdapterTableDefinitionGrid extends AbstractTableDefinitionGrid {
 
 		};
 		fromFieldCombo.setEditable(true);
-		table.getColumnModel().getColumn(SRC_COL).setCellEditor(new DynamicComboCellEditor(fromFieldCombo));
+		table.getColumnModel().getColumn(SRC_COL).setCellEditor(new DynamicComboCellEditorV2(fromFieldCombo));
 
 		// and a dynamic combo for the formula
 		TableCellDynamicComboBox formulaCombo = new TableCellDynamicComboBox("", false) {
 
 			@Override
 			protected List<String> getAvailableItems() {
-				// get selected cell
-				ODLColumnType type = ODLColumnType.STRING;
-				if (row != -1 && row < dfn.getColumnCount()) {
-					type = dfn.getColumnType(row);
-				}
+				// Turn off formula suggestions for the moment...
+				
+//				// get selected cell
+//				ODLColumnType type = ODLColumnType.STRING;
+//				if (row != -1 && row < dfn.getColumnCount()) {
+//					type = dfn.getColumnType(row);
+//				}
 
 //				if (queryAvailableFields != null) {
 //					return asList(prefixGroupByFormulae(queryAvailableFields.queryAvailableFormula(type), row));
@@ -295,7 +328,7 @@ public class AdapterTableDefinitionGrid extends AbstractTableDefinitionGrid {
 		fromFieldCombo.setEditable(true);
 		
 		// set dynamic editor for formula column
-		table.getColumnModel().getColumn(FORMULA_COL).setCellEditor(new DynamicComboCellEditor(formulaCombo));
+		table.getColumnModel().getColumn(FORMULA_COL).setCellEditor(new DynamicComboCellEditorV2(formulaCombo));
 
 		// grey out read only string cells
 		final TableCellRenderer defaultRenderer = table.getDefaultRenderer(String.class);
