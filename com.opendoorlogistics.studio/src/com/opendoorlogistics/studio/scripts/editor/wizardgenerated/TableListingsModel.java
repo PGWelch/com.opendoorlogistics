@@ -68,7 +68,10 @@ class TableListingsModel extends AbstractTableModel {
 			if (tn.getDatastore().getSourceType() == ScriptDataSourceType.EXTERNAL) {
 				return "Spreadsheet";
 			}
-			return (Strings.isEmpty(opt.getName()) ? opt.getOptionId() : opt.getName());
+			if(opt!=null){
+				return (Strings.isEmpty(opt.getName()) ? opt.getOptionId() : opt.getName());				
+			}
+			return "";
 
 		case 1:
 			return tn.getDatastore()!=null ? tn.getDatastore().getDatastoreId() : "";

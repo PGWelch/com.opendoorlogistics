@@ -1101,6 +1101,10 @@ final public class ScriptUtils {
 					return ret;
 				}
 				
+				else if(adapterConfig.getAdapterType() == ScriptAdapterType.PARAMETER){
+					return api.scripts().parameters().dsDefinition(false);
+				}
+				
 				if ((adapterConfig.getFlags() & TableFlags.FLAG_IS_DRAWABLES) == TableFlags.FLAG_IS_DRAWABLES) {
 					ODLDatastore<? extends ODLTableDefinition> drawables = api.standardComponents().map().getLayeredDrawablesDefinition();
 					for (int i = 0; i < drawables.getTableCount(); i++) {

@@ -392,6 +392,11 @@ final public class AdapterBuilder {
 		ArrayList<ODLDatastore<? extends ODLTable>> built = new ArrayList<>();
 		for (AdaptedTableConfig atc : constituents) {
 
+			if(processedConfig!=null && processedConfig.getAdapterType() == ScriptAdapterType.PARAMETER && api.stringConventions().equalStandardised(atc.getName(), api.scripts().parameters().tableDefinition(true).getName())){
+				env.setFailed("Cannot union a parameter table.");
+				return;
+			}
+			
 			// Create a modified adapter config with all combined field names in and uniform type,
 			// but those not included in the individual config are unsourced.
 			// The table source and filter must match the original constituent table

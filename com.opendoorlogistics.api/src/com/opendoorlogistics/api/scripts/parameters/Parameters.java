@@ -11,9 +11,9 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
  *
  */
 public interface Parameters {
-	ODLTableDefinition tableDefinition();
+	ODLTableDefinition tableDefinition(boolean includeKeyColumn);
 	
-	ODLDatastore<? extends ODLTableDefinition> dsDefinition();
+	ODLDatastore<? extends ODLTableDefinition> dsDefinition(boolean includeKeyColumn);
 	
 	ODLDatastore<? extends ODLTableReadOnly> exampleDs();
 
@@ -31,8 +31,8 @@ public interface Parameters {
 	ODLColumnType getColumnType(ODLTableReadOnly parametersTable, String key);
 	PromptType getPromptType(ODLTableReadOnly parametersTable, String key);
 	//String getKey(ODLTableReadOnly parametersTable, int row);
-	String getByRow(ODLTableReadOnly parametersTable, int row,FieldType type);
-	String getByKey(ODLTableReadOnly parametersTable, String key,FieldType type);	
+	String getByRow(ODLTableReadOnly parametersTable, int row,ParamDefinitionField type);
+	String getByKey(ODLTableReadOnly parametersTable, String key,ParamDefinitionField type);	
 	boolean exists(ODLTableReadOnly parametersTable, String key);
 	
 	/**
@@ -41,22 +41,33 @@ public interface Parameters {
 	 */
 	ParametersControlFactory getControlFactory();
 	
-	enum FieldType{
+	public static final String FIELDNAME_KEY ="Key";
+	public static final String FIELDNAME_VALUE_TYPE ="ValueType";
+	//public static final String FIELDNAME_DEFAULT_VALUE ="DefaultValue";
+	public static final String FIELDNAME_EDITOR_TYPE ="EditorType";
+	public static final String FIELDNAME_PROMPT_TYPE ="PromptType";
+	public static final String FIELDNAME_VALUE ="Value";
+	
+	enum ParamDefinitionField{
 		KEY,
 		VALUE_TYPE,
-		DEFAULT_VALUE,
+	//	DEFAULT_VALUE,
 		EDITOR_TYPE,
 		PROMPT_TYPE,
-		VALUE
+		VALUE;
+
 	}
+	
+	String getParamDefinitionFieldName(ParamDefinitionField type);
 	
 	enum PromptType{
 		ATTACH,
 		POPUP,
 		ATTACH_POPUP,
+
 	}
 	
-	
+
 //	static final int COL_KEY=0;
 //	static final int COL_VALUE_TYPE=COL_KEY+1;
 //	static final int COL_DEFAULT_VALUE=COL_VALUE_TYPE+1;

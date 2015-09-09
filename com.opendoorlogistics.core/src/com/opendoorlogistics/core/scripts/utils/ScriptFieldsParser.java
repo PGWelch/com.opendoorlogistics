@@ -230,7 +230,7 @@ public class ScriptFieldsParser {
 
 		// we should always have the internal parameters datastore
 		Parameters parameters = api.scripts().parameters();
-		ret.add(new SourcedDatastore(parameters.getDSId(), parameters.dsDefinition(), ScriptDataSourceType.INTERNAL_DATASOURCE, -1, null));
+		ret.add(new SourcedDatastore(parameters.getDSId(), parameters.dsDefinition(true), ScriptDataSourceType.INTERNAL_DATASOURCE, -1, null));
 		
 		// add adapters
 		if (option != null) {

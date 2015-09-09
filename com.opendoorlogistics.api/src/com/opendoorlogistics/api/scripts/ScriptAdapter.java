@@ -44,7 +44,8 @@ public interface ScriptAdapter extends ScriptElement{
 	
 	enum ScriptAdapterType{
 		NORMAL,
-		VLS
+		VLS,
+		PARAMETER,
 	}
 	
 	ScriptAdapterType getAdapterType();

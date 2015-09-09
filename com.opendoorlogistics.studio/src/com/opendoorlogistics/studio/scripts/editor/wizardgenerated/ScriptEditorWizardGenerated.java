@@ -54,6 +54,7 @@ import javax.swing.tree.TreeSelectionModel;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.scripts.ScriptOption;
 import com.opendoorlogistics.api.scripts.ScriptOption.OutputType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -71,6 +72,7 @@ import com.opendoorlogistics.core.scripts.elements.OutputConfig;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.elements.ScriptBaseElement;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
+import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
 import com.opendoorlogistics.core.scripts.utils.AdapterExpectedStructureProvider;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser.SourcedDatastore;
@@ -95,6 +97,7 @@ import com.opendoorlogistics.utils.ui.ODLAction;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 import com.opendoorlogistics.utils.ui.SimpleActionConfig;
 
+
 final public class ScriptEditorWizardGenerated extends ScriptEditor {
 	private static final Map<DisplayNodeType, Icon> iconsByType;
 	private static final Icon openOptionIcon;
@@ -111,6 +114,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 		iconsByType = new HashMap<>();
 		iconsByType.put(DisplayNodeType.COMPONENT_CONFIGURATION, Icons.loadFromStandardPath("script-element-component-config.png"));
 		iconsByType.put(DisplayNodeType.DATA_ADAPTER, Icons.loadFromStandardPath("script-element-data-adapter.png"));
+		iconsByType.put(DisplayNodeType.PARAMETER, Icons.loadFromStandardPath("parameter.png"));
 		iconsByType.put(DisplayNodeType.INSTRUCTION, Icons.loadFromStandardPath("script-element-instruction.png"));
 		// iconsByType.put(DisplayNodeType.INSTRUCTION, new DefaultTreeCellRenderer().getLeafIcon());
 		iconsByType.put(DisplayNodeType.AVAILABLE_TABLES, Icons.loadFromStandardPath("available-tables.png"));
@@ -127,7 +131,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 	}
 
 	enum DisplayNodeType {
-		OPTION, INSTRUCTION, DATA_ADAPTER, COMPONENT_CONFIGURATION, COPY_TABLES, AVAILABLE_TABLES
+		OPTION, INSTRUCTION, DATA_ADAPTER,PARAMETER, COMPONENT_CONFIGURATION, COPY_TABLES, AVAILABLE_TABLES
 	}
 
 	class DisplayNode implements TreeNode {
@@ -148,6 +152,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 				return option;
 
 			case DATA_ADAPTER:
+			case PARAMETER:
 				return adapter;
 
 			case COMPONENT_CONFIGURATION:
@@ -181,6 +186,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 
 			// add id
 			switch (type) {
+			case PARAMETER:
 			case DATA_ADAPTER:
 				htmlBuilder.append("<Strong>ID</Strong> : " + adapter.getId() + htmlHorizontalWhitespace);
 				break;
@@ -397,7 +403,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 					// show all flags for every adapter - even report key - even though they're not used on each one
 					long visibleColumnFlags = TableFlags.FLAG_IS_OPTIONAL | TableFlags.FLAG_IS_GROUP_BY_FIELD | TableFlags.FLAG_IS_BATCH_KEY | TableFlags.FLAG_IS_REPORT_KEYFIELD;
 					
-					AdapterTablesTabControl tabControl = new AdapterTablesTabControl(api, adapter, 0, visibleColumnFlags, createAvailableOptionsQuery(), dfnProvider, ScriptEditorWizardGenerated.this.runner) {
+					AdapterTablesTabControl tabControl = new AdapterTablesTabControl(api, adapter,  visibleColumnFlags, createAvailableOptionsQuery(), dfnProvider, ScriptEditorWizardGenerated.this.runner) {
 						protected List<ODLAction> createTabPageActions(final AdaptedTableConfig table) {
 							List<ODLAction> ret = super.createTabPageActions(table);
 
@@ -921,7 +927,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 		private DisplayNode createUnconnectedAdapterNode(Option option, AdapterConfig adapter) {
 			DisplayNode node = new DisplayNode();
 			node.option = option;
-			node.type = DisplayNodeType.DATA_ADAPTER;
+			node.type =(adapter!=null && adapter.getAdapterType()==ScriptAdapterType.PARAMETER) ? DisplayNodeType.PARAMETER:DisplayNodeType.DATA_ADAPTER;
 			node.adapter = adapter;
 			
 			// just use the adapter id as we use this in formulae and allow the user to change it in the IU
@@ -1419,16 +1425,51 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 
 		});
 
-		treeActions.add(new EditOption("Add data adapter", "Add a data adapter", "script-element-data-adapter.png") {
+		for(ScriptAdapterType type : new ScriptAdapterType[]{ScriptAdapterType.NORMAL,ScriptAdapterType.PARAMETER}){
+			
+		String name;
+		String icon;
+		String shortName;
+		switch(type){
+		case NORMAL:
+			shortName = "adapter";
+			name = "Add data adapter";
+			icon="script-element-data-adapter.png";
+			break;
+			
+		case PARAMETER:
+			shortName = "parameter";
+			name = "Add a parameter";
+			icon = "parameter.png";
+			break;
+			
+		default:
+			throw new IllegalArgumentException();
+		}
+		
+		treeActions.add(new EditOption(name, name, icon) {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if(hasOption()){
 					Option parent = option();
-					String name = JOptionPane.showInputDialog(ScriptEditorWizardGenerated.this, "Enter new data adapter name", "adapter");
+					String name = JOptionPane.showInputDialog(ScriptEditorWizardGenerated.this, "Enter new " + shortName + " name", shortName);
 					if(name!=null){
 						name = ScriptUtils.createUniqueDatastoreId(script, name);
-						parent.getAdapters().add(new AdapterConfig(name));
+						AdapterConfig newAdapter=null;
+						switch (type) {
+						case NORMAL:
+							newAdapter =new AdapterConfig(name); 
+							break;
+							
+						case PARAMETER:
+							newAdapter = new ParametersImpl(api).createParameterAdapter(name);
+							break;
+
+						default:
+							break;
+						}
+						parent.getAdapters().add(newAdapter);
 						reinitTree(parent.getOptionId());											
 					}
 				}
@@ -1444,7 +1485,9 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 						
 		});
 		
-		treeActions.add(new EditOption("Copy data adapter", "Copy the selected data adapter to the data adapter clipboard.", "copy-data-adapter.png") {
+		}
+		
+		treeActions.add(new EditOption("Copy data adapter / parameter", "Copy the selected data adapter or parameter to the clipboard.", "copy-data-adapter.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -1460,13 +1503,13 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			@Override
 			public void updateEnabled() {
 				boolean enabled =  currentPane != null && currentPane.displayNode!=null && 
-						( currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER);
+						( currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER || currentPane.displayNode.type == DisplayNodeType.PARAMETER);
 				setEnabled(enabled);
 			}
 			
 		});
 		
-		treeActions.add(new EditOption("Paste data adapter", "Paste the data adapter from the data adapter clipboard into the option.", "paste-data-adapter.png") {
+		treeActions.add(new EditOption("Paste data adapter / parameter", "Paste the data adapter from the clipboard into the option.", "paste-data-adapter.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -1549,7 +1592,8 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			@Override
 			public void updateEnabled() {
 				boolean enabled =  currentPane != null && currentPane.displayNode!=null && 
-						(currentPane.displayNode.type == DisplayNodeType.OPTION || currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER);
+						(currentPane.displayNode.type == DisplayNodeType.OPTION || currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER ||
+						currentPane.displayNode.type == DisplayNodeType.PARAMETER);
 				setEnabled(enabled);
 			}
 			
@@ -1602,7 +1646,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 				if(enabled && currentPane.displayNode.type == DisplayNodeType.OPTION){
 					enabled = optionIndex()>=1;
 				}
-				else if(enabled && currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER && currentPane.displayNode.adapter!=null){
+				else if(enabled && (currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER ||currentPane.displayNode.type == DisplayNodeType.PARAMETER)&& currentPane.displayNode.adapter!=null){
 					enabled = currentPane.displayNode.option.getAdapters().indexOf(currentPane.displayNode.adapter)>=1;
 				}				
 				else{
@@ -1648,14 +1692,15 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			 */
 			protected boolean isAllowed() {
 				boolean enabled =  currentPane != null && currentPane.displayNode!=null;
-				if(enabled && currentPane.displayNode.type == DisplayNodeType.OPTION){
+				DisplayNodeType type = enabled? currentPane.displayNode.type:null;
+				if(enabled && type == DisplayNodeType.OPTION){
 					int index = optionIndex();
 					if(index!=-1 && currentPane.displayNode.parent!=null){
 						Option parent = currentPane.displayNode.parent.option;
 						enabled = parent!=null && index < (parent.getOptions().size()-1);
 					}
 				}
-				else if(enabled && currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER && currentPane.displayNode.adapter!=null){
+				else if(enabled && (type == DisplayNodeType.DATA_ADAPTER || type == DisplayNodeType.PARAMETER)&& currentPane.displayNode.adapter!=null){
 					enabled = currentPane.displayNode.option.getAdapters().indexOf(currentPane.displayNode.adapter) <
 							 currentPane.displayNode.option.getAdapters().size()-1;
 				}				
@@ -1791,6 +1836,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 								break;
 								
 							case DATA_ADAPTER:
+							case PARAMETER:
 								toDelete = Arrays.asList(node.adapter);
 								deleteFrom = option.getAdapters();
 								break;

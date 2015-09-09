@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.scripts.execution;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -26,8 +27,10 @@ import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.distances.ODLCostMatrix;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
+import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.scripts.ScriptOption.OutputType;
 import com.opendoorlogistics.api.scripts.parameters.Parameters;
+import com.opendoorlogistics.api.scripts.parameters.Parameters.ParamDefinitionField;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -95,6 +98,55 @@ final public class ScriptExecutor {
 		this(api,ODLDatastoreImpl.alterableFactory, ODLGlobalComponents.getProvider(), reporter, compileOnly);
 	}
 
+	private void fillParameters(Option script, ScriptExecutionBlackboardImpl result) {
+		Parameters parameters = api.scripts().parameters();
+		Tables tables = api.tables();
+		ODLTable paramTable = tables.findTable(findDatastoreOrAdapter(parameters.getDSId(), result),parameters.tableDefinition(true).getName());
+		
+		HashMap<ParamDefinitionField, Integer> withKeyCols = new HashMap<>();
+		HashMap<ParamDefinitionField, Integer> noKeyCols = new HashMap<>();
+		for(ParamDefinitionField type : ParamDefinitionField.values()){
+			noKeyCols.put(type, tables.findColumnIndex(parameters.tableDefinition(false), parameters.getParamDefinitionFieldName(type)));
+			withKeyCols.put(type, tables.findColumnIndex(paramTable, parameters.getParamDefinitionFieldName(type)));
+		}
+		
+		for (AdapterConfig config : script.getAdapters()) {
+			if(config!=null && config.getAdapterType() == ScriptAdapterType.PARAMETER){
+				
+				// build the parameter adapter
+				ODLDatastore<? extends ODLTable>ds= findDatastoreOrAdapter(config.getId(), result);
+				if(result.isFailed()){
+					return;
+				}
+				
+				// standardise / validate its fields - this will match to the keyless parameter table as we take the key from
+				// the config id
+				ds = new TargetIODsInterpreter(api).buildScriptExecutionAdapter(ds, parameters.dsDefinition(false), result);
+				if(result.isFailed()){
+					return;
+				}
+				
+				// get the parameters table
+				ODLTableReadOnly newParamTable = api.tables().findTable(ds, parameters.tableDefinition(false).getName());
+				int nr = newParamTable.getRowCount();
+				if(nr!=1){
+					result.setFailed("Found parameters table with either zero or more than one row: " + config.getId());
+					return;
+				}
+				
+				// now copy over, adding the dsid as key
+				int newRow = paramTable.createEmptyRow(-1);
+				for(ParamDefinitionField type : ParamDefinitionField.values()){
+					int fromCol = noKeyCols.get(type);
+					int toCol = withKeyCols.get(type);
+					Object val = type==ParamDefinitionField.KEY ? config.getId() : newParamTable.getValueAt(0, fromCol);
+					paramTable.setValueAt(val, newRow, toCol);
+				}
+
+			}
+		}
+	}
+	
 	/**
 	 * Execute the script.
 	 * This method will not throw exceptions - failure is reported in the return object 
@@ -115,6 +167,10 @@ final public class ScriptExecutor {
 				initialiseAdapterRecords(script, bb);
 			}
 
+			if(!bb.isFailed()){
+				fillParameters(script, bb);
+			}
+			
 			if (!bb.isFailed()) {
 				executeAllInstructions(script, bb);
 			}
@@ -329,20 +385,8 @@ final public class ScriptExecutor {
 		// save external datastore wrapped in a data dependencies recorder
 		result.addDatastore(ScriptConstants.EXTERNAL_DS_NAME, null, new DataDependenciesRecorder<>(ODLTableAlterable.class, externalDS));
 
-		// build the internal parameters datastore, wrapped in an undo / redo for operations requiring undoable datastore
-		Tables tables = api.tables();
-		ODLDatastoreAlterable<? extends ODLTableAlterable> internal = tables.createAlterableDs();
-		internal = new UndoRedoDecorator<>(ODLTableAlterable.class, internal);
-		if(initialParametersTable!=null){
-			// copy existing parameters
-			tables.copyTable(initialParametersTable, internal);
-		}else{
-			// create empty table
-			tables.copyTableDefinition(api.scripts().parameters().tableDefinition(), internal);			
-		}
-		result.addDatastore(api.scripts().parameters().getDSId(), null, new DataDependenciesRecorder<>(ODLTableAlterable.class, internal));
-
-		
+		initialiseInternalParametersDs(result);
+	
 		// Create output datastores
 		for (InstructionConfig instruction : script.getInstructions()) {
 			ODLComponent component = getComponent(instruction, result);
@@ -378,6 +422,38 @@ final public class ScriptExecutor {
 			result.addDatastore(outId, instruction, new DataDependenciesRecorder<>(ODLTableAlterable.class, undoRedoDecorator));
 
 		}
+	}
+
+	/**
+	 * Initialise the internal DS that holds the parameters table + available values.
+	 * This table holds the parameters with keys.
+	 * @param result
+	 */
+	private void initialiseInternalParametersDs(ScriptExecutionBlackboardImpl result) {
+		// build the internal parameters datastore, wrapped in an undo / redo for operations requiring undoable datastore
+		Tables tables = api.tables();
+		Parameters parameters = api.scripts().parameters();
+		ODLDatastoreAlterable<? extends ODLTableAlterable> internal = tables.createAlterableDs();
+		internal = new UndoRedoDecorator<>(ODLTableAlterable.class, internal);
+		if(initialParametersTable!=null){
+			// copy existing parameters
+			tables.copyTable(initialParametersTable, internal);
+		}else{
+			// create empty table
+			tables.copyTableDefinition(parameters.tableDefinition(true), internal);			
+		}
+		
+		// copy other parameters tables over (e.g. available values)
+		ODLDatastore<? extends ODLTableDefinition> dfn = parameters.dsDefinition(true);
+		for(int i =0 ; i < dfn.getTableCount() ; i++){
+			ODLTableDefinition table = dfn.getTableAt(i);
+			if(!api.stringConventions().equalStandardised(table.getName(), parameters.tableDefinition(true).getName())){
+				// copy empty table
+				tables.copyTableDefinition(table, internal);				
+			}
+		}
+		
+		result.addDatastore(api.scripts().parameters().getDSId(), null, new DataDependenciesRecorder<>(ODLTableAlterable.class, internal));
 	}
 
 	/**
@@ -518,7 +594,7 @@ final public class ScriptExecutor {
 		Tables tables = api.tables();
 		Parameters parameters = api.scripts().parameters();
 		ODLDatastore<? extends ODLTableReadOnly> internalDs = dsFetcher.getDatastore(parameters.getDSId());
-		ODLTableReadOnly paramTable = TableUtils.findTable(internalDs, parameters.tableDefinition().getName());
+		ODLTableReadOnly paramTable = TableUtils.findTable(internalDs, parameters.tableDefinition(true).getName());
 		ODLDatastoreAlterable<? extends ODLTableAlterable> ret = tables.createAlterableDs();
 		tables.copyTable(paramTable, ret);
 		return ret;

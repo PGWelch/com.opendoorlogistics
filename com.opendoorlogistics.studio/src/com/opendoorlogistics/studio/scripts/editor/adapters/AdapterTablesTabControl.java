@@ -34,6 +34,7 @@ import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
@@ -48,6 +49,7 @@ import com.opendoorlogistics.core.scripts.elements.ScriptElementType;
 import com.opendoorlogistics.core.scripts.elements.UserFormula;
 import com.opendoorlogistics.core.scripts.io.XMLConversionHandler;
 import com.opendoorlogistics.core.scripts.io.XMLConversionHandlerImpl;
+import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
 import com.opendoorlogistics.core.scripts.utils.AdapterExpectedStructureProvider;
 import com.opendoorlogistics.core.scripts.utils.AdapterExpectedStructureProvider;
 import com.opendoorlogistics.core.scripts.wizard.TableLinkerWizard;
@@ -69,12 +71,12 @@ import com.opendoorlogistics.utils.ui.SimpleAction;
 public class AdapterTablesTabControl extends JPanel {
 	private final ODLApi api;
 	private final JTabbedPane tabs;
-	private final long visibleTableFlags;
 	private final long visibleColumnFlags;
 	private final QueryAvailableData availableOptionsQuery;
 	private final AdapterConfig config;
 	private final ODLDatastoreDefinitionProvider targetDatastore;
-	private final XMLConversionHandler conversionHandler = new XMLConversionHandlerImpl(ScriptElementType.ADAPTED_TABLE);
+	private final XMLConversionHandler conversionHandler = new XMLConversionHandlerImpl(
+			ScriptElementType.ADAPTED_TABLE);
 	private final ScriptUIManager scriptUIManager;
 
 	private class MyXMLTransferHandler extends ScriptXMLTransferHandler {
@@ -96,12 +98,13 @@ public class AdapterTablesTabControl extends JPanel {
 
 	}
 
-	public AdapterTablesTabControl(ODLApi api,final AdapterConfig config, long visibleTableFlags, long visibleFlags, QueryAvailableData availableOptionsQuery, AdapterExpectedStructureProvider targetDatastore, ScriptUIManager uiManager) {
+	public AdapterTablesTabControl(ODLApi api, final AdapterConfig config, long visibleFlags,
+			QueryAvailableData availableOptionsQuery, AdapterExpectedStructureProvider targetDatastore,
+			ScriptUIManager uiManager) {
 		this.tabs = new JTabbedPane();
 		this.api = api;
 		this.tabs.setTransferHandler(new MyXMLTransferHandler());
 		setTransferHandler(new MyXMLTransferHandler());
-		this.visibleTableFlags = visibleTableFlags;
 		this.visibleColumnFlags = visibleFlags;
 		this.availableOptionsQuery = availableOptionsQuery;
 		this.config = config;
@@ -119,72 +122,96 @@ public class AdapterTablesTabControl extends JPanel {
 
 	private void addTabCtrl(final AdaptedTableConfig table, int index) {
 
-		AdaptedTableControl ctrl = new AdaptedTableControl(api,table, visibleTableFlags, visibleColumnFlags, availableOptionsQuery) {
+		long visibleTableFlags = 0;
+		long newTabVisibleColumnFlags = visibleColumnFlags;
+		if (isParameterTable(table)) {
+			visibleTableFlags |= AdaptedTableControl.DISABLE_SOURCE_FLAGS;
+			newTabVisibleColumnFlags = 0;
+		}
+
+		AdaptedTableControl ctrl = new AdaptedTableControl(api, table, visibleTableFlags, newTabVisibleColumnFlags,
+				availableOptionsQuery) {
 			@Override
 			protected List<ODLAction> createActions() {
 				List<ODLAction> ret = super.createActions();
 				ret.add(null); // null is a separator
 				ret.addAll(createTabPageActions(table));
 				return ret;
-			}				
+			}
 		};
 
 		ctrl.setTargetDatastoreDefinitionProvider(targetDatastore);
-		
+
 		ctrl.setFormChangedListener(new FormChangedListener() {
-			
+
 			@Override
 			public void formChanged(AdaptedTableControl form) {
-				// Update the tables control but we don't need to updated the individual
-				// tab contents as this has only changed for the input form and already been updated.
+				// Update the tables control but we don't need to updated the
+				// individual
+				// tab contents as this has only changed for the input form and
+				// already been updated.
 				updateAppearance(false);
 			}
 		});
 
-		// String panelName = "Table \"" + table.getName() + "\""; // adapterConfig.getId();
+		// String panelName = "Table \"" + table.getName() + "\""; //
+		// adapterConfig.getId();
 		tabs.add(ctrl, index);
 		// tabs.setTitleAt(index, panelName);
 		tabs.setSelectedIndex(index);
 	}
 
-//	public static void main(String[] arg) {
-//		InitialiseStudio.initialise();
-//		AdapterConfig conf = new AdapterConfig();
-//		// conf.createTable("blah", "blah2");
-//		// conf.createTable("blah blah", "blah3");
-//
-//		QueryAvailableData queryAvailableData = QueryAvailableDataImpl.createExternalDsQuery(ExampleData.createLocationsWithDemandExample(0));
-//		final ODLDatastore<? extends ODLTableDefinition> target = ExampleData.createTerritoriesExample(2);
-//		System.out.println(target);
-//		ShowPanel.showPanel(new AdapterTablesTabControl(conf, 0, TableFlags.FLAG_IS_BATCH_KEY | TableFlags.FLAG_IS_GROUP_BY_FIELD | TableFlags.FLAG_IS_OPTIONAL, queryAvailableData, new AdapterDestinationDefinition() {
-//
-//			@Override
-//			public ODLDatastore<? extends ODLTableDefinition> getDatastoreDefinition() {
-//				return target;
-//			}
-//
-////			@Override
-////			public ODLTableDefinition getTarget(AdaptedTableConfig tableConfig) {
-////				// TODO Auto-generated method stub
-////				return null;
-////			}
-//		}, null));
-//	}
+	private boolean isParameterTable(final AdaptedTableConfig table) {
+		return config != null && config.getAdapterType() == ScriptAdapterType.PARAMETER && table != null
+				&& api.stringConventions().equalStandardised(table.getName(), ParametersImpl.TABLE_NAME);
+	}
+
+	// public static void main(String[] arg) {
+	// InitialiseStudio.initialise();
+	// AdapterConfig conf = new AdapterConfig();
+	// // conf.createTable("blah", "blah2");
+	// // conf.createTable("blah blah", "blah3");
+	//
+	// QueryAvailableData queryAvailableData =
+	// QueryAvailableDataImpl.createExternalDsQuery(ExampleData.createLocationsWithDemandExample(0));
+	// final ODLDatastore<? extends ODLTableDefinition> target =
+	// ExampleData.createTerritoriesExample(2);
+	// System.out.println(target);
+	// ShowPanel.showPanel(new AdapterTablesTabControl(conf, 0,
+	// TableFlags.FLAG_IS_BATCH_KEY | TableFlags.FLAG_IS_GROUP_BY_FIELD |
+	// TableFlags.FLAG_IS_OPTIONAL, queryAvailableData, new
+	// AdapterDestinationDefinition() {
+	//
+	// @Override
+	// public ODLDatastore<? extends ODLTableDefinition>
+	// getDatastoreDefinition() {
+	// return target;
+	// }
+	//
+	//// @Override
+	//// public ODLTableDefinition getTarget(AdaptedTableConfig tableConfig) {
+	//// // TODO Auto-generated method stub
+	//// return null;
+	//// }
+	// }, null));
+	// }
 
 	protected String getTabTitle(int configIndex, AdapterConfig config) {
 		// name the tabs differently if this is input into the reporter
-		if(targetDatastore!=null){
+		if (targetDatastore != null) {
 			ODLDatastore<? extends ODLTableDefinition> target = targetDatastore.getDatastoreDefinition();
-			if(target!=null && TableUtils.hasFlag(target, TableFlags.FLAG_IS_REPORTER_INPUT)){
-				// create output definition first which will merge same name tables (i.e. union)
+			if (target != null && TableUtils.hasFlag(target, TableFlags.FLAG_IS_REPORTER_INPUT)) {
+				// create output definition first which will merge same name
+				// tables (i.e. union)
 				// then find the index of the table
 				String name = config.getTable(configIndex).getName();
 				ODLDatastore<? extends ODLTableDefinition> output = config.createOutputDefinition();
 				int nbNonMap = 0;
 				for (int i = 0; i < output.getTableCount(); i++) {
 					ODLTableDefinition dfn = output.getTableAt(i);
-					boolean headerMap = Strings.equalsStd(api.standardComponents().reporter().getHeaderMapTableName(), dfn.getName());
-		
+					boolean headerMap = Strings.equalsStd(api.standardComponents().reporter().getHeaderMapTableName(),
+							dfn.getName());
+
 					// do we have a name match?
 					if (Strings.equalsStd(name, dfn.getName())) {
 						if (headerMap) {
@@ -195,85 +222,90 @@ public class AdapterTablesTabControl extends JPanel {
 							return "Subreport " + nbNonMap + " \"" + name + "\"";
 						}
 					}
-		
+
 					// count the non-map tables
 					if (!headerMap) {
 						nbNonMap++;
 					}
-				}		
+				}
 			}
 		}
-		
+
 		// Get the from datastore part of the title
 		AdaptedTableConfig table = config.getTable(configIndex);
-//		String fromDs=null;
-//		boolean isExternal = Strings.equalsStd(table.getFromDatastore(), ScriptConstants.EXTERNAL_DS_NAME);
-//		if(!Strings.isEmpty(table.getFromDatastore()) && !isExternal){
-//			fromDs = table.getFromDatastore();
-//		}		
-//		
-//		// Get the from table part but don't show if from datastore is empty and from and to table are same name
-//		String fromTable = table.getFromTable();
-//		if(fromDs==null && Strings.equalsStd(table.getName(), fromTable)){
-//			fromTable = null;
-//		}
-//		
-//		// Try checking if the datastore only has one table in which case just write the datastore name
-//		if(fromTable!=null && !isExternal && availableOptionsQuery!=null && !Strings.isEmpty(table.getFromDatastore())){
-//			ODLDatastore<? extends ODLTableDefinition> ds = availableOptionsQuery.getDatastoreDefinition(table.getFromDatastore());
-//			if(ds!=null && ds.getTableCount()==1 && Strings.equalsStd(ds.getTableAt(0).getName(), fromTable)){
-//				fromTable = null;
-//			}
-//		}
-//		
-//		// Build source string
-//		StringBuilder src = new StringBuilder();
-//		if(fromDs!=null){
-//			src.append(fromDs);
-//			if(fromTable!=null){
-//				src.append(",");
-//			}
-//		}
-//		if(fromTable!=null){
-//			src.append(fromTable);
-//		}
-//		
-//		// Get total available chars
-//		int maxChars = 75;
-//		int available =  maxChars - (table.getName()!=null ? table.getName().length() : 0) - 3;
-//		
-//		// Get the source string and truncate if needed
-//		String srcStr = src.toString();
-//		boolean isTruncated=false;
-//		if(srcStr.length() > available){
-//			srcStr = srcStr.substring(0, Math.max(available,0));
-//			isTruncated =true;		
-//		}
-		
+		// String fromDs=null;
+		// boolean isExternal = Strings.equalsStd(table.getFromDatastore(),
+		// ScriptConstants.EXTERNAL_DS_NAME);
+		// if(!Strings.isEmpty(table.getFromDatastore()) && !isExternal){
+		// fromDs = table.getFromDatastore();
+		// }
+		//
+		// // Get the from table part but don't show if from datastore is empty
+		// and from and to table are same name
+		// String fromTable = table.getFromTable();
+		// if(fromDs==null && Strings.equalsStd(table.getName(), fromTable)){
+		// fromTable = null;
+		// }
+		//
+		// // Try checking if the datastore only has one table in which case
+		// just write the datastore name
+		// if(fromTable!=null && !isExternal && availableOptionsQuery!=null &&
+		// !Strings.isEmpty(table.getFromDatastore())){
+		// ODLDatastore<? extends ODLTableDefinition> ds =
+		// availableOptionsQuery.getDatastoreDefinition(table.getFromDatastore());
+		// if(ds!=null && ds.getTableCount()==1 &&
+		// Strings.equalsStd(ds.getTableAt(0).getName(), fromTable)){
+		// fromTable = null;
+		// }
+		// }
+		//
+		// // Build source string
+		// StringBuilder src = new StringBuilder();
+		// if(fromDs!=null){
+		// src.append(fromDs);
+		// if(fromTable!=null){
+		// src.append(",");
+		// }
+		// }
+		// if(fromTable!=null){
+		// src.append(fromTable);
+		// }
+		//
+		// // Get total available chars
+		// int maxChars = 75;
+		// int available = maxChars - (table.getName()!=null ?
+		// table.getName().length() : 0) - 3;
+		//
+		// // Get the source string and truncate if needed
+		// String srcStr = src.toString();
+		// boolean isTruncated=false;
+		// if(srcStr.length() > available){
+		// srcStr = srcStr.substring(0, Math.max(available,0));
+		// isTruncated =true;
+		// }
+
 		// Build the title
 		StringBuilder title = new StringBuilder();
 		title.append(table.getName());
-//		if((isTruncated && srcStr.length()>3) || srcStr.length()>0){
-//			title.append(" (");
-//			title.append(srcStr);
-//			if(isTruncated){
-//				title.append("...");
-//			}
-//			title.append(")");
-//		}
-//		
-		if(Strings.isEmpty(table.getShortEditorUINote())==false){
+		// if((isTruncated && srcStr.length()>3) || srcStr.length()>0){
+		// title.append(" (");
+		// title.append(srcStr);
+		// if(isTruncated){
+		// title.append("...");
+		// }
+		// title.append(")");
+		// }
+		//
+		if (Strings.isEmpty(table.getShortEditorUINote()) == false) {
 			title.append(" (" + table.getShortEditorUINote() + ")");
 		}
-		
-		return title.toString();
-		
 
-	
+		return title.toString();
+
 	}
 
 	private final Font tabTitleFont = new Font("SansSerif", Font.PLAIN, 11);
-	
+
 	public void updateAppearance(boolean updateTabContents) {
 		for (int i = 0; i < tabs.getTabCount(); i++) {
 			if (i < config.getTableCount()) {
@@ -312,23 +344,26 @@ public class AdapterTablesTabControl extends JPanel {
 
 				});
 
-//				// Check for error with table...
-//				ODLDatastore<? extends ODLTableDefinition> targetDs = targetDatastore!=null?targetDatastore.getDatastoreDefinition():null;
-//				HashMap<Object, String> validateResult =new TargetIODsInterpreter(api).validateAdapter(config, targetDs); 
-//				String error = validateResult.get(table);
-//				
-//				if (error!=null) {
-//					ctrl.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.RED, 2), BorderFactory.createEmptyBorder(3, 3, 3, 3)));
-//					tabs.setToolTipTextAt(i, error);
-//				} else {
-//					ctrl.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-//					tabs.setToolTipTextAt(i, null);
-//				}
-				
-				if(updateTabContents){
-					ctrl.updateAppearance();	
+				// // Check for error with table...
+				// ODLDatastore<? extends ODLTableDefinition> targetDs =
+				// targetDatastore!=null?targetDatastore.getDatastoreDefinition():null;
+				// HashMap<Object, String> validateResult =new
+				// TargetIODsInterpreter(api).validateAdapter(config, targetDs);
+				// String error = validateResult.get(table);
+				//
+				// if (error!=null) {
+				// ctrl.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.RED,
+				// 2), BorderFactory.createEmptyBorder(3, 3, 3, 3)));
+				// tabs.setToolTipTextAt(i, error);
+				// } else {
+				// ctrl.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+				// tabs.setToolTipTextAt(i, null);
+				// }
+
+				if (updateTabContents) {
+					ctrl.updateAppearance();
 				}
-				
+
 			} else {
 				// dummy page...
 				if (config.getTableCount() > 0) {
@@ -364,7 +399,9 @@ public class AdapterTablesTabControl extends JPanel {
 	}
 
 	/**
-	 * Prompt the user for a new table including both the destination and the source
+	 * Prompt the user for a new table including both the destination and the
+	 * source
+	 * 
 	 * @param source
 	 * @param destination
 	 * @param currentDestination
@@ -417,7 +454,7 @@ public class AdapterTablesTabControl extends JPanel {
 			// add "new table"
 			ArrayList<String> destTables = new ArrayList<>();
 			destTables.add(newTable);
-			
+
 			// add predefined table names
 			if (targetDatastore != null && targetDatastore.getDatastoreDefinition() != null) {
 				for (String table : TableUtils.getTableNames(targetDatastore.getDatastoreDefinition())) {
@@ -434,7 +471,8 @@ public class AdapterTablesTabControl extends JPanel {
 
 			panel.addLine(new JLabel("Select destination table "), destTableCombo);
 			if (destTableCombo.getItemCount() > 1 && currentDestination == null) {
-				// selected the alphabetically first destination table by default
+				// selected the alphabetically first destination table by
+				// default
 				destTableCombo.setSelectedIndex(1);
 			}
 		}
@@ -471,8 +509,9 @@ public class AdapterTablesTabControl extends JPanel {
 	}
 
 	private void addNewAdaptedTable(int index) {
-		ODLDatastore<? extends ODLTableDefinition> target = targetDatastore != null ? targetDatastore.getDatastoreDefinition() :null;
-		PromptNewTableResult prompt = promptNewAdaptedTable(true, target!=null, null);
+		ODLDatastore<? extends ODLTableDefinition> target = targetDatastore != null
+				? targetDatastore.getDatastoreDefinition() : null;
+		PromptNewTableResult prompt = promptNewAdaptedTable(true, target != null, null);
 		if (prompt == null) {
 			return;
 		}
@@ -481,27 +520,29 @@ public class AdapterTablesTabControl extends JPanel {
 		if (prompt.sourceTable != null) {
 			src = availableOptionsQuery.getTableDefinition(prompt.sourceDatastore, prompt.sourceTable);
 		}
-		
-		AdaptedTableConfig newTable  = new TargetIODsInterpreter(api).buildAdaptedTableConfig(prompt.sourceDatastore, src, target, prompt.destinationTable);
-		
-//		ODLTableDefinition dest = null;
-//		if (prompt.destinationTable != null) {
-//			dest = TableUtils.findTable(targetDatastore.getDatastoreDefinition(), prompt.destinationTable);
-//		}
-//
-//		AdaptedTableConfig newTable = null;
-//		if (dest != null && dest.getColumnCount() > 0) {
-//			newTable = TableLinkerWizard.createBestGuess(src, dest);
-//		} else if (src != null) {
-//			newTable = WizardUtils.createAdaptedTableConfig(src, src.getName());
-//		} else {
-//			newTable = new AdaptedTableConfig();
-//			newTable.setName("New table");
-//		}
-//
-//		if (prompt.sourceTable != null) {
-//			newTable.setFrom(prompt.sourceDatastore, prompt.sourceTable);
-//		}
+
+		AdaptedTableConfig newTable = new TargetIODsInterpreter(api).buildAdaptedTableConfig(prompt.sourceDatastore,
+				src, target, prompt.destinationTable);
+
+		// ODLTableDefinition dest = null;
+		// if (prompt.destinationTable != null) {
+		// dest = TableUtils.findTable(targetDatastore.getDatastoreDefinition(),
+		// prompt.destinationTable);
+		// }
+		//
+		// AdaptedTableConfig newTable = null;
+		// if (dest != null && dest.getColumnCount() > 0) {
+		// newTable = TableLinkerWizard.createBestGuess(src, dest);
+		// } else if (src != null) {
+		// newTable = WizardUtils.createAdaptedTableConfig(src, src.getName());
+		// } else {
+		// newTable = new AdaptedTableConfig();
+		// newTable.setName("New table");
+		// }
+		//
+		// if (prompt.sourceTable != null) {
+		// newTable.setFrom(prompt.sourceDatastore, prompt.sourceTable);
+		// }
 
 		addNewAdaptedTable(newTable, index);
 	}
@@ -515,7 +556,8 @@ public class AdapterTablesTabControl extends JPanel {
 	private void updateTable(int index) {
 		AdaptedTableConfig table = config.getTable(index);
 
-		ODLTableDefinition src = availableOptionsQuery != null ? availableOptionsQuery.getTableDefinition(table.getFromDatastore(), table.getFromTable()) : null;
+		ODLTableDefinition src = availableOptionsQuery != null
+				? availableOptionsQuery.getTableDefinition(table.getFromDatastore(), table.getFromTable()) : null;
 		ODLTableDefinition dest = TableUtils.findTable(targetDatastore.getDatastoreDefinition(), table.getName());
 
 		final AdaptedTableConfig relinked = TableLinkerWizard.createBestGuess(src, dest);
@@ -548,8 +590,9 @@ public class AdapterTablesTabControl extends JPanel {
 				col.setType(relinked.getColumn(rli).getType());
 			}
 		}
-		
-		// sort in order of appearance in relinked, put anything that doesn't appear last
+
+		// sort in order of appearance in relinked, put anything that doesn't
+		// appear last
 		Collections.sort(table.getColumns(), new Comparator<AdapterColumnConfig>() {
 
 			@Override
@@ -620,50 +663,59 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 		});
 
-		ret.add(new TabPageAction("Rename table", "Rename selected adapter table", "table-rename.png") {
+		if (!isParameterTable(table)) {
+			ret.add(new TabPageAction("Rename table", "Rename selected adapter table", "table-rename.png") {
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				PromptNewTableResult result = promptNewAdaptedTable(false, true, table.getName());
-				if (result != null && result.destinationTable != null) {
-					table.setName(result.destinationTable);
-					// tabs.setTitleAt(getIndex(), "Table \"" + result.destinationTable+ "\"");
-					AdapterTablesTabControl.this.updateAppearance(true);
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					PromptNewTableResult result = promptNewAdaptedTable(false, true, table.getName());
+					if (result != null && result.destinationTable != null) {
+						table.setName(result.destinationTable);
+						// tabs.setTitleAt(getIndex(), "Table \"" +
+						// result.destinationTable+ "\"");
+						AdapterTablesTabControl.this.updateAppearance(true);
+					}
 				}
-			}
 
-		});
+			});
+		}
 
-		ret.add(new TabPageAction("Edit table label", "Change the label shown in brackets after the table name in the tab control.", "adapted-table-short-ui-note.png") {
+		ret.add(new TabPageAction("Edit table label",
+				"Change the label shown in brackets after the table name in the tab control.",
+				"adapted-table-short-ui-note.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				String current = table.getShortEditorUINote();
-				if(current==null){
+				if (current == null) {
 					current = "";
 				}
-				
-				current = JOptionPane.showInputDialog(AdapterTablesTabControl.this, "Enter the label for table " + table.getName(), current);
-				if(current!=null){
+
+				current = JOptionPane.showInputDialog(AdapterTablesTabControl.this,
+						"Enter the label for table " + table.getName(), current);
+				if (current != null) {
 					table.setShortEditorUINote(current);
 					AdapterTablesTabControl.this.updateAppearance(true);
 				}
-//				PromptNewTableResult result = promptNewAdaptedTable(false, true, table.getName());
-//				if (result != null && result.destinationTable != null) {
-//					table.setName(result.destinationTable);
-//					// tabs.setTitleAt(getIndex(), "Table \"" + result.destinationTable+ "\"");
-//					AdapterTablesTabControl.this.updateAppearance(true);
-//				}
+				// PromptNewTableResult result = promptNewAdaptedTable(false,
+				// true, table.getName());
+				// if (result != null && result.destinationTable != null) {
+				// table.setName(result.destinationTable);
+				// // tabs.setTitleAt(getIndex(), "Table \"" +
+				// result.destinationTable+ "\"");
+				// AdapterTablesTabControl.this.updateAppearance(true);
+				// }
 			}
 
 		});
-		
+
 		ret.add(new TabPageAction("Copy table", "Copy the current table to the clipboard", "table-copy.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-				clipboard.setContents(((ScriptXMLTransferHandler) getTransferHandler()).createTransferable(AdapterTablesTabControl.this), null);
+				clipboard.setContents(((ScriptXMLTransferHandler) getTransferHandler())
+						.createTransferable(AdapterTablesTabControl.this), null);
 			}
 
 			@Override
@@ -676,13 +728,16 @@ public class AdapterTablesTabControl extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				((ScriptXMLTransferHandler) getTransferHandler()).importData(AdapterTablesTabControl.this, Toolkit.getDefaultToolkit().getSystemClipboard().getContents(AdapterTablesTabControl.this));
+				((ScriptXMLTransferHandler) getTransferHandler()).importData(AdapterTablesTabControl.this,
+						Toolkit.getDefaultToolkit().getSystemClipboard().getContents(AdapterTablesTabControl.this));
 			}
 		});
 
 		// wizard tools actions (appear in a popup)
 		ArrayList<ODLAction> wizardTools = new ArrayList<>();
-		wizardTools.add(new TabPageAction("Update table based on destination", "Update table based on its destination. Any missing fields are added and empty from/formulae are updated where possible.", null) {
+		wizardTools.add(new TabPageAction("Update table based on destination",
+				"Update table based on its destination. Any missing fields are added and empty from/formulae are updated where possible.",
+				null) {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -691,12 +746,14 @@ public class AdapterTablesTabControl extends JPanel {
 
 			@Override
 			public void updateEnabled() {
-				setEnabled(targetDatastore != null && targetDatastore.getDatastoreDefinition() != null && TableUtils.findTable(targetDatastore.getDatastoreDefinition(), table.getName()) != null);
+				setEnabled(targetDatastore != null && targetDatastore.getDatastoreDefinition() != null
+						&& TableUtils.findTable(targetDatastore.getDatastoreDefinition(), table.getName()) != null);
 			}
 		});
 
 		// create seleted empty tables in datastore action
-		wizardTools.add(new TabPageAction("Export this table to datastore", "Create empty table in the datastore with same design as this table", null) {
+		wizardTools.add(new TabPageAction("Export this table to datastore",
+				"Create empty table in the datastore with same design as this table", null) {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -712,7 +769,8 @@ public class AdapterTablesTabControl extends JPanel {
 		});
 
 		// create all empty tables in datastore action
-		wizardTools.add(new TabPageAction("Export all tables to datastore", "Create empty tables in the datastore with same design as these tables", null) {
+		wizardTools.add(new TabPageAction("Export all tables to datastore",
+				"Create empty tables in the datastore with same design as these tables", null) {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -729,7 +787,8 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 		});
 
-		ret.add(ODLAction.createParentAction("Data adapter wizard actions", Icons.loadFromStandardPath("tools-wizard-2.png"), wizardTools));
+		ret.add(ODLAction.createParentAction("Data adapter wizard actions",
+				Icons.loadFromStandardPath("tools-wizard-2.png"), wizardTools));
 
 		ret.add(new TabPageAction("Delete table", "Delete selected adapted table", "table-delete-2.png") {
 
@@ -786,25 +845,24 @@ public class AdapterTablesTabControl extends JPanel {
 				setEnabled(getIndex() < config.getTableCount() - 1);
 			}
 		});
-		
+
 		ret.add(new TabPageAction("Edit user formulae", "Edit the adapted tables user formulae", "user-formula.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int index = getIndex();
 				final AdaptedTableConfig tableConfig = config.getTables().get(index);
-				
+
 				// get a copy of the current formulae
 				final ArrayList<UserFormula> formulaeCopy = new ArrayList<UserFormula>();
-				if(tableConfig.getUserFormulae()!=null){
-					for(UserFormula uf: tableConfig.getUserFormulae()){
+				if (tableConfig.getUserFormulae() != null) {
+					for (UserFormula uf : tableConfig.getUserFormulae()) {
 						formulaeCopy.add(new UserFormula(uf));
 					}
 				}
-				
 
 				// create the editor dialog
-				OkCancelDialog dlg = new OkCancelDialog(){
+				OkCancelDialog dlg = new OkCancelDialog() {
 					@Override
 					protected Component createMainComponent(boolean inWindowsBuilder) {
 						return new ListPanel<UserFormula>(formulaeCopy, "user formula") {
@@ -816,60 +874,60 @@ public class AdapterTablesTabControl extends JPanel {
 
 							@Override
 							protected UserFormula editItem(final UserFormula item) {
-								final JTextArea textArea = new JTextArea(item.getValue());	
+								final JTextArea textArea = new JTextArea(item.getValue());
 								textArea.setEditable(true);
 								textArea.setLineWrap(true);
-								OkCancelDialog dlg = new OkCancelDialog(){
+								OkCancelDialog dlg = new OkCancelDialog() {
 									@Override
 									protected Component createMainComponent(boolean inWindowsBuilder) {
-										return new JScrollPane(textArea); 
+										return new JScrollPane(textArea);
 									}
 								};
 								dlg.setMinimumSize(new Dimension(400, 200));
 								dlg.setLocationRelativeTo(this);
 								dlg.setTitle("Enter formula text");
-								if(dlg.showModal() == OkCancelDialog.OK_OPTION){
+								if (dlg.showModal() == OkCancelDialog.OK_OPTION) {
 									item.setValue(textArea.getText());
 								}
 								return item;
 							}
 						};
-//						return new TablePanel<String>(formulaeCopy, "user formula") {
-//
-//							@Override
-//							protected TableModel createTableModel() {
-//								// TODO Auto-generated method stub
-//								return null;
-//							}
-//
-//							@Override
-//							protected String createNewItem() {
-//								// TODO Auto-generated method stub
-//								return null;
-//							}
-//
-//							@Override
-//							protected String editItem(String item) {
-//								// TODO Auto-generated method stub
-//								return null;
-//							}
-//						};
+						// return new TablePanel<String>(formulaeCopy, "user
+						// formula") {
+						//
+						// @Override
+						// protected TableModel createTableModel() {
+						// // TODO Auto-generated method stub
+						// return null;
+						// }
+						//
+						// @Override
+						// protected String createNewItem() {
+						// // TODO Auto-generated method stub
+						// return null;
+						// }
+						//
+						// @Override
+						// protected String editItem(String item) {
+						// // TODO Auto-generated method stub
+						// return null;
+						// }
+						// };
 					}
-					
+
 				};
-				dlg.setTitle( "" + tableConfig.getName() + " user formulae");
+				dlg.setTitle("" + tableConfig.getName() + " user formulae");
 				dlg.setLocationRelativeTo(AdapterTablesTabControl.this);
 				dlg.setMinimumSize(new Dimension(400, 200));
-//				dlg.setMaximumSize(new Dimension(400, 800));
-				
+				// dlg.setMaximumSize(new Dimension(400, 800));
+
 				// replace the formulae
-				if(dlg.showModal() == OkCancelDialog.OK_OPTION){
+				if (dlg.showModal() == OkCancelDialog.OK_OPTION) {
 					tableConfig.setUserFormulae(formulaeCopy);
 				}
 			}
 		});
-				
-		
+
 		return ret;
 	}
 
