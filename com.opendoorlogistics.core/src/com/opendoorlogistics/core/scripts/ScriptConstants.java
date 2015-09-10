@@ -14,6 +14,8 @@ final public class ScriptConstants {
 	public static final String EXTERNAL_DS_NAME = "external";
 
 	public static final String INTERNAL_GLOBAL_DS = "scriptglobal";
+	
+	public static final String SCRIPT_EMBEDDED_TABLE_DATA_DS = "embeddedData";
 
 //	public static final String IMPORT_LINK_POSTFIX =":\\";
 	

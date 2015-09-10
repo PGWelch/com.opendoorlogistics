@@ -8,6 +8,7 @@ package com.opendoorlogistics.studio.scripts.editor.adapters;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Toolkit;
@@ -24,6 +25,7 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -37,6 +39,7 @@ import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.TableFlags;
@@ -47,6 +50,7 @@ import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.elements.ScriptElementType;
 import com.opendoorlogistics.core.scripts.elements.UserFormula;
+import com.opendoorlogistics.core.scripts.execution.adapters.EmbeddedDataUtils;
 import com.opendoorlogistics.core.scripts.io.XMLConversionHandler;
 import com.opendoorlogistics.core.scripts.io.XMLConversionHandlerImpl;
 import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
@@ -54,6 +58,8 @@ import com.opendoorlogistics.core.scripts.utils.AdapterExpectedStructureProvider
 import com.opendoorlogistics.core.scripts.utils.AdapterExpectedStructureProvider;
 import com.opendoorlogistics.core.scripts.wizard.TableLinkerWizard;
 import com.opendoorlogistics.core.tables.ODLFactory;
+import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
+import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.ODLDatastoreDefinitionProvider;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -63,6 +69,8 @@ import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.studio.scripts.editor.ScriptXMLTransferHandler;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdaptedTableControl.FormChangedListener;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
+import com.opendoorlogistics.studio.tables.grid.GridEditPermissions;
+import com.opendoorlogistics.studio.tables.grid.ODLGridTable;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.ListPanel;
 import com.opendoorlogistics.utils.ui.ODLAction;
@@ -733,6 +741,64 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 		});
 
+		ret.add(new TabPageAction("Edit embedded table data", "Edit embedded table data", "toggle-embedded-script-data.png") {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int index = getIndex();
+				if(index==-1){
+					return;
+				}
+				
+				boolean validated=false;
+				if(!EmbeddedDataUtils.isValidTable(table)){
+					if(JOptionPane.showConfirmDialog(AdapterTablesTabControl.this, "The table is not currently configured as an embedded data table. Do you want to configure it to embed data?\nThis will delete all formulae and from table information (cannot be undone).", "Reconfigure table?", JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION){
+						return;
+					}
+					EmbeddedDataUtils.makeValid(table);
+					validated = true;
+				}
+				
+				
+				// Show a modal control for editing the data
+				ODLTableAlterable tabledata = table.getDataTable();
+				ODLDatastoreImpl<ODLTableAlterable> tmpDs = new ODLDatastoreImpl<>(null);
+				tmpDs.addTable(tabledata);
+				UndoRedoDecorator<ODLTableAlterable> undoredo = new UndoRedoDecorator<>(ODLTableAlterable.class, tmpDs);
+				GridEditPermissions permissions = new GridEditPermissions(true, true, true, true, false);
+				ODLGridTable tableCtrl = new ODLGridTable(undoredo, tabledata.getImmutableId(), false, null, undoredo, permissions);
+				OkCancelDialog dlg = new OkCancelDialog(SwingUtilities.getWindowAncestor(AdapterTablesTabControl.this), true, true){
+					@Override
+					protected Component createMainComponent(boolean inWindowsBuilder) {
+						JPanel panel = new JPanel();
+						ODLGridTable.addToContainer(tableCtrl, panel);
+						return panel;
+					}
+				};
+				dlg.setTitle("Edit embedded table data");
+				
+				boolean dataChanged=false;
+				if(dlg.showModal() == OkCancelDialog.OK_OPTION){
+					table.setDataTable(tabledata);
+					dataChanged=true;
+					
+				}
+				
+				// remove and re-add the control
+				if(validated || dataChanged){
+					tabs.remove(index);
+					addTabCtrl(table, index);
+					updateAppearance(true);
+
+				}
+			}
+			
+			@Override
+			public void updateEnabled() {
+				setEnabled(getIndex() != -1);
+			}
+		});
+		
 		// wizard tools actions (appear in a popup)
 		ArrayList<ODLAction> wizardTools = new ArrayList<>();
 		wizardTools.add(new TabPageAction("Update table based on destination",
@@ -750,6 +816,7 @@ public class AdapterTablesTabControl extends JPanel {
 						&& TableUtils.findTable(targetDatastore.getDatastoreDefinition(), table.getName()) != null);
 			}
 		});
+	
 
 		// create seleted empty tables in datastore action
 		wizardTools.add(new TabPageAction("Export this table to datastore",

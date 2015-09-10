@@ -6,15 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.scripts.execution.adapters;
 
-import gnu.trove.impl.Constants;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.map.hash.TLongIntHashMap;
-import gnu.trove.map.hash.TLongObjectHashMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
-import gnu.trove.set.hash.TIntHashSet;
-
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,7 +14,6 @@ import java.util.UUID;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.components.ProcessingApi;
-import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -44,7 +34,6 @@ import com.opendoorlogistics.core.formulae.Functions.FmConst;
 import com.opendoorlogistics.core.formulae.Functions.FmEquals;
 import com.opendoorlogistics.core.formulae.UserVariableProvider;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary;
-import com.opendoorlogistics.core.geometry.Spatial;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
@@ -63,7 +52,6 @@ import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator.AdapterMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.RowFilterDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.UnionDecorator;
-import com.opendoorlogistics.core.tables.io.TableIOUtils;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -72,6 +60,14 @@ import com.opendoorlogistics.core.utils.UpdateTimer;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
+
+import gnu.trove.impl.Constants;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.list.array.TLongArrayList;
+import gnu.trove.map.hash.TLongIntHashMap;
+import gnu.trove.map.hash.TLongObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.hash.TIntHashSet;
 
 final public class AdapterBuilder {
 
@@ -640,16 +636,45 @@ final public class AdapterBuilder {
 		AdaptedTableConfig tableConfig = processedConfig.getTables().get(destTableIndx);
 			
 		if(tableConfig.isJoin() && tableConfig.isFetchSourceFields()){
-			report.setFailed("Fetching source fields is not supported with join queries - see adapted table " + tableConfig.getName() + ".");
+			report.setFailed("Automatically adding source fields to the adapted table is not supported with join queries - see adapted table " + tableConfig.getName() + ".");
+			return;
+		}
+		
+		// test if we have a filter formula or sorts
+		String filterFormula = tableConfig.getFilterFormula();
+		boolean hasFilter = filterFormula!=null && filterFormula.trim().length()>0;
+		int[] sortCols =getOrderedSortColumns(tableConfig);
+		boolean hasSort = sortCols!=null && sortCols.length>0;
+
+		// process a table data adapter (i.e. not really an adapter - it actually stores data)
+		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);			
+		if(EmbeddedDataUtils.isEmbeddedData(tableConfig)){
+			
+			if(hasFilter){
+				env.setFailed("Filtering is not supported with embedded data.");
+				return;
+			}
+			
+			if(hasSort){
+				env.setFailed("Sorting is not supported with embedded data.");
+				return;	
+			}
+			
+			ODLDatastoreAlterable<? extends ODLTableAlterable> dataDs = api.tables().createAlterableDs();
+			ODLTableAlterable dataTable = tableConfig.getDataTable(dataDs);
+			int dsIndx = datasources.size();
+			mapping.setTableSourceId(destTable.getImmutableId(),dsIndx, dataTable.getImmutableId());			
+			datasources.add(dataDs);
+			for(int col=0;col< destTable.getColumnCount();col++){
+				mapping.setFieldSourceIndx(destTable.getImmutableId(), col, col);
+			}
 			return;
 		}
 		
 		// Check for case where we have a filter formula based only on a parameter that's false and hence we can skip recurse building.
 		// Don't test if we're doing a join as we need the join table definition.
-		String filterFormula = tableConfig.getFilterFormula();
-		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);	
 		if(!tableConfig.isJoin()){
-			if(filterFormula!=null && filterFormula.trim().length() >0 && isAlwaysFalseFilterFormula(filterFormula, tableConfig.getUserFormulae())){
+			if(hasFilter && isAlwaysFalseFilterFormula(filterFormula, tableConfig.getUserFormulae())){
 				mapToNewEmptyTable(destTable.getImmutableId(), destTable);
 				return;
 			}			
@@ -690,7 +715,6 @@ final public class AdapterBuilder {
 		
 		// If we have both sorting and group by then we should process sorting early, which always requires a filter formula
 		// as it uses the filter decorator
-		int[] sortCols =getOrderedSortColumns(tableConfig);
 		boolean processSortNow = AdapterBuilderUtils.hasGroupByColumn(tableConfig) == false && sortCols.length>0;
 		if (processSortNow && (filterFormula == null || filterFormula.trim().length() == 0)) {
 			filterFormula = "true";
@@ -749,6 +773,8 @@ final public class AdapterBuilder {
 			}
 		}
 	}
+
+
 
 	/**
 	 *  Create a filtered table if needed, which then becomes the source table for our final decorator...
@@ -1216,6 +1242,11 @@ final public class AdapterBuilder {
 
 	
 	private InternalTableRef buildJoinTable(final ODLTableReadOnly innerTable, AdaptedTableConfig tableConfig){
+		if(EmbeddedDataUtils.isEmbeddedData(tableConfig)){
+			env.setFailed("Embedded data in table adapters is not supported with joins.");
+			return null;
+		}
+		
 		// get outer table
 		int outerDsId = recurseBuild(tableConfig.getJoinDatastore());
 		if (outerDsId == -1) {

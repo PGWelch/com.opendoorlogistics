@@ -317,11 +317,9 @@ class ScriptExecutionTask {
 						DataDependencies dependencies = guiFascade.getDependenciesByInstructionId(cb.getInstructionId());
 						
 						// give it a parameters table if we have one and can refresh
-						ODLDatastore<? extends ODLTable> parameters = cb.getDeepCopyParamsTable();
-						if(frame.getRefreshMode()!=RefreshMode.NEVER && parameters!=null){
+						ODLDatastore<? extends ODLTable> parameters = cb.getParamsDs();
+						if( parameters!=null){
 							parameters = api.tables().copyDs(parameters);
-						}else{
-							parameters = null;
 						}
 						
 						frame.setDependencies(runner.getDs(), unfiltered, dependencies, parameters);

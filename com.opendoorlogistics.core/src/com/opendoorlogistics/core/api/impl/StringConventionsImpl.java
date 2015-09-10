@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.opendoorlogistics.api.Factory;
 import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.core.formulae.StringTokeniser;
 import com.opendoorlogistics.core.formulae.StringTokeniser.StringToken;
@@ -135,6 +136,11 @@ public class StringConventionsImpl implements StringConventions{
 	@Override
 	public String getExceptionReport(Throwable t) {
 		return Strings.getExceptionMessagesAsSingleStr(t);
+	}
+
+	@Override
+	public <T> Map<String, T> createStandardisedMap(Factory<T> factory) {
+		return new StandardisedStringTreeMap<>(factory);
 	}
 	
 	

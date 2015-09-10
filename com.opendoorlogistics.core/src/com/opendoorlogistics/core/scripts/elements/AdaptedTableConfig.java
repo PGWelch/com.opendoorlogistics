@@ -6,8 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.scripts.elements;
 
-import gnu.trove.set.hash.TIntHashSet;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,15 +15,24 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
+import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
+import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig.SortField;
 import com.opendoorlogistics.core.tables.memory.ODLAbstractTableDefinition;
 import com.opendoorlogistics.core.tables.memory.ODLColumnDefinition;
+import com.opendoorlogistics.core.tables.utils.DatastoreComparer;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.HasShortDescription;
 import com.opendoorlogistics.core.utils.JAXBUtils;
+
+import gnu.trove.set.hash.TIntHashSet;
 
 @XmlRootElement(name = "AdaptedTable")		
 final public class AdaptedTableConfig extends ODLAbstractTableDefinition<AdapterColumnConfig> implements Serializable, HasShortDescription{
@@ -67,6 +74,9 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 
 	@XmlTransient
 	private boolean fetchSourceFields=false;
+	
+	@XmlTransient
+	private ArrayList<EmbeddedDataRow> data;
 	
 	public AdaptedTableConfig(){}
 
@@ -114,6 +124,18 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 		AdaptedTableConfig ret = createNoColumnsCopy();
 		for(AdapterColumnConfig column: getColumns()){
 			ret.getColumns().add( new AdapterColumnConfig(column, column.getImmutableId()));
+		}
+		
+		if(data!=null){
+			ret.data = new ArrayList<>(data.size());
+			for(EmbeddedDataRow row:data){
+				if(row!=null){
+					// strings are immutable so just need to copy the collection
+					ret.data.add(new EmbeddedDataRow(row.getValues()));
+				}else{
+					ret.data.add(null);
+				}
+			}
 		}
 		return ret;
 	}
@@ -242,6 +264,12 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 	public void setFilterFormula(String filterFormula) {
 		this.filterFormula = filterFormula;
 	}
+
+	public ODLTableDefinitionAlterable createOutputDefinition(){
+		ODLTableDefinitionAlterable ret = new ODLApiImpl().tables().createAlterableTable(getName());
+		createOutputDefinition(ret);
+		return ret;
+	}
 	
 	public void createOutputDefinition(ODLTableDefinitionAlterable ret){
 		if(ret.getColumnCount()!=0){
@@ -347,5 +375,73 @@ final public class AdaptedTableConfig extends ODLAbstractTableDefinition<Adapter
 		this.fetchSourceFields = fetchSourceFields;
 	}
 
+	public ArrayList<EmbeddedDataRow> getData() {
+		return data;
+	}
+
+	@XmlElement(name = "Data")
+	public void setData(ArrayList<EmbeddedDataRow> data) {
+		this.data = data;
+	}
 	
+	/**
+	 * Set the data table, converting the input table to list-of-strings representation.
+	 * The table must match the adapter's definition or an exception is thrown
+	 * @param table
+	 */
+	@XmlTransient
+	public void setDataTable(ODLTableReadOnly table){
+		if(!DatastoreComparer.isSameStructure(table, createOutputDefinition(),0)){
+			throw new IllegalArgumentException();
+		}
+		
+		int nr = table.getRowCount();
+		int nc  = table.getColumnCount();
+		data = new ArrayList<>(nr);
+		ODLApi api = new ODLApiImpl();
+		for(int row=0; row<nr; row++){
+			EmbeddedDataRow newRow = new EmbeddedDataRow(nc);
+			data.add(newRow);
+			for(int col=0; col < nc ; col++){
+				newRow.getValues().add(api.values().canonicalStringRepresentation(table.getValueAt(row, col)));
+			}
+		}
+	}
+
+	/**
+	 * Create the data table from this adapter. The data is only filled if there
+	 * is row data set on the adapter.
+	 * @return
+	 */
+	@XmlTransient
+	public ODLTableAlterable getDataTable(){
+		ODLApi api = new ODLApiImpl();
+		ODLTableAlterable ret = api.tables().createAlterableTable(getName());
+		getDataTable(ret);
+		ret.setFlags(ret.getFlags() | TableFlags.UI_SET_INSERT_DELETE_PERMISSION_FLAGS);
+		return ret;
+	}
+
+	private void getDataTable(ODLTableAlterable ret) {
+		createOutputDefinition(ret);
+		int nc = ret.getColumnCount();
+		if(data!=null){
+			for(EmbeddedDataRow row:data){
+				if(row!=null){
+					int rowNb = ret.createEmptyRow(-1);
+					int len = row.getValues().size();
+					len = Math.min(len, nc);
+					for(int col =0 ; col < len ;col++){
+						ret.setValueAt(row.getValues().get(col), rowNb, col);
+					}
+				}
+			}
+		}
+	}
+
+	public ODLTableAlterable getDataTable(ODLDatastoreAlterable<? extends ODLTableAlterable> ds){
+		ODLTableAlterable ret = ds.createTable(getName(), -1);
+		getDataTable(ret);
+		return ret;
+	}
 }

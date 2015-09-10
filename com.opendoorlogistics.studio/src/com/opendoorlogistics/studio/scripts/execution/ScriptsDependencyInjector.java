@@ -33,14 +33,14 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 		final private ControlLauncherCallback cb;
 		final private String instructionId;
 		final private ODLComponent callingComponent;
-		final private ODLDatastore<? extends ODLTable> deepCopyParamsTable;
+		final private ODLDatastore<? extends ODLTable> paramsDs;
 
-		public RecordedLauncherCallback(ControlLauncherCallback cb, String instructionId , ODLComponent callingComponent,ODLDatastore<? extends ODLTable> deepCopyParamsTable) {
+		public RecordedLauncherCallback(ControlLauncherCallback cb, String instructionId , ODLComponent callingComponent,ODLDatastore<? extends ODLTable> immutableParamsDs) {
 			super();
 			this.cb = cb;
 			this.instructionId = instructionId;
 			this.callingComponent = callingComponent;
-			this.deepCopyParamsTable = deepCopyParamsTable;
+			this.paramsDs = immutableParamsDs;
 		}
 
 		public ControlLauncherCallback getCb() {
@@ -55,8 +55,8 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 			return callingComponent;
 		}
 
-		public ODLDatastore<? extends ODLTable> getDeepCopyParamsTable() {
-			return deepCopyParamsTable;
+		public ODLDatastore<? extends ODLTable> getParamsDs() {
+			return paramsDs;
 		}
 		
 	}

@@ -6,6 +6,9 @@
  ******************************************************************************/
 package com.opendoorlogistics.api.ui;
 
+import java.awt.Component;
+import java.awt.Window;
+
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -79,4 +82,11 @@ public interface UIFactory {
 	 * A panel that lays components out vertically with left alignment and stretching horizontally
 	 */
 	public JPanel createVerticalLayoutPanel();
+	
+	
+	public PromptOkCancelDialog createPromptOkCancelDialog(Window parent, JPanel contents);
+	
+	public interface PromptOkCancelDialog{
+		boolean prompt();
+	}
 }

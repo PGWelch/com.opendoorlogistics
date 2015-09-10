@@ -73,6 +73,17 @@ public interface StringConventions {
 	<T> Map<String, T> createStandardisedMap();
 	
 	/**
+	 * Create a map where all strings are standardised by default.
+	 * Not all map methods are supported.
+	 * Strings are ordered using the natural ordering in the standardised form.
+	 * 
+	 * @param factory If non-null, then get on an empty record or will cause
+	 * a record to be created using the factory to populate the value. 
+	 * @return
+	 */
+	<T> Map<String, T> createStandardisedMap(Factory<T> factory);
+	
+	/**
 	 * Create a set where all strings are standardised by default.
 	 * Not all set methods are supported.
 	 * Strings are ordered using the natural ordering in the standardised form.

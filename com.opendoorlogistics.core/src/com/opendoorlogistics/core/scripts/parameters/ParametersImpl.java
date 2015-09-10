@@ -1,10 +1,10 @@
 package com.opendoorlogistics.core.scripts.parameters;
 
-import static com.opendoorlogistics.core.scripts.parameters.WithKeyParametersTable.COL_EDITOR_TYPE;
-import static com.opendoorlogistics.core.scripts.parameters.WithKeyParametersTable.COL_KEY;
-import static com.opendoorlogistics.core.scripts.parameters.WithKeyParametersTable.COL_PROMPT_TYPE;
-import static com.opendoorlogistics.core.scripts.parameters.WithKeyParametersTable.COL_VALUE;
-import static com.opendoorlogistics.core.scripts.parameters.WithKeyParametersTable.COL_VALUE_TYPE;
+import static com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParametersTable.COL_EDITOR_TYPE;
+import static com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParametersTable.COL_KEY;
+import static com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParametersTable.COL_PROMPT_TYPE;
+import static com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParametersTable.COL_VALUE;
+import static com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParametersTable.COL_VALUE_TYPE;
 
 import java.util.List;
 
@@ -17,23 +17,29 @@ import com.opendoorlogistics.api.scripts.parameters.ParametersControlFactory;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptAdapterImpl;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
+import com.opendoorlogistics.core.scripts.parameters.beans.NoKeyParameterValues;
+import com.opendoorlogistics.core.scripts.parameters.beans.NoKeyParametersTable;
+import com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParameterValues;
+import com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParametersTable;
 import com.opendoorlogistics.core.tables.beans.BeanMapping;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
 import com.opendoorlogistics.core.utils.strings.EnumStdLookup;
 
 public class ParametersImpl implements Parameters{
 	public static final String TABLE_NAME = "Parameter";
+	public static final String PARAMETER_VALUES_TABLE_NAME = "ParameterValues";
 	public static final String VALUES_TABLE_NAME = "ParameterValues";
 	public static final String DS_ID = "internal";
 	
-	private static final BeanDatastoreMapping BEAN_NO_KEY_DS_MAPPING = BeanMapping.buildDatastore(NoKeyParametersTable.class);
-	private static final BeanDatastoreMapping BEAN_WITH_KEY_DS_MAPPING = BeanMapping.buildDatastore(WithKeyParametersTable.class);
+	private static final BeanDatastoreMapping BEAN_NO_KEY_DS_MAPPING = BeanMapping.buildDatastore(NoKeyParametersTable.class, NoKeyParameterValues.class);
+	private static final BeanDatastoreMapping BEAN_WITH_KEY_DS_MAPPING = BeanMapping.buildDatastore(WithKeyParametersTable.class, WithKeyParameterValues.class);
 //	private static final BeanTableMapping NO_KEY_BEAN_MAPPING = BEAN_NO_KEY_DS_MAPPING.getTableMapping(0);
 	private static final EnumStdLookup<ODLColumnType> COL_TYPE_LOOKUP = new EnumStdLookup<ODLColumnType>(ODLColumnType.class);
 	private static final EnumStdLookup<PromptType> PROMPT_TYPE_LOOKUP = new EnumStdLookup<PromptType>(PromptType.class);
@@ -41,7 +47,7 @@ public class ParametersImpl implements Parameters{
 	
 	private final ODLApi api;
 	
-	private static final ParametersControlFactory PARAMETERS_CONTROL;
+	private static volatile ParametersControlFactory PARAMETERS_CONTROL;
 	static{
 		List<ParametersControlFactory> ctrls =new ODLApiImpl().loadPlugins(ParametersControlFactory.class);
 		if(ctrls.size()>0){
@@ -59,8 +65,18 @@ public class ParametersImpl implements Parameters{
 
 	@Override
 	public ODLTableDefinition tableDefinition(boolean includeKey) {
-		return (includeKey ? BEAN_WITH_KEY_DS_MAPPING : BEAN_NO_KEY_DS_MAPPING).getDefinition().getTableAt(0);
+		return getTableDefinition(includeKey,0);
 	}
+
+	private ODLTableDefinition getTableDefinition(boolean includeKey, int indx) {
+		return (includeKey ? BEAN_WITH_KEY_DS_MAPPING : BEAN_NO_KEY_DS_MAPPING).getDefinition().getTableAt(indx);
+	}
+	
+	@Override
+	public ODLTableDefinition valuesTableDefinition(boolean includeKeyColumn) {
+		return getTableDefinition(includeKeyColumn, 1);
+	}
+
 
 	@Override
 	public Object getValue(ODLTableReadOnly parametersTable, String name) {
@@ -163,13 +179,21 @@ public class ParametersImpl implements Parameters{
 	}
 
 	@Override
+	public void setByKey(ODLTable table, String key, ParamDefinitionField type, String newValue) {
+		long rowId = getRowId(key, table);
+		if(rowId!=-1){
+			table.setValueById(newValue, rowId, getColIndx(type));
+		}
+	}
+	
+	@Override
 	public ODLDatastore<? extends ODLTableReadOnly> exampleDs() {
 		ODLDatastoreAlterable<? extends ODLTableAlterable>  ret = api.tables().createAlterableDs();
 		api.tables().copyTableDefinition(tableDefinition(true), ret);
 		
 		for(int i =0 ; i < 3 ; i++){
 			WithKeyParametersTable o = new WithKeyParametersTable();
-			o.key = "View" + (i+1);
+			o.setKey( "View" + (i+1));
 			o.setValue("View" + (i+1));
 			o.setPromptType( PromptType.ATTACH.name());
 			BEAN_WITH_KEY_DS_MAPPING.getTableMapping(0).writeObjectToTable(o, ret.getTableAt(0));
@@ -208,19 +232,36 @@ public class ParametersImpl implements Parameters{
 		
 		// wrap the config in the api object so we can user our high-level api code to configure it...
 		ScriptAdapter adapter = new ScriptAdapterImpl(api,null,config);
-		
 		adapter.setName(adapter.getAdapterId());
 		adapter.setAdapterType(ScriptAdapterType.PARAMETER);
+		
+		// add parameters table
 		ScriptAdapterTable newParameter = adapter.addSourcelessTable(tableDefinition(false));
-		//newParameter.setFormula(WithKeyParametersTable.COL_KEY, "\"name\"");
 		newParameter.setFormula(Parameters.FIELDNAME_VALUE_TYPE, "\"" + ODLColumnType.STRING.name()+ "\"");
-	//	newParameter.setFormula(Parameters.FIELDNAME_DEFAULT_VALUE, "\"\"");
 		newParameter.setFormula(Parameters.FIELDNAME_EDITOR_TYPE, "\"\"");
 		newParameter.setFormula(Parameters.FIELDNAME_PROMPT_TYPE, "\"" + PromptType.ATTACH.name() + "\"");
-		
 		String inputTableName = tableDefinition(false).getName();
 		newParameter.setSourceTable(":=emptytable(\"" +inputTableName+ "\",1)", inputTableName);
+		
+		// add available values table...
+		ScriptAdapterTable availableValues = adapter.addSourcelessTable(valuesTableDefinition(false));
+		String valuesTableName = valuesTableDefinition(false).getName();
+		availableValues.setSourceTable(":=emptytable(\"" +valuesTableName+ "\",0)", valuesTableName);
+		//availableValues.setFormula(0, "\"\"");
 	
 		return config;
 	}
+
+	@Override
+	public void registerControlFactory(ParametersControlFactory factory) {
+		PARAMETERS_CONTROL = factory;
+	}
+
+	@Override
+	public ODLTable findTable(ODLDatastore<? extends ODLTable> ds, TableType type) {
+		return api.tables().findTable(ds, type== TableType.PARAMETERS? TABLE_NAME : PARAMETER_VALUES_TABLE_NAME);
+	}
+
+
+
 }

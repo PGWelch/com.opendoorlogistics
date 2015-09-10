@@ -643,6 +643,8 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 				for(int i =0 ; i<ret.length ; i++){
 					arrayList.add( datastores.get(i).getDatastoreId());
 				}
+				
+				arrayList.add(ScriptConstants.SCRIPT_EMBEDDED_TABLE_DATA_DS);
 
 //				arrayList.add(ScriptConstants.SHAPEFILE_DS_NAME_PREFIX + "filename.shp");
 //				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xls");

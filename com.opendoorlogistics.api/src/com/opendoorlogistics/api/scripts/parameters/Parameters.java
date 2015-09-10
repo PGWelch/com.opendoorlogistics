@@ -2,6 +2,7 @@ package com.opendoorlogistics.api.scripts.parameters;
 
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 
@@ -12,10 +13,17 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
  */
 public interface Parameters {
 	ODLTableDefinition tableDefinition(boolean includeKeyColumn);
+	ODLTableDefinition valuesTableDefinition(boolean includeKeyColumn);
 	
 	ODLDatastore<? extends ODLTableDefinition> dsDefinition(boolean includeKeyColumn);
 	
 	ODLDatastore<? extends ODLTableReadOnly> exampleDs();
+	
+	enum TableType{
+		PARAMETERS,
+		PARAMETER_VALUES,
+	}
+	ODLTable findTable(ODLDatastore<? extends ODLTable> ds,TableType type );
 
 	//String getParameterControlComponentId();
 	
@@ -32,7 +40,8 @@ public interface Parameters {
 	PromptType getPromptType(ODLTableReadOnly parametersTable, String key);
 	//String getKey(ODLTableReadOnly parametersTable, int row);
 	String getByRow(ODLTableReadOnly parametersTable, int row,ParamDefinitionField type);
-	String getByKey(ODLTableReadOnly parametersTable, String key,ParamDefinitionField type);	
+	String getByKey(ODLTableReadOnly parametersTable, String key,ParamDefinitionField type);
+	void setByKey(ODLTable table, String key,ParamDefinitionField type, String newValue);
 	boolean exists(ODLTableReadOnly parametersTable, String key);
 	
 	/**
@@ -40,6 +49,12 @@ public interface Parameters {
 	 * @return
 	 */
 	ParametersControlFactory getControlFactory();
+	
+	/**
+	 * Registers the app-global parameters control factory
+	 * @param factory
+	 */
+	void registerControlFactory(ParametersControlFactory factory);
 	
 	public static final String FIELDNAME_KEY ="Key";
 	public static final String FIELDNAME_VALUE_TYPE ="ValueType";

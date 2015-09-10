@@ -23,6 +23,10 @@ public class FmLocalElement extends FmRowDependent{
 		this.columnIndex = columnIndex;
 	}
 
+	public String getFieldName(){
+		return name;
+	}
+	
 	@Override
 	public Object execute(FunctionParameters parameters) {
 		TableParameters p = (TableParameters)parameters;

@@ -1,18 +1,21 @@
-package com.opendoorlogistics.core.scripts.parameters;
+package com.opendoorlogistics.core.scripts.parameters.beans;
+
+import static com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParametersTable.*;
 
 import com.opendoorlogistics.api.scripts.parameters.Parameters;
 import com.opendoorlogistics.api.scripts.parameters.Parameters.ParamDefinitionField;
 import com.opendoorlogistics.api.scripts.parameters.Parameters.PromptType;
 import com.opendoorlogistics.api.tables.ODLColumnType;
+import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
-import static com.opendoorlogistics.core.scripts.parameters.WithKeyParametersTable.*;
 
 @ODLTableName(ParametersImpl.TABLE_NAME)
-@SuppressWarnings("unused") class NoKeyParametersTable extends BeanMappedRowImpl{
+@SuppressWarnings("unused") 
+public class NoKeyParametersTable extends BeanMappedRowImpl{
 	// key, value, description, value-type, ui-type, default value
 	private String valuetype = ODLColumnType.STRING.name();
 //	private String defaultValue;

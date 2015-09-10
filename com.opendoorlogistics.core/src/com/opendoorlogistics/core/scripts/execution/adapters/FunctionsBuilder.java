@@ -37,6 +37,7 @@ import com.opendoorlogistics.core.scripts.formulae.FmAggregate;
 import com.opendoorlogistics.core.scripts.formulae.FmAggregate.AggregateType;
 import com.opendoorlogistics.core.scripts.formulae.FmGroupWeightedCentroid;
 import com.opendoorlogistics.core.scripts.formulae.FmIsSelectedInMap;
+import com.opendoorlogistics.core.scripts.formulae.FmLocalElement;
 import com.opendoorlogistics.core.scripts.formulae.FmLookup;
 import com.opendoorlogistics.core.scripts.formulae.FmLookup.LookupType;
 import com.opendoorlogistics.core.scripts.formulae.image.FmImage;
@@ -359,10 +360,22 @@ final public class FunctionsBuilder {
 							if (ds != null) {
 								ODLTableDefinition table = TableUtils.findTable(ds, tableName, true);
 								if (table != null) {
+									
+									// If the parameter's key could be a fieldname or could be a string constant,
+									// assume its a string constant; otherwise we select the parameter based on the value
+									// of the table's field value (i.e. we could select a different parameter for each row).
+									Function parameterKeyFunction = children[0];
+									if(parameterKeyFunction instanceof FmLocalElement){
+										FmLocalElement le = (FmLocalElement)parameterKeyFunction;
+										if(le.getFieldName()!=null){
+											parameterKeyFunction = new FmConst((le.getFieldName()));											
+										}
+									}
+									
 									int key = TableUtils.findColumnIndx(table, PredefinedTags.PARAMETERS_TABLE_KEY);
 									int value = TableUtils.findColumnIndx(table, PredefinedTags.PARAMETERS_TABLE_VALUE);
 									if (key != -1 && value != -1) {
-										return new FmParameter(children[0], index, table.getImmutableId(), key, value);
+										return new FmParameter(parameterKeyFunction, index, table.getImmutableId(), key, value);
 									}
 								}
 							}

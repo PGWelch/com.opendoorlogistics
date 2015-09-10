@@ -6,6 +6,9 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
+import java.awt.Component;
+import java.awt.Window;
+
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -22,6 +25,7 @@ import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
 import com.opendoorlogistics.core.utils.ui.IntegerEntryPanel;
+import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel;
 import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel.EntryType;
@@ -86,6 +90,16 @@ public class UIFactoryImpl implements UIFactory{
 	@Override
 	public JPanel createTextEntryPane(String label, String initialValue, String tooltip, TextChangedListener listener) {
 		return new TextEntryPanel(label, initialValue, tooltip, EntryType.String, listener);
+	}
+
+	@Override
+	public PromptOkCancelDialog createPromptOkCancelDialog(Window parent, JPanel contents) {
+		return new OkCancelDialog(parent, true, true){
+			protected Component createMainComponent(boolean inWindowsBuilder) {
+				return contents;
+			}
+			
+		};
 	}
 
 }
