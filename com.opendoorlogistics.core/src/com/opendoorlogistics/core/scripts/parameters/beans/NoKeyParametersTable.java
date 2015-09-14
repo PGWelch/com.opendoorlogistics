@@ -19,7 +19,7 @@ public class NoKeyParametersTable extends BeanMappedRowImpl{
 	// key, value, description, value-type, ui-type, default value
 	private String valuetype = ODLColumnType.STRING.name();
 //	private String defaultValue;
-	private String editorType;
+//	private String editorType;
 	private String promptType = PromptType.ATTACH.name();
 	private String value;
 
@@ -63,18 +63,18 @@ public class NoKeyParametersTable extends BeanMappedRowImpl{
 	public void setValue(String value) {
 		this.value = value;
 	}
-
-	public String getEditorType() {
-		return editorType;
-	}
-
-	@ODLColumnName(Parameters.FIELDNAME_EDITOR_TYPE)
-	@ODLColumnOrder(COL_EDITOR_TYPE)
-	@ODLNullAllowed
-	public void setEditorType(String editorType) {
-		this.editorType = editorType;
-	}
-	
+//
+//	public String getEditorType() {
+//		return editorType;
+//	}
+//
+//	@ODLColumnName(Parameters.FIELDNAME_EDITOR_TYPE)
+//	@ODLColumnOrder(COL_EDITOR_TYPE)
+//	@ODLNullAllowed
+//	public void setEditorType(String editorType) {
+//		this.editorType = editorType;
+//	}
+//	
 	
 	
 }

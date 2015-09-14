@@ -59,7 +59,7 @@ public interface Parameters {
 	public static final String FIELDNAME_KEY ="Key";
 	public static final String FIELDNAME_VALUE_TYPE ="ValueType";
 	//public static final String FIELDNAME_DEFAULT_VALUE ="DefaultValue";
-	public static final String FIELDNAME_EDITOR_TYPE ="EditorType";
+//	public static final String FIELDNAME_EDITOR_TYPE ="EditorType";
 	public static final String FIELDNAME_PROMPT_TYPE ="PromptType";
 	public static final String FIELDNAME_VALUE ="Value";
 	
@@ -67,7 +67,7 @@ public interface Parameters {
 		KEY,
 		VALUE_TYPE,
 	//	DEFAULT_VALUE,
-		EDITOR_TYPE,
+//		EDITOR_TYPE,
 		PROMPT_TYPE,
 		VALUE;
 
@@ -79,6 +79,7 @@ public interface Parameters {
 		ATTACH,
 		POPUP,
 		ATTACH_POPUP,
+		HIDDEN,
 
 	}
 	

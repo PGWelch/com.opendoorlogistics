@@ -27,6 +27,8 @@ public class Option extends ScriptBaseElementImpl{
 	private List<ComponentConfig> componentConfig = new ArrayList<ComponentConfig>();
 	private String optionId;
 	private boolean synchronised;
+	private boolean overrideVisibleParameters=false;
+	private String visibleParametersOverride;
 
 	public String getOptionId() {
 		return optionId;
@@ -130,6 +132,24 @@ public class Option extends ScriptBaseElementImpl{
 	@XmlElement(name="ComponentConfig")		
 	public void setComponentConfigs(List<ComponentConfig> componentConfig) {
 		this.componentConfig = componentConfig;
+	}
+
+	public boolean isOverrideVisibleParameters() {
+		return overrideVisibleParameters;
+	}
+
+	@XmlAttribute
+	public void setOverrideVisibleParameters(boolean overrideVisibleParameters) {
+		this.overrideVisibleParameters = overrideVisibleParameters;
+	}
+
+	public String getVisibleParametersOverride() {
+		return visibleParametersOverride;
+	}
+
+	@XmlAttribute
+	public void setVisibleParametersOverride(String visibleParametersOverride) {
+		this.visibleParametersOverride = visibleParametersOverride;
 	}
 
 

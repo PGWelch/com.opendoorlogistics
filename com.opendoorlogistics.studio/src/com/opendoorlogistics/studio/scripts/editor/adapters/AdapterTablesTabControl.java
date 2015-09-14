@@ -33,16 +33,19 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.api.tables.ODLListener.ODLListenerType;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.TargetIODsInterpreter;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
@@ -58,6 +61,7 @@ import com.opendoorlogistics.core.scripts.utils.AdapterExpectedStructureProvider
 import com.opendoorlogistics.core.scripts.utils.AdapterExpectedStructureProvider;
 import com.opendoorlogistics.core.scripts.wizard.TableLinkerWizard;
 import com.opendoorlogistics.core.tables.ODLFactory;
+import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
@@ -83,8 +87,7 @@ public class AdapterTablesTabControl extends JPanel {
 	private final QueryAvailableData availableOptionsQuery;
 	private final AdapterConfig config;
 	private final ODLDatastoreDefinitionProvider targetDatastore;
-	private final XMLConversionHandler conversionHandler = new XMLConversionHandlerImpl(
-			ScriptElementType.ADAPTED_TABLE);
+	private final XMLConversionHandler conversionHandler = new XMLConversionHandlerImpl(ScriptElementType.ADAPTED_TABLE);
 	private final ScriptUIManager scriptUIManager;
 
 	private class MyXMLTransferHandler extends ScriptXMLTransferHandler {
@@ -106,8 +109,7 @@ public class AdapterTablesTabControl extends JPanel {
 
 	}
 
-	public AdapterTablesTabControl(ODLApi api, final AdapterConfig config, long visibleFlags,
-			QueryAvailableData availableOptionsQuery, AdapterExpectedStructureProvider targetDatastore,
+	public AdapterTablesTabControl(ODLApi api, final AdapterConfig config, long visibleFlags, QueryAvailableData availableOptionsQuery, AdapterExpectedStructureProvider targetDatastore,
 			ScriptUIManager uiManager) {
 		this.tabs = new JTabbedPane();
 		this.api = api;
@@ -122,56 +124,106 @@ public class AdapterTablesTabControl extends JPanel {
 		setLayout(new BorderLayout());
 		add(tabs, BorderLayout.CENTER);
 		for (final AdaptedTableConfig table : config.getTables()) {
-			addTabCtrl(table, tabs.getTabCount());
+			addTabCtrl(table, tabs.getTabCount(), null);
 		}
 
 		updateAppearance(true);
 	}
 
-	private void addTabCtrl(final AdaptedTableConfig table, int index) {
+	private void addTabCtrl(final AdaptedTableConfig table, int index, Boolean embeddedDataEditor) {
 
-		long visibleTableFlags = 0;
-		long newTabVisibleColumnFlags = visibleColumnFlags;
-		if (isParameterTable(table)) {
-			visibleTableFlags |= AdaptedTableControl.DISABLE_SOURCE_FLAGS;
-			newTabVisibleColumnFlags = 0;
+		// decide if we should launch the embedded data editor instead
+		if (embeddedDataEditor == null) {
+			embeddedDataEditor = EmbeddedDataUtils.isEmbeddedData(table);
 		}
 
-		AdaptedTableControl ctrl = new AdaptedTableControl(api, table, visibleTableFlags, newTabVisibleColumnFlags,
-				availableOptionsQuery) {
-			@Override
-			protected List<ODLAction> createActions() {
-				List<ODLAction> ret = super.createActions();
-				ret.add(null); // null is a separator
-				ret.addAll(createTabPageActions(table));
-				return ret;
+		Component component = null;
+		if (embeddedDataEditor) {
+
+			ODLTableAlterable tabledata = table.getDataTable();
+			ODLDatastoreImpl<ODLTableAlterable> tmpDs = new ODLDatastoreImpl<>(null);
+			tmpDs.addTable(tabledata);
+			ListenerDecorator<ODLTableAlterable> listener = new ListenerDecorator<>(ODLTableAlterable.class, tmpDs);
+			UndoRedoDecorator<ODLTableAlterable> undoredo = new UndoRedoDecorator<>(ODLTableAlterable.class, listener);
+			
+			GridEditPermissions permissions = new GridEditPermissions(true, true, true, true, false);
+			ODLGridTable tableCtrl = new ODLGridTable(undoredo, tabledata.getImmutableId(), true, null, undoredo, permissions);
+			JPanel panel = new JPanel();
+			panel.setLayout(new BorderLayout());
+			ODLGridTable.addToContainer(tableCtrl, panel);
+			listener.addListener(new ODLListener() {
+				
+				@Override
+				public void tableChanged(int tableId, int firstRow, int lastRow) {
+					table.setDataTable(tabledata);
+				}
+				
+				@Override
+				public ODLListenerType getType() {
+					return ODLListenerType.TABLE_CHANGED;
+				}
+				
+				@Override
+				public void datastoreStructureChanged() {
+					tableChanged(0, 0, 0);
+				}
+				
+			}, listener.getTableAt(0).getImmutableId());
+			
+			JToolBar toolBar = new JToolBar();
+			toolBar.setFloatable(false);
+			for(ODLAction action :createTabPageActions(table)){
+				toolBar.add(action);
 			}
-		};
+			panel.add(toolBar,BorderLayout.SOUTH);
+			
+			component = panel;
+			
+		} else {
 
-		ctrl.setTargetDatastoreDefinitionProvider(targetDatastore);
-
-		ctrl.setFormChangedListener(new FormChangedListener() {
-
-			@Override
-			public void formChanged(AdaptedTableControl form) {
-				// Update the tables control but we don't need to updated the
-				// individual
-				// tab contents as this has only changed for the input form and
-				// already been updated.
-				updateAppearance(false);
+			long visibleTableFlags = 0;
+			long newTabVisibleColumnFlags = visibleColumnFlags;
+			if (isParameterTable(table)) {
+				visibleTableFlags |= AdaptedTableControl.DISABLE_SOURCE_FLAGS;
+				newTabVisibleColumnFlags = 0;
 			}
-		});
 
-		// String panelName = "Table \"" + table.getName() + "\""; //
-		// adapterConfig.getId();
-		tabs.add(ctrl, index);
-		// tabs.setTitleAt(index, panelName);
+			AdaptedTableControl ctrl = new AdaptedTableControl(api, table, visibleTableFlags, newTabVisibleColumnFlags, availableOptionsQuery) {
+				@Override
+				protected List<ODLAction> createActions() {
+					List<ODLAction> ret = super.createActions();
+					ret.add(null); // null is a separator
+					ret.addAll(createTabPageActions(table));
+					return ret;
+				}
+			};
+
+			ctrl.setTargetDatastoreDefinitionProvider(targetDatastore);
+
+			ctrl.setFormChangedListener(new FormChangedListener() {
+
+				@Override
+				public void formChanged(AdaptedTableControl form) {
+					// Update the tables control but we don't need to updated
+					// the
+					// individual
+					// tab contents as this has only changed for the input form
+					// and
+					// already been updated.
+					updateAppearance(false);
+				}
+			});
+
+			component = ctrl;
+		}
+
+		tabs.add(component, index);
+		
 		tabs.setSelectedIndex(index);
 	}
 
 	private boolean isParameterTable(final AdaptedTableConfig table) {
-		return config != null && config.getAdapterType() == ScriptAdapterType.PARAMETER && table != null
-				&& api.stringConventions().equalStandardised(table.getName(), ParametersImpl.TABLE_NAME);
+		return config != null && config.getAdapterType() == ScriptAdapterType.PARAMETER && table != null && api.stringConventions().equalStandardised(table.getName(), ParametersImpl.TABLE_NAME);
 	}
 
 	// public static void main(String[] arg) {
@@ -217,8 +269,7 @@ public class AdapterTablesTabControl extends JPanel {
 				int nbNonMap = 0;
 				for (int i = 0; i < output.getTableCount(); i++) {
 					ODLTableDefinition dfn = output.getTableAt(i);
-					boolean headerMap = Strings.equalsStd(api.standardComponents().reporter().getHeaderMapTableName(),
-							dfn.getName());
+					boolean headerMap = Strings.equalsStd(api.standardComponents().reporter().getHeaderMapTableName(), dfn.getName());
 
 					// do we have a name match?
 					if (Strings.equalsStd(name, dfn.getName())) {
@@ -317,7 +368,6 @@ public class AdapterTablesTabControl extends JPanel {
 	public void updateAppearance(boolean updateTabContents) {
 		for (int i = 0; i < tabs.getTabCount(); i++) {
 			if (i < config.getTableCount()) {
-				AdaptedTableControl ctrl = (AdaptedTableControl) tabs.getComponentAt(i);
 				final AdaptedTableConfig table = config.getTable(i);
 
 				// set tab title with a right-click menu
@@ -352,24 +402,13 @@ public class AdapterTablesTabControl extends JPanel {
 
 				});
 
-				// // Check for error with table...
-				// ODLDatastore<? extends ODLTableDefinition> targetDs =
-				// targetDatastore!=null?targetDatastore.getDatastoreDefinition():null;
-				// HashMap<Object, String> validateResult =new
-				// TargetIODsInterpreter(api).validateAdapter(config, targetDs);
-				// String error = validateResult.get(table);
-				//
-				// if (error!=null) {
-				// ctrl.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.RED,
-				// 2), BorderFactory.createEmptyBorder(3, 3, 3, 3)));
-				// tabs.setToolTipTextAt(i, error);
-				// } else {
-				// ctrl.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-				// tabs.setToolTipTextAt(i, null);
-				// }
-
 				if (updateTabContents) {
-					ctrl.updateAppearance();
+					Component component = tabs.getComponentAt(i);
+					if(component instanceof AdaptedTableControl){
+						AdaptedTableControl ctrl = (AdaptedTableControl) tabs.getComponentAt(i);
+						ctrl.updateAppearance();					
+					}
+
 				}
 
 			} else {
@@ -517,8 +556,7 @@ public class AdapterTablesTabControl extends JPanel {
 	}
 
 	private void addNewAdaptedTable(int index) {
-		ODLDatastore<? extends ODLTableDefinition> target = targetDatastore != null
-				? targetDatastore.getDatastoreDefinition() : null;
+		ODLDatastore<? extends ODLTableDefinition> target = targetDatastore != null ? targetDatastore.getDatastoreDefinition() : null;
 		PromptNewTableResult prompt = promptNewAdaptedTable(true, target != null, null);
 		if (prompt == null) {
 			return;
@@ -529,8 +567,7 @@ public class AdapterTablesTabControl extends JPanel {
 			src = availableOptionsQuery.getTableDefinition(prompt.sourceDatastore, prompt.sourceTable);
 		}
 
-		AdaptedTableConfig newTable = new TargetIODsInterpreter(api).buildAdaptedTableConfig(prompt.sourceDatastore,
-				src, target, prompt.destinationTable);
+		AdaptedTableConfig newTable = new TargetIODsInterpreter(api).buildAdaptedTableConfig(prompt.sourceDatastore, src, target, prompt.destinationTable);
 
 		// ODLTableDefinition dest = null;
 		// if (prompt.destinationTable != null) {
@@ -557,15 +594,14 @@ public class AdapterTablesTabControl extends JPanel {
 
 	void addNewAdaptedTable(AdaptedTableConfig newTable, int index) {
 		config.getTables().add(index, newTable);
-		addTabCtrl(newTable, index);
+		addTabCtrl(newTable, index, null);
 		AdapterTablesTabControl.this.updateAppearance(true);
 	}
 
 	private void updateTable(int index) {
 		AdaptedTableConfig table = config.getTable(index);
 
-		ODLTableDefinition src = availableOptionsQuery != null
-				? availableOptionsQuery.getTableDefinition(table.getFromDatastore(), table.getFromTable()) : null;
+		ODLTableDefinition src = availableOptionsQuery != null ? availableOptionsQuery.getTableDefinition(table.getFromDatastore(), table.getFromTable()) : null;
 		ODLTableDefinition dest = TableUtils.findTable(targetDatastore.getDatastoreDefinition(), table.getName());
 
 		final AdaptedTableConfig relinked = TableLinkerWizard.createBestGuess(src, dest);
@@ -619,7 +655,7 @@ public class AdapterTablesTabControl extends JPanel {
 
 		// remove and re-add control (so all child controls up-to-date)
 		tabs.remove(index);
-		addTabCtrl(table, index);
+		addTabCtrl(table, index, null);
 		updateAppearance(true);
 	}
 
@@ -688,9 +724,7 @@ public class AdapterTablesTabControl extends JPanel {
 			});
 		}
 
-		ret.add(new TabPageAction("Edit table label",
-				"Change the label shown in brackets after the table name in the tab control.",
-				"adapted-table-short-ui-note.png") {
+		ret.add(new TabPageAction("Edit table label", "Change the label shown in brackets after the table name in the tab control.", "adapted-table-short-ui-note.png") {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -699,8 +733,7 @@ public class AdapterTablesTabControl extends JPanel {
 					current = "";
 				}
 
-				current = JOptionPane.showInputDialog(AdapterTablesTabControl.this,
-						"Enter the label for table " + table.getName(), current);
+				current = JOptionPane.showInputDialog(AdapterTablesTabControl.this, "Enter the label for table " + table.getName(), current);
 				if (current != null) {
 					table.setShortEditorUINote(current);
 					AdapterTablesTabControl.this.updateAppearance(true);
@@ -722,8 +755,7 @@ public class AdapterTablesTabControl extends JPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-				clipboard.setContents(((ScriptXMLTransferHandler) getTransferHandler())
-						.createTransferable(AdapterTablesTabControl.this), null);
+				clipboard.setContents(((ScriptXMLTransferHandler) getTransferHandler()).createTransferable(AdapterTablesTabControl.this), null);
 			}
 
 			@Override
@@ -736,74 +768,47 @@ public class AdapterTablesTabControl extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				((ScriptXMLTransferHandler) getTransferHandler()).importData(AdapterTablesTabControl.this,
-						Toolkit.getDefaultToolkit().getSystemClipboard().getContents(AdapterTablesTabControl.this));
+				((ScriptXMLTransferHandler) getTransferHandler()).importData(AdapterTablesTabControl.this, Toolkit.getDefaultToolkit().getSystemClipboard().getContents(AdapterTablesTabControl.this));
 			}
 		});
 
-		ret.add(new TabPageAction("Edit embedded table data", "Edit embedded table data", "toggle-embedded-script-data.png") {
-			
+		ret.add(new TabPageAction("Toggle embedded data editor","Toggle editing embedded data or table structure", "toggle-embedded-script-data.png") {
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				int index = getIndex();
-				if(index==-1){
+				if (index == -1) {
 					return;
 				}
-				
-				boolean validated=false;
-				if(!EmbeddedDataUtils.isValidTable(table)){
-					if(JOptionPane.showConfirmDialog(AdapterTablesTabControl.this, "The table is not currently configured as an embedded data table. Do you want to configure it to embed data?\nThis will delete all formulae and from table information (cannot be undone).", "Reconfigure table?", JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION){
+
+				Component component = tabs.getComponentAt(index);
+				boolean currentIsStructure = component instanceof AdaptedTableControl;
+				if(currentIsStructure && !EmbeddedDataUtils.isValidTable(table)){
+					if (JOptionPane.showConfirmDialog(AdapterTablesTabControl.this,
+							"The table is not correctly configured as an embedded data table. Do you want to configure it to embed data?\nThis will delete all formulae and from table information (cannot be undone).",
+							"Reconfigure table?", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) {
 						return;
 					}
-					EmbeddedDataUtils.makeValid(table);
-					validated = true;
-				}
-				
-				
-				// Show a modal control for editing the data
-				ODLTableAlterable tabledata = table.getDataTable();
-				ODLDatastoreImpl<ODLTableAlterable> tmpDs = new ODLDatastoreImpl<>(null);
-				tmpDs.addTable(tabledata);
-				UndoRedoDecorator<ODLTableAlterable> undoredo = new UndoRedoDecorator<>(ODLTableAlterable.class, tmpDs);
-				GridEditPermissions permissions = new GridEditPermissions(true, true, true, true, false);
-				ODLGridTable tableCtrl = new ODLGridTable(undoredo, tabledata.getImmutableId(), false, null, undoredo, permissions);
-				OkCancelDialog dlg = new OkCancelDialog(SwingUtilities.getWindowAncestor(AdapterTablesTabControl.this), true, true){
-					@Override
-					protected Component createMainComponent(boolean inWindowsBuilder) {
-						JPanel panel = new JPanel();
-						ODLGridTable.addToContainer(tableCtrl, panel);
-						return panel;
-					}
-				};
-				dlg.setTitle("Edit embedded table data");
-				
-				boolean dataChanged=false;
-				if(dlg.showModal() == OkCancelDialog.OK_OPTION){
-					table.setDataTable(tabledata);
-					dataChanged=true;
 					
+					EmbeddedDataUtils.makeValid(table);
 				}
 				
-				// remove and re-add the control
-				if(validated || dataChanged){
-					tabs.remove(index);
-					addTabCtrl(table, index);
-					updateAppearance(true);
+				tabs.remove(index);
+				addTabCtrl(table, index, currentIsStructure);
+				updateAppearance(true);
 
-				}
 			}
-			
+
 			@Override
 			public void updateEnabled() {
 				setEnabled(getIndex() != -1);
 			}
 		});
-		
+
 		// wizard tools actions (appear in a popup)
 		ArrayList<ODLAction> wizardTools = new ArrayList<>();
 		wizardTools.add(new TabPageAction("Update table based on destination",
-				"Update table based on its destination. Any missing fields are added and empty from/formulae are updated where possible.",
-				null) {
+				"Update table based on its destination. Any missing fields are added and empty from/formulae are updated where possible.", null) {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -812,15 +817,12 @@ public class AdapterTablesTabControl extends JPanel {
 
 			@Override
 			public void updateEnabled() {
-				setEnabled(targetDatastore != null && targetDatastore.getDatastoreDefinition() != null
-						&& TableUtils.findTable(targetDatastore.getDatastoreDefinition(), table.getName()) != null);
+				setEnabled(targetDatastore != null && targetDatastore.getDatastoreDefinition() != null && TableUtils.findTable(targetDatastore.getDatastoreDefinition(), table.getName()) != null);
 			}
 		});
-	
 
 		// create seleted empty tables in datastore action
-		wizardTools.add(new TabPageAction("Export this table to datastore",
-				"Create empty table in the datastore with same design as this table", null) {
+		wizardTools.add(new TabPageAction("Export this table to datastore", "Create empty table in the datastore with same design as this table", null) {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -836,8 +838,7 @@ public class AdapterTablesTabControl extends JPanel {
 		});
 
 		// create all empty tables in datastore action
-		wizardTools.add(new TabPageAction("Export all tables to datastore",
-				"Create empty tables in the datastore with same design as these tables", null) {
+		wizardTools.add(new TabPageAction("Export all tables to datastore", "Create empty tables in the datastore with same design as these tables", null) {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -854,8 +855,7 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 		});
 
-		ret.add(ODLAction.createParentAction("Data adapter wizard actions",
-				Icons.loadFromStandardPath("tools-wizard-2.png"), wizardTools));
+		ret.add(ODLAction.createParentAction("Data adapter wizard actions", Icons.loadFromStandardPath("tools-wizard-2.png"), wizardTools));
 
 		ret.add(new TabPageAction("Delete table", "Delete selected adapted table", "table-delete-2.png") {
 

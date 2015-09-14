@@ -24,19 +24,26 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 
+import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.scripts.parameters.Parameters;
 import com.opendoorlogistics.api.scripts.parameters.Parameters.TableType;
 import com.opendoorlogistics.api.scripts.parameters.ParametersControlFactory;
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
+import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.ODLListener.ODLListenerType;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
+import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.Script;
+import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
+import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
+import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
@@ -63,7 +70,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	private ODLDatastore<? extends ODLTableReadOnly> externalDs;
 	private DataDependencies dependencies;
 	private Script unfilteredScript;
-	private ODLDatastore<? extends ODLTable> parametersDs;
+	private ODLDatastoreAlterable<? extends ODLTableAlterable> parametersDs;
 	private HashSet<ODLListener> listeners = new HashSet<>();
 	private String title;
 
@@ -275,7 +282,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	
 	}
 
-	public void setDependencies(ODLDatastore<? extends ODLTableReadOnly> ds, Script unfilteredScript, DataDependencies dependencies, ODLDatastore<? extends ODLTable> parametersDs) {
+	public void setDependencies(ODLDatastore<? extends ODLTableReadOnly> ds, Script unfilteredScript, DataDependencies dependencies, ODLDatastore<? extends ODLTable> parametersDs, ExecutionReport report) {
 		this.unfilteredScript = unfilteredScript;
 
 		// remove any listeners from the saved datastore
@@ -344,8 +351,29 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		Parameters parameters = api.scripts().parameters();
 		ParametersControlFactory pcf = parameters.getControlFactory();
 
+		// handle the case of overriding the visible parameters; replace with filtered table
+		if(id!=null && id.getInstructionId()!=null && parametersDs!=null){
+			String myOptionId = ScriptUtils.getOptionIdByInstructionId(unfilteredScript, id.getInstructionId());
+			if(myOptionId!=null){
+				Option myOption= ScriptUtils.getOption(unfilteredScript, myOptionId);
+				if(myOption.isOverrideVisibleParameters()){
+					ODLTable parametersTable = parameters.findTable(this.parametersDs, TableType.PARAMETERS);
+					if(parametersTable!=null){
+						ODLTable filteredParamsTable = ((ParametersImpl)parameters).applyVisibleOverrides(myOption.getVisibleParametersOverride(), parametersTable, report);
+						if(!report.isFailed()){
+							api.tables().clearTable(parametersTable);
+							for(int i = 0 ; i< filteredParamsTable.getRowCount();i++){
+								api.tables().copyRow(filteredParamsTable, i, parametersTable);;
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		// create the parameters table
 		JPanel parametersPanel =null;
-		if(parametersDs!=null && pcf!=null){
+		if(parametersDs!=null && pcf!=null && !report.isFailed()){
 			ListenerDecorator<ODLTable> listenerDecorator =new ListenerDecorator<ODLTable>(ODLTable.class, this.parametersDs);
 			parametersPanel = pcf.createHorizontalPanel(api,parameters.findTable(listenerDecorator, TableType.PARAMETERS), parameters.findTable(parametersDs, TableType.PARAMETER_VALUES));
 			if(parametersPanel!=null){
@@ -365,7 +393,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 					public void datastoreStructureChanged() {
 						setDirty();
 					}
-				}, new int[]{listenerDecorator.getTableAt(0).getImmutableId()});
+				}, new int[]{parameters.findTable(listenerDecorator, TableType.PARAMETERS).getImmutableId()});
 			}
 		}
 		southPanel.addParametersPanel(parametersPanel);

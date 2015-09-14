@@ -22,6 +22,7 @@ import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
+import com.opendoorlogistics.api.scripts.parameters.Parameters.TableType;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList.MapSelectionListRegister;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -59,7 +60,7 @@ class ScriptExecutionTask {
 	private final String[] optionIds;
 	private final String scriptName;
 	private final boolean isScriptRefresh;
-	private final ODLDatastore<? extends ODLTable>  parametersTable;
+	private final ODLDatastore<? extends ODLTable>  parametersDs;
 	private volatile ExecutionReport result;
 	private volatile Script filtered;
 	private volatile ScriptsDependencyInjector guiFascade;
@@ -77,7 +78,7 @@ class ScriptExecutionTask {
 		this.optionIds = optionIds;
 		this.scriptName = scriptName;
 		this.isScriptRefresh = isScriptRefresh;
-		this.parametersTable = parametersTable;
+		this.parametersDs = parametersTable;
 	}
 
 	private ReporterFrameIdentifier getReporterFrameId(String instructionId, String panelId) {
@@ -153,9 +154,10 @@ class ScriptExecutionTask {
 		}
 
 		// Execute and get all dependencies afterwards
+		ODLApi api = runner.getAppFrame().getApi();
 		ScriptExecutor executor = new ScriptExecutor(runner.getAppFrame().getApi(),false, guiFascade);
-		if(parametersTable!=null){
-			executor.setInitialParametersTable(parametersTable.getTableAt(0));
+		if(parametersDs!=null){
+			executor.setInitialParametersTable(api.scripts().parameters().findTable(parametersDs, TableType.PARAMETERS));
 		}
 		
 		result = executor.execute(filtered, simple);
@@ -322,7 +324,7 @@ class ScriptExecutionTask {
 							parameters = api.tables().copyDs(parameters);
 						}
 						
-						frame.setDependencies(runner.getDs(), unfiltered, dependencies, parameters);
+						frame.setDependencies(runner.getDs(), unfiltered, dependencies, parameters,result);
 						frame.setRefresherCB(runner);
 					}
 				}

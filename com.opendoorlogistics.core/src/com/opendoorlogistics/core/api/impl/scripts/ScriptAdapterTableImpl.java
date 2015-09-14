@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.api.impl.scripts;
 import com.opendoorlogistics.api.scripts.ScriptAdapterTable;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptOptionImpl.FindMode;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
@@ -182,6 +183,16 @@ public class ScriptAdapterTableImpl implements ScriptAdapterTable{
 	@Override
 	public void setFetchSourceField(boolean b) {
 		table.setFetchSourceFields(b);
+	}
+
+	@Override
+	public ODLTableReadOnly getDataTable() {
+		return this.table.getDataTable();
+	}
+
+	@Override
+	public void setDataTable(ODLTableReadOnly table) {
+		this.table.setDataTable(table);
 	}
 
 

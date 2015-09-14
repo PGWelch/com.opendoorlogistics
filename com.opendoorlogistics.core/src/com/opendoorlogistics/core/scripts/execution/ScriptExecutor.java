@@ -65,6 +65,7 @@ import com.opendoorlogistics.core.scripts.execution.adapters.BuiltAdapters;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.AbstractDependencyInjector;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.DependencyInjector;
 import com.opendoorlogistics.core.scripts.formulae.TableParameters;
+import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.ODLRowReadOnly;
@@ -182,10 +183,7 @@ final public class ScriptExecutor {
 
 			}
 		}
-		
-		if(initialParametersTable!=null){
-			
-		}
+
 	}
 
 	/**
@@ -212,9 +210,9 @@ final public class ScriptExecutor {
 			if (!bb.isFailed()) {
 				fillParametersTable(script, bb);
 			}
-			
-			if(!bb.isFailed()){
-				if(!userPrompts(script, bb)){
+
+			if (!bb.isFailed()) {
+				if (!userPrompts(script, bb)) {
 					return bb;
 				}
 			}
@@ -237,24 +235,51 @@ final public class ScriptExecutor {
 		return bb;
 	}
 
-	private boolean userPrompts(Option script, ScriptExecutionBlackboardImpl result){
-		Parameters parameters = api.scripts().parameters();
+	private boolean userPrompts(Option script, ScriptExecutionBlackboardImpl result) {
+		ParametersImpl parameters = (ParametersImpl) api.scripts().parameters();
 		ParametersControlFactory factory = parameters.getControlFactory();
-		if(factory!=null && internalExecutionApi!=null){
+
+		// only prompt on the first run and only if we have a control factory
+		if (factory != null && internalExecutionApi != null && initialParametersTable == null) {
 			ODLTable paramTable = parameters.findTable(findDatastoreOrAdapter(parameters.getDSId(), result), TableType.PARAMETERS);
 			ODLTable valuesTable = parameters.findTable(findDatastoreOrAdapter(parameters.getDSId(), result), TableType.PARAMETER_VALUES);
-			if(factory.hasModalParameters(api, paramTable, valuesTable)){
-				JPanel panel = factory.createModalPanel(api, paramTable, valuesTable);
+			// if(factory.hasModalParameters(api, paramTable, valuesTable)){
+
+			// test for overriding the visible parameters
+			ODLTable overrideTable = null;
+			if (script.isOverrideVisibleParameters()) {
+				overrideTable = parameters.applyVisibleOverrides(script.getVisibleParametersOverride(), paramTable, result);
+				if (result.isFailed()) {
+					return true;
+				}
+			}
+
+			// do the prompt
+			ODLTable tableToUse = overrideTable != null ? overrideTable : paramTable;
+			if (factory.hasModalParameters(api, tableToUse, valuesTable)) {
+				JPanel panel = factory.createModalPanel(api, tableToUse, valuesTable);
 				ModalDialogResult mdr = internalExecutionApi.showModalPanel(panel, "Select parameter(s)", ModalDialogResult.OK, ModalDialogResult.CANCEL);
-				if(mdr== ModalDialogResult.CANCEL){
+				if (mdr == ModalDialogResult.CANCEL) {
 					return false;
 				}
 			}
 
+			// if we used the overrview table then copy the values over into the
+			// main table
+			if (overrideTable != null) {
+				for (int row = 0; row < overrideTable.getRowCount(); row++) {
+					String key = parameters.getByRow(overrideTable, row, ParamDefinitionField.KEY);
+					if (key != null) {
+						parameters.setByKey(paramTable, key, ParamDefinitionField.VALUE, parameters.getByRow(overrideTable, row, ParamDefinitionField.VALUE));
+					}
+				}
+			}
+			// }
+
 		}
 		return true;
 	}
-	
+
 	private boolean checkForUserCancellation(ExecutionReport ret) {
 		if (internalExecutionApi.isCancelled()) {
 			ret.setFailed("User stopped the script executing.");
@@ -760,13 +785,14 @@ final public class ScriptExecutor {
 
 			@Override
 			public void submitControlLauncher(ControlLauncherCallback cb) {
-				// Take a copy of the parameters and parameters value tables from the internal ds.
+				// Take a copy of the parameters and parameters value tables
+				// from the internal ds.
 				// This ensures we pass an immutable snapshot to the GUI code.
 				Tables tables = api.tables();
 				Parameters parameters = api.scripts().parameters();
 				ODLDatastore<? extends ODLTable> internalDs = result.getDatastore(parameters.getDSId());
-				ODLTableReadOnly paramTable =parameters.findTable(internalDs, TableType.PARAMETERS);
-				ODLTableReadOnly paramValuesTable =parameters.findTable(internalDs, TableType.PARAMETER_VALUES);
+				ODLTableReadOnly paramTable = parameters.findTable(internalDs, TableType.PARAMETERS);
+				ODLTableReadOnly paramValuesTable = parameters.findTable(internalDs, TableType.PARAMETER_VALUES);
 				ODLDatastoreAlterable<? extends ODLTableAlterable> copyDs = tables.createAlterableDs();
 				tables.copyTable(paramTable, copyDs);
 				tables.copyTable(paramValuesTable, copyDs);
