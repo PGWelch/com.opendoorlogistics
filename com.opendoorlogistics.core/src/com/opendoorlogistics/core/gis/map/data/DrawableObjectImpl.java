@@ -57,7 +57,8 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	public static final int COL_SELECTABLE= COL_TOOLTIP + 1;
 	public static final int COL_LPO= COL_SELECTABLE + 1;
 	public static final int COL_LABEL_COLOUR= COL_LPO + 1;
-	public static final int COL_FLAGS= COL_LABEL_COLOUR + 1;
+	public static final int COL_LABEL_PRIORITY= COL_LABEL_COLOUR + 1;
+	public static final int COL_FLAGS= COL_LABEL_PRIORITY + 1;
 	public static final int COL_MIN_ZOOM= COL_FLAGS + 1;
 	public static final int COL_MAX_ZOOM= COL_MIN_ZOOM + 1;
 	public static final int COL_MAX = COL_MAX_ZOOM;
@@ -125,6 +126,7 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	private String labelPositioningOption;
 	private Color labelColor;
 	private long flags;
+	private long labelPriority=0;
 	private long minZoom = 0;
 	private long maxZoom = 1000;
 	
@@ -155,6 +157,7 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		this.selectable = copyThis.getSelectable();
 		this.symbol  = copyThis.getSymbol();
 		this.tooltip = copyThis.getTooltip();
+		this.labelPriority = copyThis.getLabelPriority();
 		this.flags = copyThis.getFlags();
 		this.minZoom = copyThis.getMinZoom();
 		this.maxZoom = copyThis.getMaxZoom();
@@ -441,6 +444,17 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	@ODLColumnOrder(COL_MAX_ZOOM)
 	public void setMaxZoom(long maxZoom) {
 		this.maxZoom = maxZoom;
+	}
+
+	public long getLabelPriority() {
+		return labelPriority;
+	}
+
+	@ODLNullAllowed
+	@ODLDefaultLongValue(0)
+	@ODLColumnOrder(COL_LABEL_PRIORITY)
+	public void setLabelPriority(long labelPriority) {
+		this.labelPriority = labelPriority;
 	}
 
 	

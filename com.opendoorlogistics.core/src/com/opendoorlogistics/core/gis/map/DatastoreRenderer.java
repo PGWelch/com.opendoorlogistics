@@ -31,8 +31,10 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.geotools.geometry.jts.LiteShape;
 
@@ -53,6 +55,7 @@ import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.IntUtils;
 import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
+import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedCache;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.awt.PolygonShape;
@@ -193,6 +196,27 @@ public class DatastoreRenderer implements ObjectRenderer{
 	// }
 
 	public synchronized void renderTexts(final Graphics2D g, Iterable<? extends DrawableObject> pnts, final LatLongToScreen converter, long renderflags) {
+		// sort objects by priority (lowest first), speeding up the sort by making use of the fact that priority will mostly be the same
+		int pntsCount=0;
+		TreeMap<Long, LinkedList<DrawableObject>> sortedMap = new TreeMap<>();
+		for(DrawableObject obj : pnts){
+			long priority = obj.getLabelPriority();
+			LinkedList<DrawableObject> list = sortedMap.get(priority);
+			if(list==null){
+				list = new LinkedList<>();
+				sortedMap.put(priority, list);
+			}
+			list.add(obj);
+			pntsCount++;
+		}
+		
+		// now place back into a single collection and replace the input iterable with it
+		ArrayList<DrawableObject> sorted = new ArrayList<>(pntsCount);
+		for(LinkedList<DrawableObject> list:sortedMap.values()){
+			sorted.addAll(list);
+		}
+		pnts = sorted;
+
 		// check for label groups
 		StandardisedCache stdCache = new StandardisedCache();
 		HashMap<String, ArrayList<DrawableObject>> labelGroups = new HashMap<>();

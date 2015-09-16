@@ -25,7 +25,8 @@ public class Style extends BeanMappedRowImpl {
 	private static final int COL_LABELALWAYSVISIBLE=COL_LABEL+1;
 	private static final int COL_LABELCOLOUR=COL_LABELALWAYSVISIBLE+1;
 	private static final int COL_LABELPOSITION =COL_LABELCOLOUR+1;
-	private static final int COL_LABELSIZE=COL_LABELPOSITION +1;
+	private static final int COL_LABELPRIORITY =COL_LABELPOSITION+1;
+	private static final int COL_LABELSIZE=COL_LABELPRIORITY +1;
 	private static final int COL_LEGENDKEY=COL_LABELSIZE+1;
 	
 	public static final int NB_RULE_KEYS=4;
@@ -44,6 +45,7 @@ public class Style extends BeanMappedRowImpl {
 	private String labelAlwaysVisible;
 	private String labelColour;
 	private String labelPosition; 
+	private String labelPriority; 
 	private String labelSize;
 	private String legendKey;
 
@@ -57,6 +59,7 @@ public class Style extends BeanMappedRowImpl {
 		LABELALWAYSVISIBLE(DrawableObjectImpl.COL_FLAGS,ODLColumnType.LONG, UserRenderFlags.ALWAYS_SHOW_LABEL),
 		LABELCOLOUR(DrawableObjectImpl.COL_LABEL_COLOUR,ODLColumnType.COLOUR),
 		LABELPOSITION(DrawableObjectImpl.COL_LPO,ODLColumnType.STRING),
+		LABELPRIORITY(DrawableObjectImpl.COL_LABEL_PRIORITY,ODLColumnType.LONG),
 		LABELSIZE(DrawableObjectImpl.COL_FONT_SIZE,ODLColumnType.LONG),
 		LEGENDKEY(DrawableObjectImpl.COL_LEGEND_KEY,ODLColumnType.STRING);	
 		
@@ -127,6 +130,9 @@ public class Style extends BeanMappedRowImpl {
 			
 		case LABELPOSITION:
 			return getLabelPosition();
+			
+		case LABELPRIORITY:
+			return getLabelPriority();
 			
 		case LABELSIZE:
 			return getLabelSize();
@@ -299,6 +305,17 @@ public class Style extends BeanMappedRowImpl {
 	@ODLNullAllowed	
 	public void setLegendKey(String legendKey) {
 		this.legendKey = legendKey;
+	}
+
+	public String getLabelPriority() {
+		return labelPriority;
+	}
+
+	
+	@ODLColumnOrder(COL_LABELPRIORITY)
+	@ODLNullAllowed	
+	public void setLabelPriority(String labelPriority) {
+		this.labelPriority = labelPriority;
 	}
 
 	

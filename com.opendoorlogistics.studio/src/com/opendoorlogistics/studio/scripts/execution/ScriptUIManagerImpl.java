@@ -8,6 +8,7 @@ package com.opendoorlogistics.studio.scripts.execution;
 
 import java.io.File;
 import java.util.HashSet;
+import java.util.UUID;
 import java.util.concurrent.Future;
 
 import javax.swing.JInternalFrame;
@@ -22,6 +23,7 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.components.tables.creator.CreateTablesComponent;
 import com.opendoorlogistics.core.components.ODLWizardTemplateConfig;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
+import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.OutputConfig;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
@@ -137,6 +139,20 @@ final public class ScriptUIManagerImpl implements ScriptUIManager, ODLListener {
 	public Future<Void> executeScript(Script script, String[]optionIds,String name) {
 		// take a deep copy of the script to ensure its immutable
 		script = new ScriptIO().deepCopy(script);
+		
+		// test to see if we should launch multiple versions of a control
+		Option option = null;
+		if(optionIds ==null || optionIds.length==0){
+			option = script;
+		}else if(optionIds.length==1){
+			option = ScriptUtils.getOption(script, optionIds[0]);
+		}
+		boolean launchMultiple = option!=null && option.isLaunchMultiple();		
+	
+		// if launching multiple, give the script a unique id
+		if(launchMultiple){
+			script.setUuid(UUID.randomUUID());
+		}
 		
 		if (getDs() == null && ScriptUtils.getReadsExternalDatastore(getApi(),script)) {
 			showMessage("Cannot execute as no data tables are loaded.", false);

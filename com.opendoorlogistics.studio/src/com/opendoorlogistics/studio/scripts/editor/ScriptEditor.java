@@ -37,6 +37,7 @@ import com.opendoorlogistics.api.components.ComponentConfigurationEditorAPI;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.scripts.ScriptAdapter;
+import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.scripts.ScriptAdapterTable;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -102,7 +103,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 //	protected final JCheckBox bottomToolbarSyncCheckbox;
 
 	protected ScriptEditorToolbar createToolbar(){
-		ScriptEditorToolbar ret = new ScriptEditorToolbar(true,script.isSynchronised()) {
+		ScriptEditorToolbar ret = new ScriptEditorToolbar(true,script.isSynchronised(), script.isLaunchMultiple()) {
 			
 			@Override
 			protected void syncBoxChanged(boolean isSelected) {
@@ -133,6 +134,11 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 			@Override
 			protected boolean isToggleViewEnabled() {
 				return false;
+			}
+
+			@Override
+			protected void launchMultipleChanged(boolean isLaunchMultiple) {
+				script.setLaunchMultiple(isLaunchMultiple);
 			}
 		};
 
@@ -518,7 +524,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 					throw new RuntimeException();
 				}
 				
-				// remove all other tables in the adapter containing the target table as they are definitely not needeed
+				// remove all other tables in the adapter containing the target table as they are definitely not needed
 				AdapterConfig adapterConfig = ScriptUtils.getAdapterById(subscript, dsid, true);
 				Iterator<AdaptedTableConfig> itTable = adapterConfig.getTables().iterator();
 				while(itTable.hasNext()){
@@ -527,24 +533,35 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 					}
 				}
 				
-				// create a single dummy adapter which just copies the table contents, excluding any sort columns
-				ScriptOptionImpl builder = new ScriptOptionImpl(api,null, subscript,null);
-				ScriptAdapter adapter= builder.addDataAdapter("DummyAdapter");
-				final String adptId =adapter.getAdapterId();
-				ScriptAdapterTable dummyTable = adapter.addEmptyTable(table.getName());
-				dummyTable.setSourceTable(dsid, table.getName());
-				for(int i =0;i<table.getColumnCount(); i++){
-					if(table.getColumn(i).getSortField() == SortField.NO){
-						dummyTable.addColumn(table.getColumnName(i), table.getColumnType(i), false, table.getColumnName(i));
-					}
-				}
+				// if we're showing a map then rename all remaining tables (could be multiple for a union) to drawables
 				if(isMap){
-					// set table to have "drawables" name
-					dummyTable.setTableName(api.standardComponents().map().getDrawableTableDefinition().getName());
+					for(AdaptedTableConfig tableConfig : adapterConfig.getTables()){
+						tableConfig.setName(api.standardComponents().map().getDrawableTableDefinition().getName());	
+					}					
 				}
 				
+				// treat like a standard adapter, not a VLS
+				adapterConfig.setAdapterType(ScriptAdapterType.NORMAL);
+				
+//				// create a single dummy adapter which just copies the table contents, excluding any sort columns
+//				ScriptOptionImpl builder = new ScriptOptionImpl(api,null, subscript,null);
+//				ScriptAdapter adapter= builder.addDataAdapter("DummyAdapter");
+//				final String adptId =adapter.getAdapterId();
+//				ScriptAdapterTable dummyTable = adapter.addEmptyTable(table.getName());
+//				dummyTable.setSourceTable(dsid, table.getName());
+//				for(int i =0;i<table.getColumnCount(); i++){
+//					if(table.getColumn(i).getSortField() == SortField.NO){
+//						dummyTable.addColumn(table.getColumnName(i), table.getColumnType(i), false, table.getColumnName(i));
+//					}
+//				}
+//				if(isMap){
+//					// set table to have "drawables" name
+//					dummyTable.setTableName(api.standardComponents().map().getDrawableTableDefinition().getName());
+//				}
+//				
 				// add instruction to the end of the script
-				builder.addInstruction(adptId, isMap? api.standardComponents().map().getId():api.standardComponents().tableViewer().getId(), ODLComponent.MODE_DEFAULT);
+				ScriptOptionImpl builder = new ScriptOptionImpl(api,null, subscript,null);
+				builder.addInstruction(adapterConfig.getId(), isMap? api.standardComponents().map().getId():api.standardComponents().tableViewer().getId(), ODLComponent.MODE_DEFAULT);
 				
 				// give script a unique id
 				String name = isMap ? "Map data" : "Table result";				

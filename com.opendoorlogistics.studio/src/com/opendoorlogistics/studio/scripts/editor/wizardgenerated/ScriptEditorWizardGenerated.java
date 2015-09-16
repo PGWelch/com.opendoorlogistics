@@ -1304,7 +1304,9 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 
 	protected ScriptEditorToolbar createToolbar() {
 
-		ScriptEditorToolbar ret = new ScriptEditorToolbar(isRunScriptAllowed(), currentPane != null ? currentPane.displayNode.option.isSynchronised() : false) {
+		ScriptEditorToolbar ret = new ScriptEditorToolbar(isRunScriptAllowed(),
+				currentPane != null ? currentPane.displayNode.option.isSynchronised() : false,
+				currentPane != null ? currentPane.displayNode.option.isLaunchMultiple() : false) {
 
 			@Override
 			protected void syncBoxChanged(boolean isSelected) {
@@ -1337,6 +1339,13 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			@Override
 			protected boolean isToggleViewEnabled() {
 				return script.getOptions() == null || script.getOptions().size() == 0;
+			}
+
+			@Override
+			protected void launchMultipleChanged(boolean isLaunchMultiple) {
+				if (currentPane != null) {
+					currentPane.displayNode.option.setLaunchMultiple(isLaunchMultiple);
+				}
 			}
 		};
 

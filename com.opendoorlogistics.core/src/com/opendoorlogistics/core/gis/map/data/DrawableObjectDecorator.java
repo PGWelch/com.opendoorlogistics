@@ -147,5 +147,10 @@ public class DrawableObjectDecorator implements DrawableObject {
 		return decorated.getMaxZoom();
 	}
 
+	@Override
+	public long getLabelPriority() {
+		return decorated.getLabelPriority();
+	}
+
 	
 }

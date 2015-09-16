@@ -190,7 +190,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	protected int getRowCount(int tableId) {
 		int sum=0;
 		for(ODLDatastore<? extends T> ds: stores){
-			ODLTableReadOnly table = (ODLTableReadOnly)ds.getTableAt(tableId);
+			ODLTableReadOnly table = (ODLTableReadOnly)ds.getTableByImmutableId(tableId);
 			if(table!=null){
 				sum += table.getRowCount();
 			}

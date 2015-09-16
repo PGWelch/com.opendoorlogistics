@@ -234,6 +234,11 @@ public class ChangedObjectsCalculator {
 			modified = Colours.compare(oldObj.getLabelColour(), newObj.getLabelColour()) != 0;
 		}
 		
+		// check label priority
+		if(!modified){
+			modified = oldObj.getLabelPriority()!=newObj.getLabelPriority();
+		}
+		
 		// font size
 		if (!modified) {
 			modified = oldObj.getFontSize() != newObj.getFontSize();

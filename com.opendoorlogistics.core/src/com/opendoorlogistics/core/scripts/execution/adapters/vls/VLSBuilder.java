@@ -2,11 +2,13 @@ package com.opendoorlogistics.core.scripts.execution.adapters.vls;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonParser.NumberType;
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.Factory;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.Tables;
@@ -51,6 +53,8 @@ import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
+
+import gnu.trove.set.hash.TIntHashSet;
 
 public class VLSBuilder {
 
@@ -140,8 +144,8 @@ public class VLSBuilder {
 
 	private enum LayerType {
 		BACKGROUND_IMAGE(PredefinedTags.BACKGROUND_IMAGE, PredefinedTags.BACKGROUND_IMAGE), BACKGROUND(PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND,
-				PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND), ACTIVE(PredefinedTags.DRAWABLES, "active"), FOREGROUND(
-				PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND);
+				PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND), ACTIVE(PredefinedTags.DRAWABLES, "active"), FOREGROUND(PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND,
+						PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND);
 
 		final String tablename;
 		final String[] keywords;
@@ -152,6 +156,7 @@ public class VLSBuilder {
 		}
 
 		private static final StandardisedStringTreeMap<LayerType> KEYWORD_MAP = new StandardisedStringTreeMap<VLSBuilder.LayerType>();
+
 		static {
 			for (LayerType type : LayerType.values()) {
 				for (String keyword : type.keywords) {
@@ -177,7 +182,8 @@ public class VLSBuilder {
 	}
 
 	/**
-	 * Finds the input table and validates it to the table definition, returning a table mapped to have the correct fields in the correct order
+	 * Finds the input table and validates it to the table definition, returning
+	 * a table mapped to have the correct fields in the correct order
 	 * 
 	 * @author Phil
 	 *
@@ -223,7 +229,8 @@ public class VLSBuilder {
 			SourceTable ret = new SourceTable();
 			ret.raw = raw;
 
-			// Do simple name-based mapping to ensure all fields are present and in correct order, returning the mapped table
+			// Do simple name-based mapping to ensure all fields are present and
+			// in correct order, returning the mapped table
 			ODLDatastoreImpl<ODLTableDefinition> tmpDfn = new ODLDatastoreImpl<ODLTableDefinition>(null);
 			tmpDfn.addTable(definition);
 
@@ -245,6 +252,46 @@ public class VLSBuilder {
 		}
 	}
 
+	private class ViewHierarchy{
+		List<View> background = new ArrayList<>();
+		List<View> active = new ArrayList<>();
+		List<View> foreground = new ArrayList<>();
+		View current;
+	}
+	
+	private ViewHierarchy readViewHierarchy(SourceTable viewTable, ExecutionReport report){
+		ViewHierarchy ret = new ViewHierarchy();
+		
+		// Read views table and turn into map
+		List<View> views = readViewTable(viewTable, report);
+		StringConventions strings = api.stringConventions();
+		Map<String, View> viewById = strings.createStandardisedMap();
+		for (View view : views) {
+			if (strings.isEmptyString(view.getId())) {
+				report.setFailed("Empty or null ID found for view row.");
+				return null;
+			}
+
+			if (viewById.containsKey(view.getId())) {
+				report.setFailed("Found duplicate view id: " + view.getId());
+				return null;
+			}
+
+			viewById.put(view.getId(), view);
+		}
+
+		// Find the main view
+		ret.current= findView(views, report);
+		if (report.isFailed()) {
+			return null;
+		}
+
+		// Build the view hierarchy, including each view only once
+		Set<String> includedViews = strings.createStandardisedSet();
+		
+		return ret;
+	}
+	
 	public ODLDatastore<? extends ODLTable> build(VLSDependencyInjector injector, ExecutionReport report) {
 
 		// Try getting built in tables
@@ -256,16 +303,13 @@ public class VLSBuilder {
 			return null;
 		}
 
-		View view = findView(viewTable, report);
-		if (report.isFailed()) {
-			return null;
-		}
-
+		ViewHierarchy viewHierarchy = readViewHierarchy(viewTable, report);
+		
 		// Get layers for this view including their data source tables
 		ArrayList<MatchedLayer> matchedLayers = new ArrayList<VLSBuilder.MatchedLayer>();
-		StringConventions strings = api.stringConventions();
+		StringConventions strings = api.stringConventions();		
 		Map<String, MatchedLayer> matchedLayersMap = strings.createStandardisedMap();
-		readLayers(finder, layerTable, view, matchedLayers, matchedLayersMap, report);
+		readLayers(finder, layerTable, viewHierarchy.current, matchedLayers, matchedLayersMap, report);
 		if (report.isFailed()) {
 			return null;
 		}
@@ -335,7 +379,8 @@ public class VLSBuilder {
 					dsList.add(wrapTableInDs(ml.source.validated));
 
 				} else {
-					// union - we build individual adapters, then place in a union decorator which we add to the final adapter
+					// union - we build individual adapters, then place in a
+					// union decorator which we add to the final adapter
 
 					// build adapters for each layer
 					ArrayList<ODLDatastore<? extends ODLTable>> dsListToUnion = new ArrayList<ODLDatastore<? extends ODLTable>>(nl);
@@ -393,14 +438,17 @@ public class VLSBuilder {
 					String styleValue = style.style.getFormula(ft);
 					Function function = null;
 					if (strings.isEmptyString(styleValue)) {
-						function = FmConst.NULL;
+						function = null;
 					} else {
 
-						// Test if this value is actually a formula (starts with :=)
+						// Test if this value is actually a formula (starts with
+						// :=)
 						String styleFormula = AdapterBuilderUtils.getFormulaFromText(styleValue);
 						if (styleFormula != null) {
-							// Build the formula against the raw table (with the additional fields),
-							// not the validated one where additional fields are stripped
+							// Build the formula against the raw table (with the
+							// additional fields),
+							// not the validated one where additional fields are
+							// stripped
 							function = injector.buildFormula(styleFormula, layer.source.raw);
 							if (report.isFailed()) {
 								report.setFailed("Failed to process view-layer-style tables.");
@@ -410,8 +458,7 @@ public class VLSBuilder {
 							// Create constant formula with correct type
 							Object value = ColumnValueProcessor.convertToMe(ft.outputType, styleValue);
 							if (value == null) {
-								report.setFailed("Could not convert value \"" + styleValue + "\" for style formula " + ft.name() + " to required type "
-										+ ft.outputType.name() + ".");
+								report.setFailed("Could not convert value \"" + styleValue + "\" for style formula " + ft.name() + " to required type " + ft.outputType.name() + ".");
 							} else {
 								function = new FmConst(value);
 							}
@@ -456,8 +503,7 @@ public class VLSBuilder {
 		}
 	}
 
-	private void readLayers(TableFinder finder, SourceTable layerTable, View view, ArrayList<MatchedLayer> matchedLayers,
-			Map<String, MatchedLayer> matchedLayersMap, ExecutionReport report) {
+	private void readLayers(TableFinder finder, SourceTable layerTable, View view, ArrayList<MatchedLayer> matchedLayers, Map<String, MatchedLayer> matchedLayersMap, ExecutionReport report) {
 		StringConventions strings = api.stringConventions();
 		Map<String, ODLTable> sourceTables = strings.createStandardisedMap();
 
@@ -467,11 +513,24 @@ public class VLSBuilder {
 			report.setFailed("Failed to read one or more layer records correctly.");
 		}
 
+		// Collate by view
+		Map<String, LinkedList<Layer>> layersByView = strings.createStandardisedMap(new Factory<LinkedList<Layer>>() {
+
+			@Override
+			public LinkedList<Layer> create() {
+				return new LinkedList<>();
+			}
+		});
+		for (Layer layer : layers) {
+			layersByView.get(layer.getViewId()).add(layer);
+		}
+
 		// Loop over each layer object within the view
 		int[] countByLayerType = new int[LayerType.values().length];
-		for (Layer layer : layers) {
-			if (strings.equalStandardised(view.getId(), layer.getViewId())) {
-
+		LinkedList<Layer> layers4View = layersByView.get(view.getId());
+		if (layers4View != null) {
+			for (Layer layer : layers4View) {
+				
 				// check layer id
 				if (strings.isEmptyString(layer.getId())) {
 					report.setFailed("Empty or null ID found for layer row.");
@@ -488,18 +547,19 @@ public class VLSBuilder {
 				matchedLayers.add(ml);
 				matchedLayersMap.put(layer.getId(), ml);
 
-				// identify layer type, using position of the active layer to identify background and foreground if string is empty
-				if(Strings.isEmpty(layer.getLayerType())){
+				// identify layer type, using position of the active layer to
+				// identify background and foreground if string is empty
+				if (Strings.isEmpty(layer.getLayerType())) {
 					report.setFailed("Layer with id " + layer.getId() + " has empty layer type.");
-					return;					
+					return;
 				}
-				
+
 				ml.layerType = LayerType.identify(layer.getLayerType());
 				if (ml.layerType == null) {
 					report.setFailed("Unidentified layer type: " + layer.getLayerType());
 					return;
 				}
-				
+
 				// validate layer type order
 				if (ml.layerType == LayerType.ACTIVE && countByLayerType[ml.layerType.ordinal()] > 0) {
 					report.setFailed("Found more than one active layer in a view: " + ml.layer.getId());
@@ -508,8 +568,8 @@ public class VLSBuilder {
 				for (int i = 0; i < countByLayerType.length; i++) {
 					int count = countByLayerType[i];
 					if (count > 0 && ml.layerType.ordinal() < i) {
-						report.setFailed("Found layer type " + ml.layerType.keywords[0] + " defined after layer type " + LayerType.values()[i].keywords[0]
-								+ ". Layers must be defined in order " + LayerType.orderedCommaSeparatedKeywords() + ".");
+						report.setFailed("Found layer type " + ml.layerType.keywords[0] + " defined after layer type " + LayerType.values()[i].keywords[0] + ". Layers must be defined in order "
+								+ LayerType.orderedCommaSeparatedKeywords() + ".");
 						return;
 					}
 				}
@@ -517,61 +577,12 @@ public class VLSBuilder {
 			}
 		}
 
-//		// Apply logic to identify layer types if not explicitly set.
-//		// Firstly find the active layer.
-//		int nml = matchedLayers.size();
-//		int activeLayerIndx=-1;
-//		for(int mli =0 ; mli < nml ; mli++){
-//			if(matchedLayers.get(mli).layerType == LayerType.ACTIVE){
-//				if(activeLayerIndx!=-1){
-//					report.setFailed("Found more than one active layer in a view: " + view.getId());
-//					return;	
-//				}else{
-//					activeLayerIndx = mli;
-//				}
-//			}
-//		}
-//		for(int mli =0 ; mli < nml ; mli++){
-//			MatchedLayer ml = matchedLayers.get(mli);
-//			
-//			if (ml.layerType == null) {
-//				// get previous and next
-//				LayerType previous=null;
-//				for(int j = mli-1 ; j>=0 &&previous==null; j--){
-//					previous = matchedLayers.get(j).layerType;
-//				}
-//				LayerType next=null;
-//				for(int j = mli+1 ; j<nml &&next==null; j++){
-//					next = matchedLayers.get(j).layerType;
-//				}
-//				
-//				if(previous == LayerType.ACTIVE){
-//					ml.layerType = LayerType.FOREGROUND;
-//				}
-//				else if (next == LayerType.ACTIVE){
-//					ml.layerType = LayerType.BACKGROUND;
-//				}
-//				
-//				
-//				if (layers.size() == 1) {
-//					// assume active
-//					ml.layerType = LayerType.ACTIVE;
-//				} else if (countByLayerType[LayerType.ACTIVE.ordinal()] == 0) {
-//					ml.layerType = LayerType.BACKGROUND;
-//				} else {
-//					ml.layerType = LayerType.FOREGROUND;
-//				}
-//			}
-//
-//
-//
-//		}
-		
 		// Process matched layer sources
 		for (MatchedLayer ml : matchedLayers) {
 			Layer layer = ml.layer;
 
-			// process source - note this could be a formula pointing to a shapefile or similar in the future
+			// process source - note this could be a formula pointing to a
+			// shapefile or similar in the future
 			if (strings.isEmptyString(layer.getSource())) {
 				report.setFailed("Empty or null source value found for the data source for row in layers table with layer id " + layer.getId() + ".");
 				return;
@@ -628,7 +639,9 @@ public class VLSBuilder {
 		}
 
 		if (provider == null) {
-			// report.setFailed("Layer with type " + LayerType.BACKGROUND_IMAGE.keywords[0] + " had a problem executing the formula: " + source);
+			// report.setFailed("Layer with type " +
+			// LayerType.BACKGROUND_IMAGE.keywords[0] + " had a problem
+			// executing the formula: " + source);
 			report.setFailed("Background image layer with id " + layer.getId() + " - failed to execute source formula."
 					+ (wrongType ? " Result must be of type " + ODLColumnType.MAP_TILE_PROVIDER.name() + "." : ""));
 		}
@@ -637,21 +650,24 @@ public class VLSBuilder {
 
 	}
 
-	private View findView(SourceTable viewTable, ExecutionReport report) {
-		// Get the first view we find
-		if (viewTable.validated.getRowCount() == 0) {
+	private List<View> readViewTable(SourceTable viewTable, ExecutionReport report) {
+		return INPUT_VLS_ONLY.getTableMapping(INPUT_VIEW_INDX).readObjectsFromTable(viewTable.validated, report);
+	}
+
+	private View findView(List<View> views, ExecutionReport report) {
+		if (views.size() == 0) {
 			report.setFailed("No view row provided in view table.");
 			return null;
 		}
-		View view = INPUT_VLS_ONLY.getTableMapping(INPUT_VIEW_INDX).readObjectFromTableByRow(viewTable.validated, 0, report);
-		if (view == null || report.isFailed()) {
-			report.setFailed("Failed to view record correctly.");
+		// Get the first view we find witrh isdefault=1
+		for (View view : views) {
+			if (view.getIsDefault() == 1) {
+				return view;
+			}
 		}
-		if (api.stringConventions().isEmptyString(view.getId())) {
-			report.setFailed("Empty or null ID found for view row.");
-			return null;
-		}
-		return view;
+
+		// If not found just take the first
+		return views.get(0);
 	}
 
 	private static class SourceTable {
@@ -664,7 +680,8 @@ public class VLSBuilder {
 		// Get the output table definition
 		ODLTableDefinition outTableDfn = VLSSourceDrawables.BEAN_MAPPING.getTableDefinition();
 
-		// Get the raw table, trying (1) cache, (2) table formula and (3) input table
+		// Get the raw table, trying (1) cache, (2) table formula and (3) input
+		// table
 		SourceTable ret = new SourceTable();
 		ret.raw = rawSourceTables.get(layer.getSource());
 		if (ret.raw == null) {
@@ -718,7 +735,8 @@ public class VLSBuilder {
 			}
 		}
 
-		// Match columns based on name and also match by geom type if not already found
+		// Match columns based on name and also match by geom type if not
+		// already found
 		ColumnNameMatch columnNameMatch = new ColumnNameMatch(ret.raw, outTableDfn);
 		if (columnNameMatch.getMatchForTableB(VLSSourceDrawables.COL_GEOMETRY) == -1) {
 			columnNameMatch.setMatchForTableB(VLSSourceDrawables.COL_GEOMETRY, TableUtils.findColumnIndx(ret.raw, ODLColumnType.GEOM));
@@ -748,12 +766,32 @@ public class VLSBuilder {
 		return ret;
 	}
 
+	/**
+	 * Set mapping which defines a drawables table. Latitude, longitude and
+	 * geometry and non-overlapping layer come directly from the input source
+	 * table, everything else comes from a style function
+	 * 
+	 * @param ml
+	 * @param destinationTableId
+	 * @param mapping
+	 */
 	private void setFieldMapping(MatchedLayer ml, int destinationTableId, AdapterMapping mapping) {
-		for (int i = 0; i <= DrawableObjectImpl.COL_MAX; i++) {
-			if (i != DrawableObjectImpl.COL_LATITUDE && i != DrawableObjectImpl.COL_LONGITUDE && i != DrawableObjectImpl.COL_GEOMETRY) {
-				mapping.setFieldFormula(destinationTableId, i, new StyleFunction(ml, i));
+		// get set of columns read directly from validated source
+		TIntHashSet fromSource = new TIntHashSet();
+		fromSource.add(DrawableObjectImpl.COL_LATITUDE);
+		fromSource.add(DrawableObjectImpl.COL_LONGITUDE);
+		fromSource.add(DrawableObjectImpl.COL_GEOMETRY);
+		fromSource.add(DrawableObjectImpl.COL_NOPL_GROUP_KEY);
+
+		// now set the source for each column as appropriate
+		for (int drawablesCol = 0; drawablesCol <= DrawableObjectImpl.COL_MAX; drawablesCol++) {
+			if (fromSource.contains(drawablesCol)) {
+				// Read directly from validated source table
+				mapping.setFieldSourceIndx(destinationTableId, drawablesCol, drawablesCol);
 			} else {
-				mapping.setFieldSourceIndx(destinationTableId, i, i);
+				// Style formula based on unvalidated raw source table,
+				// defaulting to validated when formula unavailable empty
+				mapping.setFieldFormula(destinationTableId, drawablesCol, new StyleFunction(ml, drawablesCol));
 			}
 		}
 	}
@@ -767,12 +805,12 @@ public class VLSBuilder {
 	private static class StyleFunction extends FunctionImpl {
 		private final MatchedLayer layer;
 		private final Style.OutputFormula styleFormulaType;
-		private final List<ODLDatastore<? extends ODLTable>> rawTableInDsList;
+		private final List<ODLDatastore<? extends ODLTable>> rawTableWrappedInDsList;
 		private final int targetDrawableColumn;
 
 		StyleFunction(MatchedLayer layer, int targetDrawableColumn) {
 			this.layer = layer;
-			this.rawTableInDsList = Arrays.asList(wrapTableInDs(layer.source.raw));
+			this.rawTableWrappedInDsList = Arrays.asList(wrapTableInDs(layer.source.raw));
 			this.targetDrawableColumn = targetDrawableColumn;
 
 			// try to find a corresponding style formula type
@@ -814,20 +852,29 @@ public class VLSBuilder {
 			// use the style
 			if (style != null) {
 
+				// if we don't have a function then use the source table
+				if (style.functions[styleFormulaType.ordinal()] == null) {
+					if (targetDrawableColumn != -1) {
+						return layer.source.validated.getValueAt(tp.getRowNb(), targetDrawableColumn);
+					}
+					return null;
+				}
+
 				// Styles are executed against the raw table
-				TableParameters rawTP = new TableParameters(rawTableInDsList, 0, rawTableInDsList.get(0).getTableAt(0).getImmutableId(), tp.getRowId(),
-						tp.getRowNb(), null);
+				TableParameters rawTP = new TableParameters(rawTableWrappedInDsList, 0, rawTableWrappedInDsList.get(0).getTableAt(0).getImmutableId(), tp.getRowId(), tp.getRowNb(), null);
 				Object val = style.functions[styleFormulaType.ordinal()].execute(rawTP);
 				if (val == Functions.EXECUTION_ERROR) {
 					return Functions.EXECUTION_ERROR;
 				}
 
-				// Just return the executed value if we're not doing flag mapping logic
+				// Just return the executed value if we're not doing flag
+				// mapping logic
 				if (styleFormulaType.booleanToFlag == -1) {
 					return val;
 				}
 
-				// Otherwise process flag mapping. First get the base value from the validated table
+				// Otherwise process flag mapping. First get the base value from
+				// the validated table
 				Object baseValue = getValidatedTableValue(tp);
 				if (baseValue == Functions.EXECUTION_ERROR) {
 					return Functions.EXECUTION_ERROR;
@@ -837,7 +884,8 @@ public class VLSBuilder {
 				Long lBase = Numbers.toLong(baseValue);
 				long ret = lBase != null ? lBase : 0;
 
-				// Then transform the executed style value to a bool and add / remove the flag
+				// Then transform the executed style value to a bool and add /
+				// remove the flag
 				Long lBool = Numbers.toLong(val);
 				if (lBool != null) {
 					if (lBool == 1) {
@@ -852,7 +900,8 @@ public class VLSBuilder {
 				return ret;
 			}
 
-			// If we have no default style we take the corresponding value from the validated table (which extends drawable)
+			// If we have no default style we take the corresponding value from
+			// the validated table (which extends drawable)
 			return getValidatedTableValue(tp);
 		}
 

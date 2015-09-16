@@ -421,7 +421,7 @@ class ScriptExecutionTask {
 				} else {
 					refreshMode = RefreshMode.NEVER;
 				}
-
+				
 				// try to get it first in-case already registered
 				ReporterFrameIdentifier id = getReporterFrameId( cb.getInstructionId(), panelId);
 				@SuppressWarnings("unchecked")

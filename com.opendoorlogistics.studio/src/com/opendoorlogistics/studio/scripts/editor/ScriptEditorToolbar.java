@@ -21,9 +21,10 @@ import com.opendoorlogistics.utils.ui.SimpleAction;
 
 abstract public class ScriptEditorToolbar extends JToolBar {
 	private final JCheckBox syncBox;
+	private final JCheckBox launchMultiple;
 	private final ArrayList<ODLAction> actions = new ArrayList<>();
 
-	public ScriptEditorToolbar(boolean showSyncBox, boolean isSynchonised) {
+	public ScriptEditorToolbar(boolean showSyncBox, boolean isSynchonised, boolean isLaunchMultiple) {
 		setFloatable(false);
 		setLayout(new FlowLayout(FlowLayout.RIGHT));
 
@@ -60,6 +61,19 @@ abstract public class ScriptEditorToolbar extends JToolBar {
 		} else {
 			syncBox = null;
 		}
+		
+		launchMultiple = new JCheckBox("Launch multiple",isLaunchMultiple );
+		launchMultiple.setToolTipText("If the option launches controls, do we create a new control each time the user runs the option?");
+		add(launchMultiple);
+		launchMultiple.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				launchMultipleChanged(launchMultiple.isSelected());
+			}
+		});
+		addSeparator();
+		
 		updateEnabled();
 	}
 
@@ -86,6 +100,8 @@ abstract public class ScriptEditorToolbar extends JToolBar {
 	// }
 
 	protected abstract void syncBoxChanged(boolean isSelected);
+
+	protected abstract void launchMultipleChanged(boolean isLaunchMultiple);
 
 	protected abstract void toggleView();
 	

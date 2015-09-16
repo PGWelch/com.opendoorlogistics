@@ -150,11 +150,11 @@ final public class FunctionsBuilder {
 		}
 
 		// build group-by weighted centroid
-		FunctionDefinition dfn = new FunctionDefinition(FunctionType.FUNCTION, "groupWeightedCentroid");
-		dfn.setDescription("Only available within a group by clause. Get the weighted centroid of the geometries in the group.");
+		FunctionDefinition dfn = new FunctionDefinition(FunctionType.FUNCTION, "groupweightedcentroid");
+		dfn.setDescription("Only available within a group by clause. Get the weighted centroid of the geometries in the group. If EPSG code is null, centroid is calculated using lat-long coordinates. The weight field can also be a constant value - e.g. use 1 instead of a field name.");
 		dfn.addArg("geometry_field");
 		dfn.addArg("weight_field");
-		dfn.addArg("ESPG_code");
+		dfn.addArg("EPSG_code");
 		if (groupRowIdToSourceRowIds != null) {
 			dfn.setFactory(new FunctionFactory() {
 
