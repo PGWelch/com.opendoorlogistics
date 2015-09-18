@@ -20,6 +20,7 @@ import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.core.formulae.FormulaParser;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionImpl;
@@ -50,6 +51,7 @@ import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator.AdapterMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.UnionDecorator;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
+import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
@@ -145,14 +147,17 @@ public class VLSBuilder {
 	}
 
 	private enum LayerType {
-		BACKGROUND_IMAGE(PredefinedTags.BACKGROUND_IMAGE, PredefinedTags.BACKGROUND_IMAGE), BACKGROUND(PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND,
-				PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND, "background"), ACTIVE(PredefinedTags.DRAWABLES, "active"), FOREGROUND(PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND,
-						PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, "foreground");
+		BACKGROUND_IMAGE(false,PredefinedTags.BACKGROUND_IMAGE, PredefinedTags.BACKGROUND_IMAGE),
+		BACKGROUND(true,PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND,PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND, "background"), 
+		ACTIVE(true,PredefinedTags.DRAWABLES, "active"), 
+		FOREGROUND(true,PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND,PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, "foreground");
 
 		final String tablename;
 		final String[] keywords;
+		final boolean drawable;
 
-		private LayerType(String tablename, String... keywords) {
+		private LayerType(boolean drawable,String tablename, String... keywords) {
+			this.drawable = drawable;
 			this.tablename = tablename;
 			this.keywords = keywords;
 		}
@@ -384,6 +389,54 @@ public class VLSBuilder {
 		return ret;
 	}
 
+	/**
+	 * Each output drawable table gets the same additional fields address to its destination
+	 * @param matchedLayers
+	 */
+	private void calculateAddFromSrcFields(List<MatchedLayer> matchedLayers){
+//		ODLTableDefinition destinationTable = TableUtils.findTable(DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS, layerType.tablename);
+
+		// first ensure the fields are common throughout...
+		Tables tables = api.tables();
+		StringConventions strings = api.stringConventions();
+		Set<String> includedFields = strings.createStandardisedSet();
+		ODLTableDefinitionAlterable combined = tables.createAlterableTable(PredefinedTags.DRAWABLES);
+		
+		class TableAdder{
+			void add(ODLTableDefinition table){
+				int nc = table.getColumnCount();
+				for(int i =0 ; i < nc ; i++){
+					String fld = table.getColumnName(i);
+					if(!includedFields.contains(fld)){
+						combined.addColumn(-1, fld, table.getColumnType(i), 0);
+						includedFields.add(fld);
+					}
+				}	
+			}
+		}
+		
+		// Add standard tables first
+		TableAdder tableAdder = new TableAdder();
+		for (LayerType layerType : LayerType.values()) {
+			if(layerType.drawable){
+				tableAdder.add(TableUtils.findTable(DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS, layerType.tablename));
+			}
+		}
+		
+		// Then fields from all matched layers
+		for (MatchedLayer ml : matchedLayers) {
+			if(ml.layerType.drawable){
+				tableAdder.add(ml.source.raw);
+			}
+		}
+		
+		//for(ODLTableDefinition table : )
+	//	for(ODLTableDefinition tableDefinition : )
+//		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES, -1);				
+//		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND, -1);				
+//		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, -1);
+	}
+	
 	private AdaptedDecorator<ODLTable> createAdapter(List<MatchedLayer> matchedLayers, ExecutionReport report) {
 		// Now process all layers into the datastore adapter
 		ArrayList<MatchedLayer> layersInType = new ArrayList<VLSBuilder.MatchedLayer>(matchedLayers.size());
@@ -1008,6 +1061,15 @@ public class VLSBuilder {
 				return ret;
 			}
 
+			// take min and max zoom from the layers if set
+			if(targetDrawableColumn == DrawableObjectImpl.COL_MIN_ZOOM && layer.layer.getMinZoom()!=null){
+				return layer.layer.getMinZoom();
+			}
+
+			if(targetDrawableColumn == DrawableObjectImpl.COL_MAX_ZOOM && layer.layer.getMaxZoom()!=null){
+				return layer.layer.getMaxZoom();
+			}
+			
 			// If we have no default style we take the corresponding value from
 			// the validated table (which extends drawable)
 			return getValidatedTableValue(tp);

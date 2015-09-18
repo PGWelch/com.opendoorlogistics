@@ -2,7 +2,6 @@ package com.opendoorlogistics.core.scripts.execution.adapters.vls;
 
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultLongValue;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 
@@ -14,8 +13,8 @@ public class Layer extends BeanMappedRowImpl{
 	private String source; // could be formula in the future
 	private String filter;
 	private String layerType;
-	private long minZoom;
-	private long maxZoom;
+	private Long minZoom;
+	private Long maxZoom;
 	private String description;
 	
 	private static final int COL_VIEW=0;
@@ -53,22 +52,22 @@ public class Layer extends BeanMappedRowImpl{
 		this.source = source;
 	}
 
-	public long getMinZoom() {
+	public Long getMinZoom() {
 		return minZoom;
 	}
 	
 	@ODLColumnOrder(COL_MIN_ZOOM)
-	@ODLDefaultLongValue(0)
-	public void setMinZoom(long minZoom) {
+	@ODLNullAllowed
+	public void setMinZoom(Long minZoom) {
 		this.minZoom = minZoom;
 	}
-	public long getMaxZoom() {
+	public Long getMaxZoom() {
 		return maxZoom;
 	}
 	
 	@ODLColumnOrder(COL_MAX_ZOOM)
-	@ODLDefaultLongValue(1000)
-	public void setMaxZoom(long maxZoom) {
+	@ODLNullAllowed
+	public void setMaxZoom(Long maxZoom) {
 		this.maxZoom = maxZoom;
 	}
 
