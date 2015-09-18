@@ -30,7 +30,7 @@ public class Option extends ScriptBaseElementImpl{
 	private boolean launchMultiple;
 	private boolean overrideVisibleParameters=false;
 	private String visibleParametersOverride;
-
+	
 	public String getOptionId() {
 		return optionId;
 	}
@@ -163,5 +163,4 @@ public class Option extends ScriptBaseElementImpl{
 	}
 
 
-	
 }

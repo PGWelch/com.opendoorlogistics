@@ -17,6 +17,7 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
@@ -310,10 +311,12 @@ final public class AdapterBuilderUtils {
 	public static String getFormulaFromText(String text) {
 		if (text != null) {
 			text = text.trim();
-			if (text.startsWith(":=")) {
+			if (text.startsWith(ScriptConstants.FORMULA_PREFIX)) {
 				return text.substring(2, text.length());
 			}
 		}
 		return null;
 	}
+	
+
 }

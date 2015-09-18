@@ -23,12 +23,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
@@ -46,7 +46,6 @@ import javax.swing.JToolBar;
 import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
-import javax.swing.border.EtchedBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
@@ -87,6 +86,7 @@ import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser.SourcedDatast
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils.OptionVisitor;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils.OutputWindowSyncLevel;
+import com.opendoorlogistics.core.scripts.utils.ScriptUtils.ScriptIds;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.LayoutUtils;
 import com.opendoorlogistics.core.utils.ui.ModalDialog;
@@ -99,6 +99,7 @@ import com.opendoorlogistics.studio.scripts.editor.OutputPanel;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditorToolbar;
 import com.opendoorlogistics.studio.scripts.editor.adapters.AdapterTablesTabControl;
+import com.opendoorlogistics.studio.scripts.editor.adapters.UserFormulaEditor;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.ODLAction;
@@ -113,11 +114,31 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 	// = new HashMap<>();
 	private static final String htmlHorizontalWhitespace;
 	private MyScrollPane currentPane;
-	private ArrayList<ODLAction> treeActions = new ArrayList<>();
+	private ArrayList<TreeAction> treeActions = new ArrayList<>();
 	private JTree tree;
 	private JSplitPane splitPane;
 	private static AdapterConfig dataAdapterClipboard;
+	private static Option optionClipboard;
 
+	private static abstract class TreeAction extends SimpleAction{
+
+		public TreeAction(SimpleActionConfig config) {
+			super(config);
+		}
+
+		public TreeAction(String name, String tooltip, String smallIconPng, String largeIconPng) {
+			super(name, tooltip, smallIconPng, largeIconPng);
+		}
+
+		public TreeAction(String name, String tooltip, String smallIconPng) {
+			super(name, tooltip, smallIconPng);
+		}
+
+		public boolean addToToolbar(){
+			return true;
+		}
+	}
+	
 	static {
 		iconsByType = new HashMap<>();
 		iconsByType.put(DisplayNodeType.COMPONENT_CONFIGURATION, Icons.loadFromStandardPath("script-element-component-config.png"));
@@ -722,6 +743,18 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 				// create glue to swallow the spare space
 				ret.panel.add(Box.createVerticalGlue());
 			}
+			
+			// add user formula editor panel
+			if(isRoot){
+				ret.panel.addWhitespace();
+				if(script.getUserFormulae()==null){
+					script.setUserFormulae(new ArrayList<>());
+				}
+				JPanel userformula =UserFormulaEditor.createUserFormulaListPanel(script.getUserFormulae());
+				userformula.setBorder(BorderFactory.createTitledBorder("Add global formulae here..."));
+				ret.panel.add(userformula);
+			}
+			
 			return ret;
 		}
 
@@ -1251,8 +1284,10 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 
 	private JToolBar createTreeToolBar() {
 		JToolBar ret = new ODLScrollableToolbar().getToolBar();
-		for (ODLAction action : treeActions) {
-			ret.add(action);
+		for (TreeAction action : treeActions) {
+			if(action.addToToolbar()){
+				ret.add(action);				
+			}
 		}
 		ret.setFloatable(false);
 		return ret;
@@ -1306,6 +1341,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 
 		ScriptEditorToolbar ret = new ScriptEditorToolbar(isRunScriptAllowed(),
 				currentPane != null ? currentPane.displayNode.option.isSynchronised() : false,
+						isRunScriptAllowed(),
 				currentPane != null ? currentPane.displayNode.option.isLaunchMultiple() : false) {
 
 			@Override
@@ -1464,7 +1500,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 	}
 
 	private void initTreeActions() {
-		abstract class EditOption extends SimpleAction {
+		abstract class EditOption extends TreeAction {
 
 			EditOption(String name, String tooltip, String smallIconPng) {
 				super(name, tooltip, smallIconPng);
@@ -1639,7 +1675,111 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 
 		});
+		
 
+		treeActions.add(new EditOption("Copy option", "Copy the selected option to the clipboard.", "script-option-copy-paste.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (currentPane != null && currentPane.displayNode != null && currentPane.displayNode.type == DisplayNodeType.OPTION) {
+					// take a deep copy of the script
+					Script scriptCopy = new ScriptIO().deepCopy(script);
+
+					// save the deep copied adapter to the global clipboard
+					if(currentPane.displayNode.isRoot){
+						optionClipboard =scriptCopy;
+					}else if(currentPane.displayNode.option!=null){
+						optionClipboard = ScriptUtils.getOption(scriptCopy, currentPane.displayNode.option.getOptionId());						
+					}
+				}
+			}
+
+			@Override
+			public void updateEnabled() {
+				boolean enabled = currentPane != null && currentPane.displayNode != null
+						&& (currentPane.displayNode.type == DisplayNodeType.OPTION);
+				setEnabled(enabled);
+			}
+
+			@Override
+			public boolean addToToolbar(){
+				return false;
+			}
+
+		});
+
+		treeActions.add(new EditOption("Paste option", "Paste the option from the option clipboard into the selected option.", "script-option-copy-paste.png") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (currentPane != null && currentPane.displayNode != null && currentPane.displayNode.type == DisplayNodeType.OPTION && optionClipboard != null) {
+					// deep copy the option
+					Script tmp = new Script();
+					tmp.getOptions().add(optionClipboard);
+					tmp = new ScriptIO().deepCopy(tmp);
+					Option option = tmp.getOptions().get(0);
+					
+					
+					// check for used adapters etc
+					ScriptIds current = ScriptUtils.getIds(api, script);
+					ScriptIds pasting = ScriptUtils.getIds(api, option);
+					
+					StringBuilder errors = new StringBuilder();
+					class Helper{
+						void checkOverlap(Set<String> A, Set<String> B, String message){
+							Set<String> overlap = ScriptIds.getCommonStrings(api, A, B);
+							if(overlap.size()>0){
+								StringBuilder builder = new StringBuilder();
+								int lineLen=0;
+								for(String s: overlap){
+									if(builder.length()>0){
+										builder.append(", ");
+										lineLen+=2;
+									}
+									if(lineLen>100){
+										builder.append("\n");
+										lineLen=0;
+									}
+									builder.append(s);
+									lineLen +=s.length();
+								}
+								errors.append(message + builder.toString());
+							}
+						}
+					}
+					Helper helper = new Helper();
+					helper.checkOverlap(current.datastoresAndAdapters, pasting.datastoresAndAdapters, 
+							"Cannot paste option as the following output datastore or adapter ids would no longer be unique:\n");
+					
+					if(errors.length()==0){
+						helper.checkOverlap(current.options, pasting.options, 
+								"Cannot paste option as the following option ids would no longer be unique:\n");						
+					}
+					
+					if(errors.length()>0){
+						JOptionPane.showMessageDialog(ScriptEditorWizardGenerated.this, errors.toString());
+						return;
+					}
+					
+					// add it to the parent option and reinit the display tree
+					Option parent = currentPane.displayNode.option;
+					parent.getOptions().add(option);
+					reinitTree(parent.getOptionId());
+				}
+			}
+
+			@Override
+			public void updateEnabled() {
+				boolean enabled = currentPane != null && currentPane.displayNode != null && (currentPane.displayNode.type == DisplayNodeType.OPTION && optionClipboard != null);
+				setEnabled(enabled);
+			}
+
+			@Override
+			public boolean addToToolbar(){
+				return false;
+			}
+		});
+		
 		treeActions.add(new EditOption("Rename", "Rename the selected item.", "script-rename.png") {
 
 			@Override

@@ -9,6 +9,8 @@ import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.memory.ODLTableImpl;
 
 public class EmptyTable extends FunctionImpl implements TableFormula{
+	public static final String KEYWORD = "emptytable";
+	
 	public EmptyTable(Function name,Function rowCount) {
 		super(name,rowCount);
 	}

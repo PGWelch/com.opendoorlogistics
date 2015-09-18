@@ -33,6 +33,8 @@ import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 
 public class TableFormulaBuilder {
+	private static String ADAPT_TABLE_FNC_NAME = "adapttable";
+	
 	public interface DependencyInjector{
 		ODLDatastore<? extends ODLTable> buildAdapter(AdapterConfig config);
 	}
@@ -68,11 +70,11 @@ public class TableFormulaBuilder {
 	private static FunctionDefinitionLibrary buildFunctionLib(DependencyInjector injector, ExecutionReport report){
 		FunctionDefinitionLibrary lib = new FunctionDefinitionLibrary();
 		lib.addStandardFunction(Shapefile.class, "shapefile", "Load the shapefile", "filename");
-		lib.addStandardFunction(EmptyTable.class, "emptytable", "Create a table with no columns and blank rows", "tablename", "rowcount");
+		lib.addStandardFunction(EmptyTable.class, EmptyTable.KEYWORD, "Create a table with no columns and blank rows", "tablename", "rowcount");
 		
 	//	createFetchTableFunctionFactory();
 		
-		FunctionDefinition fetchDfn = new FunctionDefinition("fetchTable");
+		FunctionDefinition fetchDfn = new FunctionDefinition(ADAPT_TABLE_FNC_NAME);
 		fetchDfn.addArg("tableReference", ArgumentType.STRING_CONSTANT, "Reference to the table - e.g. \"external, customers\".");
 		fetchDfn.addVarArgs("fieldDefinition", ArgumentType.STRING_CONSTANT, "One or more field definitions in the form TYPE FIELDNAME=FUNCTION.");
 		FunctionFactory fetchFactory = createFetchTableFunctionFactory(injector, report);
@@ -108,11 +110,11 @@ public class TableFormulaBuilder {
 			public Function createFunction(Function... children) {
 				int n = children.length;
 				if(n==0){
-					report.setFailed("Error processing fetch table function, no input parameter for table reference found.");
+					report.setFailed("Error processing " + ADAPT_TABLE_FNC_NAME + " function, no input parameter for table reference found.");
 					return null;
 				}
 				
-				List<String> strs = functionToStrs( "fetch table" , children, report);
+				List<String> strs = functionToStrs( ADAPT_TABLE_FNC_NAME , children, report);
 				if(report.isFailed()){
 					return null;
 				}
@@ -120,12 +122,12 @@ public class TableFormulaBuilder {
 				String tableRef = strs.get(0);
 				List<String> mapfields = strs.subList(1, strs.size());
 				
-				AdaptedTableConfig table = createFetchTableAdapter("fetch table",tableRef, mapfields, report);
+				AdaptedTableConfig table = createFetchTableAdapter(ADAPT_TABLE_FNC_NAME,tableRef, mapfields, report);
 				if(report.isFailed()){
 					return null;
 				}
 				
-				return runFetchTableAdapter("fetch table" , table, injector, report);
+				return runFetchTableAdapter(ADAPT_TABLE_FNC_NAME, table, injector, report);
 			}
 
 		};

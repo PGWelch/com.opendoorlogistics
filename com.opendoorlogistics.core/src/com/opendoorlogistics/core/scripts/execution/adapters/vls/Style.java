@@ -16,7 +16,8 @@ public class Style extends BeanMappedRowImpl {
 	private static final int COL_KEY2=COL_KEY1+1;
 	private static final int COL_KEY3=COL_KEY2+1;
 	private static final int COL_KEY4=COL_KEY3+1;
-	private static final int COL_COLOUR=COL_KEY4+1;
+	private static final int COL_FILTER=COL_KEY4+1;
+	private static final int COL_COLOUR=COL_FILTER+1;
 	private static final int COL_WIDTH =COL_COLOUR+1;
 	private static final int COL_SYMBOL=COL_WIDTH +1;
 	private static final int COL_OUTLINED=COL_SYMBOL+1;
@@ -28,6 +29,7 @@ public class Style extends BeanMappedRowImpl {
 	private static final int COL_LABELPRIORITY =COL_LABELPOSITION+1;
 	private static final int COL_LABELSIZE=COL_LABELPRIORITY +1;
 	private static final int COL_LEGENDKEY=COL_LABELSIZE+1;
+	private static final int COL_DESCRIPTION=COL_LEGENDKEY+1;
 	
 	public static final int NB_RULE_KEYS=4;
 	public static final String TABLE_NAME = "Styles";
@@ -36,6 +38,7 @@ public class Style extends BeanMappedRowImpl {
 	private String key2;
 	private String key3;
 	private String key4;
+	private String filter;
 	private String colour;
 	private String width; // filter width zero??
 	private String symbol;
@@ -48,6 +51,7 @@ public class Style extends BeanMappedRowImpl {
 	private String labelPriority; 
 	private String labelSize;
 	private String legendKey;
+	private String description;
 
 	public enum OutputFormula{
 		COLOUR(DrawableObjectImpl.COL_COLOUR, ODLColumnType.COLOUR),
@@ -318,5 +322,26 @@ public class Style extends BeanMappedRowImpl {
 		this.labelPriority = labelPriority;
 	}
 
+	public String getFilter() {
+		return filter;
+	}
+
+	@ODLColumnOrder(COL_FILTER)
+	@ODLNullAllowed	
+	public void setFilter(String filter) {
+		this.filter = filter;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	@ODLColumnOrder(COL_DESCRIPTION)
+	@ODLNullAllowed
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	
 	
 }

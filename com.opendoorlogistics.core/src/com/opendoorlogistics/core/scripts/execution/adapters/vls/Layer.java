@@ -16,6 +16,7 @@ public class Layer extends BeanMappedRowImpl{
 	private String layerType;
 	private long minZoom;
 	private long maxZoom;
+	private String description;
 	
 	private static final int COL_VIEW=0;
 	private static final int COL_ID=COL_VIEW+1;
@@ -24,6 +25,7 @@ public class Layer extends BeanMappedRowImpl{
 	private static final int COL_LAYER_TYPE=COL_FILTER+1;
 	private static final int COL_MIN_ZOOM=COL_LAYER_TYPE+1;
 	private static final int COL_MAX_ZOOM=COL_MIN_ZOOM+1;
+	private static final int COL_DESCRIPTION = COL_MAX_ZOOM+1;
 	
 	
 	public String getViewId() {
@@ -90,4 +92,15 @@ public class Layer extends BeanMappedRowImpl{
 		this.layerType = layerType;
 	}
 
+	public String getDescription() {
+		return description;
+	}
+
+	@ODLColumnOrder(COL_DESCRIPTION)
+	@ODLNullAllowed
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	
 }

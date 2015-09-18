@@ -104,6 +104,18 @@ class ScriptExecutionTask {
 		if (filtered == null) {
 			return;
 		}
+		
+		// Copy over the override use prompt information
+		Option mainOption = null;
+		if(optionIds==null || optionIds.length==0){
+			mainOption = unfiltered;
+		}else if (optionIds!=null && optionIds.length==1){
+			mainOption = ScriptUtils.getOption(unfiltered, optionIds[0]);
+		}
+		if(mainOption!=null){
+			filtered.setOverrideVisibleParameters(mainOption.isOverrideVisibleParameters());
+			filtered.setVisibleParametersOverride(mainOption.getVisibleParametersOverride());
+		}
 
 		// Create the execution api we give to the script executor to allow it interact with the UI
 		initDependencyEjector();

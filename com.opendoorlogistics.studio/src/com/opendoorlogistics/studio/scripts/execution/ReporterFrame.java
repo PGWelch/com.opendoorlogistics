@@ -52,16 +52,16 @@ import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
 import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
 import com.opendoorlogistics.utils.ui.Icons;
 
-final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInternalFrame implements  GlobalSelectionChangedCB{
+final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInternalFrame implements GlobalSelectionChangedCB {
 	private final GlobalMapSelectedRowsManager gsm;
 	private final ReporterFrameIdentifier id;
 	private final Border defaultBorder;
 	private final Border outOfDateBorder = BorderFactory.createLineBorder(Color.RED, 2);
 	private final RefreshMode refreshMode;
 	private final ODLComponent callingComponent;
-	//private final JPanel parametersPanel;
+	// private final JPanel parametersPanel;
 	private final SmartSouthPanel southPanel = new SmartSouthPanel();
-	//private JCheckBox autorefreshBox;
+	// private JCheckBox autorefreshBox;
 	private JButton manualRefreshButton;
 	private JLabel refreshLabel;
 	private T userPanel;
@@ -74,13 +74,11 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	private HashSet<ODLListener> listeners = new HashSet<>();
 	private String title;
 
-	public enum RefreshMode{
-		AUTOMATIC,
-		MANUAL,
-		NEVER
+	public enum RefreshMode {
+		AUTOMATIC, MANUAL, NEVER
 	}
-	
-	public ReporterFrame(T userPanel, ReporterFrameIdentifier id, String title,ODLComponent component, RefreshMode refreshMode, GlobalMapSelectedRowsManager gmsrm) {
+
+	public ReporterFrame(T userPanel, ReporterFrameIdentifier id, String title, ODLComponent component, RefreshMode refreshMode, GlobalMapSelectedRowsManager gmsrm) {
 		super(id.getCombinedId());
 		this.id = id;
 		this.userPanel = userPanel;
@@ -89,15 +87,15 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		this.refreshMode = refreshMode;
 		this.gsm = gmsrm;
 		this.callingComponent = component;
-		//this.parametersPanel = new JPanel();
-		//this.parametersPanel.setLayout(new BorderLayout());
-		
-	//	parametersPanel.setBorder(BorderFactory.createEmptyBorder());
+		// this.parametersPanel = new JPanel();
+		// this.parametersPanel.setLayout(new BorderLayout());
+
+		// parametersPanel.setBorder(BorderFactory.createEmptyBorder());
 		gsm.registerListener(this);
-		
+
 		setLayout(new BorderLayout());
 		add(userPanel, BorderLayout.CENTER);
-		
+
 		if (refreshMode == RefreshMode.MANUAL) {
 			southPanel.addRefreshPanel(createRefreshControl());
 		}
@@ -109,64 +107,65 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		updateAppearance();
 	}
 
-	public ODLComponent getComponent(){
+	public ODLComponent getComponent() {
 		return callingComponent;
 	}
-	
+
 	/**
 	 * South panel which adds / hides itself
+	 * 
 	 * @author Phil
 	 *
 	 */
-	private class SmartSouthPanel extends ODLScrollableToolbar{
+	private class SmartSouthPanel extends ODLScrollableToolbar {
 		private JPanel refreshPanel;
 		private JPanel parametersPanel;
-		
+
 		SmartSouthPanel() {
-		//	setLayout(new FlowLayout(FlowLayout.LEFT));
-		//	setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
-		//	setBorder(BorderFactory.createEmptyBorder());
-		//	setMinimumSize(new Dimension());
+			// setLayout(new FlowLayout(FlowLayout.LEFT));
+			// setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
+			// setBorder(BorderFactory.createEmptyBorder());
+			// setMinimumSize(new Dimension());
 			getToolBar().setBorder(BorderFactory.createEmptyBorder());
 		}
-		
-		void addRefreshPanel(JPanel panel){
+
+		void addRefreshPanel(JPanel panel) {
 			this.refreshPanel = panel;
 			update();
 		}
-		
-		void addParametersPanel(JPanel panel){		
+
+		void addParametersPanel(JPanel panel) {
 			this.parametersPanel = panel;
 			update();
 		}
-		
-		void update(){
+
+		void update() {
 			ReporterFrame.this.remove(this);
 			getToolBar().removeAll();
-			
-			int count=0;
-			if(parametersPanel!=null && parametersPanel.getComponentCount()>0){
+
+			int count = 0;
+			if (parametersPanel != null && parametersPanel.getComponentCount() > 0) {
 				parametersPanel.setBorder(BorderFactory.createEmptyBorder());
 				getToolBar().add(parametersPanel);
 				count++;
 			}
-			
-			if(refreshPanel!=null){
+
+			if (refreshPanel != null) {
 				getToolBar().add(refreshPanel);
 				count++;
 			}
-			
-			if(count>0){
+
+			if (count > 0) {
 				ReporterFrame.this.add(this, BorderLayout.SOUTH);
 			}
 		}
 	}
-	
+
 	private JPanel createRefreshControl() {
 		// instantiate and configure the toolbar obejct
 		JPanel refreshBar = new JPanel();
 		refreshBar.setLayout(new BoxLayout(refreshBar, BoxLayout.X_AXIS));
-	//	refreshBar.setFloatable(false);
+		// refreshBar.setFloatable(false);
 
 		// add the manual refresh label
 		refreshLabel = new JLabel(" Manual refresh ");
@@ -180,13 +179,13 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (refreshCB != null && unfilteredScript != null) {
-					refreshCB.postReportRefreshRequest(unfilteredScript,id, false, parametersDs);
+					refreshCB.postReportRefreshRequest(unfilteredScript, id, false, parametersDs);
 				}
 			}
 		});
 		refreshBar.add(manualRefreshButton);
 
-	//	refreshBar.addSeparator();
+		// refreshBar.addSeparator();
 
 		return refreshBar;
 	}
@@ -197,8 +196,9 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 			manualRefreshButton.setEnabled(manualEnabled);
 			refreshLabel.setEnabled(manualEnabled);
 
-			//boolean autoenabled = refreshCB != null && (dependencies == null || dependencies.isWritten() == false);
-			//autorefreshBox.setEnabled(autoenabled);
+			// boolean autoenabled = refreshCB != null && (dependencies == null
+			// || dependencies.isWritten() == false);
+			// autorefreshBox.setEnabled(autoenabled);
 
 			setTitle(title + (isDirty ? " (OUT-OF-DATE)" : ""));
 
@@ -215,7 +215,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 			if (getBorder() != border) {
 				setBorder(border);
 			}
-		}else{
+		} else {
 			setTitle(title);
 		}
 	}
@@ -230,28 +230,30 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 
 	public void setUserPanel(T panel) {
 		// changing panel?
-		if(this.userPanel != panel){
-			
+		if (this.userPanel != panel) {
+
 			// remove old panel
-			if(this.userPanel!=null){
+			if (this.userPanel != null) {
 				remove(this.userPanel);
-				this.userPanel.dispose();		
+				this.userPanel.dispose();
 			}
-			
+
 			// add new panel
 			this.userPanel = panel;
-			add(userPanel, BorderLayout.CENTER);				
+			add(userPanel, BorderLayout.CENTER);
 		}
-		
+
 		isDirty = false;
 		updateAppearance();
 
-		// need revalidate here or it doesn't always repaint (repaint doesn't work)
+		// need revalidate here or it doesn't always repaint (repaint doesn't
+		// work)
 		revalidate();
 	}
 
 	/**
-	 * Set the reporter frame to be dirty. This can be called from other threads.
+	 * Set the reporter frame to be dirty. This can be called from other
+	 * threads.
 	 */
 	public synchronized void setDirty() {
 		if (isDirty == false) {
@@ -271,18 +273,19 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		}
 	}
 
-	public RefreshMode getRefreshMode(){
+	public RefreshMode getRefreshMode() {
 		return refreshMode;
 	}
-	
+
 	private void runAutorefresh() {
 		if (refreshCB != null && unfilteredScript != null && isDirty) {
-			refreshCB.postReportRefreshRequest(unfilteredScript,id, true,parametersDs);
+			refreshCB.postReportRefreshRequest(unfilteredScript, id, true, parametersDs);
 		}
-	
+
 	}
 
-	public void setDependencies(ODLDatastore<? extends ODLTableReadOnly> ds, Script unfilteredScript, DataDependencies dependencies, ODLDatastore<? extends ODLTable> parametersDs, ExecutionReport report) {
+	public void setDependencies(ODLDatastore<? extends ODLTableReadOnly> ds, Script unfilteredScript, DataDependencies dependencies, ODLDatastore<? extends ODLTable> parametersDs,
+			ExecutionReport report) {
 		this.unfilteredScript = unfilteredScript;
 
 		// remove any listeners from the saved datastore
@@ -340,66 +343,66 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 				listeners.add(listener);
 				ds.addListener(listener, tableids);
 			}
-		}else{
-			this.externalDs=null;
+		} else {
+			this.externalDs = null;
 			this.dependencies = null;
 		}
 
 		// handle parameters and show / update the panel as needed
 		ODLApi api = new ODLApiImpl();
-		this.parametersDs =api.tables().copyDs(parametersDs);
+		this.parametersDs = api.tables().copyDs(parametersDs);
 		Parameters parameters = api.scripts().parameters();
 		ParametersControlFactory pcf = parameters.getControlFactory();
 
 		// handle the case of overriding the visible parameters; replace with filtered table
-		if(id!=null && id.getInstructionId()!=null && parametersDs!=null){
+		if (id != null && id.getInstructionId() != null && parametersDs != null) {
 			String myOptionId = ScriptUtils.getOptionIdByInstructionId(unfilteredScript, id.getInstructionId());
-			if(myOptionId!=null){
-				Option myOption= ScriptUtils.getOption(unfilteredScript, myOptionId);
-				if(myOption.isOverrideVisibleParameters()){
-					ODLTable parametersTable = parameters.findTable(this.parametersDs, TableType.PARAMETERS);
-					if(parametersTable!=null){
-						ODLTable filteredParamsTable = ((ParametersImpl)parameters).applyVisibleOverrides(myOption.getVisibleParametersOverride(), parametersTable, report);
-						if(!report.isFailed()){
-							api.tables().clearTable(parametersTable);
-							for(int i = 0 ; i< filteredParamsTable.getRowCount();i++){
-								api.tables().copyRow(filteredParamsTable, i, parametersTable);;
-							}
+			Option myOption = myOptionId != null ? ScriptUtils.getOption(unfilteredScript, myOptionId) : unfilteredScript;
+			if (myOption != null && myOption.isOverrideVisibleParameters()) {
+				ODLTable parametersTable = parameters.findTable(this.parametersDs, TableType.PARAMETERS);
+				if (parametersTable != null) {
+					ODLTable filteredParamsTable = ((ParametersImpl) parameters).applyVisibleOverrides(myOption.getVisibleParametersOverride(), parametersTable, report);
+					if (!report.isFailed()) {
+						api.tables().clearTable(parametersTable);
+						for (int i = 0; i < filteredParamsTable.getRowCount(); i++) {
+							api.tables().copyRow(filteredParamsTable, i, parametersTable);
+							;
 						}
 					}
 				}
 			}
+			// }
 		}
-		
+
 		// create the parameters table
-		JPanel parametersPanel =null;
-		if(parametersDs!=null && pcf!=null && !report.isFailed()){
-			ListenerDecorator<ODLTable> listenerDecorator =new ListenerDecorator<ODLTable>(ODLTable.class, this.parametersDs);
-			parametersPanel = pcf.createHorizontalPanel(api,parameters.findTable(listenerDecorator, TableType.PARAMETERS), parameters.findTable(parametersDs, TableType.PARAMETER_VALUES));
-			if(parametersPanel!=null){
+		JPanel parametersPanel = null;
+		if (parametersDs != null && pcf != null && !report.isFailed()) {
+			ListenerDecorator<ODLTable> listenerDecorator = new ListenerDecorator<ODLTable>(ODLTable.class, this.parametersDs);
+			parametersPanel = pcf.createHorizontalPanel(api, parameters.findTable(listenerDecorator, TableType.PARAMETERS), parameters.findTable(parametersDs, TableType.PARAMETER_VALUES));
+			if (parametersPanel != null) {
 				listenerDecorator.addListener(new ODLListener() {
-					
+
 					@Override
 					public void tableChanged(int tableId, int firstRow, int lastRow) {
 						setDirty();
 					}
-					
+
 					@Override
 					public ODLListenerType getType() {
 						return ODLListenerType.TABLE_CHANGED;
 					}
-					
+
 					@Override
 					public void datastoreStructureChanged() {
 						setDirty();
 					}
-				}, new int[]{parameters.findTable(listenerDecorator, TableType.PARAMETERS).getImmutableId()});
+				}, new int[] { parameters.findTable(listenerDecorator, TableType.PARAMETERS).getImmutableId() });
 			}
 		}
 		southPanel.addParametersPanel(parametersPanel);
 
-
-		// it is assumed the control is no longer dirty after a call to set dependencies
+		// it is assumed the control is no longer dirty after a call to set
+		// dependencies
 		isDirty = false;
 		updateAppearance();
 	}
@@ -425,17 +428,17 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	}
 
 	public static interface OnRefreshReport {
-		void postReportRefreshRequest(Script unfilteredScript,ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh, ODLDatastore<? extends ODLTable> parametersTable);
+		void postReportRefreshRequest(Script unfilteredScript, ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh, ODLDatastore<? extends ODLTable> parametersTable);
 	}
 
 	@Override
 	public void selectionChanged(GlobalMapSelectedRowsManager manager) {
-		if(dependencies!=null && dependencies.isReadRowFlags()){
+		if (dependencies != null && dependencies.isReadRowFlags()) {
 			setDirty();
 		}
 	}
-	
-	Script getUnfilteredScript(){
+
+	Script getUnfilteredScript() {
 		return unfilteredScript;
 	}
 
@@ -443,10 +446,8 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		return parametersDs;
 	}
 
+	// public Script getScript(){
+	// return script;
+	// }
 
-//	public Script getScript(){
-//		return script;
-//	}
-	
-	
 }

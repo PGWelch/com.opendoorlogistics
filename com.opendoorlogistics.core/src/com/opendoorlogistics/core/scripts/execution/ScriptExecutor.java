@@ -65,6 +65,7 @@ import com.opendoorlogistics.core.scripts.execution.adapters.BuiltAdapters;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.AbstractDependencyInjector;
 import com.opendoorlogistics.core.scripts.execution.dependencyinjection.DependencyInjector;
 import com.opendoorlogistics.core.scripts.formulae.TableParameters;
+import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
@@ -195,8 +196,23 @@ final public class ScriptExecutor {
 	 * @return
 	 */
 	public ExecutionReport execute(Script script, ODLDatastoreAlterable<? extends ODLTableAlterable> externalDS) {
+		
+		// deep copy and add any global formulae to all table adapters...
+		if(script.getUserFormulae()!=null && script.getUserFormulae().size()>0){
+			script = new ScriptIO().deepCopy(script);
+			for (AdapterConfig config : script.getAdapters()) {
+				for(AdaptedTableConfig table: config.getTables()){
+					if(table.getUserFormulae()==null){
+						table.setUserFormulae(script.getUserFormulae());
+					}else{
+						table.getUserFormulae().addAll(script.getUserFormulae());
+					}
+				}
+			}			
+		}
+		
 		ScriptExecutionBlackboardImpl bb = new ScriptExecutionBlackboardImpl(compileOnly);
-
+		
 		internalExecutionApi.postStatusMessage("Starting script execution...");
 
 		try {

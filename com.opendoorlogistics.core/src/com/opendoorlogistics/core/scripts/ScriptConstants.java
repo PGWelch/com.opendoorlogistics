@@ -36,4 +36,6 @@ final public class ScriptConstants {
 	public static boolean isExternalDs(String s){
 		return Strings.equalsStd(s, EXTERNAL_DS_NAME);
 	}
+	
+	public static final String FORMULA_PREFIX = ":=";
 }

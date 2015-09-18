@@ -126,8 +126,7 @@ public class FmLookup extends FunctionImpl {
 			
 			// get the row id
 			long id = list!=null ? list[i] : table.getRowId(i);
-			count++;
-
+			
 			// check the other search values if we have them
 			boolean matches=true;
 			for(int j = 1 ; j < nbLookups && matches; j++){
@@ -139,6 +138,9 @@ public class FmLookup extends FunctionImpl {
 			}
 			
 			if(matches){
+				// increment the matching row count
+				count++;
+
 				// get the lookup value unless we're just counting)
 				Object otherVal = null;
 				if (type != LookupType.COUNT && type!=LookupType.SEL_COUNT) {

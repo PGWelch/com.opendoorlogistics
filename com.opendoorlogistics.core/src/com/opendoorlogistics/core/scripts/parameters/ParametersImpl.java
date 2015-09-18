@@ -33,33 +33,34 @@ import com.opendoorlogistics.core.tables.beans.BeanMapping;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
 import com.opendoorlogistics.core.utils.strings.EnumStdLookup;
 
-public class ParametersImpl implements Parameters{
+public class ParametersImpl implements Parameters {
 	public static final String TABLE_NAME = "Parameter";
 	public static final String PARAMETER_VALUES_TABLE_NAME = "ParameterValues";
 	public static final String VALUES_TABLE_NAME = "ParameterValues";
 	public static final String DS_ID = "internal";
-	
+
 	private static final BeanDatastoreMapping BEAN_NO_KEY_DS_MAPPING = BeanMapping.buildDatastore(NoKeyParametersTable.class, NoKeyParameterValues.class);
 	private static final BeanDatastoreMapping BEAN_WITH_KEY_DS_MAPPING = BeanMapping.buildDatastore(WithKeyParametersTable.class, WithKeyParameterValues.class);
-//	private static final BeanTableMapping NO_KEY_BEAN_MAPPING = BEAN_NO_KEY_DS_MAPPING.getTableMapping(0);
+	// private static final BeanTableMapping NO_KEY_BEAN_MAPPING =
+	// BEAN_NO_KEY_DS_MAPPING.getTableMapping(0);
 	private static final EnumStdLookup<ODLColumnType> COL_TYPE_LOOKUP = new EnumStdLookup<ODLColumnType>(ODLColumnType.class);
 	private static final EnumStdLookup<PromptType> PROMPT_TYPE_LOOKUP = new EnumStdLookup<PromptType>(PromptType.class);
 
-	
 	private final ODLApi api;
-	
+
 	private static volatile ParametersControlFactory PARAMETERS_CONTROL;
-	static{
-		List<ParametersControlFactory> ctrls =new ODLApiImpl().loadPlugins(ParametersControlFactory.class);
-		if(ctrls.size()>0){
+
+	static {
+		List<ParametersControlFactory> ctrls = new ODLApiImpl().loadPlugins(ParametersControlFactory.class);
+		if (ctrls.size() > 0) {
 			System.out.println("Loaded parameter control factory plugin");
 			PARAMETERS_CONTROL = ctrls.get(0);
-		}else{
-			PARAMETERS_CONTROL=null;
+		} else {
+			PARAMETERS_CONTROL = null;
 		}
 
 	}
-	
+
 	public ParametersImpl(ODLApi api) {
 		super();
 		this.api = api;
@@ -67,24 +68,23 @@ public class ParametersImpl implements Parameters{
 
 	@Override
 	public ODLTableDefinition tableDefinition(boolean includeKey) {
-		return getTableDefinition(includeKey,0);
+		return getTableDefinition(includeKey, 0);
 	}
 
 	private ODLTableDefinition getTableDefinition(boolean includeKey, int indx) {
 		return (includeKey ? BEAN_WITH_KEY_DS_MAPPING : BEAN_NO_KEY_DS_MAPPING).getDefinition().getTableAt(indx);
 	}
-	
+
 	@Override
 	public ODLTableDefinition valuesTableDefinition(boolean includeKeyColumn) {
 		return getTableDefinition(includeKeyColumn, 1);
 	}
 
-
 	@Override
 	public Object getValue(ODLTableReadOnly parametersTable, String name) {
 		String val = getRawColValue(name, parametersTable, COL_VALUE);
 		ODLColumnType type = getColumnType(parametersTable, name);
-		if(type!=null){
+		if (type != null) {
 			return api.values().convertValue(val, type);
 		}
 		return null;
@@ -99,21 +99,21 @@ public class ParametersImpl implements Parameters{
 	public PromptType getPromptType(ODLTableReadOnly parametersTable, String name) {
 		return PROMPT_TYPE_LOOKUP.get(getRawColValue(name, parametersTable, COL_PROMPT_TYPE));
 	}
-	
-	private long getRowId(String name, ODLTableReadOnly parametersTable){
-		if(name!=null){
-			long [] find = parametersTable.find(COL_KEY, name);
-			if(find!=null && find.length>0){
+
+	private long getRowId(String name, ODLTableReadOnly parametersTable) {
+		if (name != null) {
+			long[] find = parametersTable.find(COL_KEY, name);
+			if (find != null && find.length > 0) {
 				return find[0];
 			}
 		}
 		return -1;
 	}
-	
+
 	private String getRawColValue(String name, ODLTableReadOnly parametersTable, int col) {
 		long rowId = getRowId(name, parametersTable);
-		if(rowId!=-1){
-			return (String)parametersTable.getValueById(rowId, col);	
+		if (rowId != -1) {
+			return (String) parametersTable.getValueById(rowId, col);
 		}
 		return null;
 	}
@@ -125,7 +125,7 @@ public class ParametersImpl implements Parameters{
 
 	@Override
 	public ODLDatastore<? extends ODLTableDefinition> dsDefinition(boolean includeKey) {
-		return (includeKey?BEAN_WITH_KEY_DS_MAPPING:  BEAN_NO_KEY_DS_MAPPING).getDefinition();
+		return (includeKey ? BEAN_WITH_KEY_DS_MAPPING : BEAN_NO_KEY_DS_MAPPING).getDefinition();
 	}
 
 	@Override
@@ -135,7 +135,7 @@ public class ParametersImpl implements Parameters{
 
 	@Override
 	public boolean exists(ODLTableReadOnly parametersTable, String key) {
-		return getRowId(key, parametersTable)!=-1;
+		return getRowId(key, parametersTable) != -1;
 	}
 
 	@Override
@@ -143,21 +143,21 @@ public class ParametersImpl implements Parameters{
 		return PARAMETERS_CONTROL;
 	}
 
-//	@Override
-//	public String getParameterControlComponentId() {
-//		return "com.opendoorlogistics.core.parameters.control";
-//	}
-	
-	private int getWithKeyColIndx(ParamDefinitionField type){
-		switch(type){
+	// @Override
+	// public String getParameterControlComponentId() {
+	// return "com.opendoorlogistics.core.parameters.control";
+	// }
+
+	private int getWithKeyColIndx(ParamDefinitionField type) {
+		switch (type) {
 		case KEY:
 			return COL_KEY;
 		case VALUE_TYPE:
 			return COL_VALUE_TYPE;
-	//	case DEFAULT_VALUE:
-	//		return COL_DEFAULT_VALUE;
-	//	case EDITOR_TYPE:
-	//		return COL_EDITOR_TYPE;
+		// case DEFAULT_VALUE:
+		// return COL_DEFAULT_VALUE;
+		// case EDITOR_TYPE:
+		// return COL_EDITOR_TYPE;
 		case PROMPT_TYPE:
 			return COL_PROMPT_TYPE;
 		case VALUE:
@@ -174,8 +174,8 @@ public class ParametersImpl implements Parameters{
 	@Override
 	public String getByKey(ODLTableReadOnly parametersTable, String key, ParamDefinitionField type) {
 		long rowId = getRowId(key, parametersTable);
-		if(rowId!=-1){
-			return (String)parametersTable.getValueById(rowId, getWithKeyColIndx(type));
+		if (rowId != -1) {
+			return (String) parametersTable.getValueById(rowId, getWithKeyColIndx(type));
 		}
 		return null;
 	}
@@ -183,38 +183,38 @@ public class ParametersImpl implements Parameters{
 	@Override
 	public void setByKey(ODLTable table, String key, ParamDefinitionField type, String newValue) {
 		long rowId = getRowId(key, table);
-		if(rowId!=-1){
+		if (rowId != -1) {
 			table.setValueById(newValue, rowId, getWithKeyColIndx(type));
 		}
 	}
-	
+
 	@Override
 	public ODLDatastore<? extends ODLTableReadOnly> exampleDs() {
-		ODLDatastoreAlterable<? extends ODLTableAlterable>  ret = api.tables().createAlterableDs();
+		ODLDatastoreAlterable<? extends ODLTableAlterable> ret = api.tables().createAlterableDs();
 		api.tables().copyTableDefinition(tableDefinition(true), ret);
-		
-		for(int i =0 ; i < 3 ; i++){
+
+		for (int i = 0; i < 3; i++) {
 			WithKeyParametersTable o = new WithKeyParametersTable();
-			o.setKey( "View" + (i+1));
-			o.setValue("View" + (i+1));
-			o.setPromptType( PromptType.ATTACH.name());
+			o.setKey("View" + (i + 1));
+			o.setValue("View" + (i + 1));
+			o.setPromptType(PromptType.ATTACH.name());
 			BEAN_WITH_KEY_DS_MAPPING.getTableMapping(0).writeObjectToTable(o, ret.getTableAt(0));
 		}
-		
+
 		return ret;
 	}
 
 	@Override
 	public String getParamDefinitionFieldName(ParamDefinitionField type) {
-		switch(type){
+		switch (type) {
 		case KEY:
 			return Parameters.FIELDNAME_KEY;
 		case VALUE_TYPE:
 			return Parameters.FIELDNAME_VALUE_TYPE;
-//		case DEFAULT_VALUE:
-//			return Parameters.FIELDNAME_DEFAULT_VALUE;
-		//case EDITOR_TYPE:
-		//	return Parameters.FIELDNAME_EDITOR_TYPE;
+		// case DEFAULT_VALUE:
+		// return Parameters.FIELDNAME_DEFAULT_VALUE;
+		// case EDITOR_TYPE:
+		// return Parameters.FIELDNAME_EDITOR_TYPE;
 		case PROMPT_TYPE:
 			return Parameters.FIELDNAME_PROMPT_TYPE;
 		case VALUE:
@@ -225,39 +225,44 @@ public class ParametersImpl implements Parameters{
 
 	/**
 	 * Called from the script editor UI...
+	 * 
 	 * @return
 	 */
-	public AdapterConfig createParameterAdapter(String id){
+	public AdapterConfig createParameterAdapter(String id) {
 		AdapterConfig config = new AdapterConfig(id);
 		config.setAdapterType(ScriptAdapterType.PARAMETER);
-		
-		
-		// wrap the config in the api object so we can user our high-level api code to configure it...
-		ScriptAdapter adapter = new ScriptAdapterImpl(api,null,config);
+
+		// wrap the config in the api object so we can user our high-level api
+		// code to configure it...
+		ScriptAdapter adapter = new ScriptAdapterImpl(api, null, config);
 		adapter.setName(adapter.getAdapterId());
 		adapter.setAdapterType(ScriptAdapterType.PARAMETER);
-		
+
 		// add parameters table
 		ScriptAdapterTable newParameter = adapter.addSourcelessTable(tableDefinition(false));
-		ODLTable dataTable = (ODLTable)api.tables().copyTableDefinition(tableDefinition(false),api.tables().createAlterableDs());
+		ODLTable dataTable = (ODLTable) api.tables().copyTableDefinition(tableDefinition(false), api.tables().createAlterableDs());
 		dataTable.createEmptyRow(-1);
 		dataTable.setValueAt(PromptType.ATTACH_POPUP.name(), 0, api.tables().findColumnIndex(dataTable, Parameters.FIELDNAME_PROMPT_TYPE));
 		dataTable.setValueAt(ODLColumnType.STRING.name(), 0, api.tables().findColumnIndex(dataTable, Parameters.FIELDNAME_VALUE_TYPE));
 		newParameter.setDataTable(dataTable);
-		
-		//newParameter.setFormula(Parameters.FIELDNAME_VALUE_TYPE, "\"" + ODLColumnType.STRING.name()+ "\"");
-	//	newParameter.setFormula(Parameters.FIELDNAME_EDITOR_TYPE, "\"\"");
-	//	newParameter.setFormula(Parameters.FIELDNAME_PROMPT_TYPE, "\"" + PromptType.ATTACH.name() + "\"");
-	//	String inputTableName = tableDefinition(false).getName();
-		//newParameter.setSourceTable(":=emptytable(\"" +inputTableName+ "\",1)", inputTableName);
+
+		// newParameter.setFormula(Parameters.FIELDNAME_VALUE_TYPE, "\"" +
+		// ODLColumnType.STRING.name()+ "\"");
+		// newParameter.setFormula(Parameters.FIELDNAME_EDITOR_TYPE, "\"\"");
+		// newParameter.setFormula(Parameters.FIELDNAME_PROMPT_TYPE, "\"" +
+		// PromptType.ATTACH.name() + "\"");
+		// String inputTableName = tableDefinition(false).getName();
+		// newParameter.setSourceTable(":=emptytable(\"" +inputTableName+
+		// "\",1)", inputTableName);
 		newParameter.setSourceTable(ScriptConstants.SCRIPT_EMBEDDED_TABLE_DATA_DS, "");
 		// add available values table...
 		ScriptAdapterTable availableValues = adapter.addSourcelessTable(valuesTableDefinition(false));
-	//	String valuesTableName = valuesTableDefinition(false).getName();
-	//	availableValues.setSourceTable(":=emptytable(\"" +valuesTableName+ "\",0)", valuesTableName);
+		// String valuesTableName = valuesTableDefinition(false).getName();
+		// availableValues.setSourceTable(":=emptytable(\"" +valuesTableName+
+		// "\",0)", valuesTableName);
 		availableValues.setSourceTable(ScriptConstants.SCRIPT_EMBEDDED_TABLE_DATA_DS, "");
-		//availableValues.setFormula(0, "\"\"");
-	
+		// availableValues.setFormula(0, "\"\"");
+
 		return config;
 	}
 
@@ -268,56 +273,63 @@ public class ParametersImpl implements Parameters{
 
 	@Override
 	public ODLTable findTable(ODLDatastore<? extends ODLTable> ds, TableType type) {
-		return api.tables().findTable(ds, type== TableType.PARAMETERS? TABLE_NAME : PARAMETER_VALUES_TABLE_NAME);
+		return api.tables().findTable(ds, type == TableType.PARAMETERS ? TABLE_NAME : PARAMETER_VALUES_TABLE_NAME);
 	}
 
 	/**
-	 * Apply the string defining the visible parameters override to the input parameters table,
-	 * return the filtered and ordered result as a new table.
+	 * Apply the string defining the visible parameters override to the input
+	 * parameters table, return the filtered and ordered result as a new table.
+	 * 
 	 * @param overrideCommand
 	 * @param parametersTable
 	 * @param report
 	 * @return
 	 */
-	public ODLTable applyVisibleOverrides(String overrideCommand, ODLTableReadOnly parametersTable,ExecutionReport report){
+	public ODLTable applyVisibleOverrides(String overrideCommand, ODLTableReadOnly parametersTable, ExecutionReport report) {
 		String formatMsg = "Visible parameters override should be a comma-separated line in the format [PROMPT_TYPE] parametername, e.g. ATTACH Potential, Sales, POPUP Workload";
-		ODLTable ret = (ODLTable)api.tables().copyTableDefinition(parametersTable, api.tables().createAlterableDs());
-		if(overrideCommand!=null){
-			String [] params = overrideCommand.split(",");
-			for(int i =0 ; i < params.length ; i++){
-				String [] words =params[i].split("\\s+");
-				if(words.length==0 || words.length>2){
+		ODLTable ret = (ODLTable) api.tables().copyTableDefinition(parametersTable, api.tables().createAlterableDs());
+		if (overrideCommand != null) {
+			String[] params = overrideCommand.split(",");
+			for (int i = 0; i < params.length; i++) {
+				String[] words = params[i].split("\\s+");
+				if (words.length == 0 || words.length > 2) {
 					report.setFailed("Incorrect format in visible parameters override. " + formatMsg);
 					return null;
 				}
-				
+
 				// Get and validate prompt type if we have one
 				PromptType promptType = PromptType.ATTACH_POPUP;
-				int paramWordIndx=0;
-				if(words.length==2){
-					promptType = PROMPT_TYPE_LOOKUP.get(words[0]);
-					if(promptType==null){
-						report.setFailed("Unidentified prompt type in visible parameters override: " + words[0] + ".\n" + formatMsg);
-						return null;						
+				int paramWordIndx = 0;
+				if (words.length == 2) {
+					words[0] = api.stringConventions().standardise(words[0]);
+					if(words[0].length()>0){
+						promptType = PROMPT_TYPE_LOOKUP.get(words[0]);
+						if (promptType == null) {
+							report.setFailed("Unidentified prompt type in visible parameters override: " + words[0] + ".\n" + formatMsg);
+							return null;
+						}						
 					}
 					paramWordIndx++;
 				}
-				
+
 				String key = words[paramWordIndx];
-				long rowId = getRowId(key, parametersTable);
-				if(rowId==-1){
-					report.setFailed("Cannot find parameter " + key + " referenced in visible parameters override. " + formatMsg);
-					return null;
+				key = api.stringConventions().standardise(key);
+				if (key.length() > 0) {
+					long rowId = getRowId(key, parametersTable);
+					if (rowId == -1) {
+						report.setFailed("Cannot find parameter \"" + key + "\" referenced in visible parameters override. " + formatMsg);
+						return null;
+					}
+
+					// copy the parameter over
+					api.tables().copyRowById(parametersTable, rowId, ret);
+
+					// but set its new prompt type
+					setByKey(ret, key, ParamDefinitionField.PROMPT_TYPE, promptType.name());
 				}
-				
-				// copy the parameter over
-				api.tables().copyRowById(parametersTable, rowId, ret);
-				
-				// but set its new prompt type
-				setByKey(ret, key, ParamDefinitionField.PROMPT_TYPE, promptType.name());
 			}
 		}
-		
+
 		return ret;
 	}
 

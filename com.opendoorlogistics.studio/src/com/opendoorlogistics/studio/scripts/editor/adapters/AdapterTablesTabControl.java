@@ -109,6 +109,7 @@ public class AdapterTablesTabControl extends JPanel {
 
 	}
 
+
 	public AdapterTablesTabControl(ODLApi api, final AdapterConfig config, long visibleFlags, QueryAvailableData availableOptionsQuery, AdapterExpectedStructureProvider targetDatastore,
 			ScriptUIManager uiManager) {
 		this.tabs = new JTabbedPane();
@@ -184,7 +185,7 @@ public class AdapterTablesTabControl extends JPanel {
 			long visibleTableFlags = 0;
 			long newTabVisibleColumnFlags = visibleColumnFlags;
 			if (isParameterTable(table)) {
-				visibleTableFlags |= AdaptedTableControl.DISABLE_SOURCE_FLAGS;
+			//	visibleTableFlags |= AdaptedTableControl.DISABLE_SOURCE_FLAGS;
 				newTabVisibleColumnFlags = 0;
 			}
 
@@ -932,33 +933,7 @@ public class AdapterTablesTabControl extends JPanel {
 				OkCancelDialog dlg = new OkCancelDialog() {
 					@Override
 					protected Component createMainComponent(boolean inWindowsBuilder) {
-						return new ListPanel<UserFormula>(formulaeCopy, "user formula") {
-
-							@Override
-							protected UserFormula createNewItem() {
-								return editItem(new UserFormula("funcname() = X"));
-							}
-
-							@Override
-							protected UserFormula editItem(final UserFormula item) {
-								final JTextArea textArea = new JTextArea(item.getValue());
-								textArea.setEditable(true);
-								textArea.setLineWrap(true);
-								OkCancelDialog dlg = new OkCancelDialog() {
-									@Override
-									protected Component createMainComponent(boolean inWindowsBuilder) {
-										return new JScrollPane(textArea);
-									}
-								};
-								dlg.setMinimumSize(new Dimension(400, 200));
-								dlg.setLocationRelativeTo(this);
-								dlg.setTitle("Enter formula text");
-								if (dlg.showModal() == OkCancelDialog.OK_OPTION) {
-									item.setValue(textArea.getText());
-								}
-								return item;
-							}
-						};
+						return UserFormulaEditor.createUserFormulaListPanel(formulaeCopy);
 						// return new TablePanel<String>(formulaeCopy, "user
 						// formula") {
 						//
@@ -981,6 +956,8 @@ public class AdapterTablesTabControl extends JPanel {
 						// }
 						// };
 					}
+
+
 
 				};
 				dlg.setTitle("" + tableConfig.getName() + " user formulae");

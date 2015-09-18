@@ -55,6 +55,7 @@ import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.execution.OptionsSubpath;
+import com.opendoorlogistics.core.scripts.formulae.tables.EmptyTable;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser.SourcedDatastore;
@@ -103,7 +104,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 //	protected final JCheckBox bottomToolbarSyncCheckbox;
 
 	protected ScriptEditorToolbar createToolbar(){
-		ScriptEditorToolbar ret = new ScriptEditorToolbar(true,script.isSynchronised(), script.isLaunchMultiple()) {
+		ScriptEditorToolbar ret = new ScriptEditorToolbar(true,script.isSynchronised(), true,script.isLaunchMultiple()) {
 			
 			@Override
 			protected void syncBoxChanged(boolean isSelected) {
@@ -622,6 +623,8 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 
 	public QueryAvailableData createAvailableOptionsQuery() {
 		QueryAvailableData ret = new QueryAvailableData() {
+			private String emptyTableDs = ScriptConstants.FORMULA_PREFIX + EmptyTable.KEYWORD + "(\"tablename\",1)";
+			private String emptyTableName = "tablename";
 			
 			@Override
 			public String[] queryAvailableFields(String datastore, String tablename) {
@@ -640,6 +643,11 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 
 			@Override
 			public String[] queryAvailableTables(String datastore) {
+				// if this is the empty table ds, add the empty table name...
+				if(api.stringConventions().equalStandardised(datastore, emptyTableDs.replace(" ", ""))){
+					return new String[]{emptyTableName};
+				}
+				
 				SourcedDatastore sd = getDatastore(datastore);
 				if(sd==null){
 					return new String[0];
@@ -662,7 +670,10 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 				}
 				
 				arrayList.add(ScriptConstants.SCRIPT_EMBEDDED_TABLE_DATA_DS);
+				arrayList.add(emptyTableDs);
 
+				// add formulae..
+			//	arrayList.add();
 //				arrayList.add(ScriptConstants.SHAPEFILE_DS_NAME_PREFIX + "filename.shp");
 //				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xls");
 //				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xlsx");

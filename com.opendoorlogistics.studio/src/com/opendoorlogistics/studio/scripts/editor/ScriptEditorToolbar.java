@@ -24,30 +24,30 @@ abstract public class ScriptEditorToolbar extends JToolBar {
 	private final JCheckBox launchMultiple;
 	private final ArrayList<ODLAction> actions = new ArrayList<>();
 
-	public ScriptEditorToolbar(boolean showSyncBox, boolean isSynchonised, boolean isLaunchMultiple) {
+	public ScriptEditorToolbar(boolean showSyncBox, boolean isSynchonised, boolean showLaunchMultipleBox, boolean isLaunchMultiple) {
 		setFloatable(false);
 		setLayout(new FlowLayout(FlowLayout.RIGHT));
 
-		ODLAction toggleAction = new ODLAction("","Switch between a single page script view and a tree-based script view.",Icons.loadFromStandardPath("switch-script-view.png")) {
-			
+		ODLAction toggleAction = new ODLAction("", "Switch between a single page script view and a tree-based script view.", Icons.loadFromStandardPath("switch-script-view.png")) {
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				toggleView();
 			}
-			
-			@Override	
+
+			@Override
 			public void updateEnabled() {
 				setEnabled(isToggleViewEnabled());
 			}
 		};
 		actions.add(toggleAction);
 		add(toggleAction);
-		//add(Box.createHorizontalGlue());
-		
+		// add(Box.createHorizontalGlue());
+
 		if (showSyncBox) {
 			syncBox = new JCheckBox("Keep output windows synced", isSynchonised);
-			syncBox.setToolTipText("<html>Keep any output windows of the script synchronised with the main data by re-running the script." + "<br>If sychronised, output windows can be used to write to the main data."
-					+ "<br><b>Only use if script runs quickly as UI locks during sychronisation.</b></html>");
+			syncBox.setToolTipText("<html>Keep any output windows of the script synchronised with the main data by re-running the script."
+					+ "<br>If sychronised, output windows can be used to write to the main data." + "<br><b>Only use if script runs quickly as UI locks during sychronisation.</b></html>");
 			add(syncBox);
 			syncBox.addActionListener(new ActionListener() {
 
@@ -61,19 +61,23 @@ abstract public class ScriptEditorToolbar extends JToolBar {
 		} else {
 			syncBox = null;
 		}
-		
-		launchMultiple = new JCheckBox("Launch multiple",isLaunchMultiple );
-		launchMultiple.setToolTipText("If the option launches controls, do we create a new control each time the user runs the option?");
-		add(launchMultiple);
-		launchMultiple.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				launchMultipleChanged(launchMultiple.isSelected());
-			}
-		});
-		addSeparator();
-		
+
+		if (showLaunchMultipleBox) {
+			launchMultiple = new JCheckBox("Launch multiple", isLaunchMultiple);
+			launchMultiple.setToolTipText("If the option launches controls, do we create a new control each time the user runs the option?");
+			add(launchMultiple);
+			launchMultiple.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					launchMultipleChanged(launchMultiple.isSelected());
+				}
+			});
+			addSeparator();
+		} else {
+			launchMultiple = null;
+		}
+
 		updateEnabled();
 	}
 
@@ -91,6 +95,7 @@ abstract public class ScriptEditorToolbar extends JToolBar {
 		if (syncBox != null) {
 			syncBox.setEnabled(isSyncBoxEnabled());
 		}
+
 	}
 
 	protected abstract boolean isSyncBoxEnabled();
@@ -104,6 +109,6 @@ abstract public class ScriptEditorToolbar extends JToolBar {
 	protected abstract void launchMultipleChanged(boolean isLaunchMultiple);
 
 	protected abstract void toggleView();
-	
+
 	protected abstract boolean isToggleViewEnabled();
 }

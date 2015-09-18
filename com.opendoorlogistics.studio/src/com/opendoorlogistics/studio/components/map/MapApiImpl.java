@@ -560,6 +560,11 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	@Override
 	public void dispose() {
 		isDisposed = true;
+		
+		// unselect everything then tell the listeners
+		setSelectedIds(new long[]{});
+		fireSelectionChangedListeners(this);
+		
 		renderer.dispose();
 		fireDisposedListeners(this);
 

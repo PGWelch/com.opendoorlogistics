@@ -7,6 +7,8 @@
 package com.opendoorlogistics.core.scripts.elements;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import javax.xml.bind.annotation.XmlAttribute;
@@ -22,7 +24,8 @@ final public class Script extends Option implements Serializable{
 	private Version version = new Version(ScriptConstants.SCRIPT_VERSION_MAJOR, ScriptConstants.SCRIPT_VERSION_MINOR, ScriptConstants.SCRIPT_VERSION_REVISION);
 	private ScriptEditorType scriptEditorUIType = ScriptEditorType.WIZARD_GENERATED_EDITOR;
 	private String createdByComponentId;
-	//private TemplateConfig template;
+	private List<UserFormula> userFormulae = new ArrayList<UserFormula>();
+
 	
 	@XmlTransient
 	private UUID uuid = UUID.randomUUID();
@@ -69,7 +72,17 @@ final public class Script extends Option implements Serializable{
 		this.createdByComponentId = createdByComponentId;
 	}
 
+	public List<UserFormula> getUserFormulae() {
+		return userFormulae;
+	}
 
+	@XmlElement(name = "UserFormulae")	
+	public void setUserFormulae(List<UserFormula> userFormulae) {
+		this.userFormulae = userFormulae;
+	}
+
+
+	
 
 //	public TemplateConfig getTemplate() {
 //		return template;

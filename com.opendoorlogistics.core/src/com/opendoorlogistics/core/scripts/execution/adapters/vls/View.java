@@ -1,6 +1,7 @@
 package com.opendoorlogistics.core.scripts.execution.adapters.vls;
 
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
+import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultLongValue;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
@@ -12,7 +13,8 @@ public class View extends BeanMappedRowImpl{
 	private String id;
 	private String backgroundViewIds;
 	private String activeViewId;
-	private String foregroundViewId;
+	private String foregroundViewIds;
+	private String description;
 	private long dflt;
 	
 	public String getId() {
@@ -44,14 +46,14 @@ public class View extends BeanMappedRowImpl{
 		this.activeViewId = activeViewId;
 	}
 
-	public String getForegroundViewId() {
-		return foregroundViewId;
+	public String getForegroundViewIds() {
+		return foregroundViewIds;
 	}
 
 	@ODLNullAllowed
 	@ODLColumnOrder(4)
-	public void setForegroundViewId(String foregroundViewId) {
-		this.foregroundViewId = foregroundViewId;
+	public void setForegroundViewIds(String foregroundViewId) {
+		this.foregroundViewIds = foregroundViewId;
 	}
 
 	public long getIsDefault() {
@@ -61,8 +63,19 @@ public class View extends BeanMappedRowImpl{
 	@ODLNullAllowed
 	@ODLColumnOrder(5)
 	@ODLDefaultLongValue(0)
+	@ODLColumnName("Default")
 	public void setIsDefault(long dflt) {
 		this.dflt = dflt;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	@ODLNullAllowed
+	@ODLColumnOrder(6)
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 

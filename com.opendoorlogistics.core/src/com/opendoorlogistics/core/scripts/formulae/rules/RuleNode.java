@@ -41,14 +41,17 @@ public class RuleNode {
 	// }
 	// }
 	// }
-	
+
+	public static RuleNode buildTree(List<List<Object>> selectorsMatrix) {
+		return buildTree(selectorsMatrix, false);
+	}
 	
 	/**
 	 * Build the tree given the input matrix of rules x select values
 	 * @param selectorsMatrix
 	 * @return
 	 */
-	public static RuleNode buildTree(List<List<Object>> selectorsMatrix) {
+	public static RuleNode buildTree(List<List<Object>> selectorsMatrix, boolean buildNodePerRule) {
 		StandardisedCache standardisedCache = new StandardisedCache();
 		int n = selectorsMatrix.size();
 		
@@ -78,7 +81,8 @@ public class RuleNode {
 				}
 
 				// make a node if none exists, marking the rule number
-				if (nextParent == null) {
+				boolean isLastColumn= col==nc-1;
+				if (nextParent == null || (isLastColumn && buildNodePerRule)) {
 					nextParent = new RuleNode(rule, col, s, false);
 					
 					// add to parent
@@ -100,7 +104,7 @@ public class RuleNode {
 	 * @param values
 	 * @return
 	 */
-	public int findRuleNumber(Object[] values) {
+	public int findRuleNumber(Object[] values,RuleFilter ruleFilter, Object filterData) {
 		if(!isRootNode()){
 			throw new RuntimeException("Only call this method on the root node of the tree");
 		}
@@ -109,7 +113,7 @@ public class RuleNode {
 		lowestRuleNumber[0] = Integer.MAX_VALUE;
 
 		// Find the lowest matching rule number
-		recurseMatch(values, this, lowestRuleNumber,standardisedCache);
+		recurseMatch(values, this, lowestRuleNumber,ruleFilter,filterData,standardisedCache);
 		int ruleNb =lowestRuleNumber[0] ;
 		
 		if(ruleNb == Integer.MAX_VALUE){
@@ -118,13 +122,23 @@ public class RuleNode {
 		return ruleNb;
 	}
 	
-	private static void recurseMatch(Object[] values, RuleNode node, int[] lowestRuleNumber, StandardisedCache standardisedCache) {
+	public int findRuleNumber(Object[] values) {
+		return findRuleNumber(values, null, null);
+	}
+	
+	public static interface RuleFilter{
+		boolean filter(Object filterData,Object[] values, int ruleNb);
+	}
+	
+	private static void recurseMatch(Object[] values, RuleNode node, int[] lowestRuleNumber, RuleFilter ruleFilter, Object filterData,StandardisedCache standardisedCache) {
 
 		// record the rule if we're on the last one and its lower than the
 		// current lowest
 		int nc = values.length;
 		if (node.colIndx == nc - 1) {
-			lowestRuleNumber[0] = Math.min(lowestRuleNumber[0], node.ruleNb);
+			if(ruleFilter==null || ruleFilter.filter(filterData, values, node.ruleNb)){
+				lowestRuleNumber[0] = Math.min(lowestRuleNumber[0], node.ruleNb);				
+			}
 		} else {
 			// recurse to the next level if we find a null selector (which
 			// matches all) or we have a match
@@ -138,7 +152,7 @@ public class RuleNode {
 					}
 
 					if (recurse) {
-						recurseMatch(values,  childNode, lowestRuleNumber, standardisedCache);
+						recurseMatch(values,  childNode, lowestRuleNumber, ruleFilter, filterData,standardisedCache);
 					}
 				}
 			}

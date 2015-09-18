@@ -34,7 +34,6 @@ import com.opendoorlogistics.core.formulae.Functions.FmConst;
 import com.opendoorlogistics.core.formulae.Functions.FmEquals;
 import com.opendoorlogistics.core.formulae.UserVariableProvider;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary;
-import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig.SortField;
@@ -143,6 +142,7 @@ final public class AdapterBuilder {
 //				return importedDs;
 //			}
 //		}
+
 		
 		if (id != null) {
 			// check for cycles
@@ -649,15 +649,39 @@ final public class AdapterBuilder {
 		// process a table data adapter (i.e. not really an adapter - it actually stores data)
 		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);			
 		if(EmbeddedDataUtils.isEmbeddedData(tableConfig)){
+			class ErrorMsg{
+				void set(AdaptedTableConfig tableConfig,String error){
+					env.setFailed(error + " See table " + tableConfig.getName() + " in adapter " + (id!=null?id:"n/a") + ".");
+				}
+			}
+			ErrorMsg errorMsg = new ErrorMsg();
 			
 			if(hasFilter){
-				env.setFailed("Filtering is not supported with embedded data.");
+				errorMsg.set(tableConfig,"Filtering is not supported with embedded data.");
 				return;
 			}
 			
 			if(hasSort){
-				env.setFailed("Sorting is not supported with embedded data.");
+				errorMsg.set(tableConfig,"Sorting is not supported with embedded data.");
 				return;	
+			}
+			
+			if(tableConfig.isLimitResults()){
+				errorMsg.set(tableConfig,"Limiting the number of results is not supported with embedded data.");
+				return;				
+			}
+			
+			// check for no functions (unsupported)
+			for(AdapterColumnConfig colmn : tableConfig.getColumns()){
+				if(colmn.isUseFormula()){
+					errorMsg.set(tableConfig,"Formula are not supported for embedded data.");
+					return;		
+				}
+				
+				if(colmn.getIsGroupBy()){
+					errorMsg.set(tableConfig,"Grouping is not supported for embedded data.");
+					return;			
+				}
 			}
 			
 			ODLDatastoreAlterable<? extends ODLTableAlterable> dataDs = api.tables().createAlterableDs();

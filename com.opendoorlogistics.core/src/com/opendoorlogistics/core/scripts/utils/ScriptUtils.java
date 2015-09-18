@@ -10,11 +10,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.swing.Icon;
 
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -924,7 +926,77 @@ final public class ScriptUtils {
 			}
 		});
 	}
+	
+	public static class ScriptIds{
+		final public Set<String> adapters;
+		final public Set<String> outputdatastores;		
+		final public Set<String> options;
+		final public Set<String> datastoresAndAdapters;
+		
+		ScriptIds(Set<String> adapters, Set<String> outputdatastores, Set<String> options, Set<String> datastoresAndAdapters) {
+			this.adapters = adapters;
+			this.outputdatastores = outputdatastores;
+			this.options = options;
+			this.datastoresAndAdapters = datastoresAndAdapters;
+		}
+		
+		public boolean containsAdapterOrDatastore(String s){
+			return adapters.contains(s) || outputdatastores.contains(s);
+		}
+		
+		public static Set<String> getCommonStrings(ODLApi api,Set<String> setA, Set<String> setB){
+			 Set<String> ret = api.stringConventions().createStandardisedSet();
+			 for(String s : setA){
+				 if(setB.contains(s)){
+					 ret.add(s);
+				 }
+			 }
+			 
+			 for(String s : setB){
+				 if(setA.contains(s)){
+					 ret.add(s);
+				 }
+			 }
+			 
+			 return ret;
+		}
+		
+	}
 
+	/**
+	 * Fetch all ids in the script
+	 * @param api
+	 * @param option
+	 * @return
+	 */
+	public static ScriptIds getIds(ODLApi api,Option option){
+		StringConventions strings = api.stringConventions();
+		ScriptIds ret = new ScriptIds(strings.createStandardisedSet(), strings.createStandardisedSet(), strings.createStandardisedSet(), strings.createStandardisedSet());
+		visitOptions(option, new OptionVisitor() {
+			
+			@Override
+			public boolean visitOption(Option parent, Option option, int depth) {
+				ret.options.add(option.getOptionId());
+				for(InstructionConfig instruction : option.getInstructions()){
+					if(instruction.getOutputDatastore()!=null){
+						ret.outputdatastores.add(instruction.getOutputDatastore());
+					}
+				}
+				
+				for(AdapterConfig adapter : option.getAdapters()){
+					if(adapter.getId()!=null){
+						ret.adapters.add(adapter.getId());						
+					}
+				}
+				return true;
+			}
+		});
+		
+		ret.datastoresAndAdapters.addAll(ret.outputdatastores);
+		ret.datastoresAndAdapters.addAll(ret.adapters);
+		return ret;
+	}
+	
 	/**
 	 * For the input script find out what synchronisation can be done of output windows
 	 * 

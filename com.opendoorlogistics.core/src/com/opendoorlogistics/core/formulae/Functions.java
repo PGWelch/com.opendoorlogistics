@@ -697,7 +697,7 @@ public class Functions {
 
 	}
 
-	public static final class FmRound extends Fm1ParamBase {
+	public static final class FmRound extends FunctionImpl {
 
 		public FmRound(Function a) {
 			super(a);
@@ -714,18 +714,24 @@ public class Functions {
 		}
 
 		@Override
-		protected double execute(double a) {
-			return Math.round(a);
-		}
-
-		@Override
 		public boolean hasBrackets() {
 			return true;
 		}
 
 		@Override
-		protected long execute(long l) {
-			return l;
+		public Object execute(FunctionParameters parameters) {
+			Object a = child(0).execute(parameters);
+			if (a == EXECUTION_ERROR ) {
+				return EXECUTION_ERROR;
+			}
+
+			Double d = Numbers.toDouble(a);
+			if (d != null) {
+				return (long) Math.round(d);
+			}
+
+			return null;
+
 		}
 	}
 
