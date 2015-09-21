@@ -65,6 +65,7 @@ public class VLSBuilder {
 	private static final int INPUT_VIEW_INDX;
 	private static final int INPUT_LAYER_INDX;
 	private static final int INPUT_STYLE_INDX;
+	private static final int INPUT_EXTRA_FIELDS_INDX;
 	private static final BeanTableMapping SOURCE_TABLE;
 	private static final Function[] APPEARANCE_KEY_ACCESSORS;
 
@@ -75,10 +76,11 @@ public class VLSBuilder {
 	}
 
 	static {
-		INPUT_VLS_ONLY = BeanMapping.buildDatastore(View.class, Layer.class, Style.class);
+		INPUT_VLS_ONLY = BeanMapping.buildDatastore(View.class, Layer.class, Style.class, ExtraFields.class);
 		INPUT_VIEW_INDX = 0;
 		INPUT_LAYER_INDX = 1;
 		INPUT_STYLE_INDX = 2;
+		INPUT_EXTRA_FIELDS_INDX = 3;
 
 		SOURCE_TABLE = BeanMapping.buildTable(VLSSourceDrawables.class);
 
@@ -213,23 +215,23 @@ public class VLSBuilder {
 			}
 		}
 
-		ODLTable fetchRawSourceTable(String name) {
+		ODLTable fetchRawSourceTable(String name, boolean isOptional) {
 			Integer indx = tables.get(name);
 			ODLTable ret = null;
 			if (indx != null) {
 				ret = injector.buildTable(indx);
 			}
 
-			if (ret == null) {
+			if (ret == null && !isOptional) {
 				report.setFailed("Cannot find table required by view-layer-style adapter: " + name);
 			}
 
 			return ret;
 		}
 
-		SourceTable fetchValidatedSourceTable(String name, ODLTableDefinition definition) {
-			ODLTable raw = fetchRawSourceTable(name);
-			if (report.isFailed()) {
+		SourceTable fetchValidatedSourceTable(String name,boolean isOptional, ODLTableDefinition definition) {
+			ODLTable raw = fetchRawSourceTable(name,isOptional);
+			if (report.isFailed() || raw==null) {
 				return null;
 			}
 
@@ -353,9 +355,10 @@ public class VLSBuilder {
 
 		// Try getting built in tables
 		TableFinder finder = new TableFinder(api, injector, report);
-		SourceTable viewTable = finder.fetchValidatedSourceTable(View.TABLE_NAME, INPUT_VLS_ONLY.getTableMapping(INPUT_VIEW_INDX).getTableDefinition());
-		SourceTable layerTable = finder.fetchValidatedSourceTable(Layer.TABLE_NAME, INPUT_VLS_ONLY.getTableMapping(INPUT_LAYER_INDX).getTableDefinition());
-		SourceTable styleTable = finder.fetchValidatedSourceTable(Style.TABLE_NAME, INPUT_VLS_ONLY.getTableMapping(INPUT_STYLE_INDX).getTableDefinition());
+		SourceTable viewTable = finder.fetchValidatedSourceTable(View.TABLE_NAME,false, INPUT_VLS_ONLY.getTableMapping(INPUT_VIEW_INDX).getTableDefinition());
+		SourceTable layerTable = finder.fetchValidatedSourceTable(Layer.TABLE_NAME,false, INPUT_VLS_ONLY.getTableMapping(INPUT_LAYER_INDX).getTableDefinition());
+		SourceTable styleTable = finder.fetchValidatedSourceTable(Style.TABLE_NAME,false, INPUT_VLS_ONLY.getTableMapping(INPUT_STYLE_INDX).getTableDefinition());
+		SourceTable extraFieldDfnsTable = finder.fetchValidatedSourceTable(ExtraFields.TABLE_NAME, true, INPUT_VLS_ONLY.getTableMapping(INPUT_EXTRA_FIELDS_INDX).getTableDefinition());
 		if (report.isFailed()) {
 			return null;
 		}
@@ -389,53 +392,6 @@ public class VLSBuilder {
 		return ret;
 	}
 
-	/**
-	 * Each output drawable table gets the same additional fields address to its destination
-	 * @param matchedLayers
-	 */
-	private void calculateAddFromSrcFields(List<MatchedLayer> matchedLayers){
-//		ODLTableDefinition destinationTable = TableUtils.findTable(DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS, layerType.tablename);
-
-		// first ensure the fields are common throughout...
-		Tables tables = api.tables();
-		StringConventions strings = api.stringConventions();
-		Set<String> includedFields = strings.createStandardisedSet();
-		ODLTableDefinitionAlterable combined = tables.createAlterableTable(PredefinedTags.DRAWABLES);
-		
-		class TableAdder{
-			void add(ODLTableDefinition table){
-				int nc = table.getColumnCount();
-				for(int i =0 ; i < nc ; i++){
-					String fld = table.getColumnName(i);
-					if(!includedFields.contains(fld)){
-						combined.addColumn(-1, fld, table.getColumnType(i), 0);
-						includedFields.add(fld);
-					}
-				}	
-			}
-		}
-		
-		// Add standard tables first
-		TableAdder tableAdder = new TableAdder();
-		for (LayerType layerType : LayerType.values()) {
-			if(layerType.drawable){
-				tableAdder.add(TableUtils.findTable(DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS, layerType.tablename));
-			}
-		}
-		
-		// Then fields from all matched layers
-		for (MatchedLayer ml : matchedLayers) {
-			if(ml.layerType.drawable){
-				tableAdder.add(ml.source.raw);
-			}
-		}
-		
-		//for(ODLTableDefinition table : )
-	//	for(ODLTableDefinition tableDefinition : )
-//		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES, -1);				
-//		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND, -1);				
-//		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, -1);
-	}
 	
 	private AdaptedDecorator<ODLTable> createAdapter(List<MatchedLayer> matchedLayers, ExecutionReport report) {
 		// Now process all layers into the datastore adapter
@@ -831,7 +787,7 @@ public class VLSBuilder {
 			if (layerFormula != null) {
 				ret.raw = finder.injector.buildTableFormula(layer.getSource());
 			} else {
-				ret.raw = finder.fetchRawSourceTable(VLSSourceDrawables.SOURCE_PREFIX + layer.getSource());
+				ret.raw = finder.fetchRawSourceTable(VLSSourceDrawables.SOURCE_PREFIX + layer.getSource(),false);
 			}
 		}
 

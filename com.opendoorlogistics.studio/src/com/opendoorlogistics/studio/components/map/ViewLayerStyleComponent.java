@@ -11,6 +11,7 @@ import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.scripts.ScriptAdapter;
+import com.opendoorlogistics.api.scripts.ScriptAdapterTable;
 import com.opendoorlogistics.api.scripts.ScriptInputTables;
 import com.opendoorlogistics.api.scripts.ScriptOption;
 import com.opendoorlogistics.api.scripts.ScriptTemplatesBuilder;
@@ -20,10 +21,13 @@ import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.core.scripts.ScriptConstants;
+import com.opendoorlogistics.core.scripts.execution.adapters.vls.ExtraFields;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.Layer;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.Style;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.VLSBuilder;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.View;
+import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.utils.ui.Icons;
 
@@ -116,6 +120,11 @@ public class ViewLayerStyleComponent implements ODLComponent {
 						mapAdapter.addSourcelessTable(dest);
 					}
 				}
+				
+				// add the extra fields afterwards as we want this to use embedded data...
+				ODLTableDefinition extraFieldsDfn = TableUtils.findTable(VLSBuilder.getVLSTableDefinitions(), ExtraFields.TABLE_NAME);
+				ScriptAdapterTable efAdapter = mapAdapter.addSourcelessTable(extraFieldsDfn);
+				efAdapter.setSourceTable(ScriptConstants.SCRIPT_EMBEDDED_TABLE_DATA_DS, "");
 				
 				// now add the instruction which launches the map component, not this component
 				builder.addInstruction(mapAdapter.getAdapterId(), AbstractMapViewerComponent.COMPONENT_ID, ODLComponent.MODE_DEFAULT,new MapConfig());
