@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
@@ -98,6 +99,10 @@ final public class Colours {
 		}
 	}
 
+	public static Map<String, Color> getStandardColoursMap(){
+		return colourMap;
+	}
+	
 	private static String standardise(String s) {
 		s = Strings.std(s);
 		s = s.replace(" ", "");

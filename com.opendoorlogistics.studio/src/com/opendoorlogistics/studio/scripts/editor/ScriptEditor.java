@@ -37,6 +37,7 @@ import com.opendoorlogistics.api.components.ComponentConfigurationEditorAPI;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.scripts.ScriptAdapter;
+import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.scripts.ScriptAdapterTable;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -54,6 +55,7 @@ import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.execution.OptionsSubpath;
+import com.opendoorlogistics.core.scripts.formulae.tables.EmptyTable;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser;
 import com.opendoorlogistics.core.scripts.utils.ScriptFieldsParser.SourcedDatastore;
@@ -102,7 +104,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 //	protected final JCheckBox bottomToolbarSyncCheckbox;
 
 	protected ScriptEditorToolbar createToolbar(){
-		ScriptEditorToolbar ret = new ScriptEditorToolbar(true,script.isSynchronised()) {
+		ScriptEditorToolbar ret = new ScriptEditorToolbar(true,script.isSynchronised(), true,script.isLaunchMultiple()) {
 			
 			@Override
 			protected void syncBoxChanged(boolean isSelected) {
@@ -133,6 +135,11 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 			@Override
 			protected boolean isToggleViewEnabled() {
 				return false;
+			}
+
+			@Override
+			protected void launchMultipleChanged(boolean isLaunchMultiple) {
+				script.setLaunchMultiple(isLaunchMultiple);
 			}
 		};
 
@@ -518,7 +525,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 					throw new RuntimeException();
 				}
 				
-				// remove all other tables in the adapter containing the target table as they are definitely not needeed
+				// remove all other tables in the adapter containing the target table as they are definitely not needed
 				AdapterConfig adapterConfig = ScriptUtils.getAdapterById(subscript, dsid, true);
 				Iterator<AdaptedTableConfig> itTable = adapterConfig.getTables().iterator();
 				while(itTable.hasNext()){
@@ -527,24 +534,35 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 					}
 				}
 				
-				// create a single dummy adapter which just copies the table contents, excluding any sort columns
-				ScriptOptionImpl builder = new ScriptOptionImpl(api,null, subscript,null);
-				ScriptAdapter adapter= builder.addDataAdapter("DummyAdapter");
-				final String adptId =adapter.getAdapterId();
-				ScriptAdapterTable dummyTable = adapter.addEmptyTable(table.getName());
-				dummyTable.setSourceTable(dsid, table.getName());
-				for(int i =0;i<table.getColumnCount(); i++){
-					if(table.getColumn(i).getSortField() == SortField.NO){
-						dummyTable.addColumn(table.getColumnName(i), table.getColumnType(i), false, table.getColumnName(i));
-					}
-				}
+				// if we're showing a map then rename all remaining tables (could be multiple for a union) to drawables
 				if(isMap){
-					// set table to have "drawables" name
-					dummyTable.setTableName(api.standardComponents().map().getDrawableTableDefinition().getName());
+					for(AdaptedTableConfig tableConfig : adapterConfig.getTables()){
+						tableConfig.setName(api.standardComponents().map().getDrawableTableDefinition().getName());	
+					}					
 				}
 				
+				// treat like a standard adapter, not a VLS
+				adapterConfig.setAdapterType(ScriptAdapterType.NORMAL);
+				
+//				// create a single dummy adapter which just copies the table contents, excluding any sort columns
+//				ScriptOptionImpl builder = new ScriptOptionImpl(api,null, subscript,null);
+//				ScriptAdapter adapter= builder.addDataAdapter("DummyAdapter");
+//				final String adptId =adapter.getAdapterId();
+//				ScriptAdapterTable dummyTable = adapter.addEmptyTable(table.getName());
+//				dummyTable.setSourceTable(dsid, table.getName());
+//				for(int i =0;i<table.getColumnCount(); i++){
+//					if(table.getColumn(i).getSortField() == SortField.NO){
+//						dummyTable.addColumn(table.getColumnName(i), table.getColumnType(i), false, table.getColumnName(i));
+//					}
+//				}
+//				if(isMap){
+//					// set table to have "drawables" name
+//					dummyTable.setTableName(api.standardComponents().map().getDrawableTableDefinition().getName());
+//				}
+//				
 				// add instruction to the end of the script
-				builder.addInstruction(adptId, isMap? api.standardComponents().map().getId():api.standardComponents().tableViewer().getId(), ODLComponent.MODE_DEFAULT);
+				ScriptOptionImpl builder = new ScriptOptionImpl(api,null, subscript,null);
+				builder.addInstruction(adapterConfig.getId(), isMap? api.standardComponents().map().getId():api.standardComponents().tableViewer().getId(), ODLComponent.MODE_DEFAULT);
 				
 				// give script a unique id
 				String name = isMap ? "Map data" : "Table result";				
@@ -605,6 +623,8 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 
 	public QueryAvailableData createAvailableOptionsQuery() {
 		QueryAvailableData ret = new QueryAvailableData() {
+			private String emptyTableDs = ScriptConstants.FORMULA_PREFIX + EmptyTable.KEYWORD + "(\"tablename\",1)";
+			private String emptyTableName = "tablename";
 			
 			@Override
 			public String[] queryAvailableFields(String datastore, String tablename) {
@@ -623,6 +643,11 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 
 			@Override
 			public String[] queryAvailableTables(String datastore) {
+				// if this is the empty table ds, add the empty table name...
+				if(api.stringConventions().equalStandardised(datastore, emptyTableDs.replace(" ", ""))){
+					return new String[]{emptyTableName};
+				}
+				
 				SourcedDatastore sd = getDatastore(datastore);
 				if(sd==null){
 					return new String[0];
@@ -643,12 +668,17 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 				for(int i =0 ; i<ret.length ; i++){
 					arrayList.add( datastores.get(i).getDatastoreId());
 				}
+				
+				arrayList.add(ScriptConstants.SCRIPT_EMBEDDED_TABLE_DATA_DS);
+				arrayList.add(emptyTableDs);
 
-				arrayList.add(ScriptConstants.SHAPEFILE_DS_NAME_PREFIX + "filename.shp");
-				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xls");
-				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xlsx");
-				arrayList.add(ImportFileType.CSV.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.csv");
-				arrayList.add(ImportFileType.TAB.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.tab");
+				// add formulae..
+			//	arrayList.add();
+//				arrayList.add(ScriptConstants.SHAPEFILE_DS_NAME_PREFIX + "filename.shp");
+//				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xls");
+//				arrayList.add(ImportFileType.EXCEL.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.xlsx");
+//				arrayList.add(ImportFileType.CSV.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.csv");
+//				arrayList.add(ImportFileType.TAB.name().toLowerCase() + ScriptConstants.IMPORT_LINK_POSTFIX + "filename.tab");
 				
 				return arrayList.toArray(new String[arrayList.size()]);
 			}

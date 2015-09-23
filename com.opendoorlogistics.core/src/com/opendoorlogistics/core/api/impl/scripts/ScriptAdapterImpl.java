@@ -102,5 +102,17 @@ public class ScriptAdapterImpl extends ScriptElementImpl implements ScriptAdapte
 	}
 
 
+	@Override
+	public ScriptAdapterType getAdapterType() {
+		return adapter.getAdapterType();
+	}
+
+
+	@Override
+	public void setAdapterType(ScriptAdapterType type) {
+		adapter.setAdapterType(type);
+	}
+
+
 
 }

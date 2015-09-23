@@ -39,7 +39,7 @@ public class FmLookupWeightedCentroid extends FmAbstractLookup {
 			dfn.addArg("weight_field_name", ArgumentType.STRING_CONSTANT, "Weight of the geometry value in the foreign table.");			
 		}
 		
-		dfn.addArg("ESPG_SRID", ArgumentType.GENERAL, "Spatial Reference System Identifier (SRID) from the ESPG SRID database.");
+		dfn.addArg("EPSG_SRID", ArgumentType.GENERAL, "Spatial Reference System Identifier (SRID) from the EPSG SRID database. If EPSG code is null, centroid is calculated using lat-long coordinates.");
 
 		// only build the factory if we have actual datastore to build against
 		if (datastores != null) {
@@ -71,15 +71,15 @@ public class FmLookupWeightedCentroid extends FmAbstractLookup {
 	private final int otherTablePrimaryKeyColumn;
 	private final int otherTableWeightColumn;
 
-	private FmLookupWeightedCentroid(int datastoreIndex, int otherTableId, int otherTablePrimaryKeyColumn, int otherTableGeomColumn,int otherTableWeightColumn, Function foreignKeyValue, Function espgCode) {
-		super(datastoreIndex, otherTableId, otherTableGeomColumn, foreignKeyValue, espgCode);
+	private FmLookupWeightedCentroid(int datastoreIndex, int otherTableId, int otherTablePrimaryKeyColumn, int otherTableGeomColumn,int otherTableWeightColumn, Function foreignKeyValue, Function epsgCode) {
+		super(datastoreIndex, otherTableId, otherTableGeomColumn, foreignKeyValue, epsgCode);
 		this.otherTablePrimaryKeyColumn = otherTablePrimaryKeyColumn;
 		this.otherTableWeightColumn = otherTableWeightColumn;
 	}
 
 	@Override
 	public Object execute(FunctionParameters parameters) {
-		Object[] childExe = executeChildFormulae(parameters, true);
+		Object[] childExe = executeChildFormulae(parameters, false);
 		if (childExe == null) {
 			return Functions.EXECUTION_ERROR;
 		}
@@ -90,11 +90,8 @@ public class FmLookupWeightedCentroid extends FmAbstractLookup {
 		}
 
 		long[] list = table.find(otherTablePrimaryKeyColumn, childExe[0]);
-		String espg = (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, childExe[1]);		
-		if(espg==null){
-			return Functions.EXECUTION_ERROR;			
-		}
-		
-		return new GeomWeightedCentroid().calculate(table, list, otherTableReturnKeyColummn, otherTableWeightColumn, espg);
+		String epsg = (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, childExe[1]);		
+
+		return new GeomWeightedCentroid().calculate(table, list, otherTableReturnKeyColummn, otherTableWeightColumn, epsg);
 	}
 }

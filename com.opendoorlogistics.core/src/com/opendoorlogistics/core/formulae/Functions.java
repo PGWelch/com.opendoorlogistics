@@ -30,6 +30,8 @@ import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 import com.opendoorlogistics.core.geometry.operations.LinestringFraction;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
+import com.opendoorlogistics.core.gis.map.background.BackgroundMapConfig;
+import com.opendoorlogistics.core.gis.map.background.BackgroundTileFactorySingleton;
 import com.opendoorlogistics.core.gis.postcodes.UKPostcodes;
 import com.opendoorlogistics.core.gis.postcodes.UKPostcodes.UKPostcodeLevel;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
@@ -37,6 +39,7 @@ import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
+import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -694,7 +697,7 @@ public class Functions {
 
 	}
 
-	public static final class FmRound extends Fm1ParamBase {
+	public static final class FmRound extends FunctionImpl {
 
 		public FmRound(Function a) {
 			super(a);
@@ -711,18 +714,24 @@ public class Functions {
 		}
 
 		@Override
-		protected double execute(double a) {
-			return Math.round(a);
-		}
-
-		@Override
 		public boolean hasBrackets() {
 			return true;
 		}
 
 		@Override
-		protected long execute(long l) {
-			return l;
+		public Object execute(FunctionParameters parameters) {
+			Object a = child(0).execute(parameters);
+			if (a == EXECUTION_ERROR ) {
+				return EXECUTION_ERROR;
+			}
+
+			Double d = Numbers.toDouble(a);
+			if (d != null) {
+				return (long) Math.round(d);
+			}
+
+			return null;
+
 		}
 	}
 
@@ -1812,6 +1821,34 @@ public class Functions {
 		}
 	}
 
+	public static final class FmPow extends Fm2ParamBase {
+
+		public FmPow(Function a, Function b) {
+			super(a, b);
+		}
+
+		@Override
+		public Function deepCopy() {
+			return new FmMod(child(0).deepCopy(), child(1).deepCopy());
+		}
+
+		@Override
+		protected Object execute(Object a, Object b) {
+			Double da = Numbers.toDouble(a);
+			Double db = Numbers.toDouble(b);
+			if (da == null || db == null) {
+				return EXECUTION_ERROR;
+			}
+			return Math.pow(da, db);
+		}
+
+		@Override
+		public String toString() {
+			return toString("pow");
+		}
+	}
+
+	
 	public static final class FmMultiply extends FunctionImpl {
 
 		public FmMultiply(Function... formulae) {
@@ -2637,4 +2674,44 @@ public class Functions {
 		
 	}
 	
+	public static class FmTileFactory extends FunctionImpl{
+		public FmTileFactory(Function param) {
+			super(param);
+		}
+		
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object val = child(0).execute(parameters);
+			if(val == null || val == Functions.EXECUTION_ERROR){
+				return Functions.EXECUTION_ERROR;
+			}
+			
+			String s =(String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, val);
+			if(s==null){
+				return Functions.EXECUTION_ERROR;				
+			}
+			
+			StandardisedStringTreeMap<String> map = new StandardisedStringTreeMap<String>();
+			String [] split = s.split(",");
+			for(String keyvalue : split){
+				String[] extraSplit = keyvalue.split("=");
+				for(int i =0 ; i < extraSplit.length ; i++){
+					extraSplit[i] = extraSplit[i].trim();
+				}
+				if(extraSplit.length!=2 || extraSplit[0].length()==0){
+					return Functions.EXECUTION_ERROR;
+				}
+				map.put(extraSplit[0], extraSplit[1]);
+			}
+			
+			BackgroundMapConfig config = new BackgroundMapConfig(map);
+			return BackgroundTileFactorySingleton.createTileFactory(config);
+		}
+
+		@Override
+		public Function deepCopy() {
+			throw new UnsupportedOperationException();
+		}
+		
+	}
 }

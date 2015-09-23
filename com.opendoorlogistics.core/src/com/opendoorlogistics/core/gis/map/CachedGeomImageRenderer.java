@@ -29,6 +29,10 @@ public class CachedGeomImageRenderer implements ObjectRenderer{
 	
 	@Override
 	public boolean renderObject(Graphics2D g, LatLongToScreen converter, DrawableObject obj, boolean isSelected, long renderFlags){
+		if(!DatastoreRenderer.isVisibleAtZoom(obj, converter.getZoomForObjectFiltering())){
+			return false;
+		}
+		
 		// test if we have points
 		boolean hasPoint = obj.getGeometry()==null;
 		if(!hasPoint){

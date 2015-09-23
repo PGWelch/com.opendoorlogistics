@@ -37,7 +37,7 @@ public class TableDefinitionGrid extends AbstractTableDefinitionGrid {
 		table.setModel(new MyTableModel());
 		
 		// create jcombobox for enum
-		JComboBox<ODLColumnType> combo = new JComboBox<>(ODLColumnType.values());
+		JComboBox<ODLColumnType> combo = new JComboBox<>(ODLColumnType.standardTypes());
 		TableColumn column = table.getColumnModel().getColumn(1);
 		column.setCellEditor(new DefaultCellEditor(combo));
 	}

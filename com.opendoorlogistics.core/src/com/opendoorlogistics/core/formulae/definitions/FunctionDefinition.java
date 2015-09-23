@@ -21,6 +21,7 @@ public final class FunctionDefinition implements Iterable<FunctionArgument> {
 	private FunctionFactory factory;
 	private String description;
 	private int operatorPrecendence=Integer.MAX_VALUE;
+	private String group;
 	
 	public enum FunctionType {
 		 OPERATOR,FUNCTION, CONSTANT
@@ -233,6 +234,14 @@ public final class FunctionDefinition implements Iterable<FunctionArgument> {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public String getGroup() {
+		return group;
+	}
+
+	public void setGroup(String group) {
+		this.group = group;
 	}
 
 }

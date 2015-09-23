@@ -9,7 +9,12 @@ package com.opendoorlogistics.core.gis.map.data;
 import java.awt.Color;
 
 import com.opendoorlogistics.api.components.PredefinedTags;
+import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTableAlterable;
+import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.map.annotations.ImageFormulaKey;
@@ -25,6 +30,9 @@ import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultStringValue
 import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.tables.beans.annotations.ODLTag;
+import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
+import com.opendoorlogistics.core.tables.memory.ODLTableImpl;
+import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 
 @ODLTableName(PredefinedTags.DRAWABLES)
 public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
@@ -49,9 +57,14 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	public static final int COL_SELECTABLE= COL_TOOLTIP + 1;
 	public static final int COL_LPO= COL_SELECTABLE + 1;
 	public static final int COL_LABEL_COLOUR= COL_LPO + 1;
-	public static final int COL_FLAGS= COL_LABEL_COLOUR + 1;
-
+	public static final int COL_LABEL_PRIORITY= COL_LABEL_COLOUR + 1;
+	public static final int COL_FLAGS= COL_LABEL_PRIORITY + 1;
+	public static final int COL_MIN_ZOOM= COL_FLAGS + 1;
+	public static final int COL_MAX_ZOOM= COL_MIN_ZOOM + 1;
+	public static final int COL_MAX = COL_MAX_ZOOM;
+	
 	private static final BeanDatastoreMapping mapping;
+	public static final ODLDatastore<? extends ODLTableDefinition> ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS;
 	private static final double DEFAULT_OPAQUE = 1.0;
 	
 	static{
@@ -76,6 +89,19 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		};
 		
 		mapping.getTableMapping(0).setRowfilter(rowfilter);
+		
+		// Create datastore definition for active, inactive-background, inactive-foreground
+		ODLDatastoreImpl<ODLTableDefinitionAlterable> activeBackgroundForeground = new ODLDatastoreImpl<>(ODLTableImpl.ODLTableDefinitionAlterableFactory);
+		ODLTableDefinition drawablesTable = mapping.getDefinition().getTableAt(0);
+		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES, -1);				
+		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND, -1);				
+		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, -1);				
+		DatastoreCopier.copyTableDefinition(BackgroundImage.BEAN_MAPPING.getTableDefinition(), activeBackgroundForeground);				
+		for(int tableIndx = 1 ; tableIndx<=3 ; tableIndx++){
+			ODLTableDefinitionAlterable alterable= activeBackgroundForeground.getTableAt(tableIndx);
+			alterable.setFlags(alterable.getFlags() | TableFlags.FLAG_IS_OPTIONAL);
+		}
+		ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS = activeBackgroundForeground;
 	}
 	
 	public static BeanDatastoreMapping getBeanMapping(){
@@ -100,6 +126,9 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	private String labelPositioningOption;
 	private Color labelColor;
 	private long flags;
+	private long labelPriority=0;
+	private long minZoom = 0;
+	private long maxZoom = 1000;
 	
 	public DrawableObjectImpl(){}
 	
@@ -128,7 +157,10 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		this.selectable = copyThis.getSelectable();
 		this.symbol  = copyThis.getSymbol();
 		this.tooltip = copyThis.getTooltip();
+		this.labelPriority = copyThis.getLabelPriority();
 		this.flags = copyThis.getFlags();
+		this.minZoom = copyThis.getMinZoom();
+		this.maxZoom = copyThis.getMaxZoom();
 	}
 	
 
@@ -392,4 +424,38 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		this.flags = f;
 	}
 
+	public long getMinZoom() {
+		return minZoom;
+	}
+
+	@ODLNullAllowed
+	@ODLDefaultLongValue(0)
+	@ODLColumnOrder(COL_MIN_ZOOM)
+	public void setMinZoom(long minZoom) {
+		this.minZoom = minZoom;
+	}
+
+	public long getMaxZoom() {
+		return maxZoom;
+	}
+
+	@ODLNullAllowed
+	@ODLDefaultLongValue(1000)
+	@ODLColumnOrder(COL_MAX_ZOOM)
+	public void setMaxZoom(long maxZoom) {
+		this.maxZoom = maxZoom;
+	}
+
+	public long getLabelPriority() {
+		return labelPriority;
+	}
+
+	@ODLNullAllowed
+	@ODLDefaultLongValue(0)
+	@ODLColumnOrder(COL_LABEL_PRIORITY)
+	public void setLabelPriority(long labelPriority) {
+		this.labelPriority = labelPriority;
+	}
+
+	
 }

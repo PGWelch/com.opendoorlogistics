@@ -28,6 +28,15 @@ public class OSMTileFactoryInfo extends TileFactoryInfo
 	 */
 	public OSMTileFactoryInfo(String baseUrl)
 	{
+//		super("OpenStreetMap", 
+//				1, max - 2, max, 
+//				256, true, true, 					// tile size is 256 and x/y orientation is normal
+//				baseUrl,
+//	//			"http://otile1.mqcdn.com/tiles/1.0.0/osm",
+//			//	"http://tile.openstreetmap.org",
+//			//	"http://otile1.mqcdn.com/tiles/1.0.0/sat",
+//				"x", "y", "z");
+		
 		super("OpenStreetMap", 
 				1, max - 2, max, 
 				256, true, true, 					// tile size is 256 and x/y orientation is normal
@@ -35,7 +44,7 @@ public class OSMTileFactoryInfo extends TileFactoryInfo
 	//			"http://otile1.mqcdn.com/tiles/1.0.0/osm",
 			//	"http://tile.openstreetmap.org",
 			//	"http://otile1.mqcdn.com/tiles/1.0.0/sat",
-				"x", "y", "z");						// 5/15/10.png
+				"x", "y", "z");		
 	}
 
 	@Override

@@ -22,15 +22,19 @@ import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
+import com.opendoorlogistics.api.scripts.parameters.Parameters.TableType;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList.MapSelectionListRegister;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.Script;
-import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard;
+import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImpl;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
@@ -50,11 +54,13 @@ import com.opendoorlogistics.studio.scripts.execution.ReporterFrame.RefreshMode;
 import com.opendoorlogistics.studio.scripts.execution.ScriptsDependencyInjector.RecordedLauncherCallback;
 
 class ScriptExecutionTask {
+	private final ODLApi api = new ODLApiImpl();
 	private final ScriptsRunner runner;
 	private final Script unfiltered;
 	private final String[] optionIds;
 	private final String scriptName;
 	private final boolean isScriptRefresh;
+	private final ODLDatastore<? extends ODLTable>  parametersDs;
 	private volatile ExecutionReport result;
 	private volatile Script filtered;
 	private volatile ScriptsDependencyInjector guiFascade;
@@ -66,12 +72,13 @@ class ScriptExecutionTask {
 	private volatile DataDependencies wholeScriptDependencies;
 	private volatile boolean showingModalPanel = false;
 
-	ScriptExecutionTask(ScriptsRunner runner, final Script script, String[] optionIds, final String scriptName, boolean isScriptRefresh) {
+	ScriptExecutionTask(ScriptsRunner runner, final Script script, String[] optionIds, final String scriptName, boolean isScriptRefresh,ODLDatastore<? extends ODLTable>  parametersTable) {
 		this.runner = runner;
 		this.unfiltered = script;
 		this.optionIds = optionIds;
 		this.scriptName = scriptName;
 		this.isScriptRefresh = isScriptRefresh;
+		this.parametersDs = parametersTable;
 	}
 
 	private ReporterFrameIdentifier getReporterFrameId(String instructionId, String panelId) {
@@ -96,6 +103,18 @@ class ScriptExecutionTask {
 		filtered = ExecutionUtils.getFilteredCollapsedScript(runner.getAppFrame(), unfiltered, optionIds, scriptName);
 		if (filtered == null) {
 			return;
+		}
+		
+		// Copy over the override use prompt information
+		Option mainOption = null;
+		if(optionIds==null || optionIds.length==0){
+			mainOption = unfiltered;
+		}else if (optionIds!=null && optionIds.length==1){
+			mainOption = ScriptUtils.getOption(unfiltered, optionIds[0]);
+		}
+		if(mainOption!=null){
+			filtered.setOverrideVisibleParameters(mainOption.isOverrideVisibleParameters());
+			filtered.setVisibleParametersOverride(mainOption.getVisibleParametersOverride());
 		}
 
 		// Create the execution api we give to the script executor to allow it interact with the UI
@@ -147,10 +166,15 @@ class ScriptExecutionTask {
 		}
 
 		// Execute and get all dependencies afterwards
+		ODLApi api = runner.getAppFrame().getApi();
 		ScriptExecutor executor = new ScriptExecutor(runner.getAppFrame().getApi(),false, guiFascade);
+		if(parametersDs!=null){
+			executor.setInitialParametersTable(api.scripts().parameters().findTable(parametersDs, TableType.PARAMETERS));
+		}
+		
 		result = executor.execute(filtered, simple);
 		if (!result.isFailed()) {
-			wholeScriptDependencies = executor.extractDependencies((ScriptExecutionBlackboard) result);
+			wholeScriptDependencies = executor.extractDependencies((ScriptExecutionBlackboardImpl) result);
 		}
 
 		// Finish up on the EDT
@@ -272,7 +296,7 @@ class ScriptExecutionTask {
 
 			// merge has a transaction so don't need to start one here
 			if (!MergeBranchedDatastore.merge(writeRecorder, runner.getDs())) {
-				result.setFailed("Failed to merge the script result with the primary datastore." + System.lineSeparator() + "This may happen if the data changes whilst a script is running.");
+				result.setFailed("Failed to merge the result of running the script with the datastore." + System.lineSeparator() + "This may happen if the data or tables change whilst a script is running.");
 			}
 		}
 
@@ -305,7 +329,14 @@ class ScriptExecutionTask {
 					for (ReporterFrame<?> frame : frames) {
 						// set dependencies
 						DataDependencies dependencies = guiFascade.getDependenciesByInstructionId(cb.getInstructionId());
-						frame.setDependencies(runner.getDs(), unfiltered, dependencies);
+						
+						// give it a parameters table if we have one and can refresh
+						ODLDatastore<? extends ODLTable> parameters = cb.getParamsDs();
+						if( parameters!=null){
+							parameters = api.tables().copyDs(parameters);
+						}
+						
+						frame.setDependencies(runner.getDs(), unfiltered, dependencies, parameters,result);
 						frame.setRefresherCB(runner);
 					}
 				}
@@ -393,7 +424,7 @@ class ScriptExecutionTask {
 				}
 				Option option = ScriptUtils.getOption(unfiltered, optId);
 
-				// work out the refresh mode
+				// work out the refresh mode (this can change between automatic and manual on updating a frame)
 				RefreshMode refreshMode;
 				if (refreshable && option.isSynchronised()) {
 					refreshMode = RefreshMode.AUTOMATIC;
@@ -402,7 +433,7 @@ class ScriptExecutionTask {
 				} else {
 					refreshMode = RefreshMode.NEVER;
 				}
-
+				
 				// try to get it first in-case already registered
 				ReporterFrameIdentifier id = getReporterFrameId( cb.getInstructionId(), panelId);
 				@SuppressWarnings("unchecked")

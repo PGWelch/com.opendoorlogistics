@@ -11,11 +11,10 @@ import java.util.List;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
-import com.opendoorlogistics.core.tables.ODLRow;
 import com.opendoorlogistics.core.tables.ODLRowReadOnly;
 
 final public class TableParameters implements FunctionParameters {
-	private final List<?> datastores;
+	private final TableFetcher datastores;
 	private final int dsIndx;
 	private final int tableId;
 	private final long rowId;
@@ -30,14 +29,38 @@ final public class TableParameters implements FunctionParameters {
 	 * @param rowNbIfKnown Set to -1 if row number is unknown and it will be calculated
 	 * from the default table.
 	 */
-	public TableParameters(List<?> datastores, int dsIndx, int tableId, long rowId, int rowNbIfKnown, ODLRowReadOnly thisRow) {
-		this.datastores = datastores;
+	public TableParameters(TableFetcher tableFetcher, int dsIndx, int tableId, long rowId, int rowNbIfKnown, ODLRowReadOnly thisRow) {
+		this.datastores = tableFetcher;
 		this.dsIndx = dsIndx;
 		this.tableId = tableId;
 		this.rowId = rowId;
 		this.rowNbIfKnown = rowNbIfKnown;
 		this.thisRow = thisRow;
 	}
+
+	public TableParameters(List<?> datastores, int dsIndx, int tableId, long rowId, int rowNbIfKnown, ODLRowReadOnly thisRow) {
+		this(createTableFetcher(datastores), dsIndx, tableId , rowId, rowNbIfKnown, thisRow);
+	}
+	
+	public static interface TableFetcher{
+		ODLTableReadOnly getTableById(int datastoreIndx, int tableId);		
+	}
+	
+	public static TableFetcher createTableFetcher(List<?> datastores){
+		return new TableFetcher() {
+			
+			@Override
+			public ODLTableReadOnly getTableById(int datastoreIndx, int tableId) {
+				if (datastoreIndx < datastores.size() && datastoreIndx >= 0) {
+					ODLDatastore<?> ds = (ODLDatastore<?>) datastores.get(datastoreIndx);
+					return (ODLTableReadOnly) ds.getTableByImmutableId(tableId);
+				}
+				return null;
+			}
+		};
+	}
+	
+
 
 	public int getDatasourceIndx() {
 		return dsIndx;
@@ -51,16 +74,12 @@ final public class TableParameters implements FunctionParameters {
 		return rowId;
 	}
 
-	public List<?> getDatastores() {
+	public TableFetcher getDatastores() {
 		return datastores;
 	}
 
 	public ODLTableReadOnly getTableById(int datastoreIndx, int tableId) {
-		if (datastoreIndx < datastores.size() && datastoreIndx >= 0) {
-			ODLDatastore<?> ds = (ODLDatastore<?>) datastores.get(datastoreIndx);
-			return (ODLTableReadOnly) ds.getTableByImmutableId(tableId);
-		}
-		return null;
+		return datastores.getTableById(datastoreIndx, tableId);
 	}
 
 	public ODLTableReadOnly getDefaultTable() {

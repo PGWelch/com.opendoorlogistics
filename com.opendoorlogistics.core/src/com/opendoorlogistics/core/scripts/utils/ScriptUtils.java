@@ -10,12 +10,15 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.swing.Icon;
 
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
@@ -33,6 +36,7 @@ import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.OutputConfig;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.elements.ScriptEditorType;
+import com.opendoorlogistics.core.scripts.execution.adapters.vls.VLSBuilder;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.wizard.ScriptGenerator;
 import com.opendoorlogistics.core.tables.ODLFactory;
@@ -922,7 +926,77 @@ final public class ScriptUtils {
 			}
 		});
 	}
+	
+	public static class ScriptIds{
+		final public Set<String> adapters;
+		final public Set<String> outputdatastores;		
+		final public Set<String> options;
+		final public Set<String> datastoresAndAdapters;
+		
+		ScriptIds(Set<String> adapters, Set<String> outputdatastores, Set<String> options, Set<String> datastoresAndAdapters) {
+			this.adapters = adapters;
+			this.outputdatastores = outputdatastores;
+			this.options = options;
+			this.datastoresAndAdapters = datastoresAndAdapters;
+		}
+		
+		public boolean containsAdapterOrDatastore(String s){
+			return adapters.contains(s) || outputdatastores.contains(s);
+		}
+		
+		public static Set<String> getCommonStrings(ODLApi api,Set<String> setA, Set<String> setB){
+			 Set<String> ret = api.stringConventions().createStandardisedSet();
+			 for(String s : setA){
+				 if(setB.contains(s)){
+					 ret.add(s);
+				 }
+			 }
+			 
+			 for(String s : setB){
+				 if(setA.contains(s)){
+					 ret.add(s);
+				 }
+			 }
+			 
+			 return ret;
+		}
+		
+	}
 
+	/**
+	 * Fetch all ids in the script
+	 * @param api
+	 * @param option
+	 * @return
+	 */
+	public static ScriptIds getIds(ODLApi api,Option option){
+		StringConventions strings = api.stringConventions();
+		ScriptIds ret = new ScriptIds(strings.createStandardisedSet(), strings.createStandardisedSet(), strings.createStandardisedSet(), strings.createStandardisedSet());
+		visitOptions(option, new OptionVisitor() {
+			
+			@Override
+			public boolean visitOption(Option parent, Option option, int depth) {
+				ret.options.add(option.getOptionId());
+				for(InstructionConfig instruction : option.getInstructions()){
+					if(instruction.getOutputDatastore()!=null){
+						ret.outputdatastores.add(instruction.getOutputDatastore());
+					}
+				}
+				
+				for(AdapterConfig adapter : option.getAdapters()){
+					if(adapter.getId()!=null){
+						ret.adapters.add(adapter.getId());						
+					}
+				}
+				return true;
+			}
+		});
+		
+		ret.datastoresAndAdapters.addAll(ret.outputdatastores);
+		ret.datastoresAndAdapters.addAll(ret.adapters);
+		return ret;
+	}
+	
 	/**
 	 * For the input script find out what synchronisation can be done of output windows
 	 * 
@@ -1070,9 +1144,19 @@ final public class ScriptUtils {
 		return false;
 	}
 
-	public static AdapterDestinationProvider buildAdapterDestinationDefinition(final ODLApi api, final Option root, final Option optionContainingAdapter, final String adapterId) {
+	/**
+	 * Create a provider for the adapter's expected structure, based on whether its a VLS adapter or
+	 * the component which uses it. The expected structure is recreated dynamically on-the-fly,
+	 * so should always be up-to-date.
+	 * @param api
+	 * @param root
+	 * @param optionContainingAdapter
+	 * @param adapterId
+	 * @return
+	 */
+	public static AdapterExpectedStructureProvider createAdapterExpectedStructure(final ODLApi api, final Option root, final Option optionContainingAdapter, final String adapterId) {
 		// find the adapter
-		return new AdapterDestinationProvider() {
+		return new AdapterExpectedStructureProvider() {
 
 			@Override
 			public ODLDatastore<? extends ODLTableDefinition> getDatastoreDefinition() {
@@ -1080,6 +1164,19 @@ final public class ScriptUtils {
 
 				// Check if the adapter is drawable
 				AdapterConfig adapterConfig = getAdapterById(optionContainingAdapter, adapterId, false);
+				if(adapterConfig.getAdapterType() == ScriptAdapterType.VLS){
+					// Add view-layer-style tables
+					api.tables().addTableDefinitions(VLSBuilder.getVLSTableDefinitions(), ret, false);
+					
+					ODLTableDefinition src = VLSBuilder.getSourceTableDefinition();
+					api.tables().addTableDefinition(src, ret, false);
+					return ret;
+				}
+				
+				else if(adapterConfig.getAdapterType() == ScriptAdapterType.PARAMETER){
+					return api.scripts().parameters().dsDefinition(false);
+				}
+				
 				if ((adapterConfig.getFlags() & TableFlags.FLAG_IS_DRAWABLES) == TableFlags.FLAG_IS_DRAWABLES) {
 					ODLDatastore<? extends ODLTableDefinition> drawables = api.standardComponents().map().getLayeredDrawablesDefinition();
 					for (int i = 0; i < drawables.getTableCount(); i++) {

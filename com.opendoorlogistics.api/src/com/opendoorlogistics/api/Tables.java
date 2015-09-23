@@ -6,9 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.api;
 
-import java.io.File;
-
-import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -27,6 +24,12 @@ public interface Tables {
 	ODLTableDefinitionAlterable copyTableDefinition(ODLTableDefinition copyThis, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> copyTo);
 
 	ODLTableAlterable createTable(ODLTableDefinition tableDefinition);
+
+	ODLTableAlterable copyTable(ODLTableReadOnly copyThis, ODLDatastoreAlterable<? extends ODLTableAlterable> copyTo);
+
+	ODLDatastoreAlterable<? extends ODLTableAlterable> copyDs(ODLDatastore<? extends ODLTableReadOnly> ds);
+	
+	void copyColumnDefinition(ODLTableDefinition source, int sourceCol, ODLTableDefinitionAlterable destination);
 	
 	/**
 	 * Copy a row between identical tables
@@ -120,4 +123,12 @@ public interface Tables {
 //	ODLDatastore<? extends ODLTableDefinition> createParametersTableD
 	
 	ODLTableDefinition createParametersTableDefinition();
+	
+	/**
+	 * Compare two tables
+	 * @param a
+	 * @param b
+	 * @return Return true if (and only if) tables have identical structure and field values
+	 */
+	boolean isIdentical(ODLTableReadOnly a, ODLTableReadOnly b);
 }

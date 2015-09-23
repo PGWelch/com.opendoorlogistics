@@ -8,6 +8,7 @@ package com.opendoorlogistics.api.scripts;
 
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 
 public interface ScriptAdapterTable {
 
@@ -20,6 +21,8 @@ public interface ScriptAdapterTable {
 	 * @param tableName
 	 */
 	void setFormula(String columnName, String formula);
+	
+	void setFormula(int columnIdx, String formula);
 
 	/**
 	 * Set source formulae on the adapter table
@@ -74,5 +77,11 @@ public interface ScriptAdapterTable {
 	}
 	
 	void setSortType(int col, ColumnSortType cst);
+	
+	void setFetchSourceField(boolean b);
+	
+	ODLTableReadOnly getDataTable();
+	
+	void setDataTable(ODLTableReadOnly table);
 	
 }

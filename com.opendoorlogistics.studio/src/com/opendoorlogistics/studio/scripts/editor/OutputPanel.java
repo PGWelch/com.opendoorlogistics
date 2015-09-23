@@ -48,26 +48,52 @@ final public class OutputPanel extends VerticalLayoutPanel {
 		if (showInputControls) {
 			datastore = new JTextField(config.getDatastore());
 			inputDatastoreLabel = new JLabel("Input datastore ");
-			datastore.addPropertyChangeListener(new PropertyChangeListener() {
-
-				@Override
-				public void propertyChange(PropertyChangeEvent evt) {
-					config.setDatastore(datastore.getText());
-				}
-			});
+//			datastore.addPropertyChangeListener(new PropertyChangeListener() {
+//
+//				@Override
+//				public void propertyChange(PropertyChangeEvent evt) {
+//					config.setDatastore(datastore.getText());
+//				}
+//			});
 
 			inputTableLabel = new JLabel(" table ");
 			inputTable = new JTextField(config.getInputTable());
-			inputTable.addPropertyChangeListener(new PropertyChangeListener() {
-
-				@Override
-				public void propertyChange(PropertyChangeEvent evt) {
-					config.setInputTable(inputTable.getText());
-				}
-			});
+//			inputTable.addPropertyChangeListener(new PropertyChangeListener() {
+//
+//				@Override
+//				public void propertyChange(PropertyChangeEvent evt) {
+//					config.setInputTable(inputTable.getText());
+//				}
+//			});
 			addLine(inputDatastoreLabel, datastore,Box.createRigidArea(new Dimension(10, 1)), inputTableLabel, inputTable);
 
 		//	addHalfWhitespace();
+			
+			DocumentListener listener = new DocumentListener() {
+				
+				@Override
+				public void removeUpdate(DocumentEvent e) {
+					readUI();
+				}
+				
+				@Override
+				public void insertUpdate(DocumentEvent e) {
+					readUI();
+				}
+				
+				@Override
+				public void changedUpdate(DocumentEvent e) {
+					readUI();
+				}
+				
+				void readUI(){
+					config.setInputTable(inputTable.getText());
+					config.setDatastore(datastore.getText());
+				}
+			};
+			
+			datastore.getDocument().addDocumentListener(listener);
+			inputTable.getDocument().addDocumentListener(listener);
 		}else{
 			inputDatastoreLabel=null;
 			datastore = null;

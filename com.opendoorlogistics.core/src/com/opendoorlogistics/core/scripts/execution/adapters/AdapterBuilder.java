@@ -6,23 +6,15 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.scripts.execution.adapters;
 
-import gnu.trove.impl.Constants;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.map.hash.TLongIntHashMap;
-import gnu.trove.map.hash.TLongObjectHashMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
-import gnu.trove.set.hash.TIntHashSet;
-
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.components.ProcessingApi;
-import com.opendoorlogistics.api.io.ImportFileType;
+import com.opendoorlogistics.api.scripts.ScriptAdapter.ScriptAdapterType;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -32,6 +24,7 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.formulae.FormulaParser;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
@@ -41,14 +34,15 @@ import com.opendoorlogistics.core.formulae.Functions.FmConst;
 import com.opendoorlogistics.core.formulae.Functions.FmEquals;
 import com.opendoorlogistics.core.formulae.UserVariableProvider;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary;
-import com.opendoorlogistics.core.geometry.Spatial;
-import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig.SortField;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.elements.UserFormula;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard;
+import com.opendoorlogistics.core.scripts.execution.adapters.TableFormulaBuilder.DependencyInjector;
+import com.opendoorlogistics.core.scripts.execution.adapters.vls.VLSBuilder;
+import com.opendoorlogistics.core.scripts.execution.adapters.vls.VLSBuilder.VLSDependencyInjector;
 import com.opendoorlogistics.core.scripts.formulae.FmLocalElement;
 import com.opendoorlogistics.core.scripts.formulae.TableParameters;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
@@ -57,7 +51,6 @@ import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator.AdapterMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.RowFilterDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.UnionDecorator;
-import com.opendoorlogistics.core.tables.io.TableIOUtils;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -66,6 +59,14 @@ import com.opendoorlogistics.core.utils.UpdateTimer;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
+
+import gnu.trove.impl.Constants;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.list.array.TLongArrayList;
+import gnu.trove.map.hash.TLongIntHashMap;
+import gnu.trove.map.hash.TLongObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.hash.TIntHashSet;
 
 final public class AdapterBuilder {
 
@@ -85,69 +86,68 @@ final public class AdapterBuilder {
 	private final ArrayList<ODLDatastore<? extends ODLTable>> datasources = new ArrayList<>();
 	private final AdapterConfig inputConfig;
 	private final ProcessingApi continueCb;
+	private final ExecutionReport report;
 	private ODLDatastore<? extends ODLTableDefinition> destination;
 	private AdapterMapping mapping;
 	private AdapterConfig processedConfig;
 	private UUID adapterUUID = UUID.randomUUID();
+	private final ODLApiImpl api = new ODLApiImpl();
 
-	private AdapterBuilder(AdapterConfig adapterConfig, String id, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env,ProcessingApi continueCb, BuiltAdapters result) {
+	public AdapterBuilder(AdapterConfig adapterConfig, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env,ProcessingApi continueCb, BuiltAdapters result) {
 		this.inputConfig = adapterConfig;
-		this.id = id;
+		this.id = adapterConfig.getId();
 		this.env = env;
+		this.report = env;
 		this.callerAdapters = callerAdapters;
 		this.builtAdapters = result;
 		this.continueCb = continueCb;
 	}
 	
-
-	public AdapterBuilder(String id, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env, ProcessingApi continueCb,BuiltAdapters result) {
-		this(env.getAdapterConfig(id), id, callerAdapters, env, continueCb,result);
-	}
-
-	public AdapterBuilder(AdapterConfig adapterConfig, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env, ProcessingApi continueCb,BuiltAdapters result) {
-		this(adapterConfig, adapterConfig.getId(), callerAdapters, env,continueCb, result);
-	}
+//	public AdapterBuilder(AdapterConfig adapterConfig, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env, ProcessingApi continueCb,BuiltAdapters result) {
+//		this(adapterConfig, adapterConfig.getId(), callerAdapters, env,continueCb, result);
+//	}
 
 	private void setFailed() {
-		env.setFailed("Failed to build adapter \"" + id + "\"");
+		report.setFailed("Failed to build adapter \"" + id + "\"");
 	}
 
 	public ODLDatastore<? extends ODLTable> build() {
 
 		// do nothing if we've already failed
-		if (env.isFailed()) {
+		if (report.isFailed()) {
 			return null;
 		}
 		
-		// check for importing files
-		if(id!=null){	
-			// check for importing a shapefile...
-			ODLDatastore<? extends ODLTable> importedDs = null;
-			String shapefilename = Strings.caseInsensitiveReplace(id, ScriptConstants.SHAPEFILE_DS_NAME_PREFIX, "");
-			if(shapefilename.equals(id)==false){
-				shapefilename = shapefilename.trim();
-				importedDs = Spatial.importAndCacheShapefile(new File(shapefilename));
-			}
-			
-			for(ImportFileType ft : new ImportFileType[]{ImportFileType.CSV,ImportFileType.EXCEL, ImportFileType.TAB}){
-				String prefix = ft.name() + ScriptConstants.IMPORT_LINK_POSTFIX;
-				String filename = Strings.caseInsensitiveReplace(id, prefix, "");
-				if(filename.equals(id)==false){
-					filename = filename.trim();
-					importedDs = TableIOUtils.importFile(new File(filename), ft,continueCb, env);
-				}
-			}
-			
-			if(importedDs!=null){
-				builtAdapters.addAdapter(id, importedDs);	
-				return importedDs;
-			}
-		}
+//		// check for importing files
+//		if(id!=null){	
+//			// check for importing a shapefile...
+//			ODLDatastore<? extends ODLTable> importedDs = null;
+//			String shapefilename = Strings.caseInsensitiveReplace(id, ScriptConstants.SHAPEFILE_DS_NAME_PREFIX, "");
+//			if(shapefilename.equals(id)==false){
+//				shapefilename = shapefilename.trim();
+//				importedDs = Spatial.importAndCacheShapefile(new File(shapefilename));
+//			}
+//			
+//			for(ImportFileType ft : new ImportFileType[]{ImportFileType.CSV,ImportFileType.EXCEL, ImportFileType.TAB}){
+//				String prefix = ft.name() + ScriptConstants.IMPORT_LINK_POSTFIX;
+//				String filename = Strings.caseInsensitiveReplace(id, prefix, "");
+//				if(filename.equals(id)==false){
+//					filename = filename.trim();
+//					importedDs = TableIOUtils.importFile(new File(filename), ft,continueCb, env);
+//				}
+//			}
+//			
+//			if(importedDs!=null){
+//				builtAdapters.addAdapter(id, importedDs);	
+//				return importedDs;
+//			}
+//		}
+
 		
 		if (id != null) {
 			// check for cycles
-			if (callerAdapters.contains(id)) {
-				env.setFailed("Cyclic dependency detected around adapter \"" + id + "\"; adapters cannot call themselves either directly or indirectly.");
+			if( callerAdapters!=null && callerAdapters.contains(id)) {
+				report.setFailed("Cyclic dependency detected around adapter \"" + id + "\"; adapters cannot call themselves either directly or indirectly.");
 				setFailed();
 				return null;
 			}
@@ -162,13 +162,38 @@ final public class AdapterBuilder {
 			}
 		}
 
+		// check for a table formula
+		if(id!=null){
+			String formula = AdapterBuilderUtils.getFormulaFromText(id);
+			if(formula!=null){
+				ODLDatastore<? extends ODLTable> importedDs = TableFormulaBuilder.build(formula,new DependencyInjector() {
+					
+					@Override
+					public ODLDatastore<? extends ODLTable> buildAdapter(AdapterConfig config) {
+						int indx = recurseBuild(config);
+						if(indx!=-1){
+							return datasources.get(indx);							
+						}
+						return null;
+					}
+				}, report);
+				if(importedDs!=null){
+					builtAdapters.addAdapter(id, importedDs);	
+					return importedDs;
+				}		
+				return null;
+			}
+		}
+		
+		
 		// we should have an adapter config by this point...
 		if (inputConfig == null) {
-			env.setFailed("Cannot find datastore or adapter \"" + id + "\"");
+			report.setFailed("Cannot find datastore or adapter \"" + id + "\"");
 		}
 
 		// process the adapter config; split unions off to process separately
 		processedConfig = new AdapterConfig(inputConfig.getId());
+		processedConfig.setAdapterType(inputConfig.getAdapterType());
 		int nt = inputConfig.getTableCount();
 		ArrayList<List<AdaptedTableConfig>> unionSourceAdapters = new ArrayList<>();
 		for (int i = 0; i < nt; i++) {
@@ -201,35 +226,85 @@ final public class AdapterBuilder {
 			}
 		}
 
-		// get the datastore structure the view should generate
-		destination = processedConfig.createOutputDefinition();
+		// Get the datastore structure the view should generate. Even if we're building a VLS
+		// adapter we get the normal (non-VLS) output as the VLS adapter is built on top if this...
+		destination = processedConfig.createNormalOutputDefinition();
 
 		// create a mapping with records for the destination tables and fields but no sources yet
-		mapping = AdapterMapping.createUnassignedMapping(destination);
+		mapping = AdapterMapping.createUnassignedMapping(destination, true);
 
-		// loop over each table, building union or non-union as needed
-		for (int destTableIndx = 0; destTableIndx < processedConfig.getTableCount() && env.isFailed() == false; destTableIndx++) {
-			List<AdaptedTableConfig> union = unionSourceAdapters.get(destTableIndx);
-			if (union == null) {
-				buildTable(destTableIndx);
-			} else {
-				buildUnionTable(union, destination.getTableAt(destTableIndx).getImmutableId());
+		// create the adapter (initally empty)
+		AdaptedDecorator<ODLTable> nonVLSAdapter = new AdaptedDecorator<ODLTable>(mapping, datasources);
+		ODLDatastore<? extends ODLTable> ret = nonVLSAdapter;
+		
+		// Add the tables to the adapter
+		if(processedConfig.getAdapterType() == ScriptAdapterType.VLS){
+			// Build VLS instead, source tables are built on-command
+			ret = new VLSBuilder(api).build(new VLSDependencyInjector() {
+				
+				@Override
+				public String getTableName(int i) {
+					return processedConfig.getTable(i).getName();
+				}
+				
+				@Override
+				public int getTableCount() {
+					return processedConfig.getTableCount();
+				}
+				
+				@Override
+				public ODLTable buildTable(int i) {
+					AdapterBuilder.this.buildTable(unionSourceAdapters, i);
+					return nonVLSAdapter.getTableAt(i);
+				}
+
+				@Override
+				public Function buildFormula(String formula,ODLTableDefinition table) {
+					return buildFormulaWithTableVariables(table, formula, -1, null, null);
+				}
+
+				@Override
+				public ODLTable buildTableFormula(String s) {
+					int index = recurseBuild(s);
+					if(index!=-1){
+						ODLDatastore<? extends ODLTable> tableFormulaDs = datasources.get(index);
+						if(tableFormulaDs!=null && tableFormulaDs.getTableCount()>0){
+							return tableFormulaDs.getTableAt(0);
+						}
+					}
+					return null;
+				}
+			}, report);
+			
+		}
+		else{
+			// Loop over each table, building union or non-union as needed.
+			for (int destTableIndx = 0; destTableIndx < processedConfig.getTableCount() && report.isFailed() == false; destTableIndx++) {
+				buildTable(unionSourceAdapters, destTableIndx);
 			}
 			
-			AdaptedTableConfig tableConfig = processedConfig.getTable(destTableIndx);
-			if(tableConfig.isLimitResults()){
-				processLimitResults(destTableIndx, tableConfig.getMaxNumberRows());
-			}
-			
-			if(env.isFailed()){
-				env.setFailed("Could not build data adapter table \"" + tableConfig.getName() + "\".");
-			}
 		}
 
-		// now create the adapter from the mapping giving it all the created datastores
-		AdaptedDecorator<ODLTable> ret = new AdaptedDecorator<ODLTable>(mapping, datasources);
 		builtAdapters.addAdapter(id, ret);
 		return ret;
+	}
+
+	private void buildTable(ArrayList<List<AdaptedTableConfig>> unionSourceAdapters, int destTableIndx) {
+		List<AdaptedTableConfig> union = unionSourceAdapters.get(destTableIndx);
+		if (union == null) {
+			buildNonUnionTable(destTableIndx);
+		} else {
+			buildUnionTable(union, destination.getTableAt(destTableIndx).getImmutableId());
+		}
+		
+		AdaptedTableConfig tableConfig = processedConfig.getTable(destTableIndx);
+		if(tableConfig.isLimitResults()){
+			processLimitResults(destTableIndx, tableConfig.getMaxNumberRows());
+		}
+		
+		if(report.isFailed()){
+			report.setFailed("Could not build data adapter table \"" + tableConfig.getName() + "\".");
+		}
 	}
 
 	private void processLimitResults(int tableIndx, int limit){
@@ -313,6 +388,11 @@ final public class AdapterBuilder {
 		ArrayList<ODLDatastore<? extends ODLTable>> built = new ArrayList<>();
 		for (AdaptedTableConfig atc : constituents) {
 
+			if(processedConfig!=null && processedConfig.getAdapterType() == ScriptAdapterType.PARAMETER && api.stringConventions().equalStandardised(atc.getName(), api.scripts().parameters().tableDefinition(true).getName())){
+				env.setFailed("Cannot union a parameter table.");
+				return;
+			}
+			
 			// Create a modified adapter config with all combined field names in and uniform type,
 			// but those not included in the individual config are unsourced.
 			// The table source and filter must match the original constituent table
@@ -348,7 +428,7 @@ final public class AdapterBuilder {
 			AdapterBuilder builder = new AdapterBuilder(dummy, callerAdapters != null ? new StandardisedStringSet(callerAdapters) : new StandardisedStringSet(), env,continueCb, builtAdapters);
 			try {
 				ODLDatastore<? extends ODLTable> constituentDs = builder.build();
-				if (constituentDs == null || env.isFailed()) {
+				if (constituentDs == null || report.isFailed()) {
 					throw new UnionTableException("Failed to build constituent table in unioned table.");
 				}
 				built.add(constituentDs);
@@ -413,7 +493,7 @@ final public class AdapterBuilder {
 		}
 
 		TLongArrayList sort() {
-			if (env.isFailed()) {
+			if (report.isFailed()) {
 				return null;
 			}
 
@@ -428,11 +508,11 @@ final public class AdapterBuilder {
 				// build the formula and check for failure
 				formulae[i] = buildFunction(sourceTable, col);
 				if (formulae[i] == null) {
-					env.setFailed();
+					report.setFailed();
 				}
 
-				if (env.isFailed()) {
-					env.log("Failed to build sort by field: " + (i + 1));
+				if (report.isFailed()) {
+					report.log("Failed to build sort by field: " + (i + 1));
 					return null;
 				}
 			}
@@ -468,8 +548,8 @@ final public class AdapterBuilder {
 				for (int j = 0; j < row.values.length; j++) {
 					 row.values[j] = formulae[j].execute(parameters);
 					if (row.values[j] == Functions.EXECUTION_ERROR) {
-						env.setFailed("Failed to execute sort formula or read sort field number " + (i + 1));
-						env.setFailed("If you were doing a group-by, from the source table you can only sort on the group-by source field (and not a formula).");
+						report.setFailed("Failed to execute sort formula or read sort field number " + (i + 1));
+						report.setFailed("If you were doing a group-by, from the source table you can only sort on the group-by source field (and not a formula).");
 						return null;
 					}
 
@@ -478,7 +558,7 @@ final public class AdapterBuilder {
 						ODLColumnType type = adaptedTableConfig.getColumnType(sortColumns[j]);
 						row.values[j] = ColumnValueProcessor.convertToMe(type,row.values[j]);
 						if (row.values[j] == null) {
-							env.setFailed("Failed to convert result of sort formula or read sort field to correct type: " + Strings.convertEnumToDisplayFriendly(type));
+							report.setFailed("Failed to convert result of sort formula or read sort field to correct type: " + Strings.convertEnumToDisplayFriendly(type));
 							return null;
 						}
 
@@ -512,17 +592,16 @@ final public class AdapterBuilder {
 	private boolean isAlwaysFalseFilterFormula(String filter, List<UserFormula> userFormulae){
 
 		// build the function lib with the parameter function but nothing else, so row-level fields are not readable
-		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
-		library.build();
-		FunctionsBuilder.buildParametersFormulae(library, createIndexDatastoresWrapper(), env);
-		if(env.isFailed()){
+		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary(FunctionDefinitionLibrary.DEFAULT_LIB);
+		FunctionsBuilder.buildParametersFormulae(library, createIndexDatastoresWrapper(), report);
+		if(report.isFailed()){
 			return false;
 		}
 		
 		Function f= buildFormula(filter, library, EMPTY_UVP,userFormulae, FormulaParser.UnidentifiedPolicy.CREATE_UNIDENTIFIED_PLACEHOLDER_FUNCTION);
 		
 		// test for unidentified
-		if(f!=null && !env.isFailed() && !FormulaParser.FmUnidentified.containsUnidentified(f)){
+		if(f!=null && !report.isFailed() && !FormulaParser.FmUnidentified.containsUnidentified(f)){
 		
 			Object val = null;
 			try {
@@ -534,11 +613,11 @@ final public class AdapterBuilder {
 				}
 				
 			} catch (Exception e) {
-				env.setFailed(e);
+				report.setFailed(e);
 				val = Functions.EXECUTION_ERROR;
 			}
 			if(val==Functions.EXECUTION_ERROR){
-				env.setFailed("Failed to execute filter function:"  + filter);
+				report.setFailed("Failed to execute filter function:"  + filter);
 			}
 		}
 		
@@ -552,16 +631,74 @@ final public class AdapterBuilder {
 	 * 
 	 * @param destTableIndx
 	 */
-	private void buildTable(int destTableIndx) {
+	private void buildNonUnionTable(int destTableIndx) {
 
 		AdaptedTableConfig tableConfig = processedConfig.getTables().get(destTableIndx);
+			
+		if(tableConfig.isJoin() && tableConfig.isFetchSourceFields()){
+			report.setFailed("Automatically adding source fields to the adapted table is not supported with join queries - see adapted table " + tableConfig.getName() + ".");
+			return;
+		}
+		
+		// test if we have a filter formula or sorts
+		String filterFormula = tableConfig.getFilterFormula();
+		boolean hasFilter = filterFormula!=null && filterFormula.trim().length()>0;
+		int[] sortCols =getOrderedSortColumns(tableConfig);
+		boolean hasSort = sortCols!=null && sortCols.length>0;
+
+		// process a table data adapter (i.e. not really an adapter - it actually stores data)
+		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);			
+		if(EmbeddedDataUtils.isEmbeddedData(tableConfig)){
+			class ErrorMsg{
+				void set(AdaptedTableConfig tableConfig,String error){
+					env.setFailed(error + " See table " + tableConfig.getName() + " in adapter " + (id!=null?id:"n/a") + ".");
+				}
+			}
+			ErrorMsg errorMsg = new ErrorMsg();
+			
+			if(hasFilter){
+				errorMsg.set(tableConfig,"Filtering is not supported with embedded data.");
+				return;
+			}
+			
+			if(hasSort){
+				errorMsg.set(tableConfig,"Sorting is not supported with embedded data.");
+				return;	
+			}
+			
+			if(tableConfig.isLimitResults()){
+				errorMsg.set(tableConfig,"Limiting the number of results is not supported with embedded data.");
+				return;				
+			}
+			
+			// check for no functions (unsupported)
+			for(AdapterColumnConfig colmn : tableConfig.getColumns()){
+				if(colmn.isUseFormula()){
+					errorMsg.set(tableConfig,"Formula are not supported for embedded data.");
+					return;		
+				}
 				
+				if(colmn.getIsGroupBy()){
+					errorMsg.set(tableConfig,"Grouping is not supported for embedded data.");
+					return;			
+				}
+			}
+			
+			ODLDatastoreAlterable<? extends ODLTableAlterable> dataDs = api.tables().createAlterableDs();
+			ODLTableAlterable dataTable = tableConfig.getDataTable(dataDs);
+			int dsIndx = datasources.size();
+			mapping.setTableSourceId(destTable.getImmutableId(),dsIndx, dataTable.getImmutableId());			
+			datasources.add(dataDs);
+			for(int col=0;col< destTable.getColumnCount();col++){
+				mapping.setFieldSourceIndx(destTable.getImmutableId(), col, col);
+			}
+			return;
+		}
+		
 		// Check for case where we have a filter formula based only on a parameter that's false and hence we can skip recurse building.
 		// Don't test if we're doing a join as we need the join table definition.
-		String filterFormula = tableConfig.getFilterFormula();
-		ODLTableDefinition destTable = destination.getTableAt(destTableIndx);	
 		if(!tableConfig.isJoin()){
-			if(filterFormula!=null && filterFormula.trim().length() >0 && isAlwaysFalseFilterFormula(filterFormula, tableConfig.getUserFormulae())){
+			if(hasFilter && isAlwaysFalseFilterFormula(filterFormula, tableConfig.getUserFormulae())){
 				mapToNewEmptyTable(destTable.getImmutableId(), destTable);
 				return;
 			}			
@@ -577,9 +714,14 @@ final public class AdapterBuilder {
 		}
 
 		// find source table in the datasource
-		tableRef.tableIndex = TableUtils.findTableIndex(datasources.get(tableRef.dsIndex), tableConfig.getFromTable(), true);
+		ODLDatastore<? extends ODLTable> srcDs=datasources.get(tableRef.dsIndex);
+		tableRef.tableIndex = TableUtils.findTableIndex(srcDs, tableConfig.getFromTable(), true);
+		if(tableRef.tableIndex==-1 && srcDs!=null && srcDs.getTableCount()==1 && Strings.isEmpty(tableConfig.getFromTable())){
+			// If no table name available and we only have 1 table, match to that
+			tableRef.tableIndex=0;
+		}
 		if (tableRef.tableIndex == -1) {
-			env.setFailed("Could not find table \"" + tableConfig.getFromTable() + "\".");
+			report.setFailed("Could not find table \"" + tableConfig.getFromTable() + "\".");
 			setFailed();
 			return;
 		}
@@ -587,7 +729,7 @@ final public class AdapterBuilder {
 		// process join if we have one
 		if(tableConfig.isJoin()){
 			tableRef = buildJoinTable(table(tableRef), tableConfig);
-			if(env.isFailed()){
+			if(report.isFailed()){
 				return;
 			}
 			
@@ -597,7 +739,6 @@ final public class AdapterBuilder {
 		
 		// If we have both sorting and group by then we should process sorting early, which always requires a filter formula
 		// as it uses the filter decorator
-		int[] sortCols =getOrderedSortColumns(tableConfig);
 		boolean processSortNow = AdapterBuilderUtils.hasGroupByColumn(tableConfig) == false && sortCols.length>0;
 		if (processSortNow && (filterFormula == null || filterFormula.trim().length() == 0)) {
 			filterFormula = "true";
@@ -605,7 +746,7 @@ final public class AdapterBuilder {
 		
 		tableRef = processFilteringSorting(tableConfig, processSortNow, filterFormula, tableRef);
 
-		if (env.isFailed()) {
+		if (report.isFailed()) {
 			return;
 		}
 
@@ -626,7 +767,8 @@ final public class AdapterBuilder {
 		mapping.setTableSourceId(destTable.getImmutableId(), tableRef.dsIndex, srcTable.getImmutableId());
 
 		// Process each of the destination fields
-		for (int destFieldIndx = 0; destFieldIndx < tableConfig.getColumnCount() && !env.isFailed(); destFieldIndx++) {
+		StandardisedStringSet destFieldNames = new StandardisedStringSet();
+		for (int destFieldIndx = 0; destFieldIndx < tableConfig.getColumnCount() && !report.isFailed(); destFieldIndx++) {
 			AdapterColumnConfig field = tableConfig.getColumn(destFieldIndx);
 			if (field.isUseFormula()) {
 				Function formula = buildFormulaWithTableVariables(srcTable, field.getFormula(), originalFromDsIndex, tableConfig.getUserFormulae(),tableConfig);
@@ -635,12 +777,28 @@ final public class AdapterBuilder {
 				}
 			} else {
 				// If we use a mapped field instead of a formula we can write back to the original table
-				AdapterBuilderUtils.mapSingleField(srcTable, destTable.getImmutableId(), field, destFieldIndx, mapping, 0, env);
+				AdapterBuilderUtils.mapSingleField(srcTable, destTable.getImmutableId(), field, destFieldIndx, mapping, 0, report);
 			}
 
+			if(field.getName()!=null){
+				destFieldNames.add(field.getName());				
+			}
 		}
 
+		// add source fields AFTER any declared fields so we don't mess up any expected column order
+		if(tableConfig.isFetchSourceFields() && srcTable!=null){
+			int nsrcFields = srcTable.getColumnCount();
+			for(int srcCol =0 ; srcCol < nsrcFields ; srcCol++){
+				String field = srcTable.getColumnName(srcCol);
+				if(!destFieldNames.contains(field)){
+					mapping.addMappedField(destTable.getImmutableId(), field, srcTable.getColumnType(srcCol), srcCol);
+					destFieldNames.add(field);
+				}
+			}
+		}
 	}
+
+
 
 	/**
 	 *  Create a filtered table if needed, which then becomes the source table for our final decorator...
@@ -659,7 +817,7 @@ final public class AdapterBuilder {
 		if (filterFormula != null && filterFormula.trim().length() > 0) {
 			ODLTableReadOnly srcTable = table(tableRef);
 			Function formula = buildFormulaWithTableVariables(srcTable, filterFormula, tableRef.dsIndex,tableConfig.getUserFormulae(), null);
-			if (env.isFailed()) {
+			if (report.isFailed()) {
 				return null;
 			}
 
@@ -706,7 +864,7 @@ final public class AdapterBuilder {
 						FunctionParameters parameters = new TableParameters(datasources, tableRef.dsIndex, srcTable.getImmutableId(), srcTable.getRowId(row),row,null);
 						Object exec = formula.execute(parameters);
 						if (exec == Functions.EXECUTION_ERROR) {
-							env.setFailed("Failed to execute filter formula on row number " + (row+1)+"/" + nbRows + " of table " + srcTable.getName() +": " + filterFormula);
+							report.setFailed("Failed to execute filter formula on row number " + (row+1)+"/" + nbRows + " of table " + srcTable.getName() +": " + filterFormula);
 							return null;
 						}
 	
@@ -719,7 +877,7 @@ final public class AdapterBuilder {
 				// sort these row ids if sort columns are set
 				if (processSortNow ) {
 					rowIds = new TableSorter(tableRef, rowIds, tableConfig, sortCols).sort();
-					if (env.isFailed()) {
+					if (report.isFailed()) {
 						return null;
 					}
 				}
@@ -801,7 +959,7 @@ final public class AdapterBuilder {
 			} else {
 				
 				if(isGroupedBy){
-					env.setFailed("Found a field marked as both group by sort sort; cannot sort on a grouped by field.");
+					report.setFailed("Found a field marked as both group by sort sort; cannot sort on a grouped by field.");
 					return;					
 				}
 				
@@ -825,7 +983,7 @@ final public class AdapterBuilder {
 			}else{
 				nonSortFormulae[gbf] = FmConst.NULL;
 			}
-			if (env.isFailed()) {
+			if (report.isFailed()) {
 				return;
 			}
 
@@ -894,7 +1052,7 @@ final public class AdapterBuilder {
 				FunctionParameters parameters = new TableParameters(datasources, srcTableRef.dsIndex, srcTable.getImmutableId(), srcTable.getRowId(srcRow),srcRow,null);
 				key[gbf] = nonSortFormulae[gbf].execute(parameters);
 				if (key[gbf] == Functions.EXECUTION_ERROR) {
-					env.setFailed("Error executing formula or reading field in group-by adapter: " + nonSortFormulae[gbf]);
+					report.setFailed("Error executing formula or reading field in group-by adapter: " + nonSortFormulae[gbf]);
 					return;
 				}
 			}
@@ -957,7 +1115,7 @@ final public class AdapterBuilder {
 						
 						if(!errorReporter.reportedAccessingNonGroupByField){
 							errorReporter.reportedAccessingNonGroupByField = true;
-							env.log("Attempted to access field from the ungrouped table: " + getName());
+							report.log("Attempted to access field from the ungrouped table: " + getName());
 						}
 						return Functions.EXECUTION_ERROR;
 					}
@@ -978,7 +1136,7 @@ final public class AdapterBuilder {
 				String formulaText =getSafeFormula(field);
 				Function ret = formulaText!=null? buildFormula(formulaText, library, uvp, rawTableConfig.getUserFormulae(),FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION) : FmConst.NULL;
 				if (ret == null) {
-					env.setFailed("Failed to build non-group formula or access field in group-by query: " + formulaText);
+					report.setFailed("Failed to build non-group formula or access field in group-by query: " + formulaText);
 				}
 				return ret;
 			}
@@ -1003,7 +1161,7 @@ final public class AdapterBuilder {
 				// execute formula against the grouped table; aggregate formulae redirect to source table
 				Object val = executeNonSortNonGroupByFormulaInGroupedTable(nonSortFormulae, groupedDsIndex, groupedTable, groupRow, col);
 				if (val == Functions.EXECUTION_ERROR) {
-					env.setFailed("Error executing formula or reading field in grouping.");
+					report.setFailed("Error executing formula or reading field in grouping.");
 					return;
 				}
 
@@ -1013,7 +1171,7 @@ final public class AdapterBuilder {
 			}
 			
 			if(continueCb!=null && continueCb.isCancelled()){
-				env.setFailed("User cancelled the process.");
+				report.setFailed("User cancelled the process.");
 				return;
 			}
 		}
@@ -1108,6 +1266,11 @@ final public class AdapterBuilder {
 
 	
 	private InternalTableRef buildJoinTable(final ODLTableReadOnly innerTable, AdaptedTableConfig tableConfig){
+		if(EmbeddedDataUtils.isEmbeddedData(tableConfig)){
+			env.setFailed("Embedded data in table adapters is not supported with joins.");
+			return null;
+		}
+		
 		// get outer table
 		int outerDsId = recurseBuild(tableConfig.getJoinDatastore());
 		if (outerDsId == -1) {
@@ -1116,7 +1279,7 @@ final public class AdapterBuilder {
 		}
 		int outerTableIndx = TableUtils.findTableIndex(datasources.get(outerDsId), tableConfig.getJoinTable(), true);
 		if (outerTableIndx == -1) {
-			env.setFailed("Could not find table \"" + tableConfig.getFromTable() + "\".");
+			report.setFailed("Could not find table \"" + tableConfig.getFromTable() + "\".");
 			setFailed();
 			return null;
 		}
@@ -1156,7 +1319,7 @@ final public class AdapterBuilder {
 
 		// use the filter formula optimiser as it fills the join table even if there's no filter formula
 		FilterFormulaOptimiser filterFormulaOptimiser = new FilterFormulaOptimiser(tableConfig.getFilterFormula(), formula, outerTable.getColumnCount());
-		filterFormulaOptimiser.fillJoinTable(outerTable, innerTable, joinTable, datasources, datastoreIndx, env);
+		filterFormulaOptimiser.fillJoinTable(outerTable, innerTable, joinTable, datasources, datastoreIndx, report);
 		
 		// speed up ideas???
 		// - Split filter formula into equivalent ANDS array.
@@ -1212,21 +1375,7 @@ final public class AdapterBuilder {
 			final int defaultDsIndx,List<UserFormula> userFormulae, ODLTableDefinition targetTableDefinition) {
 
 		// create variable provider for the formula parser. variables come from source table
-		UserVariableProvider uvp = new UserVariableProvider() {
-			@Override
-			public Function getVariable(String name) {
-				if(srcTable==null){
-					return null;
-				}
-				
-				int colIndx = TableUtils.findColumnIndx(srcTable, name, true);
-				if (colIndx == -1) {
-					return null;
-				}
-				return new FmLocalElement(colIndx, name);
-			}
-		};
-
+		UserVariableProvider uvp = FmLocalElement.createUserVariableProvider(srcTable);
 		FunctionDefinitionLibrary library = buildFunctionLibrary(defaultDsIndx, targetTableDefinition);
 		return buildFormula(formulaText, library, uvp,userFormulae, FormulaParser.UnidentifiedPolicy.THROW_EXCEPTION);
 	}
@@ -1248,8 +1397,8 @@ final public class AdapterBuilder {
 			}
 			return formula;
 		} catch (Throwable e) {
-			env.setFailed(e);
-			env.setFailed("Failed building formula " + formulaText);
+			report.setFailed(e);
+			report.setFailed("Failed building formula " + formulaText);
 			setFailed();
 		}
 		return null;
@@ -1257,9 +1406,8 @@ final public class AdapterBuilder {
 	}
 
 	protected FunctionDefinitionLibrary buildFunctionLibrary(final int defaultDsIndx,ODLTableDefinition targetTableDefinition) {
-		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary();
-		library.build();
-		FunctionsBuilder.buildNonAggregateFormulae(library, createIndexDatastoresWrapper(), defaultDsIndx,targetTableDefinition,adapterUUID, env);
+		FunctionDefinitionLibrary library = new FunctionDefinitionLibrary(FunctionDefinitionLibrary.DEFAULT_LIB);
+		FunctionsBuilder.buildNonAggregateFormulae(library, createIndexDatastoresWrapper(), defaultDsIndx,targetTableDefinition,adapterUUID, report);
 		return library;
 	}
 
@@ -1274,25 +1422,37 @@ final public class AdapterBuilder {
 			selectedDsIndx = indx;
 		} else {
 
-			// recursively build and save to the datastores in this builder
-			StandardisedStringSet newSet = new StandardisedStringSet(callerAdapters);
-			if (processedConfig.getId() != null) {
-				newSet.add(processedConfig.getId());
+			AdapterConfig recurseConfig = env.getAdapterConfig(dsId);
+			if(recurseConfig==null){
+				recurseConfig = new AdapterConfig(dsId);
 			}
-			AdapterBuilder newBuilder = new AdapterBuilder(dsId, newSet, env,continueCb, builtAdapters);
-			ODLDatastore<? extends ODLTable> selectedSrc = newBuilder.build();
-
-			if (selectedSrc == null) {
-				env.setFailed("Cannot find datastore or adapter with id \"" + dsId + "\"");
-			}
-			if (env.isFailed()) {
-				setFailed();
-				return -1;
-			}
-
-			selectedDsIndx = datasources.size();
-			addDatasource(dsId, selectedSrc);
+			
+			selectedDsIndx = recurseBuild(recurseConfig);
 		}
+		return selectedDsIndx;
+	}
+
+	private int recurseBuild(AdapterConfig recurseConfig) {
+		// recursively build and save to the datastores in this builder
+		StandardisedStringSet newSet = callerAdapters!=null?new StandardisedStringSet(callerAdapters) : new StandardisedStringSet();
+		if (processedConfig!=null && processedConfig.getId() != null) {
+			newSet.add(processedConfig.getId());
+		}
+		
+		AdapterBuilder newBuilder = new AdapterBuilder(recurseConfig, newSet, env,continueCb, builtAdapters);
+		ODLDatastore<? extends ODLTable> selectedSrc = newBuilder.build();
+
+		if (selectedSrc == null) {
+			report.setFailed("Cannot find datastore or adapter with id \"" + recurseConfig.getId() + "\"");
+		}
+		
+		if (report.isFailed()) {
+			return -1;
+		}
+
+		// add to datasources
+		int selectedDsIndx = datasources.size();
+		addDatasource(recurseConfig.getId(), selectedSrc);
 		return selectedDsIndx;
 	}
 

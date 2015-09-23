@@ -27,7 +27,10 @@ public class Option extends ScriptBaseElementImpl{
 	private List<ComponentConfig> componentConfig = new ArrayList<ComponentConfig>();
 	private String optionId;
 	private boolean synchronised;
-
+	private boolean launchMultiple;
+	private boolean overrideVisibleParameters=false;
+	private String visibleParametersOverride;
+	
 	public String getOptionId() {
 		return optionId;
 	}
@@ -132,6 +135,32 @@ public class Option extends ScriptBaseElementImpl{
 		this.componentConfig = componentConfig;
 	}
 
+	public boolean isOverrideVisibleParameters() {
+		return overrideVisibleParameters;
+	}
 
-	
+	@XmlAttribute
+	public void setOverrideVisibleParameters(boolean overrideVisibleParameters) {
+		this.overrideVisibleParameters = overrideVisibleParameters;
+	}
+
+	public String getVisibleParametersOverride() {
+		return visibleParametersOverride;
+	}
+
+	@XmlAttribute
+	public void setVisibleParametersOverride(String visibleParametersOverride) {
+		this.visibleParametersOverride = visibleParametersOverride;
+	}
+
+	public boolean isLaunchMultiple() {
+		return launchMultiple;
+	}
+
+	@XmlAttribute
+	public void setLaunchMultiple(boolean launchMultiple) {
+		this.launchMultiple = launchMultiple;
+	}
+
+
 }

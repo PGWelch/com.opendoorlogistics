@@ -17,6 +17,7 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
@@ -64,7 +65,11 @@ final public class AdapterBuilderUtils {
 		boolean isSourceFieldSet = Strings.isEmpty(destinationField.getFrom()) == false;
 		boolean missingSetOk = (mappingFlags & MAPPING_FLAGS_MISSING_SET_OPTIONAL_OK)==MAPPING_FLAGS_MISSING_SET_OPTIONAL_OK;
 		if (srcFieldIndx == -1 && (!isOptional || (isSourceFieldSet && !missingSetOk))) {
-			result.setFailed("Could not find source field \"" + destinationField.getFrom() + "\" required by field \"" + destinationField.getName() + "\".");
+			if(isSourceFieldSet){
+				result.setFailed("Could not find source field \"" + destinationField.getFrom() + "\" required by field \"" + destinationField.getName() + "\" within data adapter.");				
+			}else{
+				result.setFailed("The destination field \"" + destinationField.getName() + "\" within a data adapter does not have its source set.");				
+			}
 			return false;
 		}
 
@@ -296,4 +301,22 @@ final public class AdapterBuilderUtils {
 		}
 		return ret;
 	}
+	
+	/**
+	 * Get formula text or return null if the string isn't a formula
+	 * 
+	 * @param text
+	 * @return
+	 */
+	public static String getFormulaFromText(String text) {
+		if (text != null) {
+			text = text.trim();
+			if (text.startsWith(ScriptConstants.FORMULA_PREFIX)) {
+				return text.substring(2, text.length());
+			}
+		}
+		return null;
+	}
+	
+
 }

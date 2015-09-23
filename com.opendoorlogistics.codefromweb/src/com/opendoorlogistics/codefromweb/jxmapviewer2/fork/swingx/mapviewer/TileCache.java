@@ -28,6 +28,8 @@ import org.apache.commons.logging.LogFactory;
  */
 public class TileCache
 {
+	public static final long MAXSIZE_BYTES = 1000 * 1000 * 50;
+	
 	private static final Log log = LogFactory.getLog(TileCache.class);
 	
 	private Map<URI, BufferedImage> imgmap = new HashMap<URI, BufferedImage>();
@@ -55,7 +57,7 @@ public class TileCache
 	{
 		synchronized (bytemap)
 		{
-			while (bytesize > 1000 * 1000 * 50)
+			while (bytesize >MAXSIZE_BYTES)
 			{
 				URI olduri = bytemapAccessQueue.removeFirst();
 				byte[] oldbimg = bytemap.remove(olduri);

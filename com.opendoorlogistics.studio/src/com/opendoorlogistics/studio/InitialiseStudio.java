@@ -29,7 +29,7 @@ import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.execution.OptionsSubpath;
-import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard;
+import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImpl;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilder;
 import com.opendoorlogistics.core.scripts.execution.adapters.FunctionsBuilder;
@@ -105,7 +105,7 @@ final public class InitialiseStudio implements ODLStudioLoader{
 				MapSelectionList.class, SuggestedFillValuesManager.class,
 				 MouseMotionListener.class, ScriptEditor.class, ScriptEditorWizardGenerated.class, AdaptedTableControl.class,
 				AdapterTableDefinitionGrid.class, AdapterTablesTabControl.class, QueryAvailableData.class, ScriptsRunner.class, ScriptUIManager.class, ScriptUIManagerImpl.class,
-				ScriptExecutor.class, ScriptExecutionBlackboard.class, ExecutionReportImpl.class, AdapterBuilder.class, FunctionsBuilder.class, OptionsSubpath.class,
+				ScriptExecutor.class, ScriptExecutionBlackboardImpl.class, ExecutionReportImpl.class, AdapterBuilder.class, FunctionsBuilder.class, OptionsSubpath.class,
 				AbstractDependencyInjector.class, DependencyInjector.class, DependencyInjectorDecorator.class, ProcessingApiDecorator.class,
 				com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStateListener.class, com.opendoorlogistics.api.distances.ODLCostMatrix.class,
 				com.opendoorlogistics.codefromweb.BlockingLifoQueue.class, com.opendoorlogistics.codefromweb.DesktopScrollPane.class,
@@ -200,11 +200,23 @@ final public class InitialiseStudio implements ODLStudioLoader{
 	}
 
 	private static void initLookAndFeel() {
-		// copy progress bar defaults
-		HashMap<Object, Object> progressDefaults = new HashMap<>();
+		// get the defaults to keep
+		HashMap<Object, Object> defaultsToKeep = new HashMap<>();
 		for (Map.Entry<Object, Object> entry : UIManager.getDefaults().entrySet()) {
-			if (entry.getKey().getClass() == String.class && ((String) entry.getKey()).startsWith("ProgressBar")) {
-				progressDefaults.put(entry.getKey(), entry.getValue());
+			// keep progress bar string defaults (as nimbus looks rubbish)
+			boolean isStringKey = entry.getKey().getClass() == String.class ;
+			String key = isStringKey ? ((String) entry.getKey()):"";
+			
+			boolean keep =key.startsWith("ProgressBar");
+			
+			// keep tabbed pane defaults as nimbus to prevent re-ordering http://stackoverflow.com/questions/7481991/jtabbedpane-avoid-automatic-re-ordering-tabs-if-stacked-nimbus
+			if(!keep){
+				// see list of properties here http://www.java2s.com/Tutorial/Java/0240__Swing/CustomizingaJTabbedPaneLookandFeel.htm
+				keep = key.startsWith("TabbedPane");
+			}
+			
+			if (keep) {
+				defaultsToKeep.put(entry.getKey(), entry.getValue());
 			}
 		}
 
@@ -234,7 +246,7 @@ final public class InitialiseStudio implements ODLStudioLoader{
 		}
 
 		// copy back progress bar defaults
-		for (Map.Entry<Object, Object> entry : progressDefaults.entrySet()) {
+		for (Map.Entry<Object, Object> entry : defaultsToKeep.entrySet()) {
 			UIManager.getDefaults().put(entry.getKey(), entry.getValue());
 		}
 

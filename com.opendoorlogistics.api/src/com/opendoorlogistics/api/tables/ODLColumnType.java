@@ -6,12 +6,44 @@
  ******************************************************************************/
 package com.opendoorlogistics.api.tables;
 
+import java.util.ArrayList;
+
 import javax.xml.bind.annotation.XmlEnum;
 
 @XmlEnum(String.class)
 public enum ODLColumnType {
 	STRING, LONG, DOUBLE, COLOUR,
-	IMAGE, GEOM, TIME, DATE;
+	IMAGE, GEOM, TIME, DATE, MAP_TILE_PROVIDER;
 
 
+	private ODLColumnType() {
+		this(false);
+	}
+	
+	private ODLColumnType(boolean engineType) {
+		this.engineType = engineType;
+	}
+
+	private final boolean engineType;
+
+	public boolean isEngineType() {
+		return engineType;
+	}
+	
+	private static ODLColumnType [] STD_TYPES;
+	
+	static{
+		ArrayList<ODLColumnType> list = new ArrayList<ODLColumnType>();
+		for(ODLColumnType type : ODLColumnType.values()){
+			if(!type.isEngineType()){
+				list.add(type);				
+			}
+		}
+		STD_TYPES = list.toArray(new ODLColumnType[list.size()]);
+	}
+	
+	public static ODLColumnType [] standardTypes(){
+		return STD_TYPES;
+	}
+	
 }

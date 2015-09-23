@@ -18,6 +18,8 @@ import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.distances.ODLCostMatrix;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
+import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 
@@ -28,5 +30,5 @@ public interface DependencyInjector extends ProcessingApi, HasApi {
 	ODLCostMatrix calculateDistances(DistancesConfiguration request, ODLTableReadOnly... tables);
 	ODLGeom calculateRouteGeom(DistancesConfiguration request, LatLong from, LatLong to);	
 	void addInstructionDependencies(String instructionId,  DataDependencies dependencies);	
-	void submitControlLauncher(String instructionId,ODLComponent component, ControlLauncherCallback cb);
+	void submitControlLauncher(String instructionId,ODLComponent component,ODLDatastore<? extends ODLTable> parametersTableCopy, ControlLauncherCallback cb);
 }

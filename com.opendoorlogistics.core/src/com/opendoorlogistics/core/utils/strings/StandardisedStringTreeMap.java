@@ -13,7 +13,19 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.opendoorlogistics.api.Factory;
+
 public class StandardisedStringTreeMap <T> implements Map<String, T> {
+	private final Factory<T> factory;
+	
+	public StandardisedStringTreeMap(){
+		this.factory = null;
+	}
+	
+	public StandardisedStringTreeMap(Factory<T> factory){
+		this.factory = factory;
+	}
+	
 	private TreeMap<String, T> map = new TreeMap<>(new Comparator<String>(){
 
 		@Override
@@ -26,8 +38,12 @@ public class StandardisedStringTreeMap <T> implements Map<String, T> {
 	@Override
 	public T put(String id, T o){
 		T ret = get(id);
-		map.put(canonical(id), o);
+		internalPut(id, o);
 		return ret;
+	}
+
+	private void internalPut(String id, T o) {
+		map.put(canonical(id), o);
 	}
 
 	public T remove(String id){
@@ -35,7 +51,12 @@ public class StandardisedStringTreeMap <T> implements Map<String, T> {
 	}
 	
 	public T get(String id){
-		return map.get(canonical(id));
+		T ret= map.get(canonical(id));
+		if(ret==null && factory!=null){
+			ret = factory.create();
+			internalPut(id, ret);
+		}
+		return ret;
 	}
 	
 	@Override

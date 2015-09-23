@@ -152,52 +152,52 @@ public class NOPLManager {
 		return ret;
 	}
 	
-	private List<DrawableObjectLayer> splitDrawablesIntoLayersV2(Iterable<? extends DrawableObject> drawables){
-		StandardisedCache standardiser = new StandardisedCache();
-
-		// split by consecutive NOLP group key
-		ArrayList<DrawableObjectLayer> ret = new ArrayList<>();		
-		DrawableObjectLayer currentLayer = null;
-		for(DrawableObject o:drawables){
-			
-			// create new layer if needed
-			boolean novlpl = Strings.isEmpty(o.getNonOverlappingPolygonLayerGroupKey())==false;
-			if(novlpl){
-				String stdGroup = standardiser.std(o.getNonOverlappingPolygonLayerGroupKey());
-				if(currentLayer == null || currentLayer.getType() != DrawableObjectLayer.LayerType.NOVLPL || currentLayer.getNOVLPLGroupId().equals(stdGroup)==false){
-					
-					// scan for matching an existing polygon layer
-					currentLayer = null;
-					for(DrawableObjectLayer layer:ret){
-						if(layer.getType() ==DrawableObjectLayer.LayerType.NOVLPL && layer.getNOVLPLGroupId().equals(novlpl) ){
-							// User has probably screwed up as same id has been used non-consecutively. 
-							// Just render everything in the first layer.
-							currentLayer = layer;
-						}
-					}
-					
-					// no found, create new
-					if(currentLayer==null){
-						currentLayer = new DrawableObjectLayer(stdGroup);
-						ret.add(currentLayer);						
-					}
-				}
-								
-			}else{
-				// normal case
-				if(currentLayer ==null || currentLayer.getType() != DrawableObjectLayer.LayerType.NORMAL){
-					currentLayer = new DrawableObjectLayer();
-					ret.add(currentLayer);
-				}
-			}
-
-			// add object to current layer
-			currentLayer.add(o);
-
-		}
-		
-		return ret;
-	}
+//	private List<DrawableObjectLayer> splitDrawablesIntoLayersV2(Iterable<? extends DrawableObject> drawables){
+//		StandardisedCache standardiser = new StandardisedCache();
+//
+//		// split by consecutive NOLP group key
+//		ArrayList<DrawableObjectLayer> ret = new ArrayList<>();		
+//		DrawableObjectLayer currentLayer = null;
+//		for(DrawableObject o:drawables){
+//			
+//			// create new layer if needed
+//			boolean novlpl = Strings.isEmpty(o.getNonOverlappingPolygonLayerGroupKey())==false;
+//			if(novlpl){
+//				String stdGroup = standardiser.std(o.getNonOverlappingPolygonLayerGroupKey());
+//				if(currentLayer == null || currentLayer.getType() != DrawableObjectLayer.LayerType.NOVLPL || currentLayer.getNOVLPLGroupId().equals(stdGroup)==false){
+//					
+//					// scan for matching an existing polygon layer
+//					currentLayer = null;
+//					for(DrawableObjectLayer layer:ret){
+//						if(layer.getType() ==DrawableObjectLayer.LayerType.NOVLPL && layer.getNOVLPLGroupId().equals(novlpl) ){
+//							// User has probably screwed up as same id has been used non-consecutively. 
+//							// Just render everything in the first layer.
+//							currentLayer = layer;
+//						}
+//					}
+//					
+//					// no found, create new
+//					if(currentLayer==null){
+//						currentLayer = new DrawableObjectLayer(stdGroup);
+//						ret.add(currentLayer);						
+//					}
+//				}
+//								
+//			}else{
+//				// normal case
+//				if(currentLayer ==null || currentLayer.getType() != DrawableObjectLayer.LayerType.NORMAL){
+//					currentLayer = new DrawableObjectLayer();
+//					ret.add(currentLayer);
+//				}
+//			}
+//
+//			// add object to current layer
+//			currentLayer.add(o);
+//
+//		}
+//		
+//		return ret;
+//	}
 	/**
 	 * Get the tile or create it if it doesn't exist yet
 	 * @param layerId

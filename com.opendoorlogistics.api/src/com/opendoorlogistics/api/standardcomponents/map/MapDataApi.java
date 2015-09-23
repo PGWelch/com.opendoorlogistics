@@ -21,6 +21,7 @@ public interface MapDataApi {
 	ODLTable getUnfilteredInactiveForegroundTable();
 	ODLTable getUnfilteredInactiveBackgroundTable();
 	ODLTableReadOnly getActiveTableSelectedOnly();
+	ODLTableReadOnly getBackgroundImagesTable();
 	
 	/**
 	 * Get a single table with all input tables (filtered)

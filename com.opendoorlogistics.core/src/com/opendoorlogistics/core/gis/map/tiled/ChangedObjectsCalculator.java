@@ -234,6 +234,11 @@ public class ChangedObjectsCalculator {
 			modified = Colours.compare(oldObj.getLabelColour(), newObj.getLabelColour()) != 0;
 		}
 		
+		// check label priority
+		if(!modified){
+			modified = oldObj.getLabelPriority()!=newObj.getLabelPriority();
+		}
+		
 		// font size
 		if (!modified) {
 			modified = oldObj.getFontSize() != newObj.getFontSize();
@@ -258,6 +263,15 @@ public class ChangedObjectsCalculator {
 		if(!modified){
 			modified = oldObj.getFlags()!=newObj.getFlags();
 		}
+		
+		if(!modified){
+			modified = oldObj.getMinZoom()!=newObj.getMinZoom();
+		}
+		
+		if(!modified){
+			modified = oldObj.getMaxZoom()!=newObj.getMaxZoom();
+		}
+		
 		return modified;
 	}
 

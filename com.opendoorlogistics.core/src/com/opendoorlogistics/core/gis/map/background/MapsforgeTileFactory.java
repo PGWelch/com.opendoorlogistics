@@ -24,6 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
+import org.apache.commons.io.FilenameUtils;
 import org.mapsforge.core.graphics.Canvas;
 import org.mapsforge.core.graphics.TileBitmap;
 import org.mapsforge.map.awt.AwtGraphicFactory;
@@ -33,6 +34,9 @@ import org.mapsforge.map.layer.renderer.DatabaseRenderer;
 import org.mapsforge.map.layer.renderer.RendererJob;
 import org.mapsforge.map.model.DisplayModel;
 import org.mapsforge.map.reader.MapDataStore;
+import org.mapsforge.map.reader.MapFile;
+import org.mapsforge.map.reader.MultiMapDataStore;
+import org.mapsforge.map.reader.MultiMapDataStore.DataPolicy;
 import org.mapsforge.map.rendertheme.ExternalRenderTheme;
 import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.mapsforge.map.rendertheme.XmlRenderTheme;
@@ -316,10 +320,14 @@ class MapsforgeTileFactory extends TileFactory {
 			g.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
 			Canvas canvas = (Canvas) AwtGraphicFactory.createGraphicContext(g);
 			canvas.drawBitmap(bitmap, 0, 0);
-			BackgroundMapUtils.renderFade(g,fadeColour.getColour());
+			if(fadeColour!=null){
+				BackgroundMapUtils.renderFade(g,fadeColour.getColour());				
+			}
 			
 			g.dispose();
-			image = BackgroundMapUtils.greyscale(image, fadeColour.getGreyscale());
+			if(fadeColour!=null){
+				image = BackgroundMapUtils.greyscale(image, fadeColour.getGreyscale());				
+			}
 			
 			// TEST save to file
 		//	ImageUtils.toPNGFile(image, new File("C:\\temp\\MapsforgeOutput\\" + System.currentTimeMillis() + ".png"));
@@ -511,5 +519,43 @@ class MapsforgeTileFactory extends TileFactory {
 	@Override
 	public boolean isRenderedOffline() {
 		return true;
+	}
+	
+	static MapDataStore openMapsforgeDb(String filename) {
+		File file = null;
+		if (Strings.isEmpty(filename)) {
+			// to do.. assume loading all files in the mapsforge directory
+			file = new File(AppConstants.MAPSFORGE_DIRECTORY).getAbsoluteFile();
+		}else{
+			file = RelativeFiles.validateRelativeFiles(filename, AppConstants.MAPSFORGE_DIRECTORY);			
+		}
+
+		if (file == null || !file.exists()) {
+			return null;
+		}
+		
+		// if its a directory, load all the ones from the directory
+		MultiMapDataStore ret = new MultiMapDataStore(DataPolicy.RETURN_ALL);
+		if(file.isDirectory()){
+			for(File child : file.listFiles()){
+				String ext = FilenameUtils.getExtension(child.getAbsolutePath());
+				if(ext!=null && ext.toLowerCase().equals("map")){
+					try {
+						MapFile mf= new MapFile(child);
+						ret.addMapDataStore(mf, false, false);
+					} catch (Exception e) {
+					}			
+				}
+			}
+		}
+		else{
+			try {
+				MapFile mf= new MapFile(file);
+				ret.addMapDataStore(mf, false, false);
+			} catch (Exception e) {
+			}			
+		}
+
+		return ret;
 	}
 }

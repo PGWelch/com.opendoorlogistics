@@ -15,7 +15,9 @@ import java.awt.event.ActionListener;
 
 import javax.swing.*;
 
-public class OkCancelDialog extends JDialog {
+import com.opendoorlogistics.api.ui.UIFactory.PromptOkCancelDialog;
+
+public class OkCancelDialog extends JDialog implements PromptOkCancelDialog{
 	public final static int OK_OPTION = JOptionPane.OK_OPTION;
 	public final static int CANCEL_OPTION = JOptionPane.CANCEL_OPTION;
 
@@ -138,5 +140,10 @@ public class OkCancelDialog extends JDialog {
 		selectedOption = CANCEL_OPTION;
 		setVisible(true);
 		return selectedOption;
+	}
+
+	@Override
+	public boolean prompt() {
+		return showModal() == OK_OPTION;
 	}
 }

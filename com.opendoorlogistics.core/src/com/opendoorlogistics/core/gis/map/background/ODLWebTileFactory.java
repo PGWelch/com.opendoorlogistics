@@ -8,7 +8,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.gis.map.background;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -31,12 +30,12 @@ import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
 
 class ODLWebTileFactory extends AbstractTileFactory  {
-	private final FadeConfig fadeColor;
+	private final FadeConfig fade;
 	
 	public ODLWebTileFactory(TileFactoryInfo info, FadeConfig fadeColor) {
 		super(info);
 		setThreadPoolSize(2);
-		this.fadeColor = fadeColor;
+		this.fade = fadeColor;
 	}
 
 
@@ -108,7 +107,7 @@ class ODLWebTileFactory extends AbstractTileFactory  {
 		}
 		
 		// turn image into argb so we can fade, then do fade
-		BufferedImage workImg = fadeImage(bimg);
+		BufferedImage workImg = greyscaleFade(bimg);
 		
 		// save to cache
 		CompressedImage compressed = new CompressedImage(workImg, CompressedType.PNG);
@@ -122,14 +121,17 @@ class ODLWebTileFactory extends AbstractTileFactory  {
 	 * @param bimg
 	 * @return
 	 */
-	public BufferedImage fadeImage(BufferedImage bimg) {
+	private BufferedImage greyscaleFade(BufferedImage bimg) {
 		BufferedImage workImg = new BufferedImage(bimg.getWidth(), bimg.getHeight(), BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g=null;
 		try {
 			g = workImg.createGraphics();
 			g.setClip(0, 0, bimg.getWidth(), bimg.getHeight());
 			g.drawImage(bimg, 0, 0, null);
-			BackgroundMapUtils.renderFade(g, fadeColor.getColour());
+			if(fade!=null){
+				BackgroundMapUtils.renderFade(g, fade.getColour());				
+			}
+
 		} catch (Exception e) {
 			// TODO: handle exception
 		}
@@ -140,14 +142,17 @@ class ODLWebTileFactory extends AbstractTileFactory  {
 			}
 		}
 		
-		workImg = BackgroundMapUtils.greyscale(workImg, fadeColor.getGreyscale());
+		if(fade!=null){
+			workImg = BackgroundMapUtils.greyscale(workImg, fade.getGreyscale());			
+		}
+
 		return workImg;
 	}
 	
 	
 	@Override
 	protected BufferedImage processLoadedImage(BufferedImage img){
-		return fadeImage(img);
+		return greyscaleFade(img);
 	}
 
 

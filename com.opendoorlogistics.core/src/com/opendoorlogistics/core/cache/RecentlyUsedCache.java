@@ -25,13 +25,19 @@ final public class RecentlyUsedCache {
 	private long timeIndex=0;
 	private long totalBytes;
 	private final long bytesLimit;
+	private final long entriesLimit;
 	private WeakHashMap<Object, CacheEntry> cached = new WeakHashMap<>();
 	private final String name;
 	private boolean logToConsole=false;
-	
+
 	public RecentlyUsedCache(String name,long bytesLimit){
+		this(name, bytesLimit, Long.MAX_VALUE);
+	}
+	
+	public RecentlyUsedCache(String name,long bytesLimit, long entriesLimit){
 		this.name = name;
 		this.bytesLimit = bytesLimit;
+		this.entriesLimit = entriesLimit;
 	}
 
 	private static class CacheEntry implements Comparable<CacheEntry>{
@@ -64,7 +70,7 @@ final public class RecentlyUsedCache {
 			timeIndex = 0;
 			cached.clear();
 		}else{
-			if(totalBytes > bytesLimit ){
+			if(totalBytes > bytesLimit || cached.size() > entriesLimit ){
 				// sort by last used time, latest first
 				ArrayList<CacheEntry> sorted = new ArrayList<>();
 				for(CacheEntry o : cached.values()){
@@ -78,7 +84,7 @@ final public class RecentlyUsedCache {
 				totalBytes = 0;
 				cached.clear();
 				int i =0;
-				while(i<sorted.size() && totalBytes < bytesLimit /2  ){
+				while(i<sorted.size() && totalBytes < bytesLimit /2 && cached.size() < entriesLimit ){
 					cached.put(sorted.get(i).key, sorted.get(i));
 					totalBytes += sorted.get(i).nbBytes;
 					i++;
@@ -95,6 +101,9 @@ final public class RecentlyUsedCache {
 	
 
 	public synchronized void put(Object objectKey, Object value, long nbBytes){
+		// remove the old object just in case it's already here so bytes count is correct
+		remove(objectKey);
+		
 		timeIndex++;
 		CacheEntry obj = new CacheEntry(objectKey, value, nbBytes);
 		obj.lastUsed = timeIndex;
@@ -189,6 +198,7 @@ final public class RecentlyUsedCache {
 		if(container!=null){
 			cached.remove(key);
 			totalBytes -= container.nbBytes;
+
 		}
 	}
 
@@ -200,4 +210,7 @@ final public class RecentlyUsedCache {
 	public long getEstimatedTotalBytes(){
 		return totalBytes;
 	}
+
+
+	
 }

@@ -41,4 +41,14 @@ public interface ScriptAdapter extends ScriptElement{
 	void setFlags(long flags);
 	
 	ScriptAdapterTable getTable(int i);
+	
+	enum ScriptAdapterType{
+		NORMAL,
+		VLS,
+		PARAMETER,
+	}
+	
+	ScriptAdapterType getAdapterType();
+	
+	void setAdapterType(ScriptAdapterType type);
 }

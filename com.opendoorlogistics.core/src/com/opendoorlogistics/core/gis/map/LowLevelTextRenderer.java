@@ -23,6 +23,7 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
 
+import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.geometry.LatLongToScreen;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
@@ -74,16 +75,16 @@ class LowLevelTextRenderer {
 	}
 	
 	public enum LabelPositionOption{
-		RIGHT("right", "r"),
-		LEFT("left", "l"),
-		TOP("top", "t"),
-		BOTTOM("bottom" , "b"),
-		CENTRE("centre"),
-		NO_LABEL("no-label"),
-		TOP_LEFT("top-left", "tl"),
-		TOP_RIGHT("top-right", "tr"),
-		BOTTOM_LEFT("bottom-left", "bl"),
-		BOTTOM_RIGHT("bottom-right", "br"),
+		RIGHT(PredefinedTags.RIGHT, "r"),
+		LEFT(PredefinedTags.LEFT, "l"),
+		TOP(PredefinedTags.TOP, "t"),
+		BOTTOM(PredefinedTags.BOTTOM , "b"),
+		CENTRE(PredefinedTags.CENTRE),
+		NO_LABEL(PredefinedTags.NO_LABEL),
+		TOP_LEFT(PredefinedTags.TOP_LEFT, "tl"),
+		TOP_RIGHT(PredefinedTags.TOP_RIGHT, "tr"),
+		BOTTOM_LEFT(PredefinedTags.BOTTOM_LEFT, "bl"),
+		BOTTOM_RIGHT(PredefinedTags.BOTTOM_RIGHT, "br"),
 		;
 		
 		private LabelPositionOption(String ...keywords) {
@@ -369,13 +370,15 @@ class LowLevelTextRenderer {
 	 * @param g
 	 * @param textQuadtree
 	 */
-	void renderInBottomRightCorner(String text, int fontSize,Graphics2D g,Quadtree textQuadtree){
+	void renderInBottomCorner(String text, int fontSize,Graphics2D g,Quadtree textQuadtree, boolean rightCorner){
+		// Measure text
 		Font font = getFont(fontSize);
 		TextLayout textLayout =createTextLayout(text, font, g.getFontRenderContext());
 		Point2D.Double size = getSize(textLayout);
 		
+		// Get bounds of the screen
 		Rectangle bounds = g.getClipBounds();
-		Point2D screenPos = new Point2D.Double(bounds.getWidth() - size.x - 0, bounds.getHeight() - size.y - 0);
+		Point2D screenPos = new Point2D.Double(rightCorner? bounds.getWidth() - size.x - 2:0, bounds.getHeight() - size.y - 0);
 		drawTextLayout(font, screenPos, textLayout, size, null,g, true, textQuadtree);
 	}
 	

@@ -12,7 +12,7 @@ import java.util.List;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
-import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboard;
+import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImpl;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 /**

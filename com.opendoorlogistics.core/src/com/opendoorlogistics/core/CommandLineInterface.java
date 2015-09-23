@@ -19,7 +19,7 @@ public class CommandLineInterface {
 	}
 
 	public static boolean process(String [] args){
-		if(args.length>0){
+		if(args!=null && args.length>0){
 			String keyword=null;
 			for(String minus:StringTokeniser.minuses){
 				if(args[0].startsWith(minus)){

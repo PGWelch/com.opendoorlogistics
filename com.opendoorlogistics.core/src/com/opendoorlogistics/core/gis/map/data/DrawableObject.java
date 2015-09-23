@@ -51,6 +51,8 @@ public interface DrawableObject extends LatLong, HasGlobalRowId{
 	
 	Color getLabelColour();
 	
+	long getLabelPriority();
+	
 	/**
 	 * Get the geometry. If this is null a point
 	 * is drawn at the long-lat instead. 
@@ -61,4 +63,8 @@ public interface DrawableObject extends LatLong, HasGlobalRowId{
 	String getTooltip();
 	
 	long getFlags();
+	
+	long getMinZoom();
+	
+	long getMaxZoom();
 }

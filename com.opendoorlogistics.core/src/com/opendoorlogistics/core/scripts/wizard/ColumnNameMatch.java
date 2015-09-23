@@ -81,4 +81,10 @@ public class ColumnNameMatch {
 	public int getMatchForTableB(int columnIndexInB) {
 		return matchedByB.get(columnIndexInB);
 	}
+	
+	public void setMatchForTableB(int columnIndexInB, int matchingColumnIndexInA){
+		matchedByB.put(columnIndexInB, matchingColumnIndexInA);
+		matchedByA.put(matchingColumnIndexInA, columnIndexInB);
+	}
+	
 }

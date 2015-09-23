@@ -12,13 +12,18 @@ import gnu.trove.set.hash.TLongHashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
+import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.api.tables.TableQuery;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreComparer;
 import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
 import com.opendoorlogistics.core.utils.Long2Ints;
@@ -185,7 +190,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	protected int getRowCount(int tableId) {
 		int sum=0;
 		for(ODLDatastore<? extends T> ds: stores){
-			ODLTableReadOnly table = (ODLTableReadOnly)ds.getTableAt(tableId);
+			ODLTableReadOnly table = (ODLTableReadOnly)ds.getTableByImmutableId(tableId);
 			if(table!=null){
 				sum += table.getRowCount();
 			}
@@ -374,29 +379,6 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected long[] find(int tableId, int col, Object value) {
-		TLongArrayList ret = new TLongArrayList();
-		
-		TLongHashSet hashset = new TLongHashSet();
-		for(int dsIndex = 0; dsIndex<length;dsIndex++){
-			ODLTableReadOnly table = (ODLTableReadOnly)stores.get(dsIndex).getTableByImmutableId(tableId);
-			if(table!=null){
-				long[] result = table.find(col, value);
-				int n = result.length;
-				for(int i=0;i<n;i++){
-					long id = result[i];
-					if(hashset.contains(id)==false){
-						hashset.add(id);
-						ret.add(id);
-					}
-				}
-			}
-		}
-		
-		return ret.toArray();
-	}
-
-	@Override
 	protected long getRowFlags(int tableId, long rowId) {
 		int dsIndx = dsIndexWithRowId(tableId, rowId);
 		if(dsIndx!=-1){
@@ -436,6 +418,55 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 			return ((ODLTableReadOnly)stores.get(dsIndx).getTableByImmutableId(tableId)).getRowLastModifiedTimeMillsecs(rowId);
 		}
 		return 0;
+	}
+
+	@Override
+	protected long[] find(int tableId, int col, Object value) {
+		TLongArrayList ret = new TLongArrayList();
+		
+		TLongHashSet hashset = new TLongHashSet();
+		for(int dsIndex = 0; dsIndex<length;dsIndex++){
+			ODLTableReadOnly table = (ODLTableReadOnly)stores.get(dsIndex).getTableByImmutableId(tableId);
+			if(table!=null){
+				long[] result = table.find(col, value);
+				int n = result.length;
+				for(int i=0;i<n;i++){
+					long id = result[i];
+					if(hashset.contains(id)==false){
+						hashset.add(id);
+						ret.add(id);
+					}
+				}
+			}
+		}
+		
+		return ret.toArray();
+	}
+	
+	@Override
+	protected ODLTableReadOnly query(int tableId, TableQuery query) {
+		
+		// Create empty return table
+		ODLApiImpl api = new ODLApiImpl();
+		Tables tables = api.tables();
+		ODLDatastoreAlterable<? extends ODLTableAlterable > ds = tables.createAlterableDs();
+		ODLTableDefinition outDfn = getTableByImmutableId(tableId);		
+		ODLTableAlterable ret=(ODLTableAlterable)tables.copyTableDefinition(outDfn, ds);
+		
+		// Fill with results
+		for(int dsIndex = 0; dsIndex<length;dsIndex++){
+			ODLTableReadOnly srcTable = (ODLTableReadOnly)stores.get(dsIndex).getTableByImmutableId(tableId);
+			if(srcTable!=null){
+				ODLTableReadOnly queryResult = srcTable.query(query);
+				if(queryResult!=null){
+					int n = queryResult.getRowCount();
+					for(int i =0 ; i < n ; i++){
+						tables.copyRow(queryResult, i, ret);
+					}
+				}
+			}
+		}
+		return ret;
 	}
 
 

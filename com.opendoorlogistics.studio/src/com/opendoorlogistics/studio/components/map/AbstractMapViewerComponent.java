@@ -42,13 +42,10 @@ import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.utils.ui.Icons;
 
 public abstract class AbstractMapViewerComponent implements Maps {
-	//public static final String ID = "com.opendoorlogistics.studio.uicomponents.map";
-	public static String INACTIVE_FOREGROUND = "inactive-foreground";
-	public static String INACTIVE_BACKGROUND = "inactive-background";
-	
+	public static final String COMPONENT_ID ="com.opendoorlogistics.studio.uicomponents.map"; 
 	@Override
 	public String getId() {
-		return "com.opendoorlogistics.studio.uicomponents.map";
+		return COMPONENT_ID;
 	}
 
 	@Override
@@ -62,19 +59,18 @@ public abstract class AbstractMapViewerComponent implements Maps {
 	}
 
 	private ODLDatastore<? extends ODLTableDefinition> getIODsDefinition(boolean activeOnly) {
-		ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ret = ODLFactory.createDefinition();
-		ODLTableDefinition dfn = DrawableObjectImpl.getBeanMapping().getDefinition().getTableAt(0);
-		
-		DatastoreCopier.copyTableDefinition(dfn, ret);
-		
-		// add the optional tables after the main one - certain parts of the logic assume main ones first
-		if(!activeOnly){
-			makeOptional(DatastoreCopier.copyTableDefinition(dfn, ret, INACTIVE_BACKGROUND));			
-			makeOptional(DatastoreCopier.copyTableDefinition(dfn, ret, INACTIVE_FOREGROUND));			
+		if(activeOnly){
+			ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ret = ODLFactory.createDefinition();
+			ODLTableDefinition dfn = DrawableObjectImpl.getBeanMapping().getDefinition().getTableAt(0);
+			
+			DatastoreCopier.copyTableDefinition(dfn, ret);
+			return ret;		
+			
 		}
-				
-		return ret;		
-		//return MapUtils.createEmptyDatastore();
+		else{
+			return DrawableObjectImpl.ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS;
+		}
+
 	}
 	
 	private static void makeOptional(ODLTableDefinitionAlterable alterable){
@@ -132,8 +128,8 @@ public abstract class AbstractMapViewerComponent implements Maps {
 					ODLTableDefinition dest = inputTables.getTargetTable(i);
 					String dsid = inputTables.getSourceDatastoreId(i);
 					if(!Strings.equalsStd(dest.getName(), PredefinedTags.DRAWABLES)
-					&& !Strings.equalsStd(dest.getName(), INACTIVE_BACKGROUND)
-					&& !Strings.equalsStd(dest.getName(), INACTIVE_FOREGROUND)
+					&& !Strings.equalsStd(dest.getName(), PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND)
+					&& !Strings.equalsStd(dest.getName(), PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND)
 					){
 						continue;
 					}

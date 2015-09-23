@@ -12,6 +12,8 @@ import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.distances.ODLCostMatrix;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTable;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableQuery;
 import com.opendoorlogistics.core.tables.memory.ODLTableDefinitionImpl;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.Numbers;
@@ -235,6 +237,11 @@ public final class ODLCostMatrixImpl extends ODLTableDefinitionImpl implements O
 	@Override
 	public long getRowLastModifiedTimeMillsecs(long rowId) {
 		return 0;
+	}
+
+	@Override
+	public ODLTableReadOnly query(TableQuery query) {
+		return null;
 	}
 
 

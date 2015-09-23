@@ -36,9 +36,16 @@ public class ModalDialog extends JDialog {
 	public ModalDialog(Window parent, JPanel content, String title, final ModalDialogResult... buttons) {
 		super(parent, title, ModalityType.DOCUMENT_MODAL);
 
+
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		setLayout(new BorderLayout());
-		add(content, BorderLayout.CENTER);
+		
+		// add additional panel which holds everything so we can have a border
+		JPanel mainPanel = new JPanel();
+		mainPanel.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+		mainPanel.setLayout(new BorderLayout(6,6));
+		mainPanel.add(content, BorderLayout.CENTER);
+		add(mainPanel, BorderLayout.CENTER);
 
 //		JToolBar toolBar = new JToolBar();
 //		toolBar.setFloatable(false);
@@ -111,7 +118,7 @@ public class ModalDialog extends JDialog {
 			button.setPreferredSize(maxSize);
 		}
 
-		add(buttonsPanel, BorderLayout.SOUTH);
+		mainPanel.add(buttonsPanel, BorderLayout.SOUTH);
 
 		pack();
 		

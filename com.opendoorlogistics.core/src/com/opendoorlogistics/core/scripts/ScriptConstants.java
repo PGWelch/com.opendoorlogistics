@@ -13,9 +13,13 @@ final public class ScriptConstants {
 	
 	public static final String EXTERNAL_DS_NAME = "external";
 
-	public static final String IMPORT_LINK_POSTFIX =":\\";
+	public static final String INTERNAL_GLOBAL_DS = "scriptglobal";
 	
-	public static final String SHAPEFILE_DS_NAME_PREFIX = "shapefile" + IMPORT_LINK_POSTFIX;
+	public static final String SCRIPT_EMBEDDED_TABLE_DATA_DS = "embeddedData";
+
+//	public static final String IMPORT_LINK_POSTFIX =":\\";
+	
+//	public static final String SHAPEFILE_DS_NAME_PREFIX = "shapefile" + IMPORT_LINK_POSTFIX;
 
 	public static final String FILE_EXT = "odlx";
 
@@ -32,4 +36,6 @@ final public class ScriptConstants {
 	public static boolean isExternalDs(String s){
 		return Strings.equalsStd(s, EXTERNAL_DS_NAME);
 	}
+	
+	public static final String FORMULA_PREFIX = ":=";
 }

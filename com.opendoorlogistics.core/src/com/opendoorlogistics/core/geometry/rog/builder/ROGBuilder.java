@@ -613,6 +613,11 @@ public class ROGBuilder {
 				return zoom;
 			}
 
+			@Override
+			public int getZoomForObjectFiltering() {
+				return zoom;
+			}
+
 		};
 
 		TransformGeomToWorldBitmap mathTransform = new TransformGeomToWorldBitmap(converter);

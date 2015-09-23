@@ -21,6 +21,7 @@ import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.utils.Pair;
+import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -29,19 +30,19 @@ import com.vividsolutions.jts.geom.Point;
 public class GeomWeightedCentroid {
 	private static class CacheKey {
 		final HashSet<Pair<ODLGeom, Double>> items;
-		final String espg;
+		final String epsg;
 
 		public CacheKey(Collection<Pair<ODLGeom, Double>> items, String espg) {
 			super();
 			this.items = new HashSet<>(items);
-			this.espg = espg;
+			this.epsg = espg;
 		}
 
 		@Override
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + ((espg == null) ? 0 : espg.hashCode());
+			result = prime * result + ((epsg == null) ? 0 : epsg.hashCode());
 			result = prime * result + ((items == null) ? 0 : items.hashCode());
 			return result;
 		}
@@ -56,10 +57,10 @@ public class GeomWeightedCentroid {
 				return false;
 			CacheKey other = (CacheKey) obj;
 
-			if (espg == null) {
-				if (other.espg != null)
+			if (epsg == null) {
+				if (other.epsg != null)
 					return false;
-			} else if (!espg.equals(other.espg))
+			} else if (!epsg.equals(other.epsg))
 				return false;
 			if (items == null) {
 				if (other.items != null)
@@ -123,8 +124,7 @@ public class GeomWeightedCentroid {
 		ODLGeom ret = (ODLGeom) cache.get(record);
 		if (ret == null) {
 
-			// ODLGeom ret =null;
-			GridTransforms transforms = new GridTransforms(ESPGCode);
+			GridTransforms transforms =Strings.isEmpty(ESPGCode)?null: new GridTransforms(ESPGCode);
 
 			// transform all geoms and get their individual centroids
 			double weightSum = 0;
@@ -136,7 +136,7 @@ public class GeomWeightedCentroid {
 					return null;
 				}
 
-				g = transforms.wgs84ToGrid(g);
+				g = transforms!=null? transforms.wgs84ToGrid(g):g;
 				Point pnt = g.getCentroid();
 				double w = pair.getSecond();
 				weightSum += w;
@@ -146,7 +146,7 @@ public class GeomWeightedCentroid {
 
 			if (weightSum > 0) {
 				Point pGrid = new GeometryFactory().createPoint(new Coordinate(xSum / weightSum, ySum / weightSum));
-				Point pTrans = (Point) transforms.gridToWGS84(pGrid);
+				Point pTrans = (Point)( transforms!=null?transforms.gridToWGS84(pGrid): pGrid);
 				ret = new ODLLoadedGeometry(pTrans);
 
 				// estimate size as size of keys as these will be the most expensive..

@@ -7,13 +7,11 @@
 package com.opendoorlogistics.utils.ui.tables;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
-import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -21,7 +19,6 @@ import javax.swing.JToolBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.TableCellRenderer;
 
 import com.opendoorlogistics.utils.ui.ODLAction;
 import com.opendoorlogistics.utils.ui.SimpleAction;
@@ -80,6 +77,23 @@ public abstract class AbstractTableDefinitionGrid extends JPanel {
 		
 		table.setRowHeight(26);
 		updateAppearance();
+		
+//		table.addFocusListener(new FocusListener() {
+//			
+//			@Override
+//			public void focusLost(FocusEvent arg0) {
+//				if(table.isEditing()){
+//					table.
+//				}
+//				System.out.println("focused lost "+ System.currentTimeMillis());
+//			}
+//			
+//			@Override
+//			public void focusGained(FocusEvent arg0) {
+//				System.out.println("focused gained " + System.currentTimeMillis());
+//				
+//			}
+//		});
 	}
 
 	protected void fillToolbar(JToolBar toolBar) {

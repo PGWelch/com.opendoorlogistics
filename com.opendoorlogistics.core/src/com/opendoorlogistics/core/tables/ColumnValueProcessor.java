@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.opendoorlogistics.api.standardcomponents.map.MapTileProvider;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
@@ -69,6 +70,9 @@ public class ColumnValueProcessor {
 
 		case DATE:
 			return LocalDate.class;
+			
+		case MAP_TILE_PROVIDER:
+			return MapTileProvider.class;
 
 		default:
 			throw new RuntimeException();
@@ -184,11 +188,19 @@ public class ColumnValueProcessor {
 			return null;
 		}
 
-		if (other.getClass() == ColumnValueProcessor.getJavaClass(convertToMe)) {
-			// check for same class
+		if(ColumnValueProcessor.getJavaClass(convertToMe).isAssignableFrom(other.getClass())){
 			return other;
 		}
+//		if (other.getClass() == ColumnValueProcessor.getJavaClass(convertToMe)) {
+//			// check for same class
+//			return other;
+//		}
 
+		if(convertToMe.isEngineType() ){
+			// no conversion between engine types
+			return null;
+		}
+		
 		// treat boolean as integer
 		if (other.getClass() == Boolean.class || other.getClass() == Boolean.TYPE) {
 			other = (Boolean) other ? 1 : 0;

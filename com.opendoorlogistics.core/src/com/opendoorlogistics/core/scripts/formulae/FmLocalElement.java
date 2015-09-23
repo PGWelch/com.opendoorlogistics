@@ -6,11 +6,13 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.scripts.formulae;
 
+import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.formulae.Function;
-import com.opendoorlogistics.core.formulae.FunctionImpl;
-import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
+import com.opendoorlogistics.core.formulae.Functions;
+import com.opendoorlogistics.core.formulae.UserVariableProvider;
+import com.opendoorlogistics.core.tables.utils.TableUtils;
 
 public class FmLocalElement extends FmRowDependent{
 	private final String name;
@@ -21,6 +23,10 @@ public class FmLocalElement extends FmRowDependent{
 		this.columnIndex = columnIndex;
 	}
 
+	public String getFieldName(){
+		return name;
+	}
+	
 	@Override
 	public Object execute(FunctionParameters parameters) {
 		TableParameters p = (TableParameters)parameters;
@@ -58,5 +64,29 @@ public class FmLocalElement extends FmRowDependent{
 	
 	public int getColumnIndex(){
 		return columnIndex;
+	}
+	
+	/**
+	 * Create a user variable provider used in the compilation of functions, which supplied
+	 * FmLocalElement instances to the function parser
+	 * @param srcTable
+	 * @return
+	 */
+	public static UserVariableProvider createUserVariableProvider(ODLTableDefinition srcTable){
+		UserVariableProvider uvp = new UserVariableProvider() {
+			@Override
+			public Function getVariable(String name) {
+				if(srcTable==null){
+					return null;
+				}
+				
+				int colIndx = TableUtils.findColumnIndx(srcTable, name, true);
+				if (colIndx == -1) {
+					return null;
+				}
+				return new FmLocalElement(colIndx, name);
+			}
+		};
+		return uvp;
 	}
 }

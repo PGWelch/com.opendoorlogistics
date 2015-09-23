@@ -31,8 +31,10 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.geotools.geometry.jts.LiteShape;
 
@@ -53,6 +55,7 @@ import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.IntUtils;
 import com.opendoorlogistics.core.utils.SimpleSoftReferenceMap;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
+import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedCache;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.vividsolutions.jts.awt.PolygonShape;
@@ -193,6 +196,27 @@ public class DatastoreRenderer implements ObjectRenderer{
 	// }
 
 	public synchronized void renderTexts(final Graphics2D g, Iterable<? extends DrawableObject> pnts, final LatLongToScreen converter, long renderflags) {
+		// sort objects by priority (lowest first), speeding up the sort by making use of the fact that priority will mostly be the same
+		int pntsCount=0;
+		TreeMap<Long, LinkedList<DrawableObject>> sortedMap = new TreeMap<>();
+		for(DrawableObject obj : pnts){
+			long priority = obj.getLabelPriority();
+			LinkedList<DrawableObject> list = sortedMap.get(priority);
+			if(list==null){
+				list = new LinkedList<>();
+				sortedMap.put(priority, list);
+			}
+			list.add(obj);
+			pntsCount++;
+		}
+		
+		// now place back into a single collection and replace the input iterable with it
+		ArrayList<DrawableObject> sorted = new ArrayList<>(pntsCount);
+		for(LinkedList<DrawableObject> list:sortedMap.values()){
+			sorted.addAll(list);
+		}
+		pnts = sorted;
+
 		// check for label groups
 		StandardisedCache stdCache = new StandardisedCache();
 		HashMap<String, ArrayList<DrawableObject>> labelGroups = new HashMap<>();
@@ -296,6 +320,10 @@ public class DatastoreRenderer implements ObjectRenderer{
 		final LowLevelTextRenderer lowLevelRenderer = new LowLevelTextRenderer();
 		class TextDrawer {
 			void render(DrawableObject obj) {
+				if(!isVisibleAtZoom(obj, converter.getZoomForObjectFiltering())){
+					return;
+				}
+				
 				if (Strings.isEmpty(obj.getLabel()) == false) {
 					boolean visible = false;
 					if (obj.getGeometry() == null) {
@@ -321,9 +349,10 @@ public class DatastoreRenderer implements ObjectRenderer{
 		}
 		TextDrawer drawer = new TextDrawer();
 
-		// Draw OSM copyright
+		// Draw OSM copyright (and zoom too if this is on)
 		if ((renderflags & RenderProperties.DRAW_OSM_COPYRIGHT) == RenderProperties.DRAW_OSM_COPYRIGHT) {
-			lowLevelRenderer.renderInBottomRightCorner(AppConstants.OSM_COPYRIGHT, 9, g, textQuadtree);
+			lowLevelRenderer.renderInBottomCorner(AppConstants.OSM_COPYRIGHT + ". Z" +  ZoomConverter.toExternal(converter.getZoomForObjectFiltering()), 9, g, textQuadtree, true);
+	//		lowLevelRenderer.renderInBottomCorner("Zoom " + converter.getZoomForObjectFiltering(), 9, g, textQuadtree, false);
 		}
 
 		// render groups first, rendering the winning object only
@@ -443,6 +472,19 @@ public class DatastoreRenderer implements ObjectRenderer{
 		return ret;
 	}
 
+	static boolean isVisibleAtZoom(DrawableObject o, int internalZoom){
+		int externalZoom = ZoomConverter.toExternal(internalZoom);
+		if(o.getMinZoom() > externalZoom){
+			return false;
+		}
+		
+		if(o.getMaxZoom() < externalZoom){
+			return false;
+		}
+		
+		return true;
+	}
+	
 	public static List<DrawableObject> getObjectsWithinRectangle(Iterable<? extends DrawableObject> pnts, LatLongToScreen converter, Rectangle selRectOnScreen, boolean filterUnselectable) {
 
 		List<DrawableObject> ret = new ArrayList<>();
@@ -465,6 +507,10 @@ public class DatastoreRenderer implements ObjectRenderer{
 			for (DrawableObject pnt : pnts) {
 				
 				if(filterUnselectable && pnt.getSelectable()==0){
+					continue;
+				}
+				
+				if(!isVisibleAtZoom(pnt, converter.getZoomForObjectFiltering())){
 					continue;
 				}
 				
@@ -899,6 +945,10 @@ public class DatastoreRenderer implements ObjectRenderer{
 	private boolean renderGeometry(Graphics2D g, final LatLongToScreen converter, DrawableObject pnt, boolean isSelected, long renderFlags) {
 		boolean rendered = false;
 
+		if(!isVisibleAtZoom(pnt, converter.getZoomForObjectFiltering())){
+			return false;
+		}
+		
 		ODLGeomImpl geom = pnt.getGeometry();
 		if (geom == null) {
 			return false;
@@ -989,6 +1039,8 @@ public class DatastoreRenderer implements ObjectRenderer{
 		}
 		return transformed;
 	}
+	
+
 
 	static boolean hasValidLatLong(DrawableObject obj) {
 		if (Double.isNaN(obj.getLatitude()) || Double.isNaN(obj.getLongitude())) {
@@ -1001,6 +1053,10 @@ public class DatastoreRenderer implements ObjectRenderer{
 	public boolean renderObject(Graphics2D g, LatLongToScreen converter, DrawableObject pnt, boolean isSelected, long renderFlags) {
 
 		boolean rendered = false;
+		if(!isVisibleAtZoom(pnt, converter.getZoomForObjectFiltering())){
+			return false;
+		}
+		
 		if (pnt.getGeometry() == null) {
 			// get on-screen position
 			if (hasValidLatLong(pnt)) {

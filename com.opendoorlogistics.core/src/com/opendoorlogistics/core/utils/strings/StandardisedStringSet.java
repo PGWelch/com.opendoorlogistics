@@ -86,9 +86,19 @@ public class StandardisedStringSet implements Set<String>{
 		return set.contains(Strings.std(o.toString()));
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T[] toArray(T[] a) {
-		throw new UnsupportedOperationException();
+		int i =0;
+		for(String s: this){
+			if(i<a.length){
+				a[i]=(T)s;
+				i++;
+			}else{
+				break;
+			}
+		}
+		return a;
 	}
 
 	@Override

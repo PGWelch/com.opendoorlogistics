@@ -108,6 +108,11 @@ final public class SynchronousRenderer {
 				return zoomLevel;
 			}
 
+			@Override
+			public int getZoomForObjectFiltering() {
+				return zoomLevel;
+			}
+
 		};
 	}
 

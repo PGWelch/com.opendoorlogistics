@@ -3,6 +3,7 @@ package com.opendoorlogistics.api.scripts;
 import java.io.File;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.scripts.parameters.Parameters;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 
@@ -28,4 +29,10 @@ public interface Scripts {
 	String findOptionIdByName(ScriptOption option, String optionName);
 	
 	ExecutionReport executeScript( ScriptOption option, String optionId,ODLDatastoreAlterable<? extends ODLTableAlterable> ds);
+	
+	/**
+	 * Get interface for dealing with script parameters
+	 * @return
+	 */
+	Parameters parameters();
 }

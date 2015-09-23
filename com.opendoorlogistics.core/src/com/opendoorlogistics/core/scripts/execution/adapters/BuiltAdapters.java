@@ -28,4 +28,14 @@ final public class BuiltAdapters {
 		return adapters.get(id);
 	}
 
+//	public String createUniqueAdapterId(String prefix){
+//
+//		return Strings.makeUnique(prefix, new DoesStringExist() {
+//			
+//			@Override
+//			public boolean isExisting(String s) {
+//				return adapters.containsKey(s);
+//			}
+//		});
+//	}
 }

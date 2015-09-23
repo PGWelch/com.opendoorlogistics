@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.api.impl.scripts;
 import com.opendoorlogistics.api.scripts.ScriptAdapterTable;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptOptionImpl.FindMode;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
@@ -39,10 +40,20 @@ public class ScriptAdapterTableImpl implements ScriptAdapterTable{
 	@Override
 	public void setFormula(String columnName, String formula) {
 		AdapterColumnConfig conf = getAdaptedColumn( columnName, FindMode.MUST_EXIST_IN_CURRENT_OPTION);
+		setFormula(formula, conf);
+	}
+
+	private void setFormula(String formula, AdapterColumnConfig conf) {
 		conf.setFormula(formula);
 		conf.setUseFormula(true);
 	}
 
+	@Override
+	public void setFormula(int columnIdx, String formula) {
+		setFormula(formula,table.getColumn(columnIdx));
+	}
+
+	
 	@Override
 	public void setSourceColumn(String columnName, String sourceColumn) {
 		AdapterColumnConfig conf = getAdaptedColumn(  columnName, FindMode.MUST_EXIST_IN_CURRENT_OPTION);
@@ -168,5 +179,21 @@ public class ScriptAdapterTableImpl implements ScriptAdapterTable{
 			break;
 		}
 	}
+
+	@Override
+	public void setFetchSourceField(boolean b) {
+		table.setFetchSourceFields(b);
+	}
+
+	@Override
+	public ODLTableReadOnly getDataTable() {
+		return this.table.getDataTable();
+	}
+
+	@Override
+	public void setDataTable(ODLTableReadOnly table) {
+		this.table.setDataTable(table);
+	}
+
 
 }

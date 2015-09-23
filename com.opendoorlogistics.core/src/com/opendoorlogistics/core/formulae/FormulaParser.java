@@ -756,13 +756,13 @@ public final class FormulaParser {
 	public static void main(String[] args) throws Exception {
 
 		FunctionDefinitionLibrary lib = new FunctionDefinitionLibrary();
-		lib.build();
+		lib.buildStd();
 		
 		List<UserFormula> userFormulae = new ArrayList<UserFormula>();
 	//	userFormulae.add(new UserFormula("add2(a,b) = a + b"));
 		//userFormulae.add(new UserFormula("ten() = 10"));
 		FormulaParser loader = new FormulaParser(null, lib, userFormulae);
-		Function formula = loader.parse("left(\"hello\",2.1");
+		Function formula = loader.parse("\"hello \"world\"\"");
 		System.out.println(formula.execute(null));
 	}
 	

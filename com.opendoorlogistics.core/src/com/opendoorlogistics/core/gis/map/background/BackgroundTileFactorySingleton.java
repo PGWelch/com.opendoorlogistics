@@ -11,92 +11,87 @@ package com.opendoorlogistics.core.gis.map.background;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
+import java.net.ResponseCache;
+import java.util.HashMap;
 import java.util.Properties;
 
-import org.apache.commons.io.FilenameUtils;
 import org.mapsforge.map.reader.MapDataStore;
-import org.mapsforge.map.reader.MapFile;
-import org.mapsforge.map.reader.MultiMapDataStore;
-import org.mapsforge.map.reader.MultiMapDataStore.DataPolicy;
 
+import com.opendoorlogistics.codefromweb.jxmapviewer2.ExpiringOSMLocalResponseCache;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.OSMTileFactoryInfo;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.Tile;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactory;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
 import com.opendoorlogistics.core.AppConstants;
-import com.opendoorlogistics.core.gis.map.JXMapUtils;
 import com.opendoorlogistics.core.gis.map.background.BackgroundMapConfig.BackgroundType;
 import com.opendoorlogistics.core.utils.Colours;
-import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.PropertiesUtils;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
-import com.opendoorlogistics.core.utils.io.RelativeFiles;
-import com.opendoorlogistics.core.utils.strings.Strings;
 
 public final class BackgroundTileFactorySingleton {
-	private static final TileFactory singleton;
+	private static final ODLTileFactory SINGLETON;
+	private static final ExpiringOSMLocalResponseCache LOCAL_RESPONSE_CACHE;
+	private static final TileFactoryCache FADELESS_TILE_FACTORY_CACHE = new TileFactoryCache();
 
 	private BackgroundTileFactorySingleton() {
 	}
 
-	@SuppressWarnings("unchecked")
-	public static TileFactory getFactory() {
-		return singleton;
+	public static ODLTileFactory getFactory() {
+		return SINGLETON;
 	}
 
 	static {
 		// always ensure we initialise the local file cache
-
+		File cacheDir = new File(System.getProperty("user.home") + File.separator + ".jxmapviewer2");
+		LOCAL_RESPONSE_CACHE = new ExpiringOSMLocalResponseCache( cacheDir, false);
+		ResponseCache.setDefault(LOCAL_RESPONSE_CACHE);
+		
+		// Read properties and create default background map
 		Properties p = PropertiesUtils.loadFromFile(new File(AppConstants.ODL_BACKGROUND_MAP_PROPERTIES_FILE));
 		BackgroundMapConfig c = new BackgroundMapConfig(p);
-		JXMapUtils.initLocalFileCache(c.getTileserverUrl());
-		singleton = createFactory(c);
-		
-//		// get files in directory
-//		File dir = new File(AppConstants.MAPSFORGE_DIRECTORY);
-//		ArrayList<File> mapFiles = new ArrayList<>();
-//		if (dir.exists()) {
-//			for (File child : dir.listFiles()) {
-//				String ext = FilenameUtils.getExtension(child.getAbsolutePath());
-//				if (Strings.equalsStd(ext, "map")) {
-//					mapFiles.add(child);
-//				}
-//			}
-//		}
-//
-//		Color fadeColour = new Color(255, 255, 255, 100);
-//
-//		// just take the first file at the moment...
-//		MapsforgeTileFactory factory = null;
-//		if (mapFiles.size() > 0) {
-//			File mapFile = mapFiles.get(0);
-//			MapDatabase mapDatabase = new MapDatabase();
-//			try {
-//				mapDatabase.openFile(mapFile);
-//				factory = new MapsforgeTileFactory(new OSMTileFactoryInfo(), mapFile, mapDatabase, fadeColour);
-//			} catch (Exception e) {
-//			}
-//		}
-//
-//		if (factory != null) {
-//			singleton = factory;
-//		} else {
-//			singleton = new ODLWebTileFactory(new OSMTileFactoryInfo(), fadeColour);
-//			JXMapUtils.initLocalFileCache();
-//
-//		}
+		SINGLETON = createTileFactory(c);
 	}
 
-	private static class EmptyTileFactory extends TileFactory{
-		final BufferedImage blankImage;
+	public static ODLTileFactory createTileFactory(BackgroundMapConfig config){
+		// Create config copy without the fade
+		BackgroundMapConfig deepCopy = new BackgroundMapConfig(config);
+		deepCopy.setFade(null);
 		
+		// Try to get factory from the fadeless-cache
+		ODLTileFactory noFade= FADELESS_TILE_FACTORY_CACHE.get(deepCopy);
+
+		// Create factory without the fade if needed
+		if(noFade==null){
+			TileFactory tileFactory = createFactory(deepCopy);
+			if(tileFactory!=null){
+				noFade = new TileFactory2ODL(tileFactory, true, null);
+				FADELESS_TILE_FACTORY_CACHE.put(deepCopy, noFade);	
+				
+				// ensure its cached properly on-disk
+				if(deepCopy.getType() == BackgroundType.OSMTILESERVER){
+					LOCAL_RESPONSE_CACHE.addAcceptedBasedURL(deepCopy.getTileserverUrl());
+				}
+			}			
+		}
+		
+		if(noFade!=null){
+			return new ODLTileFactoryDecorator(noFade, config.getFade());
+		}
+		
+		return null;
+	}
+	
+	private static class EmptyTileFactory extends TileFactory {
+		final BufferedImage blankImage;
+
 		EmptyTileFactory(TileFactoryInfo info, BackgroundMapConfig config) {
 			super(info);
-			blankImage = ImageUtils.createBlankImage(256, 256, BufferedImage.TYPE_INT_ARGB, Colours.lerp(Color.WHITE, config.getFade().getColour(), config.getFade().getColour().getAlpha() / 255.0));
+			Color colour = Color.WHITE;
+			if (config.getFade() != null && config.getFade().getColour() != null) {
+				colour = Colours.lerp(Color.WHITE, config.getFade().getColour(), config.getFade().getColour().getAlpha() / 255.0);
+			}
+			blankImage = ImageUtils.createBlankImage(256, 256, BufferedImage.TYPE_INT_ARGB, colour);
 		}
-
-
 
 		@Override
 		public BufferedImage renderSynchronously(int x, int y, int zoom) {
@@ -128,33 +123,31 @@ public final class BackgroundTileFactorySingleton {
 		@Override
 		public void dispose() {
 			// TODO Auto-generated method stub
-			
+
 		}
 
 		@Override
 		protected void startLoading(Tile tile) {
 			// TODO Auto-generated method stub
-			
+
 		}
-
-
 
 		@Override
 		public boolean isRenderedOffline() {
 			return true;
 		}
-		
+
 	}
-	
+
 	private static TileFactory createFactory(BackgroundMapConfig config) {
 		TileFactoryInfo info = new OSMTileFactoryInfo(config.getTileserverUrl());
 
 		BackgroundType type = config.getType();
 
 		if (type == BackgroundType.MAPSFORGE) {
-			MapDataStore result = openMapsforgeDb(config.getMapsforgeFilename());
+			MapDataStore result = MapsforgeTileFactory.openMapsforgeDb(config.getMapsforgeFilename());
 			if (result != null) {
-				return new MapsforgeTileFactory(info,  config.getMapsforgeXMLRenderTheme(),result, config.getFade());
+				return new MapsforgeTileFactory(info, config.getMapsforgeXMLRenderTheme(), result, config.getFade());
 			}
 			type = BackgroundType.EMPTY;
 		}
@@ -168,44 +161,42 @@ public final class BackgroundTileFactorySingleton {
 
 	}
 
-	private static MapDataStore openMapsforgeDb(String filename) {
-		File file = null;
-		if (Strings.isEmpty(filename)) {
-			// to do.. assume loading all files in the mapsforge directory
-			file = new File(AppConstants.MAPSFORGE_DIRECTORY).getAbsoluteFile();
-		}else{
-			file = RelativeFiles.validateRelativeFiles(filename, AppConstants.MAPSFORGE_DIRECTORY);			
-		}
-
-		if (file == null || !file.exists()) {
-			return null;
-		}
-		
-		// if its a directory, load all the ones from the directory
-		MultiMapDataStore ret = new MultiMapDataStore(DataPolicy.RETURN_ALL);
-		if(file.isDirectory()){
-			for(File child : file.listFiles()){
-				String ext = FilenameUtils.getExtension(child.getAbsolutePath());
-				if(ext!=null && ext.toLowerCase().equals("map")){
-					try {
-						MapFile mf= new MapFile(child);
-						ret.addMapDataStore(mf, false, false);
-					} catch (Exception e) {
-					}			
-				}
-			}
-		}
-		else{
-			try {
-				MapFile mf= new MapFile(file);
-				ret.addMapDataStore(mf, false, false);
-			} catch (Exception e) {
-			}			
-		}
-
-		return ret;
-	}
 	// public static void main(String[]args){
 	// System.out.println(BackgroundTileFactorySingleton.getFactory());
 	// }
+
+	private static class TileFactoryCache {
+		private HashMap<BackgroundMapConfig, ODLTileFactory> cached = new HashMap<BackgroundMapConfig, ODLTileFactory>();
+
+		public synchronized void put(BackgroundMapConfig config, ODLTileFactory factory) {
+			checkNoFade(config);
+			ODLTileFactory pre = get(config);
+			if (pre != null) {
+				pre.dispose();
+			}
+			cached.put(config, factory);
+		}
+
+		private void checkNoFade(BackgroundMapConfig config) {
+			if (config.getFade() != null) {
+				throw new IllegalArgumentException("Fade cannot be set on a cached tile factory; fade should be applied afterwards");
+			}
+		}
+
+		public synchronized ODLTileFactory get(BackgroundMapConfig config) {
+			checkNoFade(config);
+			return cached.get(config);
+		}
+
+		public synchronized void clear() {
+			for (ODLTileFactory factory : cached.values()) {
+				factory.dispose();
+			}
+			cached.clear();
+		}
+	}
+
+	public static void dispose(){
+		FADELESS_TILE_FACTORY_CACHE.clear();
+	}
 }

@@ -6,12 +6,14 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.formulae.definitions;
 
+import java.awt.Color;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import com.opendoorlogistics.core.distances.functions.FmDistance;
 import com.opendoorlogistics.core.distances.functions.FmDrivingDistance;
@@ -68,9 +70,11 @@ import com.opendoorlogistics.core.formulae.Functions.FmNotEqual;
 import com.opendoorlogistics.core.formulae.Functions.FmOr;
 import com.opendoorlogistics.core.formulae.Functions.FmPostcodeUKFormatUnit;
 import com.opendoorlogistics.core.formulae.Functions.FmPostcodeUk;
+import com.opendoorlogistics.core.formulae.Functions.FmPow;
 import com.opendoorlogistics.core.formulae.Functions.FmRand;
 import com.opendoorlogistics.core.formulae.Functions.FmRandColour;
 import com.opendoorlogistics.core.formulae.Functions.FmRandData;
+import com.opendoorlogistics.core.formulae.Functions.FmTileFactory;
 import com.opendoorlogistics.core.formulae.Functions.FmRandData.RandDataType;
 import com.opendoorlogistics.core.formulae.Functions.FmRandPalletColour;
 import com.opendoorlogistics.core.formulae.Functions.FmRandomSymbol;
@@ -106,10 +110,13 @@ import com.opendoorlogistics.core.gis.map.data.UserRenderFlags;
 import com.opendoorlogistics.core.gis.postcodes.UKPostcodes.UKPostcodeLevel;
 import com.opendoorlogistics.core.scripts.TableReference;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
+import com.opendoorlogistics.core.utils.Colours;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 public final class FunctionDefinitionLibrary {
+	public static FunctionDefinitionLibrary DEFAULT_LIB = new FunctionDefinitionLibrary().buildStd();
+	
 	private StandardisedStringTreeMap<List<FunctionDefinition>> map = new StandardisedStringTreeMap<>();
 	private int nextOperatorPrecedence = 0;
 
@@ -134,7 +141,16 @@ public final class FunctionDefinitionLibrary {
 		});
 	}
 
-	public FunctionDefinitionLibrary build() {
+	public FunctionDefinitionLibrary(){}
+	
+	public FunctionDefinitionLibrary(FunctionDefinitionLibrary copyFromThis){
+		for(Map.Entry<String,List< FunctionDefinition>> entry:copyFromThis.map.entrySet()){
+			map.put(entry.getKey(), entry.getValue());
+		}
+		nextOperatorPrecedence = copyFromThis.nextOperatorPrecedence;
+	}
+	
+	public FunctionDefinitionLibrary buildStd() {
 		// add operators IN ORDER OF PRECEDENCE
 		addVargsOperator(FmMultiply.class, "*", "Multiply values together.");
 		addStandardOperator(FmDivide.class, "/",  "Divide one value by the other.");
@@ -172,6 +188,7 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmAbs.class, "abs", "Get the absolute of the value","value");
 		addStandardFunction(FmCeil.class, "ceil","", "value");
 		addStandardFunction(FmFloor.class, "floor","Return the integer part of the number, e.g. 2.3 returns 2.", "value");
+		addStandardFunction(FmPow.class, "pow","Return the value of the 1st number raised to the power of the 2nd number.", "value1","value2");
 		addStandardFunction(FmRound.class, "round","Round to the nearest integer value.", "value");
 		for(String constName : new String[]{"const", "c"}){
 			addStandardFunction(FmConst.class, constName,"Create a constant string value from the input value. This is used to distinguish between string constants and source columns. For example, if your data adapter's source table has a column called \"name\" and you want to create a string constant also containing \"name\", you should use const(\"name\") as \"name\" on its own will automatically be converted to a source column reference.", "value");					
@@ -204,14 +221,14 @@ public final class FunctionDefinitionLibrary {
 				new String[]{"latitude1", "longitude1", "latitude2", "longitude2"},
 
 		}){
-			addStandardFunction(FmDistance.Km.class, "distanceKm", "Calculate distance in kilometres between points.", params);
-			addStandardFunction(FmDistance.Miles.class, "distanceMiles", "Calculate distance in miles between points.", params);
-			addStandardFunction(FmDistance.Metres.class, "distanceMetres", "Calculate distance in metres between points.", params);
+			addStandardFunction(FmDistance.Km.class, "distanceKm", "Calculate distance in kilometres between points.", params).setGroup("Distance");
+			addStandardFunction(FmDistance.Miles.class, "distanceMiles", "Calculate distance in miles between points.", params).setGroup("Distance");;
+			addStandardFunction(FmDistance.Metres.class, "distanceMetres", "Calculate distance in metres between points.", params).setGroup("Distance");;
 			
 			String []extParams = Strings.addToArray(params, "road_network_graph_directory");
-			addStandardFunction(FmDrivingDistance.Km.class, "drivingDistanceKm", "Calculate driving distance in kilometres between points.", extParams);
-			addStandardFunction(FmDrivingDistance.Miles.class, "drivingDistanceMiles", "Calculate driving distance in miles between points.", extParams);
-			addStandardFunction(FmDrivingDistance.Metres.class, "drivingDistanceMetres", "Calculate driving distance in metres between points.", extParams);
+			addStandardFunction(FmDrivingDistance.Km.class, "drivingDistanceKm", "Calculate driving distance in kilometres between points.", extParams).setGroup("DrivingDistance");
+			addStandardFunction(FmDrivingDistance.Miles.class, "drivingDistanceMiles", "Calculate driving distance in miles between points.", extParams).setGroup("DrivingDistance");
+			addStandardFunction(FmDrivingDistance.Metres.class, "drivingDistanceMetres", "Calculate driving distance in metres between points.", extParams).setGroup("DrivingDistance");
 			addStandardFunction(FmDrivingTime.class, "drivingTime", "Calculate driving time between points.", extParams);
 			addStandardFunction(FmDrivingRouteGeom.class, "routegeom", "Calculate the road network route between points.", extParams);
 			
@@ -227,9 +244,9 @@ public final class FunctionDefinitionLibrary {
 				new String[]{"days",  "hours",  "minutes",  "seconds",  "milliseconds"},
 
 		}){
-			addStandardFunction(FmTime.class, "time", "Create a time using the input components.",params);			
+			addStandardFunction(FmTime.class, "time", "Create a time using the input components.",params).setGroup("Time");;			
 		}
-		addStandardFunction(FmRound2Second.class, "round2second","Round the time to the nearest second.", "time");
+		addStandardFunction(FmRound2Second.class, "round2second","Round the time to the nearest second.", "time").setGroup("Time");
 
 		// create geometry functions
 		for(final FmGeom.GeomType type:FmGeom.GeomType.values()){
@@ -260,19 +277,20 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmGeomContains.class, "geomcontains", "Return whether the geometry contains the point, using a WGS84 latitude-longitude projection.", "geometry", "latitude", "longitude");
 		addStandardFunction(FmLineStringFraction.class, "linestringfraction", "Return a fraction (0 to 1) of the input linestring.", "linestring", "fraction");
 		addStandardFunction(FmLineStringEnd.class, "linestringend", "Return the end of a linestring (as another geometry).", "linestring");
-		
-		
+		addStandardFunction(FmTileFactory.class, "tileprovider", "Create a map tile provider", "String containing a comma-separated list of key-value pairs defining the background map - e.g. \"fade.r=255, type=MAPSFORGE\".");		
 		addStandardFunction(FmDecimalHours.class, "decimalHours", "Return the number of decimal hours in a time.","time");
 
 		// uk postcodes
 		for(final UKPostcodeLevel level: UKPostcodeLevel.values()){
-			addStandardFunction(FmPostcodeUk.class, "postcodeuk" + level.name().toLowerCase(), "Find and return the first UK postcode " + level.name().toLowerCase() + " from the input string, or null if not found.", "input_string").setFactory(new FunctionFactory() {
+			FunctionDefinition dfn = addStandardFunction(FmPostcodeUk.class, "postcodeuk" + level.name().toLowerCase(), "Find and return the first UK postcode " + level.name().toLowerCase() + " from the input string, or null if not found.", "input_string");
+			dfn.setFactory(new FunctionFactory() {
 				
 				@Override
 				public Function createFunction(Function... children) {
 					return new FmPostcodeUk(level, children[0]);
 				}
 			});
+			dfn.setGroup("postcodeUK");
 							
 		}
 		
@@ -363,7 +381,7 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmContains.class, "contains","", "find_string", "find_within_string");
 		addStandardFunction(FmIndexOf.class, "indexof","", "find_string", "find_within_string");
 		addStandardFunction(FmReplace.class, "replace","", "find_within_string", "old_string", "new_string");
-		addStandardFunction(FmPostcodeUKFormatUnit.class, "postcodeukreformatunit", "Format a UK unit postcode, ensuring a single space between the two parts.", "raw_postcode");
+		addStandardFunction(FmPostcodeUKFormatUnit.class, "postcodeukreformatunit", "Format a UK unit postcode, ensuring a single space between the two parts.", "raw_postcode").setGroup("postcodeUK");
 		addStandardFunction(FmRegExpMatches.class, "regexpmatch", "Return true if the string matched the regular expression.", "regular-expression" , "string");
 	//	addStandardFunction(FmRegExpMatchedText.class, "regexpmatchedstring", "Return the string which matched the regular expression or null if no match.", "regular-expression" , "string");
 		addStandardFunction(FmRegExpMatchedGroup.class, "regexpmatchedgroup", "Return the ith group in the regular expression, assuming it matched, or null if no match. This uses a zero-based index.", "regular-expression" , "string", "group_index");
@@ -401,9 +419,28 @@ public final class FunctionDefinitionLibrary {
 		addConstant("mfDotDashLine", new FmConst(UserRenderFlags.DOT_DASH_LINE), "Flag which forces lines to be drawn with dots and dashes _ . _ . _ .");
 		addConstant("mfDottedLine", new FmConst(UserRenderFlags.DOTTED_LINE), "Flag which forces lines to be drawn with dots. . . . . .");
 		
+		for(Map.Entry<String, Color> entry : Colours.getStandardColoursMap().entrySet()){
+			addConstant(entry.getKey(),new FmConst( entry.getValue()), "Standard colour").setGroup("colours");
+		}
+		
+	//	addTagConstants();
 		return this;
 	}
 
+//	private void addTagConstants(){
+//		for(Field field : PredefinedTags.class.getDeclaredFields()){
+//			if(field.getAnnotation(PredefinedTags.ODLConstFunction.class)!=null){
+//				String name = field.getName().toLowerCase();
+//				try {
+//					String value = (String)field.get(null);
+//					addConstant(name, new FmConst(value), "Predefined tag, equal to the string \"" + value + "\".").setGroup("predefined tags");
+//				} catch (Exception e) {
+//				
+//				}
+//			}
+//		}
+//	}
+	
 	private void addStandardOperator(Class<? extends Function> cls, String symbol, String description) {
 		addOperator(createReflectionFactory(cls, symbol), symbol,description);
 	}
@@ -511,7 +548,7 @@ public final class FunctionDefinitionLibrary {
 		return dfn;
 	}
 
-	private void addConstant(final String name, final FmConst val, final String description) {
+	private FunctionDefinition addConstant(final String name, final FmConst val, final String description) {
 		FunctionDefinition dfn = new FunctionDefinition(FunctionType.CONSTANT, name);
 		if(description!=null){
 			dfn.setDescription(description);
@@ -526,6 +563,7 @@ public final class FunctionDefinitionLibrary {
 			}
 		});
 		add(dfn);
+		return dfn;
 	}
 
 	private FunctionFactory createReflectionFactory(final Class<? extends Function> cls, final String name) {

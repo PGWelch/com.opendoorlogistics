@@ -6,6 +6,16 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import net.xeoh.plugins.base.Plugin;
+import net.xeoh.plugins.base.PluginManager;
+import net.xeoh.plugins.base.impl.PluginManagerFactory;
+import net.xeoh.plugins.base.util.PluginManagerUtil;
+
 import com.opendoorlogistics.api.Functions;
 import com.opendoorlogistics.api.IO;
 import com.opendoorlogistics.api.ODLApi;
@@ -21,15 +31,15 @@ import com.opendoorlogistics.core.api.impl.scripts.ScriptsImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 
 public class ODLApiImpl implements ODLApi{
-	private StringConventions conventions;
-	private StandardComponents standardComponents;
-	private Values conversionApi;
-	private Tables tables;
-	private Geometry geometry;
-	private UIFactory uiFactory;
-	private Functions functions;
-	private IO io;
-	private Scripts scripts;
+	private volatile StringConventions conventions;
+	private volatile StandardComponents standardComponents;
+	private volatile Values conversionApi;
+	private volatile Tables tables;
+	private volatile Geometry geometry;
+	private volatile UIFactory uiFactory;
+	private volatile Functions functions;
+	private volatile IO io;
+	private volatile Scripts scripts;
 
 	@Override
 	public Values values() {
@@ -114,6 +124,20 @@ public class ODLApiImpl implements ODLApi{
 			scripts = new ScriptsImpl(this);
 		}
 		return scripts;
+	}
+
+	@Override
+	public <T extends Plugin> List<T> loadPlugins(Class<T> cls) {
+		// register plugins from plugins directory
+		PluginManager pm = PluginManagerFactory.createPluginManager();
+		pm.addPluginsFrom(new File("." + File.separator + "plugins").toURI());
+		PluginManagerUtil pmu = new PluginManagerUtil(pm);	
+		ArrayList<T> ret = new ArrayList<T>();
+		Collection<T> plugins = pmu.getPlugins(cls);
+		if(plugins!=null){
+			ret.addAll(plugins);
+		}
+		return ret;
 	}
 
 

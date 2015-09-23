@@ -229,8 +229,8 @@ final public class Strings {
 			return "";
 		}
 		
-		StringBuilder b = new StringBuilder();
 		int n = s.length();
+		StringBuilder b = new StringBuilder(n);
 
 		// find first non-whitespace
 		int firstNonWS=n;

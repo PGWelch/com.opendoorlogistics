@@ -24,16 +24,20 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
-import com.opendoorlogistics.studio.appframe.AppFrame;
 
 /**
  * The script runner exists only whilst the current spreadsheet is open. It is closed when the spreadsheet is closed.
@@ -42,11 +46,13 @@ import com.opendoorlogistics.studio.appframe.AppFrame;
  *
  */
 public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Disposable {
+
 	
 	private static class RefreshQueue{
 		private final LinkedList<RefreshItem> queue = new LinkedList<>();
 		private final ScriptsRunner runner;
-	
+		private final ODLApi api = new ODLApiImpl();
+		
 		public RefreshQueue(ScriptsRunner runner) {
 			this.runner = runner;
 		}
@@ -77,10 +83,29 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 			Iterator<RefreshItem> it = queue.iterator();
 			while(it.hasNext()){
 				RefreshItem item = it.next();
-				if(Strings.equalsStd(top.getFrameIdentifier().getScriptId(), item.getFrameIdentifier().getScriptId())){
-					itemList.add(item);
-					it.remove();
+				
+				// Check same script
+				if(!Strings.equalsStd(top.getFrameIdentifier().getScriptId(), item.getFrameIdentifier().getScriptId())){
+					continue;
 				}
+				
+				// Check both have, or don't have, a parameter table
+				boolean topNull = top.getParametersTable()!=null;
+				boolean otherNull = item.getParametersTable()!=null;
+				if(topNull!=otherNull){
+					continue;
+				}
+				
+				// Check parameter tables are the same if we have them
+				if(!topNull){
+					if(!api.tables().isIdentical(top.getParametersTable().getTableAt(0), item.getParametersTable().getTableAt(0))){
+						continue;
+					}
+				}
+			
+				itemList.add(item);
+				it.remove();
+				
 			}
 			
 			// get all instruction ids and all reporter frame ids
@@ -94,8 +119,14 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 			// now get the options to execute these instructions
 			String[]optionIds = ScriptUtils.getOptionIdsByInstructionIds(top.getUnfilteredScript(), instructionIdsToRefresh);
 			
+			// take deep copy of parameters table if we have one, to avoid threading issues etc
+			ODLDatastore<? extends ODLTable>  parameters = top.getParametersTable();
+			if(parameters!=null){
+				parameters = api.tables().copyDs(parameters);
+			}
+			
 			// call execute which will run the script in the background
-			ScriptExecutionTask task = new ScriptExecutionTask(runner,top.getUnfilteredScript(), optionIds, "Refresh open report", true);
+			ScriptExecutionTask task = new ScriptExecutionTask(runner,top.getUnfilteredScript(), optionIds, "Refresh open report", true, parameters);
 			task.setReporterFrameIds(frameIdentifiers);
 			
 			return task;
@@ -106,11 +137,13 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 		private final ReporterFrameIdentifier frameIdentifier;
 		private final boolean isAutomaticRefresh;
 		private final Script unfilteredScript;
+		private final ODLDatastore<? extends ODLTable> parametersTable;
 		
-		public RefreshItem(Script script, ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh) {
+		public RefreshItem(Script script, ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh, ODLDatastore<? extends ODLTable> parametersTable) {
 			this.unfilteredScript = script;
 			this.frameIdentifier = frameIdentifier;
 			this.isAutomaticRefresh = isAutomaticRefresh;
+			this.parametersTable = parametersTable;
 		}
 
 		public ReporterFrameIdentifier getFrameIdentifier() {
@@ -124,6 +157,12 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 		public boolean isAutomaticRefresh() {
 			return isAutomaticRefresh;
 		}
+
+		public ODLDatastore<? extends ODLTable> getParametersTable() {
+			return parametersTable;
+		}
+		
+		
 		
 	}
 	private final AbstractAppFrame appFrame;
@@ -319,7 +358,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 			@Override
 			protected Void doInBackground() throws Exception {
 				try {
-					new ScriptExecutionTask(ScriptsRunner.this,script, optionIds, name, false).executeNonEDT();					
+					new ScriptExecutionTask(ScriptsRunner.this,script, optionIds, name, false,null).executeNonEDT();					
 				} catch (Exception e) {
 				}
 				
@@ -344,11 +383,11 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 	 * Post a report refresh to be processed by a separate single report update thread...
 	 */
 	@Override
-	public void postReportRefreshRequest(Script unfilteredScript,ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh) {
+	public void postReportRefreshRequest(Script unfilteredScript,ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh,ODLDatastore<? extends ODLTable> parametersTable) {
 		ExecutionUtils.throwIfNotOnEDT();
 		
 		// Post to the queue
-		reportRefreshQueue.post(new RefreshItem(unfilteredScript, frameIdentifier, isAutomaticRefresh));
+		reportRefreshQueue.post(new RefreshItem(unfilteredScript, frameIdentifier, isAutomaticRefresh,parametersTable));
 
 		// Submit a task to process it (may process more than one item from queue at a time).
 		// We submit the task to the background thread *after* all pending swing events have been processed as:

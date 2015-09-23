@@ -28,12 +28,19 @@ class ColumnTypeEstimator {
 		
 		// keep date auto-detect off as well, as different date format can create problems in different countries
 		okByType[ODLColumnType.DATE.ordinal()]=false;
+		
+		// all engine types stay off
+		for(ODLColumnType type : ODLColumnType.values()){
+			if(type.isEngineType()){
+				okByType[type.ordinal()]=false;
+			}
+		}
 	}
 	
 	void processValue(String value){
 		if (Strings.isEmpty(value) == false) {
 			nbNonEmptyVals++;
-			for (ODLColumnType otherType : ODLColumnType.values()) {
+			for (ODLColumnType otherType : ODLColumnType.standardTypes()) {
 				if (okByType[otherType.ordinal()]) {
 					okByType[otherType.ordinal()] = ColumnValueProcessor.convertToMe(otherType,value, ODLColumnType.STRING, true) != null;
 				}
@@ -45,7 +52,7 @@ class ColumnTypeEstimator {
 		ODLColumnType selectedType = ODLColumnType.STRING;		
 		if (nbNonEmptyVals > 0) {
 			// if we had non empty values pick the first non-string type that converted for all
-			for (ODLColumnType otherType : ODLColumnType.values()) {
+			for (ODLColumnType otherType : ODLColumnType.standardTypes()) {
 				if (otherType != ODLColumnType.STRING && okByType[otherType.ordinal()]) {
 					selectedType = otherType;
 					break;

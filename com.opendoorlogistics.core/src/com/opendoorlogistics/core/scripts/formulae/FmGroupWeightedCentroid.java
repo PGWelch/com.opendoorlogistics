@@ -84,16 +84,15 @@ public class FmGroupWeightedCentroid extends FmAbstractGroupAggregate {
 		}
 		
 		// get espg code
-		Object espgVal = child(2).execute(parameters);
-		if(espgVal ==  Functions.EXECUTION_ERROR){
+		Object epsgVal = child(2).execute(parameters);
+		if(epsgVal ==  Functions.EXECUTION_ERROR){
 			return Functions.EXECUTION_ERROR;
 		}
-		String espg = (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, espgVal);		
-		if(espg==null){
-			return Functions.EXECUTION_ERROR;			
-		}
-		
-		return new GeomWeightedCentroid().calculate(geoms, espg);
+
+		// allow EPSG to be null, we then do weighted centroid in lat-long coords 
+		String epsg = (String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, epsgVal);		
+
+		return new GeomWeightedCentroid().calculate(geoms, epsg);
 	}
 
 	@Override

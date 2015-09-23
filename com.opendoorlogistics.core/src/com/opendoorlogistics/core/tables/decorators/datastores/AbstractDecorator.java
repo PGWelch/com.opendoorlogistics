@@ -12,6 +12,8 @@ import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableQuery;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 
 /**
@@ -229,6 +231,11 @@ public abstract class AbstractDecorator<T extends ODLTableDefinition> implements
 			return AbstractDecorator.this.getRowLastModifiedTimeMillisecs(tableId, rowId);
 		}
 
+		@Override
+		public ODLTableReadOnly query(TableQuery query) {
+			return AbstractDecorator.this.query(tableId, query);
+		}
+
 
 
 	}
@@ -272,6 +279,8 @@ public abstract class AbstractDecorator<T extends ODLTableDefinition> implements
 	protected abstract int getColumnCount(int tableId);
 	
 	protected abstract String getName(int tableId);
+	
+	protected abstract ODLTableReadOnly query(int tableId, TableQuery query);
 
 	protected abstract long getFlags(int tableId);
 

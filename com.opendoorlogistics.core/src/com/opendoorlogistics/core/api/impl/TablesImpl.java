@@ -6,11 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
-import java.io.File;
-
-import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.Tables;
-import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -22,7 +18,7 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.beans.BeanTypeConversion;
-import com.opendoorlogistics.core.tables.io.PoiIO;
+import com.opendoorlogistics.core.tables.utils.DatastoreComparer;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.tables.utils.ParametersTable;
@@ -166,6 +162,26 @@ public class TablesImpl implements Tables {
 		ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> tempDs = createAlterableDs();
 		DatastoreCopier.copyTableDefinition(ParametersTable.tableDefinition(), tempDs);
 		return tempDs.getTableAt(0);
+	}
+
+	@Override
+	public void copyColumnDefinition(ODLTableDefinition source, int sourceCol, ODLTableDefinitionAlterable destination) {
+		DatastoreCopier.copyColumnDefinition(source, destination, sourceCol, false);
+	}
+
+	@Override
+	public ODLTableAlterable copyTable(ODLTableReadOnly copyThis, ODLDatastoreAlterable<? extends ODLTableAlterable> copyTo) {
+		return DatastoreCopier.copyTable(copyThis, copyTo);
+	}
+
+	@Override
+	public boolean isIdentical(ODLTableReadOnly a, ODLTableReadOnly b) {
+		return DatastoreComparer.isSame(a, b, 0);
+	}
+
+	@Override
+	public ODLDatastoreAlterable<? extends ODLTableAlterable> copyDs(ODLDatastore<? extends ODLTableReadOnly> ds) {
+		return DatastoreCopier.copyAll(ds);
 	}
 
 
