@@ -31,6 +31,11 @@ import javax.swing.event.MouseInputListener;
 import com.opendoorlogistics.utils.ui.Icons;
 
 public class ODLScrollableToolbar extends JPanel {
+	/**
+	 * This timer is static and shared between all instances of this class, as the internal thread
+	 * only gets disposed on garbage collection otherwise.
+	 */
+	private static final Timer MOVEMENT_TIMER = new Timer();
 
 	private final JToolBar toolBar;
 	private final JScrollPane scrollPane;
@@ -121,7 +126,6 @@ public class ODLScrollableToolbar extends JPanel {
 	private MouseListener createMouseListener(final boolean isLeft) {
 		return new MouseListener() {
 
-			final Timer timer = new Timer();
 			TimerTask task;
 
 			@Override
@@ -146,7 +150,7 @@ public class ODLScrollableToolbar extends JPanel {
 						scroll((int) (isLeft ? -increment : +increment));
 					}
 				};
-				timer.scheduleAtFixedRate(task, 0, 10);
+				MOVEMENT_TIMER.scheduleAtFixedRate(task, 0, 10);
 			}
 
 			@Override

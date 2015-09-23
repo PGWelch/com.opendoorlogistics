@@ -52,7 +52,7 @@ public class ODLApiImpl implements ODLApi{
 	@Override
 	public Tables tables() {
 		if(tables==null){
-			tables = new TablesImpl();			
+			tables = new TablesImpl(this);			
 		}
 		return tables;
 	}

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import com.opendoorlogistics.api.Func;
 import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.tables.ODLColumnType;
@@ -72,7 +73,9 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 				// take copy so we can add to it
 				ODLApiImpl api = new ODLApiImpl();
 				ODLDatastoreAlterable<? extends ODLTableAlterable> copy = api.tables().createAlterableDs();
-				api.tables().addTableDefinitions(destinationModel, copy, false);
+				for(int i =0 ; i < destinationModel.getTableCount();i++){
+					api.tables().copyTableDefinition(destinationModel.getTableAt(i), copy);
+				}
 				outputDs = copy;
 				destinationDsIsCopy = true;
 			}else{
@@ -146,11 +149,11 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 			return ret;
 		}
 
-		public static AdapterMapping createUnassignedMapping(ODLTableDefinition table) {
+		public static AdapterMapping createUnassignedMapping(ODLTableDefinition table, boolean alterableDestination) {
 			// create dummy datastore with just the table
 			ODLDatastoreImpl<ODLTableDefinition> dummy = new ODLDatastoreImpl<>(null);
 			dummy.addTable(table);
-			AdapterMapping ret = new AdapterMapping(dummy);
+			AdapterMapping ret = new AdapterMapping(dummy, alterableDestination);
 			allocateTable(table, ret);
 			return ret;
 		}
@@ -178,8 +181,16 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 			mappedByDestTableId.get(destinationTableId).sourceTableId = sourceTableId;
 		}
 
+		public void addMappedFormula(int destinationTableId, String name,ODLColumnType type, Function function){
+			addField(destinationTableId, name, type, -1,function);			
+		}
+		
 		public void addMappedField(int destinationTableId, String name,ODLColumnType type, int sourceFieldIndx){
 			
+			addField(destinationTableId, name, type, sourceFieldIndx,null);
+		}
+
+		private void addField(int destinationTableId, String name, ODLColumnType type, int sourceFieldIndx, Function function) {
 			MappedTable mappedTable = mappedByDestTableId.get(destinationTableId);
 			
 			// add to definition
@@ -193,6 +204,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 			MappedField mappedField = new MappedField();
 			mappedTable.fields.add(mappedField);
 			mappedField.sourceColumnIndex = sourceFieldIndx;
+			mappedField.formula = function;
 		}
 		
 		public void setFieldSourceIndx(int destinationTableId, int destinationFieldIndx, int sourceFieldIndx) {
@@ -219,6 +231,10 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 			return mappedByDestTableId.get(destinationTableId).fields.get(destinationColIndx).formula;
 		}
 
+		public int getFieldCount(int destinationTableId){
+			return mappedByDestTableId.get(destinationTableId).fields.size();
+		}
+		
 		public ODLDatastore<? extends ODLTableDefinition> getDestinationModel() {
 			return outputDs;
 		}

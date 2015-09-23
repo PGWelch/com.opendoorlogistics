@@ -35,6 +35,13 @@ public interface StringConventions {
 	 * @return
 	 */
 	boolean isEmptyString(String s);
+
+	/**
+	 * Is the input string empty when standardised?
+	 * @param s
+	 * @return
+	 */
+	boolean isEmptyStandardised(String s);
 	
 	/**
 	 * Returns a standardised version of the string used for all comparisons by ODL.

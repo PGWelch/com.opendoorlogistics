@@ -142,6 +142,11 @@ public class StringConventionsImpl implements StringConventions{
 	public <T> Map<String, T> createStandardisedMap(Factory<T> factory) {
 		return new StandardisedStringTreeMap<>(factory);
 	}
+
+	@Override
+	public boolean isEmptyStandardised(String s) {
+		return Strings.isEmptyWhenStandardised(s);
+	}
 	
 	
 

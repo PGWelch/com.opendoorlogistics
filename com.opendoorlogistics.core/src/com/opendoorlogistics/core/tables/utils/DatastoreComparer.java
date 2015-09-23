@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.tables.utils;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.utils.NullComparer;
 
@@ -20,6 +21,7 @@ final public class DatastoreComparer {
 	public static long CHECK_TABLE_NAME = 1<<4;
 	public static long ALLOW_EXTRA_COLUMNS_ON_SECOND_TABLE = 1<<5;
 	public static long CHECK_ALL = CHECK_COLUMN_FLAGS|CHECK_IMMUTABLE_TABLE_IDS|CHECK_IMMUTABLE_COLUMN_IDS|CHECK_IMMUTABLE_COLUMN_ROW_IDS|CHECK_TABLE_NAME;
+	public static long CHECK_ROW_SELECTION_STATE = 1<<6;
 	
 	public static boolean isSameStructure(ODLDatastore<? extends ODLTableDefinition> a, ODLDatastore<? extends ODLTableDefinition> b) {
 		return isSameStructure(a, b, CHECK_ALL);
@@ -116,6 +118,19 @@ final public class DatastoreComparer {
 				if(ta.getRowId(row)!=tb.getRowId(row)){
 					return false;
 				}				
+			}
+			
+			// check selection state if needed
+			if(hasFlag(flags, CHECK_ROW_SELECTION_STATE)){
+				long aRowId = ta.getRowId(row);
+				long bRowId = tb.getRowId(row);
+				if(aRowId!=-1 && bRowId!=-1){
+					boolean aSel = hasFlag(ta.getRowFlags(aRowId), TableFlags.FLAG_ROW_SELECTED_IN_MAP);					
+					boolean bSel = hasFlag(ta.getRowFlags(bRowId), TableFlags.FLAG_ROW_SELECTED_IN_MAP);
+					if(aSel!=bSel){
+						return false;
+					}
+				}
 			}
 			
 			for(int col = 0 ; col < cols; col++){

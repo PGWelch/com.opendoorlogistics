@@ -949,7 +949,7 @@ final public class ScriptExecutor {
 
 					// link fields by name
 					AdaptedTableConfig tableAdapterConfig = AdapterConfig.createSameNameMapper(inputTable);
-					AdapterMapping mapping = AdapterMapping.createUnassignedMapping(inputTable);
+					AdapterMapping mapping = AdapterMapping.createUnassignedMapping(inputTable,false);
 					mapping.setTableSourceId(inputTable.getImmutableId(), 0, outTable.getImmutableId());
 					AdapterBuilderUtils.mapFields(outTable, inputTable.getImmutableId(), tableAdapterConfig, mapping, 0, result);
 					if (result.isFailed()) {
