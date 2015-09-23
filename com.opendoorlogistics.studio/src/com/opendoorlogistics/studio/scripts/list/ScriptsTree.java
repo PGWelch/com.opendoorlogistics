@@ -362,7 +362,7 @@ class ScriptsTree implements HasScriptsProvider{
 					ScriptNode node = (ScriptNode)path.getLastPathComponent();
 					SaveExpandedState fileState = state.get(node.getFile());
 					if(fileState!=null){
-						Boolean expanded = fileState.getByOptionId(node.getOption().getOptionId());
+						Boolean expanded =node!=null&&node.getOption()!=null ?fileState.getByOptionId(node.getOption().getOptionId()):null;
 						if(expanded!=null){
 							if(expanded){
 								tree.expandRow(i);

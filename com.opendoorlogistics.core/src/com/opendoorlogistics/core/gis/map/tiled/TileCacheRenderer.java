@@ -6,8 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.gis.map.tiled;
 
-import gnu.trove.set.hash.TLongHashSet;
-
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
@@ -19,8 +17,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -38,9 +39,8 @@ import com.opendoorlogistics.core.gis.map.tiled.DrawableObjectLayer.LayerType;
 import com.opendoorlogistics.core.utils.Pair;
 import com.opendoorlogistics.core.utils.images.CompressedImage;
 import com.opendoorlogistics.core.utils.images.CompressedImage.CompressedType;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryCollection;
-import com.vividsolutions.jts.geom.Polygon;
+
+import gnu.trove.set.hash.TLongHashSet;
 
 final public class TileCacheRenderer implements Disposable {
 	private static final int MAX_GEOM_POINTS_FOR_EDT_RENDER = 5000;
@@ -74,7 +74,16 @@ final public class TileCacheRenderer implements Disposable {
 		// their most recent viewpoint should therefore generally be prioritised (unless they've
 		// zoomed back and forth quickly...)
 		int nThreads = 1;
-		service = new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new BlockingLifoQueue<Runnable>());
+		service = new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new BlockingLifoQueue<Runnable>(), new ThreadFactory() {
+			ThreadFactory factory = Executors.defaultThreadFactory();
+			
+			@Override
+			public Thread newThread(Runnable r) {
+				Thread ret = factory.newThread(r);
+				ret.setName("TileCacheRendererThread-" + UUID.randomUUID().toString());
+				return ret;
+			}
+		});
 
 	}
 
@@ -188,8 +197,7 @@ final public class TileCacheRenderer implements Disposable {
 
 				g.setClip(0, 0, TilePosition.TILE_SIZE, TilePosition.TILE_SIZE);
 				
-				// create a lat-long to onscreen converter which gives gives the viewable viewport bounds
-				// as the tile
+				// create a lat-long to onscreen converter which gives gives the viewable viewport bounds as the tile
 				LatLongToScreen converter = position.createConverter(renderInfo.originalConverter);
 
 				// render objects
@@ -201,7 +209,7 @@ final public class TileCacheRenderer implements Disposable {
 						
 						// check poly layer tile exists, if not then this tile is probably out-of-date 
 						if(tile!=null){
-							tile.draw(layer, g,renderInfo.selectedObjectIds, 0, 0);							
+							tile.draw(layer, g,renderInfo.selectedObjectIds, 0, 0, converter.getZoomForObjectFiltering());							
 						}
 					}
 					else{

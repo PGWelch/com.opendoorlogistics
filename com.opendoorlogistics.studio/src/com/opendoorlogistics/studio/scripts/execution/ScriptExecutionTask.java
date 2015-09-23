@@ -371,7 +371,7 @@ class ScriptExecutionTask {
 			for (int tableId : wholeScriptDependencies.getReadTableIds()) {
 				if(wholeScriptDependencies.hasTableValueRead(tableId)){
 					// structure and data
-					if (!DatastoreComparer.isSame(runner.getDs().getTableByImmutableId(tableId), workingDatastoreCopy.getTableByImmutableId(tableId), DatastoreComparer.CHECK_ALL)) {
+					if (!DatastoreComparer.isSame(runner.getDs().getTableByImmutableId(tableId), workingDatastoreCopy.getTableByImmutableId(tableId), DatastoreComparer.CHECK_ALL|DatastoreComparer.CHECK_ROW_SELECTION_STATE)) {
 						dataChanged = true;
 						break;
 					}	

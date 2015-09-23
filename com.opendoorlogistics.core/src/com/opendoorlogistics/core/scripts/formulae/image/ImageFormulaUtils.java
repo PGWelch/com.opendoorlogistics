@@ -14,6 +14,7 @@ import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
 import com.opendoorlogistics.core.utils.images.ImageUtils;
+import com.opendoorlogistics.core.utils.strings.Strings;
 
 public class ImageFormulaUtils {
 
@@ -64,7 +65,8 @@ public class ImageFormulaUtils {
 	enum FilterMode{
 		NONE,
 		FILTER,
-		INVERSE_FILTER
+		INVERSE_FILTER,
+		FILTER_MATCH_OR_NULL_VALUE,
 	}
 	
 	
@@ -76,7 +78,8 @@ public class ImageFormulaUtils {
 			if(filterMode !=FilterMode.NONE){
 				Object val = drawablesTable.getValueAt(row, filterColumnIndx);
 				boolean match =val != null && ColumnValueProcessor.isEqual(val, valueToMatch); 
-				if ((filterMode==FilterMode.FILTER && match) || (filterMode==FilterMode.INVERSE_FILTER && !match)) {
+				if ((filterMode==FilterMode.FILTER && match) || (filterMode==FilterMode.INVERSE_FILTER && !match)
+					||(filterMode == FilterMode.FILTER_MATCH_OR_NULL_VALUE && (match || Strings.isEmptyWhenStandardised(val)))) {
 					// each matching row gets turned into a point using the bean mapping
 					DrawableObjectImpl pnt = (DrawableObjectImpl) mapping.getTableMapping(0).readObjectFromTableByRow(drawablesTable, row);
 					if (pnt != null) {

@@ -6,6 +6,10 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
+import java.util.Map;
+import java.util.Set;
+
+import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -23,12 +27,19 @@ import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.tables.utils.ParametersTable;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
+import com.opendoorlogistics.core.utils.strings.EnumStdLookup;
 
 public class TablesImpl implements Tables {
+	private static final EnumStdLookup<ODLColumnType> CT_LOOKUP = new EnumStdLookup<ODLColumnType>(ODLColumnType.class);
+	private final ODLApi api;
+	
+	public TablesImpl(ODLApi api) {
+		this.api = api;
+	}
 
 	@Override
 	public ODLTableDefinitionAlterable copyTableDefinition(ODLTableDefinition copyThis, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> copyTo) {
-		return DatastoreCopier.copyTableDefinition(copyThis, copyTo);
+		return DatastoreCopier.copyTableDefinition(copyThis, copyTo, copyThis.getName(), copyTo.getTableByImmutableId(copyThis.getImmutableId())==null? copyThis.getImmutableId():-1);
 	}
 
 	@Override
@@ -182,6 +193,36 @@ public class TablesImpl implements Tables {
 	@Override
 	public ODLDatastoreAlterable<? extends ODLTableAlterable> copyDs(ODLDatastore<? extends ODLTableReadOnly> ds) {
 		return DatastoreCopier.copyAll(ds);
+	}
+
+	@Override
+	public ODLColumnType getColumnType(String columnTypeName) {
+		return CT_LOOKUP.get(columnTypeName);
+	}
+
+	@Override
+	public Set<String> getColumnNamesSet(ODLTableDefinition table) {
+		Set<String> ret = api.stringConventions().createStandardisedSet();
+		int nc= table.getColumnCount();
+		for(int i =0 ; i < nc ; i++){
+			ret.add(table.getColumnName(i));
+		}
+		return ret;
+	}
+
+	@Override
+	public Map<String, Integer> getColumnNamesMap(ODLTableDefinition table) {
+		Map<String, Integer> ret = api.stringConventions().createStandardisedMap();
+		int nc= table.getColumnCount();
+		for(int i =0 ; i < nc ; i++){
+			ret.put(table.getColumnName(i),i );
+		}
+		return ret;
+	}
+
+	@Override
+	public void copyTableDefinition(ODLTableDefinition copyThis, ODLTableDefinitionAlterable copyInto) {
+		DatastoreCopier.copyTableDefinition(copyThis, copyInto);
 	}
 
 

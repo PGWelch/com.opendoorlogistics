@@ -68,7 +68,7 @@ public class NOPLManager {
 				// The layer is new so add it.
 				addLayer = true;
 			}else{
-				// Check everything geometry object in the new layer exists in the old one
+				// Check each geometry object in the new layer exists in the old one
 				for(DrawableObject obj:newLayer){
 					if(obj.getGeometry()!=null){
 						if(cachedLayer.layer.hasGeom(obj.getGeometry())==false){

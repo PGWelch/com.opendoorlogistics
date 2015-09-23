@@ -47,7 +47,8 @@ final public class FmImage extends FunctionImpl {
 		ZOOM_ONLY("3","Show background map only, zooming on the matching objects."),
 		SHOW_SELECTED_NO_BACKGROUND("4", "Show the matching objects without the background map, zooming on the matching objects."),
 		SHOW_INVERSE_SELECTED_NO_BACKGROUND("5", "Show the non-matching objects without the background map, zooming on the matching objects."),
-		SHOW_INVERSE_SELECTED("6","Show the non-matching objects with the background map, zooming on the matching objects.")		
+		SHOW_INVERSE_SELECTED("6","Show the non-matching objects with the background map, zooming on the matching objects."),
+		SHOW_MATCHING_OR_EMPTY_ZOOM_MATCHING("7","Show the matching objects or those objects with an empty or null image formula key, but zooming only on the matching objects.")
 		;
 		
 		private Mode(String keyword,String description) {
@@ -157,6 +158,11 @@ final public class FmImage extends FunctionImpl {
 			
 		case ZOOM_ONLY:
 			ret = ImageFormulaUtils.createImage(key.width, key.height, key.dotsPerCM,properties,isFixedPhysicalSize(), matchingPoints,null);
+			break;
+			
+		case SHOW_MATCHING_OR_EMPTY_ZOOM_MATCHING:
+			List<DrawableObjectImpl> matchingOrNull = ImageFormulaUtils.getPoints(table,groupKeyIndx, key.keyval,FilterMode.FILTER_MATCH_OR_NULL_VALUE);			
+			ret = ImageFormulaUtils.createImage(key.width, key.height, key.dotsPerCM,properties,isFixedPhysicalSize(), matchingPoints, matchingOrNull);			
 			break;
 		}
 

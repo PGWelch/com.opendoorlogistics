@@ -11,10 +11,14 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -210,7 +214,19 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 		
 		// Have only 1 execution service thread so control updates finish processing in the order
 		// they're submitted (otherwise wrong results may appear on-screen).
-		this.executorService = Executors.newFixedThreadPool(1);
+		this.executorService = new ThreadPoolExecutor(1, 1,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
+					ThreadFactory dFactory = Executors.defaultThreadFactory();
+					
+					@Override
+					public Thread newThread(Runnable r) {
+						Thread ret = dFactory.newThread(r);
+						ret.setName("ScriptRunnerThread-" + UUID.randomUUID().toString());
+						return ret;
+					}
+				});
+	
 	}
 	
 	/**

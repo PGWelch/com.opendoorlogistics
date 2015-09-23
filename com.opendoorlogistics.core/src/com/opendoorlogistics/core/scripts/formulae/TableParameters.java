@@ -103,6 +103,10 @@ final public class TableParameters implements FunctionParameters {
 		throw new RuntimeException("Row number is not available.");
 	}
 	
+	public boolean hasRowNb(){
+		return rowNbIfKnown!=-1;
+	}
+	
 	public ODLRowReadOnly getThisRow(){
 		return thisRow;
 	}

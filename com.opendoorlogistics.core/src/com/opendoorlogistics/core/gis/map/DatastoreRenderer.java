@@ -472,7 +472,7 @@ public class DatastoreRenderer implements ObjectRenderer{
 		return ret;
 	}
 
-	static boolean isVisibleAtZoom(DrawableObject o, int internalZoom){
+	public static boolean isVisibleAtZoom(DrawableObject o, int internalZoom){
 		int externalZoom = ZoomConverter.toExternal(internalZoom);
 		if(o.getMinZoom() > externalZoom){
 			return false;

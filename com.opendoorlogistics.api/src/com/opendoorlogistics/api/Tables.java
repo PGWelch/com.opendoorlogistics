@@ -6,6 +6,9 @@
  ******************************************************************************/
 package com.opendoorlogistics.api;
 
+import java.util.Map;
+import java.util.Set;
+
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -22,6 +25,8 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
  */
 public interface Tables {
 	ODLTableDefinitionAlterable copyTableDefinition(ODLTableDefinition copyThis, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> copyTo);
+
+	void copyTableDefinition(ODLTableDefinition copyThis, ODLTableDefinitionAlterable copyInto);
 
 	ODLTableAlterable createTable(ODLTableDefinition tableDefinition);
 
@@ -87,7 +92,11 @@ public interface Tables {
 	 */
 	ODLColumnType getColumnType(Class<?> externalType);
 	
-
+	/*
+	 * Get the column type from its name
+	 */
+	ODLColumnType getColumnType(String columnTypeName);
+	
 	/**
 	 * Find the table index using a standardised string compare
 	 * @param ds
@@ -131,4 +140,15 @@ public interface Tables {
 	 * @return Return true if (and only if) tables have identical structure and field values
 	 */
 	boolean isIdentical(ODLTableReadOnly a, ODLTableReadOnly b);
+	
+	/**
+	 * Get the set of columns names. The set object supports standardised string
+	 * lookup - i.e. case insensitive etc
+	 * @param table
+	 * @return
+	 */
+	Set<String> getColumnNamesSet(ODLTableDefinition table);
+	
+	
+	Map<String, Integer> getColumnNamesMap(ODLTableDefinition table);
 }

@@ -437,10 +437,18 @@ final public class AdapterBuilder {
 			}
 		}
 		
-		// 7th Feb 2015. True 2-way union decorators create an issue in group-bys as rowids aren't unique.
-		// We therefore just copy the union result over to a different table.
+		// Create union decorator and get the table out of it...
 		UnionDecorator<ODLTable> union = new UnionDecorator<>(built);
 		ODLTableDefinition destDfn = union.getTableAt(0);
+
+		// If we're adding source columns, we need to add them to the mapping here...
+		int firstExtraField = mapping.getFieldCount(destinationTableId);
+		for(int i = firstExtraField ; i<destDfn.getColumnCount();i++){
+			mapping.addMappedField(destinationTableId, destDfn.getColumnName(i), destDfn.getColumnType(i), i);
+		}
+		
+		// 7th Feb 2015. True 2-way union decorators create an issue in group-bys as rowids aren't unique.
+		// We therefore just copy the union result over to a different table.
 		ODLDatastoreAlterable<ODLTableAlterable> ret = mapToNewEmptyTable(destinationTableId, destDfn);
 		DatastoreCopier.copyData(union.getTableAt(0), ret.getTableAt(0));
 
@@ -1115,7 +1123,7 @@ final public class AdapterBuilder {
 						
 						if(!errorReporter.reportedAccessingNonGroupByField){
 							errorReporter.reportedAccessingNonGroupByField = true;
-							report.log("Attempted to access field from the ungrouped table: " + getName());
+							report.log("Attempted to access field from the ungrouped table: " + getName() + ". Only non-formula group-by fields can be accessed.");
 						}
 						return Functions.EXECUTION_ERROR;
 					}

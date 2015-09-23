@@ -84,6 +84,17 @@ public class NOVLPolyLayerTile {
 			return drawOutline;
 		}
 
+
+		@Override
+		public long getMinZoom() {
+			// Ensure always visible as visibility filtering is done afterwards
+			return Long.MIN_VALUE;
+		}
+
+		@Override
+		public long getMaxZoom() {
+			return Long.MAX_VALUE;
+		}
 	}
 
 	DrawableObjectLayer getLayer(){
@@ -176,7 +187,7 @@ public class NOVLPolyLayerTile {
 	
 	//static final HashSet<Integer> distinctRgbs = new HashSet<>();
 	
-	boolean draw(Iterable<DrawableObject> polys, Graphics2D g2d,TLongHashSet selectedIds, int x, int y){
+	boolean draw(Iterable<DrawableObject> polys, Graphics2D g2d,TLongHashSet selectedIds, int x, int y, int zoom){
 		
 		// get colour state of each geom and put this in a map using our ids
 		final TIntObjectHashMap< Color> colours = new TIntObjectHashMap<>();
@@ -184,15 +195,18 @@ public class NOVLPolyLayerTile {
 			if(obj.getGeometry()==null){
 				continue;
 			}
-			Integer id = ids.get(obj.getGeometry());
-			if(id==null){
+			int id = ids.get(obj.getGeometry());
+			if(id==-1){
 				// unknown id.. rendering went wrong
 				return false;
 			}
 			
-			Color col = DatastoreRenderer.getRenderColour(obj, selectedIds.contains(obj.getGlobalRowId()));
-			
-			colours.put(id, col);
+			// Check visible at zoom, get colour if so
+			if(DatastoreRenderer.isVisibleAtZoom(obj, zoom)){
+				Color col = DatastoreRenderer.getRenderColour(obj, selectedIds.contains(obj.getGlobalRowId()));
+				colours.put(id, col);
+				
+			}
 		}
 		
 		BufferedImage baseImg = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
@@ -200,13 +214,13 @@ public class NOVLPolyLayerTile {
 
 		try {
 			BufferedImage img =null;
-			img = toImage(filled.get(), createRGBFilter(colours,false));
+			img = applyColourFiltering(filled.get(), createRGBFilter(colours,false));
 			gTmp.drawImage(img, x, y,null);
 			
 			// draw borders
-			img = toImage(borders.get(),  createRGBFilter(colours,true));
+			img = applyColourFiltering(borders.get(),  createRGBFilter(colours,true));
 			
-			// soften borders
+			// soften borders with a blur
 	        float[] blurKernel = {
 		            0, 1 / 8f, 0,
 		            1/8f, 1 / 2f, 1/8f,
@@ -294,7 +308,7 @@ public class NOVLPolyLayerTile {
 	}
 
 
-	private static BufferedImage toImage(Image uncompressed, RGBImageFilter rgbFilter) {
+	private static BufferedImage applyColourFiltering(Image uncompressed, RGBImageFilter rgbFilter) {
 		ImageProducer ip = new FilteredImageSource(uncompressed.getSource(), rgbFilter);
 		Image coloured = Toolkit.getDefaultToolkit().createImage(ip);
 		return ImageUtils.toBufferedImage(coloured);

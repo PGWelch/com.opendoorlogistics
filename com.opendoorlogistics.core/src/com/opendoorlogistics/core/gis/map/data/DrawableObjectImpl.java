@@ -65,6 +65,7 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 	
 	private static final BeanDatastoreMapping mapping;
 	public static final ODLDatastore<? extends ODLTableDefinition> ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS;
+	public static final ODLDatastore<? extends ODLTableDefinition> DRAWABLES_ONLY_DS;
 	private static final double DEFAULT_OPAQUE = 1.0;
 	
 	static{
@@ -91,17 +92,30 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		mapping.getTableMapping(0).setRowfilter(rowfilter);
 		
 		// Create datastore definition for active, inactive-background, inactive-foreground
-		ODLDatastoreImpl<ODLTableDefinitionAlterable> activeBackgroundForeground = new ODLDatastoreImpl<>(ODLTableImpl.ODLTableDefinitionAlterableFactory);
 		ODLTableDefinition drawablesTable = mapping.getDefinition().getTableAt(0);
-		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES, -1);				
-		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND, -1);				
-		DatastoreCopier.copyTableDefinition(drawablesTable, activeBackgroundForeground, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, -1);				
-		DatastoreCopier.copyTableDefinition(BackgroundImage.BEAN_MAPPING.getTableDefinition(), activeBackgroundForeground);				
-		for(int tableIndx = 1 ; tableIndx<=3 ; tableIndx++){
-			ODLTableDefinitionAlterable alterable= activeBackgroundForeground.getTableAt(tableIndx);
+		
+		// build without images table
+		ODLDatastoreImpl<ODLTableDefinitionAlterable> abc = new ODLDatastoreImpl<>(ODLTableImpl.ODLTableDefinitionAlterableFactory);
+		DatastoreCopier.copyTableDefinition(drawablesTable, abc, PredefinedTags.DRAWABLES, -1);				
+		DatastoreCopier.copyTableDefinition(drawablesTable, abc, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND, -1);				
+		DatastoreCopier.copyTableDefinition(drawablesTable, abc, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, -1);
+		for(int tableIndx = 1 ; tableIndx<=2 ; tableIndx++){
+			ODLTableDefinitionAlterable alterable= abc.getTableAt(tableIndx);
 			alterable.setFlags(alterable.getFlags() | TableFlags.FLAG_IS_OPTIONAL);
 		}
-		ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS = activeBackgroundForeground;
+		DRAWABLES_ONLY_DS = abc;
+		
+		// build with images
+		ODLDatastoreImpl<ODLTableDefinitionAlterable> abci = new ODLDatastoreImpl<>(ODLTableImpl.ODLTableDefinitionAlterableFactory);
+		DatastoreCopier.copyTableDefinition(drawablesTable, abci, PredefinedTags.DRAWABLES, -1);				
+		DatastoreCopier.copyTableDefinition(drawablesTable, abci, PredefinedTags.DRAWABLES_INACTIVE_BACKGROUND, -1);				
+		DatastoreCopier.copyTableDefinition(drawablesTable, abci, PredefinedTags.DRAWABLES_INACTIVE_FOREGROUND, -1);
+		DatastoreCopier.copyTableDefinition(BackgroundImage.BEAN_MAPPING.getTableDefinition(), abci);				
+		for(int tableIndx = 1 ; tableIndx<=3 ; tableIndx++){
+			ODLTableDefinitionAlterable alterable= abci.getTableAt(tableIndx);
+			alterable.setFlags(alterable.getFlags() | TableFlags.FLAG_IS_OPTIONAL);
+		}
+		ACTIVE_BACKGROUND_FOREGROUND_IMAGE_DS = abci;
 	}
 	
 	public static BeanDatastoreMapping getBeanMapping(){
