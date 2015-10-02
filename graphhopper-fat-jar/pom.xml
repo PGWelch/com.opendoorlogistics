@@ -61,11 +61,6 @@
 			<artifactId>graphhopper</artifactId>
 			<version>0.5.0</version>
 		</dependency>
-		<dependency>
-			<groupId>com.graphhopper</groupId>
-			<artifactId>graphhopper-web</artifactId>
-			<version>0.5.0</version>
-		</dependency>
 	</dependencies>
 
 	<repositories>

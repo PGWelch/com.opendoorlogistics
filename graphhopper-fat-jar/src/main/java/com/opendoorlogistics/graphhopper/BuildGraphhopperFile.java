@@ -1,7 +1,6 @@
 package com.opendoorlogistics.graphhopper;
 
 import com.graphhopper.GraphHopper;
-import com.graphhopper.http.GHServer;
 import com.graphhopper.util.CmdArgs;
 
 public class BuildGraphhopperFile {
