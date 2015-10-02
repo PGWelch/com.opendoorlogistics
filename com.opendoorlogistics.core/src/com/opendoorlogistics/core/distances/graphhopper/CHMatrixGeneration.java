@@ -18,6 +18,7 @@ import com.graphhopper.GHRequest;
 import com.graphhopper.GHResponse;
 import com.graphhopper.GraphHopper;
 import com.graphhopper.routing.Path;
+import com.graphhopper.routing.PathBidirRef;
 import com.graphhopper.routing.QueryGraph;
 import com.graphhopper.routing.ch.Path4CH;
 import com.graphhopper.routing.ch.PreparationWeighting;
@@ -25,10 +26,14 @@ import com.graphhopper.routing.util.DefaultEdgeFilter;
 import com.graphhopper.routing.util.EdgeFilter;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.routing.util.FlagEncoder;
+import com.graphhopper.routing.util.LevelEdgeFilter;
 import com.graphhopper.routing.util.Weighting;
+import com.graphhopper.routing.util.WeightingMap;
+import com.graphhopper.storage.CHGraph;
 import com.graphhopper.storage.EdgeEntry;
 import com.graphhopper.storage.Graph;
 import com.graphhopper.storage.index.QueryResult;
+import com.graphhopper.util.CHEdgeIteratorState;
 import com.graphhopper.util.EdgeExplorer;
 import com.graphhopper.util.EdgeIterator;
 import com.graphhopper.util.PointList;
@@ -57,6 +62,10 @@ public class CHMatrixGeneration implements Disposable {
 	private final PreparationWeighting prepareWeighting;
 	private final boolean useExpansionCache = true;
 	private final boolean outputText = false;
+	private final FlagEncoder flagEncoder;
+	private final Weighting weighting;
+	private final CHGraph chGraph;
+	private final LevelEdgeFilter levelEdgeFilter;
 
 	private static class FromIndexEdge {
 		private final int fromIndex;
@@ -78,9 +87,6 @@ public class CHMatrixGeneration implements Disposable {
 		   return null;
 		}
 
-		if(!rsp.isFound()) {
-		   return null;
-		}
 
 		PointList pointList = rsp.getPoints();	
 		int n = pointList.size();
@@ -125,24 +131,31 @@ public class CHMatrixGeneration implements Disposable {
 		this.graphFolder = graphFolder;
 		this.hopper = createHopper();
 		hopper.setGraphHopperLocation(this.graphFolder);
-		hopper.setEncodingManager(new EncodingManager("car"));
+		hopper.setEncodingManager(new EncodingManager(EncodingManager.CAR));
+		flagEncoder = hopper.getEncodingManager().getEncoder(EncodingManager.CAR);
 		hopper.importOrLoad();
 		encodingManager = hopper.getEncodingManager();
 
-		String vehicle = hopper.getEncodingManager().getSingle().toString();
+		String vehicle = flagEncoder.toString();
 		if (!hopper.getEncodingManager().supports(vehicle)) {
 			throw new RuntimeException(new IllegalArgumentException("Vehicle " + vehicle + " unsupported. " + "Supported are: " + hopper.getEncodingManager()));
 		}
 
 		edgeFilter = new DefaultEdgeFilter(encodingManager.getEncoder(vehicle));
 
-		if (hopper.getPreparation() == null) {
-			throw new RuntimeException("Preparation object is null. CH-preparation wasn't done or did you forgot to call disableCHShortcuts()?");
-		}
+//		if (hopper.getPreparation() == null) {
+//			throw new RuntimeException("Preparation object is null. CH-preparation wasn't done or did you forgot to call disableCHShortcuts()?");
+//		}
 
-		Weighting weighting = hopper.createWeighting("fastest", hopper.getEncodingManager().getSingle());
+		WeightingMap weightingMap = new WeightingMap("fastest");
+		weighting = hopper.createWeighting(weightingMap, flagEncoder);
 		prepareWeighting = new PreparationWeighting(weighting);
 
+		// save reference to the CH graph
+		chGraph = hopper.getGraphHopperStorage().getGraph(CHGraph.class);
+		
+		// and create a level edge filter to ensure we (a) accept virtual (snap-to) edges and (b) don't descend into the base graph
+		levelEdgeFilter = new LevelEdgeFilter(chGraph);
 	}
 
 	@Override
@@ -155,12 +168,6 @@ public class CHMatrixGeneration implements Disposable {
 		GHRequest req = new GHRequest(from, to).setVehicle("car");
 		GHResponse rsp = hopper.route(req);
 		if (rsp.hasErrors()) {
-			return null;
-		}
-
-		// route was found? e.g. if disconnected areas (like island)
-		// no route can ever be found
-		if (!rsp.isFound()) {
 			return null;
 		}
 
@@ -210,7 +217,10 @@ public class CHMatrixGeneration implements Disposable {
 		int n = points.length;
 		MatrixResult ret = new MatrixResult(n);
 		for (int fromIndex = 0; fromIndex < n; fromIndex++) {
-			for (int toIndex = 0; toIndex < n; toIndex++) {
+
+			// Loop over TO in reverse order so the first A-B we process doesn't have the same
+			// location for FROM and TO - this makes it quicker to debug as the first call is no longer a 'dummy' one.
+			for (int toIndex = n-1; toIndex >=0; toIndex--) {
 				GHPoint from = points[fromIndex];
 				GHPoint to = points[toIndex];
 				GHResponse rsp = getResponse(from, to);
@@ -218,7 +228,7 @@ public class CHMatrixGeneration implements Disposable {
 					continue;
 				}
 				ret.setDistanceMetres(fromIndex, toIndex, rsp.getDistance());
-				ret.setTimeMilliseconds(fromIndex, toIndex, rsp.getMillis());
+				ret.setTimeMilliseconds(fromIndex, toIndex, rsp.getTime());
 			}
 		}
 		return ret;
@@ -243,7 +253,9 @@ public class CHMatrixGeneration implements Disposable {
 		if(processingApi!=null){
 			processingApi.postStatusMessage("Querying positions against graph");			
 		}
-		final QueryGraph queryGraph = new QueryGraph(hopper.getGraph());
+		
+		//final QueryGraph queryGraph = new QueryGraph(hopper.getGraphHopperStorage());
+		final QueryGraph queryGraph = new QueryGraph(chGraph);
 		queryGraph.lookup(validResults);
 		if(processingApi!=null && processingApi.isCancelled()){
 			return null;
@@ -294,7 +306,7 @@ public class CHMatrixGeneration implements Disposable {
 
 		// now query all in a reverse direction, building up the final matrix
 		// for each one
-		EdgeExplorer inEdgeExplorer = queryGraph.createEdgeExplorer(new DefaultEdgeFilter(hopper.getEncodingManager().getSingle(), true, false));
+		EdgeExplorer inEdgeExplorer = queryGraph.createEdgeExplorer(new DefaultEdgeFilter(flagEncoder, true, false));
 		UpdateTimer timer = new UpdateTimer(100);
 		for (int toIndex = 0; toIndex < n; toIndex++) {
 	
@@ -307,11 +319,9 @@ public class CHMatrixGeneration implements Disposable {
 				// run query
 				SearchResult reverseTree = search(prepareWeighting, queryResults[toIndex].getClosestNode(), inEdgeExplorer, true);
 
-				// This reverse tree is used to find all results going TO the
-				// current point.
+				// This reverse tree is used to find all results going TO the current point.
 
-				// Parse all nodes of the reverse tree finding the minimum cost
-				// meeting node for each from
+				// Parse all nodes of the reverse tree finding the minimum cost meeting node for each from
 				final double[] minCost = new double[n];
 				Arrays.fill(minCost, Double.POSITIVE_INFINITY);
 				final int[] minCostNode = new int[n];
@@ -320,8 +330,7 @@ public class CHMatrixGeneration implements Disposable {
 
 					@Override
 					public boolean execute(int meetingPointNode, EdgeEntry reverseEdge) {
-						// Use list of all FROM trees which encountered this
-						// node
+						// Use list of all FROM trees which encountered this node
 						List<FromIndexEdge> list = visitedByNodeId.get(meetingPointNode);
 						if (list == null) {
 							return true;
@@ -331,8 +340,7 @@ public class CHMatrixGeneration implements Disposable {
 							FromIndexEdge fie = list.get(i);
 							int fromIndex = fie.fromIndex;
 							EdgeEntry forwardEdge = fie.edge;
-							// see if this meeting point has a lower cost
-							// than the other
+							// see if this meeting point has a lower cost  than the other
 							double cost = forwardEdge.weight + reverseEdge.weight;
 							if (cost < minCost[fromIndex]) {
 								minCost[fromIndex] = cost;
@@ -343,39 +351,24 @@ public class CHMatrixGeneration implements Disposable {
 					}
 				});
 
-				// extract the path for each one
+				// extract the path for each one so we can get the distance and time
 				for (int fromIndex = 0; fromIndex < n; fromIndex++) {
 					int meetingPointNode = minCostNode[fromIndex];
 					if (meetingPointNode != -1) {
-						Path4CH pathCh = new Path4CH(queryGraph, encodingManager.getSingle()) {
-							@Override
-							protected void processEdge(int tmpEdge, int endNode) {
-								if (useExpansionCache) {
-									EdgeNodeIdHashKey edgnid = new EdgeNodeIdHashKey(tmpEdge, endNode);
-									DistanceTime dt = expansionCache.get(edgnid);
-									if (dt == null) {
-										dt = getExpandedCHEdge(queryGraph, tmpEdge, endNode);
-										expansionCache.put(edgnid, dt);
-									}
-									distance += dt.getDistance();
-									millis += dt.getMillis();
-								} else {
-									super.processEdge(tmpEdge, endNode);
-								}
-							}
-
-						};
+						
+						// use a cache of expanded CH edges for performance reasons
+						CacheablePath4CH pathCh = new CacheablePath4CH(queryGraph, flagEncoder, expansionCache);
 						pathCh.setSwitchToFrom(false);
 						pathCh.setEdgeEntry(forwardTrees[fromIndex].get(meetingPointNode));
 						pathCh.setEdgeEntryTo(reverseTree.get(meetingPointNode));
 						Path path = pathCh.extract();
-						ret.setTimeMilliseconds(fromIndex, toIndex, path.getMillis());
+						ret.setTimeMilliseconds(fromIndex, toIndex, path.getTime());
 						ret.setDistanceMetres(fromIndex, toIndex, path.getDistance());
 					}
 				}
 			}
 			
-			if(timer.isUpdate()){
+			if(timer.isUpdate() && processingApi!=null){
 				processingApi.postStatusMessage("Performed backwards search for " + (toIndex+1) + "/" + n + " points");
 			}
 		}
@@ -408,7 +401,7 @@ public class CHMatrixGeneration implements Disposable {
 			System.out.println("Running forward searches");
 		}
 
-		EdgeExplorer outEdgeExplorer = queryGraph.createEdgeExplorer(new DefaultEdgeFilter(hopper.getEncodingManager().getSingle(), false, true));
+		EdgeExplorer outEdgeExplorer = queryGraph.createEdgeExplorer(new DefaultEdgeFilter(flagEncoder, false, true));
 		for (int fromIndex = 0; fromIndex < queryResults.length; fromIndex++) {
 			
 			// check for user quitting
@@ -461,8 +454,8 @@ public class CHMatrixGeneration implements Disposable {
 	}
 
 	private static class EdgeNodeIdHashKey {
-		private final int edgeId;
-		private final int endNodeId;
+		private int edgeId;
+		private int endNodeId;
 
 		public EdgeNodeIdHashKey(int edgeId, int endNodeId) {
 			this.edgeId = edgeId;
@@ -494,6 +487,16 @@ public class CHMatrixGeneration implements Disposable {
 			return true;
 		}
 
+		public void setEdgeId(int edgeId) {
+			this.edgeId = edgeId;
+		}
+
+
+		public void setEndNodeId(int endNodeId) {
+			this.endNodeId = endNodeId;
+		}
+
+		
 	}
 
 	private SearchResult search(PreparationWeighting weighting, int node, EdgeExplorer edgeExplorer, boolean reverse) {
@@ -521,7 +524,15 @@ public class CHMatrixGeneration implements Disposable {
 			while (iter.next()) {
 				int adjNode = iter.getAdjNode();
 
-				double tmpWeight = weighting.calcWeight(iter, reverse) + currEdge.weight;
+				// Filter out the base (no CH) graph
+				if(!levelEdgeFilter.accept(iter)){
+					continue;
+				}
+				
+				// As turn restrictions aren't enabled at the moment we should be safe putting
+				// a non-existent edge for the previous or next edge, though we should fix this in the future...
+				int previousOrNextEdge=-1;
+				double tmpWeight = weighting.calcWeight(iter, reverse,previousOrNextEdge) + currEdge.weight;
 
 				EdgeEntry de = shortestWeightMap.get(adjNode);
 				if (de == null) {
@@ -557,36 +568,40 @@ public class CHMatrixGeneration implements Disposable {
 		return shortestWeightMap;
 	}
 
-	/**
-	 * Get the result of expanding a single CH edge
-	 * 
-	 * @param graph
-	 * @param tmpEdge
-	 * @param endNode
-	 * @return
-	 */
-	private DistanceTime getExpandedCHEdge(Graph graph, final int tmpEdge, final int endNode) {
-		class SingleEdgeExpander extends Path4CH {
-			public SingleEdgeExpander(Graph g, FlagEncoder encoder) {
-				super(g, encoder);
-			}
-
-			/**
-			 * Override to make method available to code below...
-			 */
-			@Override
-			protected void processEdge(int tmpEdge, int endNode) {
-				super.processEdge(tmpEdge, endNode);
-			}
-
-		}
-		SingleEdgeExpander see = new SingleEdgeExpander(graph, encodingManager.getSingle());
-		see.processEdge(tmpEdge, endNode);
-		return new DistanceTime(see.getDistance(), see.getMillis());
-	}
+//	/**
+//	 * Get the result of expanding a single CH edge
+//	 * 
+//	 * @param graph
+//	 * @param tmpEdge
+//	 * @param endNode
+//	 * @return
+//	 */
+//	private DistanceTime getExpandedCHEdge(Graph graph, final int tmpEdge, final int endNode) {
+//		class SingleEdgeExpander extends Path4CH {
+//			public SingleEdgeExpander(Graph g, FlagEncoder encoder) {
+//				super(g, encoder);
+//			}
+//
+//			/**
+//			 * Override to make method available to code below...
+//			 */
+//			@Override
+//			protected void processEdge(int tmpEdge, int endNode) {
+//				super.processEdge(tmpEdge, endNode);
+//			}
+//
+//		}
+//		SingleEdgeExpander see = new SingleEdgeExpander(graph, flagEncoder);
+//		see.processEdge(tmpEdge, endNode);
+//		return new DistanceTime(see.getDistance(), see.getTime());
+//	}
 	
 	public String getGraphFolder(){
 		return graphFolder;
+	}
+	
+	public GraphHopper getGraphhopper(){
+		return hopper;
 	}
 	
 	public static void main(String[]args){
@@ -615,7 +630,7 @@ public class CHMatrixGeneration implements Disposable {
 		GHPoint b = new GHPoint(52.	,-1.3);		
 		
 		GraphHopper hopper = new GraphHopper().forDesktop();
-		hopper.setInMemory(true);
+		hopper.setInMemory();
 		
 		
 		hopper.setGraphHopperLocation("C:\\data\\graphhopper\\graphhopper\\europe_great-britain-gh");
@@ -627,8 +642,119 @@ public class CHMatrixGeneration implements Disposable {
 		for(Throwable thr : rsp.getErrors()){
 			System.out.println(thr);
 		}
-		System.out.println("Found = " + rsp.isFound());
+		//System.out.println("Found = " + rsp.isFound());
 		System.out.println("Distance = " + rsp.getDistance());
 
 	}
+	
+	/**
+	 * Modified implementation of Graphhopper's original Path4CH class which allows 
+	 * for the caching the expanding of shortcut edges.
+	 * @author Phil based on Peter Karich's implementation 
+	 *
+	 */
+	private class CacheablePath4CH extends PathBidirRef
+	{
+	    private final Graph routingGraph;
+	    private final HashMap<EdgeNodeIdHashKey, DistanceTime> expansionCache;
+	    private final EdgeNodeIdHashKey cacheKey = new EdgeNodeIdHashKey(-1, -1);
+	    private final FlagEncoder encoder;
+	    public CacheablePath4CH( Graph chGraph,FlagEncoder encoder,HashMap<EdgeNodeIdHashKey, DistanceTime> expansionCache )
+	    {
+	        super(chGraph.getBaseGraph(), encoder);
+	        this.routingGraph = chGraph;
+	        this.expansionCache = expansionCache;
+	        this.encoder = encoder;
+	    }
+
+	    @Override
+	    protected final void processEdge( int tmpEdge, int endNode )
+	    {
+			if (expansionCache!=null) {
+				// try getting from cache
+				EdgeNodeIdHashKey edgnid = new EdgeNodeIdHashKey(tmpEdge, endNode);
+				cacheKey.setEdgeId(tmpEdge);
+				cacheKey.setEndNodeId(endNode);
+				DistanceTime dt = expansionCache.get(edgnid);
+				
+				// calculate using a new instance without the cache if needed
+				if (dt == null) {
+					CacheablePath4CH noCache = new CacheablePath4CH(routingGraph, encoder, null);
+					noCache.processEdge(tmpEdge, endNode);
+					dt = new DistanceTime(noCache.getDistance(), noCache.getTime());
+					expansionCache.put(edgnid, dt);
+				}
+				
+				distance += dt.getDistance();
+				time += dt.getMillis();
+			} else {
+		        expandEdge((CHEdgeIteratorState) routingGraph.getEdgeIteratorState(tmpEdge, endNode), false);
+			}	    	
+	    }
+
+
+	    /**
+	     * Peter Karich's implementation from Path4CH
+	     * @param mainEdgeState
+	     * @param reverse
+	     */
+	    private void expandEdge( CHEdgeIteratorState mainEdgeState, boolean reverse )
+	    {
+	        if (!mainEdgeState.isShortcut())
+	        {
+	            double dist = mainEdgeState.getDistance();
+	            distance += dist;
+	            long flags = mainEdgeState.getFlags();
+	            time += calcMillis(dist, flags, reverse);
+	            addEdge(mainEdgeState.getEdge());
+	            return;
+	        }
+
+	        int skippedEdge1 = mainEdgeState.getSkippedEdge1();
+	        int skippedEdge2 = mainEdgeState.getSkippedEdge2();
+	        int from = mainEdgeState.getBaseNode(), to = mainEdgeState.getAdjNode();
+
+	        // get properties like speed of the edge in the correct direction
+	        if (reverse)
+	        {
+	            int tmp = from;
+	            from = to;
+	            to = tmp;
+	        }
+
+	        // getEdgeProps could possibly return an empty edge if the shortcut is available for both directions
+	        if (reverseOrder)
+	        {
+	            CHEdgeIteratorState edgeState = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge1, to);
+	            boolean empty = edgeState == null;
+	            if (empty)
+	                edgeState = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge2, to);
+
+	            expandEdge(edgeState, false);
+
+	            if (empty)
+	                edgeState = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge1, from);
+	            else
+	                edgeState = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge2, from);
+
+	            expandEdge(edgeState, true);
+	        } else
+	        {
+	            CHEdgeIteratorState iter = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge1, from);
+	            boolean empty = iter == null;
+	            if (empty)
+	                iter = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge2, from);
+
+	            expandEdge(iter, true);
+
+	            if (empty)
+	                iter = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge1, to);
+	            else
+	                iter = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge2, to);
+
+	            expandEdge(iter, false);
+	        }
+	    }
+	}
+
 }

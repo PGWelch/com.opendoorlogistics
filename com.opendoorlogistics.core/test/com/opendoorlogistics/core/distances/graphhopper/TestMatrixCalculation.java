@@ -21,10 +21,10 @@ public class TestMatrixCalculation {
 
 	@Before
 	public void setUp() throws Exception {
-		String graphFolder = "C:\\large_data\\graphhopper\\graphhopper\\europe_great-britain-gh";
+		String graphFolder = "C:\\temp\\TestGH0.5\\great-britain-latest.osm-gh";
 		dijsktra = new CHMatrixGeneration(graphFolder);
 
-		int n = 25;
+		int n = 50;
 		ExamplePointsData pnts = new ExamplePointsData();
 		if (pnts.points.length < n) {
 			n = pnts.points.length;

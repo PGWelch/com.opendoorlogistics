@@ -25,7 +25,6 @@
 	<classpathentry exported="true" kind="lib" path="libs/trove-3.0.3.jar" sourcepath="C:/Users/Phil/.m2/repository/net/sf/trove4j/trove4j/3.0.3/trove4j-3.0.3-sources.jar"/>
 	<classpathentry kind="lib" path="libs/vecmath-1.3.2.jar"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/com.opendoorlogistics.api"/>
-	<classpathentry exported="true" kind="lib" path="libs/graphhopper-0.4-SNAPSHOT.jar" sourcepath="C:/Users/Phil/Dropbox/Business/OpenSourceProjects/graphhopper/graphhopper-master"/>
 	<classpathentry kind="lib" path="libs/slf4j-api-1.7.7.jar"/>
 	<classpathentry kind="lib" path="libs/slf4j-log4j12-1.7.7.jar"/>
 	<classpathentry kind="lib" path="libs/lz4-1.2.0.jar" sourcepath="C:/Users/Phil/.m2/repository/net/jpountz/lz4/lz4/1.2.0/lz4-1.2.0-sources.jar"/>
@@ -44,5 +43,6 @@
 	<classpathentry kind="lib" path="libs/poi-ooxml-schemas-3.11-beta2-20140822.jar"/>
 	<classpathentry kind="lib" path="libs/log4j-1.2.13.jar"/>
 	<classpathentry kind="lib" path="libs/mapsforge-SwingMapViewer-0.5.1-jar-with-dependencies.jar" sourcepath="C:/Users/Phil/Dropbox/Business/DevelopmentSpace/Github/mapsforge"/>
+	<classpathentry exported="true" kind="lib" path="libs/graphhopper-0.5.0.jar" sourcepath="C:/Users/Phil/Dropbox/Business/DevelopmentSpace/3rdParty/graphhopper-0.5.0"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
