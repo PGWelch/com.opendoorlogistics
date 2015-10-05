@@ -429,9 +429,20 @@ public class CHMatrixGeneration implements Disposable {
 		}
 	}
 
-
-	private static class SearchResult extends TIntObjectHashMap<EdgeEntry> {
-
+	/**
+	 * A map of node id to EdgeEntries generated for a single shortest path query
+	 * @author Phil
+	 *
+	 */
+	public static class SearchResult extends TIntObjectHashMap<EdgeEntry> {
+		public final int nodeId;
+		public final boolean reverseQuery;
+		
+		SearchResult(int nodeId, boolean reverseQuery) {
+			this.nodeId = nodeId;
+			this.reverseQuery = reverseQuery;
+		}
+			
 	}
 
 	private static class DistanceTime {
@@ -502,7 +513,7 @@ public class CHMatrixGeneration implements Disposable {
 	private SearchResult search(PreparationWeighting weighting, int node, EdgeExplorer edgeExplorer, boolean reverse) {
 
 		PriorityQueue<EdgeEntry> openSet = new PriorityQueue<>();
-		SearchResult shortestWeightMap = new SearchResult();
+		SearchResult shortestWeightMap = new SearchResult(node,reverse);
 
 		EdgeEntry firstEdge = new EdgeEntry(EdgeIterator.NO_EDGE, node, 0);
 		shortestWeightMap.put(node, firstEdge);
@@ -646,11 +657,38 @@ public class CHMatrixGeneration implements Disposable {
 		System.out.println("Distance = " + rsp.getDistance());
 
 	}
+
+	/**
+	 * Unpack a single edge of graph (either CH edge or base edge)
+	 * @param routingGraph
+	 * @param baseGraph
+	 * @param encoder
+	 * @param edge
+	 * @param endNode
+	 * @return
+	 */
+	public DistanceTime unpackSingleEdge(Graph routingGraph, Graph baseGraph, FlagEncoder encoder,  int edge, int endNode){
+
+		class SingleEdgeUnpacker extends Path4CH{
+
+			public SingleEdgeUnpacker(Graph routingGraph, Graph baseGraph, FlagEncoder encoder) {
+				super(routingGraph, baseGraph, encoder);
+			}
+		
+		    public void processSingleEdge( int tmpEdge, int endNode ){
+		    	// access the protected method in the base class
+		    	super.processEdge(tmpEdge, endNode);
+		    }
+		}	
+		
+		SingleEdgeUnpacker unpacker = new SingleEdgeUnpacker(routingGraph, baseGraph, encoder);
+		unpacker.processSingleEdge(edge, endNode);
+		return new DistanceTime(unpacker.getDistance(), unpacker.getTime());
+	}
 	
 	/**
-	 * Modified implementation of Graphhopper's original Path4CH class which allows 
-	 * for the caching the expanding of shortcut edges.
-	 * @author Phil based on Peter Karich's implementation 
+	 * CH path extractor with caching
+	 * @author Phil
 	 *
 	 */
 	private class CacheablePath4CH extends PathBidirRef
@@ -670,90 +708,27 @@ public class CHMatrixGeneration implements Disposable {
 	    @Override
 	    protected final void processEdge( int tmpEdge, int endNode )
 	    {
+	    	DistanceTime dt = null;
 			if (expansionCache!=null) {
 				// try getting from cache
 				EdgeNodeIdHashKey edgnid = new EdgeNodeIdHashKey(tmpEdge, endNode);
 				cacheKey.setEdgeId(tmpEdge);
 				cacheKey.setEndNodeId(endNode);
-				DistanceTime dt = expansionCache.get(edgnid);
+				dt = expansionCache.get(edgnid);
 				
 				// calculate using a new instance without the cache if needed
 				if (dt == null) {
-					CacheablePath4CH noCache = new CacheablePath4CH(routingGraph, encoder, null);
-					noCache.processEdge(tmpEdge, endNode);
-					dt = new DistanceTime(noCache.getDistance(), noCache.getTime());
+					dt = unpackSingleEdge(routingGraph, routingGraph.getBaseGraph(), encoder, tmpEdge, endNode);
 					expansionCache.put(edgnid, dt);
 				}
 				
-				distance += dt.getDistance();
-				time += dt.getMillis();
 			} else {
-		        expandEdge((CHEdgeIteratorState) routingGraph.getEdgeIteratorState(tmpEdge, endNode), false);
-			}	    	
-	    }
+				dt = unpackSingleEdge(routingGraph, routingGraph.getBaseGraph(), encoder, tmpEdge, endNode);
+			}
+			
+			distance += dt.getDistance();
+			time += dt.getMillis();
 
-
-	    /**
-	     * Peter Karich's implementation from Path4CH
-	     * @param mainEdgeState
-	     * @param reverse
-	     */
-	    private void expandEdge( CHEdgeIteratorState mainEdgeState, boolean reverse )
-	    {
-	        if (!mainEdgeState.isShortcut())
-	        {
-	            double dist = mainEdgeState.getDistance();
-	            distance += dist;
-	            long flags = mainEdgeState.getFlags();
-	            time += calcMillis(dist, flags, reverse);
-	            addEdge(mainEdgeState.getEdge());
-	            return;
-	        }
-
-	        int skippedEdge1 = mainEdgeState.getSkippedEdge1();
-	        int skippedEdge2 = mainEdgeState.getSkippedEdge2();
-	        int from = mainEdgeState.getBaseNode(), to = mainEdgeState.getAdjNode();
-
-	        // get properties like speed of the edge in the correct direction
-	        if (reverse)
-	        {
-	            int tmp = from;
-	            from = to;
-	            to = tmp;
-	        }
-
-	        // getEdgeProps could possibly return an empty edge if the shortcut is available for both directions
-	        if (reverseOrder)
-	        {
-	            CHEdgeIteratorState edgeState = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge1, to);
-	            boolean empty = edgeState == null;
-	            if (empty)
-	                edgeState = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge2, to);
-
-	            expandEdge(edgeState, false);
-
-	            if (empty)
-	                edgeState = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge1, from);
-	            else
-	                edgeState = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge2, from);
-
-	            expandEdge(edgeState, true);
-	        } else
-	        {
-	            CHEdgeIteratorState iter = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge1, from);
-	            boolean empty = iter == null;
-	            if (empty)
-	                iter = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge2, from);
-
-	            expandEdge(iter, true);
-
-	            if (empty)
-	                iter = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge1, to);
-	            else
-	                iter = (CHEdgeIteratorState) routingGraph.getEdgeIteratorState(skippedEdge2, to);
-
-	            expandEdge(iter, false);
-	        }
 	    }
 	}
 
