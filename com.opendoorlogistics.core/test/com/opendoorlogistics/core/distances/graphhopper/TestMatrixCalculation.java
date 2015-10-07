@@ -24,7 +24,7 @@ public class TestMatrixCalculation {
 		String graphFolder = "C:\\temp\\TestGH0.5\\great-britain-latest.osm-gh";
 		dijsktra = new CHMatrixGeneration(graphFolder);
 
-		int n = 50;
+		int n = 25;
 		ExamplePointsData pnts = new ExamplePointsData();
 		if (pnts.points.length < n) {
 			n = pnts.points.length;
@@ -35,13 +35,17 @@ public class TestMatrixCalculation {
 			points[i] = pnts.points[i];
 		}
 
-		System.out.println("Calculating one-by-one");
-		oneByOne = dijsktra.calculateMatrixOneByOne(points);
 		
 		System.out.println("Calculating combined");
 		combined = dijsktra.calculateMatrix(points,null);
-		
-		System.out.println("Starting test");
+
+		System.out.println("Calculating one-by-one");
+		long startNano = System.nanoTime();		
+		oneByOne = dijsktra.calculateMatrixOneByOne(points);
+		long endNano = System.nanoTime();
+		double averageNanos =(double)(endNano - startNano)/(n*n);
+		double averageMs = averageNanos / 1000000;
+		System.out.print("Average milliseconds per one-by-one call: "+ averageMs );
 
 	}
 
