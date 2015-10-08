@@ -314,7 +314,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 		} catch (Throwable e2) {
 			rollbackTransaction();
 
-			JOptionPane.showMessageDialog(getRootPane(), "An exception error occurred." + (Strings.isEmpty(e2.getMessage()) == false ? " " + e2.getMessage() : ""));
+			JOptionPane.showMessageDialog(getRootPane(), "An error occurred." + (Strings.isEmpty(e2.getMessage()) == false ? " " + e2.getMessage() : ""));
 		}
 		return false;
 	}
