@@ -8,11 +8,13 @@ package com.opendoorlogistics.studio.scripts.execution;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -22,14 +24,13 @@ import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
-import com.opendoorlogistics.api.scripts.parameters.Parameters.TableType;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.scripts.parameters.Parameters.TableType;
 import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList.MapSelectionListRegister;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
-import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.scripts.elements.Option;
@@ -40,9 +41,10 @@ import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.tables.concurrency.MergeBranchedDatastore;
 import com.opendoorlogistics.core.tables.concurrency.WriteRecorderDecorator;
-import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 import com.opendoorlogistics.core.tables.decorators.datastores.SimpleDecorator;
+import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 import com.opendoorlogistics.core.tables.utils.DatastoreComparer;
+import com.opendoorlogistics.core.utils.LoggerUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.ModalDialog;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
@@ -54,6 +56,8 @@ import com.opendoorlogistics.studio.scripts.execution.ReporterFrame.RefreshMode;
 import com.opendoorlogistics.studio.scripts.execution.ScriptsDependencyInjector.RecordedLauncherCallback;
 
 class ScriptExecutionTask {
+	private final static Logger LOGGER = Logger.getLogger(ScriptExecutionTask.class.getName());
+	
 	private final ODLApi api = new ODLApiImpl();
 	private final ScriptsRunner runner;
 	private final Script unfiltered;
@@ -80,6 +84,7 @@ class ScriptExecutionTask {
 		this.isScriptRefresh = isScriptRefresh;
 		this.parametersDs = parametersTable;
 	}
+	
 
 	private ReporterFrameIdentifier getReporterFrameId(String instructionId, String panelId) {
 		return new ReporterFrameIdentifier(getScriptId(), instructionId, panelId);
@@ -366,6 +371,7 @@ class ScriptExecutionTask {
 		// Set open controls to be dirty if the datastore changed during the script's execution
 		if (!result.isFailed() && allProcessedFrames.size()>0) {
 
+			
 			// Check read tables in the main datastore against the working copy to determine if anything changed
 			boolean dataChanged = false;
 			for (int tableId : wholeScriptDependencies.getReadTableIds()) {
@@ -393,6 +399,29 @@ class ScriptExecutionTask {
 					}
 				}
 			}
+			
+			// log this check
+			StringBuilder logMsg = new StringBuilder();
+			logMsg.append(LoggerUtils.prefix());
+			logMsg.append(" - processed reporter frames ");
+			int frameCount=0;
+			for (ReporterFrame<?> frame : allProcessedFrames) {
+				if(frameCount>0){
+					logMsg.append(",");
+				}
+				logMsg.append("[");
+				logMsg.append(frame.getId().getCombinedId());
+				logMsg.append("]");
+				frameCount++;
+			}
+			logMsg.append(" with read table ids ");
+			logMsg.append(Strings.toCommas(wholeScriptDependencies.getReadTableIds()));
+			if(dataChanged){
+				logMsg.append(" data changed during running");
+			}else{
+				logMsg.append(" no data changed during running");				
+			}
+			LOGGER.info(logMsg.toString());
 		}
 		
 		// close the progress dialog

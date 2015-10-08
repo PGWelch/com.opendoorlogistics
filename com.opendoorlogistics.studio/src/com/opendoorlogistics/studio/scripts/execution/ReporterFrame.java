@@ -8,21 +8,18 @@ package com.opendoorlogistics.studio.scripts.execution;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashSet;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
-import javax.swing.border.EtchedBorder;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
@@ -36,16 +33,16 @@ import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
-import com.opendoorlogistics.api.tables.ODLListener.ODLListenerType;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.Script;
-import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
+import com.opendoorlogistics.core.utils.LoggerUtils;
+import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
 import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager.GlobalSelectionChangedCB;
 import com.opendoorlogistics.studio.controls.ODLScrollableToolbar;
@@ -53,6 +50,8 @@ import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
 import com.opendoorlogistics.utils.ui.Icons;
 
 final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInternalFrame implements GlobalSelectionChangedCB {
+	private final static Logger LOGGER = Logger.getLogger(ReporterFrame.class.getName());
+	
 	private final GlobalMapSelectedRowsManager gsm;
 	private final ReporterFrameIdentifier id;
 	private final Border defaultBorder;
@@ -259,6 +258,8 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		if (isDirty == false) {
 			isDirty = true;
 
+			LOGGER.info(LoggerUtils.prefix() + " - reporter frame " + id.getCombinedId() + " set dirty. Title="+getTitle());
+			
 			SwingUtilities.invokeLater(new Runnable() {
 
 				@Override
@@ -301,6 +302,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 
 					@Override
 					public void datastoreStructureChanged() {
+						LOGGER.info(LoggerUtils.prefix() + " - reporter frame " + id.getCombinedId() + ", datastore structure changed. Title=" + getTitle());						
 						setDirty();
 					}
 
@@ -331,6 +333,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 
 					@Override
 					public void tableChanged(int tableId, int firstRow, int lastRow) {
+						LOGGER.info(LoggerUtils.prefix() + " - reporter frame " + id.getCombinedId() + ", source table " + tableId + " is dirty. Title="+getTitle());
 						setDirty();
 					}
 
@@ -434,6 +437,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	@Override
 	public void selectionChanged(GlobalMapSelectedRowsManager manager) {
 		if (dependencies != null && dependencies.isReadRowFlags()) {
+			LOGGER.info(LoggerUtils.prefix() + " - reporter frame " + id.getCombinedId() + ", reads row flags and selection has changed. Title=" + getTitle());				
 			setDirty();
 		}
 	}

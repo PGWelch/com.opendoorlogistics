@@ -717,7 +717,7 @@ final public class Strings {
 
 	public static String toString(String separator, int... ints) {
 		StringBuilder builder = new StringBuilder();
-		for (int i = 0; i < ints.length; i++) {
+		for (int i = 0; ints!=null && i < ints.length; i++) {
 			if (i > 0) {
 				builder.append(separator);
 			}
@@ -727,7 +727,10 @@ final public class Strings {
 	}
 
 	public static String toCommas(int... ints) {
-		return toString(",", ints);
+		if(ints!=null){
+			return toString(",", ints);			
+		}
+		return "";
 	}
 
 	/**

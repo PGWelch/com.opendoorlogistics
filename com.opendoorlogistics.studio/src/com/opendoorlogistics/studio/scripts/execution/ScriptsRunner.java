@@ -21,6 +21,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Logger;
 
 import javax.swing.JInternalFrame;
 import javax.swing.JOptionPane;
@@ -33,12 +34,12 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
-import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
+import com.opendoorlogistics.core.utils.LoggerUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
@@ -50,6 +51,7 @@ import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
  *
  */
 public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Disposable {
+	private final static Logger LOGGER = Logger.getLogger(ScriptsRunner.class.getName());
 
 	
 	private static class RefreshQueue{
@@ -401,6 +403,8 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 	@Override
 	public void postReportRefreshRequest(Script unfilteredScript,ReporterFrameIdentifier frameIdentifier, boolean isAutomaticRefresh,ODLDatastore<? extends ODLTable> parametersTable) {
 		ExecutionUtils.throwIfNotOnEDT();
+		
+		LOGGER.info(LoggerUtils.prefix() + " - received refresh report request for frame " + (frameIdentifier!=null ? frameIdentifier.getCombinedId():""));
 		
 		// Post to the queue
 		reportRefreshQueue.post(new RefreshItem(unfilteredScript, frameIdentifier, isAutomaticRefresh,parametersTable));
