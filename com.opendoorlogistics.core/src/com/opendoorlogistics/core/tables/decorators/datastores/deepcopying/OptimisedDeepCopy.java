@@ -62,6 +62,8 @@ class OptimisedDeepCopy<T extends ODLTableDefinition> extends SimpleAbstractDeco
 			TableHolder h = tables.get(i);
 			
 			// only take a deep copy when we need to
+			// TO DO .. .this looks like we could optimise this by placing this within the return,
+			// but we need to check for any adverse effects...
 			if(makeWritable && h.isImmutable){
 				h.table = (T)h.table.deepCopyWithShallowValueCopy();
 				h.isImmutable = false;

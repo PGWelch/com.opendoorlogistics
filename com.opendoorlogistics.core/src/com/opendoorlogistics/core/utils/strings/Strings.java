@@ -473,15 +473,20 @@ final public class Strings {
 	}
 	
 	/**
-	 * Standardised comparison of two strings. The comparison compares the standardised version of the two strings. It also handles the situation
-	 * where you have a word followed by a number, e.g. "vehicle 9", "vehicle 11", and applies numeric sorting to the number part.
+	 * Standardised comparison of two strings. The comparison compares the standardised version of the two strings.
 	 * 
 	 * @param a
 	 * @param b
+	 * @param useNumberSortationLogic If true, the method handles the situation where you have a word followed by a number, e.g. "vehicle 9", "vehicle 11", 
+	 * and applies numeric sorting to the number part. 
 	 * @return
 	 */
-	public static int compareStd(String a, String b) {
-		return StdStringComparer.singleton().compare(a, b);
+	public static int compareStd(String a, String b, boolean useNumberSortationLogic) {
+		if(useNumberSortationLogic){
+			return StdStringComparer.singleton().compare(a, b);			
+		}else{
+			return std(a).compareTo(b);
+		}
 	}
 
 	public static boolean isTrue(String s) {

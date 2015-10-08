@@ -46,7 +46,7 @@ class LowLevelTextRenderer {
 	static final private Font LABEL_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 12);
 	static final Color LABEL_FONT_COLOUR = new Color(0, 0, 100);
 
-	static final StandardisedStringTreeMap<LabelPositionOption> labelPosOptionMap = new StandardisedStringTreeMap<LabelPositionOption>();
+	static final StandardisedStringTreeMap<LabelPositionOption> labelPosOptionMap = new StandardisedStringTreeMap<LabelPositionOption>(false);
 	
 	static final LabelPositionOption [] AUTOMATIC_POSITIONS = new LabelPositionOption[]{LabelPositionOption.TOP, LabelPositionOption.BOTTOM, LabelPositionOption.RIGHT, LabelPositionOption.LEFT,
 		LabelPositionOption.TOP_LEFT, LabelPositionOption.TOP_RIGHT, LabelPositionOption.BOTTOM_LEFT, LabelPositionOption.BOTTOM_RIGHT};

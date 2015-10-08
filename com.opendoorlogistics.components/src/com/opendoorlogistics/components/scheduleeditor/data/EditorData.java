@@ -36,10 +36,10 @@ public class EditorData {
 	private final Task[] tasks;
 	private final Resource[] resources;
 	private final TaskOrder[] order;
-	private final StandardisedStringTreeMap<Task> tasksByTaskId = new StandardisedStringTreeMap<>();
-	private final StandardisedStringTreeMap<TaskOrder> taskOrderByTaskOrderId = new StandardisedStringTreeMap<>();
-	private final StandardisedStringTreeMap<String> resourceByTaskId = new StandardisedStringTreeMap<>();
-	private final StandardisedStringTreeMap<Resource> resourceByResourceId = new StandardisedStringTreeMap<>();
+	private final StandardisedStringTreeMap<Task> tasksByTaskId = new StandardisedStringTreeMap<>(true);
+	private final StandardisedStringTreeMap<TaskOrder> taskOrderByTaskOrderId = new StandardisedStringTreeMap<>(true);
+	private final StandardisedStringTreeMap<String> resourceByTaskId = new StandardisedStringTreeMap<>(true);
+	private final StandardisedStringTreeMap<Resource> resourceByResourceId = new StandardisedStringTreeMap<>(true);
 	private final HashMap<EditorTable, DisplayFields> displayFieldsByType;
 	
 	/**

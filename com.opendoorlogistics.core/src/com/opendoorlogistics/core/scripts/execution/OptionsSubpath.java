@@ -200,8 +200,8 @@ public class OptionsSubpath {
 //	}
 
 	private static class Processor{
-		StandardisedStringSet knownOptionIds = new StandardisedStringSet();	
-		StandardisedStringSet knownInstructionIds = new StandardisedStringSet();
+		StandardisedStringSet knownOptionIds = new StandardisedStringSet(false);	
+		StandardisedStringSet knownInstructionIds = new StandardisedStringSet(false);
 		final Script script;
 		final String []optionIds;
 		final ExecutionReport report;
@@ -216,10 +216,10 @@ public class OptionsSubpath {
 		
 		void validateIds(){
 			// get and validate ids in the script (TO DO ... include adapters etc...)
-			knownOptionIds = new StandardisedStringSet();
+			knownOptionIds = new StandardisedStringSet(false);
 			validateOptionIds(script, knownOptionIds, true);
 
-			knownInstructionIds = new StandardisedStringSet();
+			knownInstructionIds = new StandardisedStringSet(false);
 			validateInstructionIds(script, knownInstructionIds);
 
 			// Check all options exist

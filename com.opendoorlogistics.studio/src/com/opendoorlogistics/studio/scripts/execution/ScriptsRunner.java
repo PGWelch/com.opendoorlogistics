@@ -115,7 +115,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 			}
 			
 			// get all instruction ids and all reporter frame ids
-			StandardisedStringSet instructionIdsToRefresh = new StandardisedStringSet();
+			StandardisedStringSet instructionIdsToRefresh = new StandardisedStringSet(false);
 			HashSet<ReporterFrameIdentifier> frameIdentifiers = new HashSet<>();
 			for(RefreshItem item:itemList){
 				instructionIdsToRefresh.add(item.getFrameIdentifier().getInstructionId());	

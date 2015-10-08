@@ -44,58 +44,114 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	
 	@Override
 	protected int getRowCount(int tableId) {
-		return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getRowCount():0;
+		ODLTableReadOnly table = readOnlyTable(tableId);
+		if(table!=null){
+			return table.getRowCount();
+		}
+		return 0;
 	}
 
 	
 	@Override	
 	protected Object getValueAt(int tableId,int rowIndex, int columnIndex) {
-		return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getValueAt(rowIndex, columnIndex):null;
+		ODLTableReadOnly table = readOnlyTable(tableId);
+		if(table!=null){
+			return table.getValueAt(rowIndex, columnIndex);
+		}
+		return null;
+		
+	//	return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getValueAt(rowIndex, columnIndex):null;
 	}
 
 	@Override
 	protected Object getValueById(int tableId, long rowId, int columnIndex) {
-		return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getValueById(rowId, columnIndex):null;
+		ODLTableReadOnly table = readOnlyTable(tableId);
+		if(table!=null){
+			return table.getValueById(rowId, columnIndex);
+		}
+		return null;
+				
+	//	return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getValueById(rowId, columnIndex):null;
 	}
 	
 	@Override
 	protected ODLColumnType getColumnFieldType(int tableId,int colIndex) {
-		return definition(tableId)!=null? definition(tableId).getColumnType(colIndex):null;
+		ODLTableDefinition dfn = definition(tableId);
+		if(dfn!=null){
+			return dfn.getColumnType(colIndex); 
+		}
+		return null;
+//		return definition(tableId)!=null? definition(tableId).getColumnType(colIndex):null;
 	}
 
 	@Override
 	protected String getColumnName(int tableId,int colIndex) {
-		return definition(tableId)!=null? definition(tableId).getColumnName(colIndex): "";
+		ODLTableDefinition dfn = definition(tableId);
+		if(dfn!=null){
+			return dfn.getColumnName(colIndex); 
+		}
+		return "";
+//		return definition(tableId)!=null? definition(tableId).getColumnName(colIndex): "";
 	}
 
 	@Override
 	protected int getColumnCount(int tableId) {
-		return definition(tableId)!=null?definition(tableId).getColumnCount():0;
+		ODLTableDefinition dfn = definition(tableId);
+		if(dfn!=null){
+			return dfn.getColumnCount(); 
+		}
+		return 0;
+		//return definition(tableId)!=null?definition(tableId).getColumnCount():0;
 	}
 
 	@Override
 	protected String getName(int tableId) {
-		return definition(tableId)!=null? definition(tableId).getName():"";
+		ODLTableDefinition dfn = definition(tableId);
+		if(dfn!=null){
+			return dfn.getName(); 
+		}
+		return "";
+		//return definition(tableId)!=null? definition(tableId).getName():"";
 	}
 
 	@Override
 	protected long getFlags(int tableId) {
-		return definition(tableId)!=null?definition(tableId).getFlags():0;
+		ODLTableDefinition dfn = definition(tableId);
+		if(dfn!=null){
+			return dfn.getFlags(); 
+		}
+		return 0;
+	//	return definition(tableId)!=null?definition(tableId).getFlags():0;
 	}
 
 	@Override
 	protected long getColumnFlags(int tableId,int colIndx) {
-		return definition(tableId)!=null?definition(tableId).getColumnFlags(colIndx):0;
+		ODLTableDefinition dfn = definition(tableId);
+		if(dfn!=null){
+			return dfn.getColumnFlags(colIndx); 
+		}
+		return 0;
+		//return definition(tableId)!=null?definition(tableId).getColumnFlags(colIndx):0;
 	}
 
 	@Override
 	protected Object getColumnDefaultValue(int tableId, int col) {
-		return definition(tableId)!=null?definition(tableId).getColumnDefaultValue(col):null;
+		ODLTableDefinition dfn = definition(tableId);
+		if(dfn!=null){
+			return dfn.getColumnDefaultValue(col); 
+		}
+		return null;
+	//	return definition(tableId)!=null?definition(tableId).getColumnDefaultValue(col):null;
 	}
 
 	@Override
 	protected int getColumnImmutableId(int tableId, int col) {
-		return definition(tableId)!=null?definition(tableId).getColumnImmutableId(col):-1;
+		ODLTableDefinition dfn = definition(tableId);
+		if(dfn!=null){
+			return dfn.getColumnImmutableId(col); 
+		}
+		return -1;
+	//	return definition(tableId)!=null?definition(tableId).getColumnImmutableId(col):-1;
 	}
 
 	protected abstract ODLTable writable(int tableId) ;
@@ -180,7 +236,12 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 
 	@Override
 	protected long getRowGlobalId(int tableId, int rowIndex) {
-		return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getRowId(rowIndex):-1;
+		ODLTableReadOnly t = readOnlyTable(tableId);
+		if(t!=null){
+			return t.getRowId(rowIndex);
+		}
+		return -1;
+		//return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getRowId(rowIndex):-1;
 	}
 
 
@@ -232,23 +293,43 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 
 	@Override
 	protected boolean containsRowId(int tableId, long rowId) {
-		return readOnlyTable(tableId)!=null?readOnlyTable(tableId).containsRowId(rowId):false;
+		ODLTableReadOnly t = readOnlyTable(tableId);
+		if(t!=null){
+			return t.containsRowId(rowId);
+		}
+		return false;			
+		//return readOnlyTable(tableId)!=null?readOnlyTable(tableId).containsRowId(rowId):false;
 	}
 
 	@Override
 	protected long[] find(int tableId, int col, Object value) {
-		return readOnlyTable(tableId)!=null?readOnlyTable(tableId).find(col, value):new long[0];
+		ODLTableReadOnly t = readOnlyTable(tableId);
+		if(t!=null){
+			return t.find(col,value);
+		}
+		return new long[0];
+	//	return readOnlyTable(tableId)!=null?readOnlyTable(tableId).find(col, value):new long[0];
 	}
 
 	@Override
 	protected long getRowFlags(int tableId, long rowId) {
-		return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getRowFlags(rowId):0;
+		ODLTableReadOnly t = readOnlyTable(tableId);
+		if(t!=null){
+			return t.getRowFlags(rowId);
+		}
+		return 0;		
+	//	return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getRowFlags(rowId):0;
 	}
 
 
 	@Override
 	protected long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
-		return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getRowLastModifiedTimeMillsecs(rowId):0;
+		ODLTableReadOnly t = readOnlyTable(tableId);
+		if(t!=null){
+			return t.getRowLastModifiedTimeMillsecs(rowId);
+		}
+		return 0;		
+	//	return readOnlyTable(tableId)!=null?readOnlyTable(tableId).getRowLastModifiedTimeMillsecs(rowId):0;
 		
 	}
 	

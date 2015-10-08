@@ -34,7 +34,7 @@ public class VLSSourceDrawables extends DrawableObjectImpl{
 
 	public static final Set<String> STD_COLUMN_NAMES;
 	static{
-		STD_COLUMN_NAMES = new StandardisedStringSet();
+		STD_COLUMN_NAMES = new StandardisedStringSet(false);
 		ODLTableDefinition dfn = BEAN_MAPPING.getTableDefinition();
 		for(int i =0 ;i < dfn.getColumnCount() ; i++){
 			STD_COLUMN_NAMES.add(dfn.getColumnName(i));

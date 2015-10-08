@@ -397,7 +397,7 @@ public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposabl
 		}
 
 		// get the set of stop ids to be inserted
-		StandardisedStringSet movedSet = new StandardisedStringSet();
+		StandardisedStringSet movedSet = new StandardisedStringSet(false);
 		for (String stopId : stopIds) {
 			movedSet.add(stopId);
 		}

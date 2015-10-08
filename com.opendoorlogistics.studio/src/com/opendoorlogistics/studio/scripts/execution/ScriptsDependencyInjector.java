@@ -27,7 +27,7 @@ import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
 abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 	private final AbstractAppFrame appFrame;
 	private final ArrayList<RecordedLauncherCallback> controlLauncherCallbacks = new ArrayList<>();
-	private final StandardisedStringTreeMap<DataDependencies> dependenciesByInstructionId = new StandardisedStringTreeMap<>();
+	private final StandardisedStringTreeMap<DataDependencies> dependenciesByInstructionId = new StandardisedStringTreeMap<>(false);
 
 	public static class RecordedLauncherCallback {
 		final private ControlLauncherCallback cb;

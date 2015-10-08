@@ -55,7 +55,7 @@ public class DisplayFields {
 		for(EditorTable type:EditorTable.values()){
 			Class<? extends Enum<?>> fieldsClass = type.getFieldsClass();
 			Enum<?>[] enumConstants = fieldsClass.getEnumConstants();
-			Set<String> set = new StandardisedStringSet();
+			Set<String> set = new StandardisedStringSet(true);
 			ScheduleEditorComponent comp = new ScheduleEditorComponent();
 			
 			for(Enum<?> e : enumConstants){

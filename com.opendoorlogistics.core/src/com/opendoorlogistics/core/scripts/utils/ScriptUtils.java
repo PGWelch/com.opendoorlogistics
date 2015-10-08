@@ -289,8 +289,8 @@ final public class ScriptUtils {
 	}
 
 	public static String[] getOptionIdsByInstructionIds(Option root, Iterable<String> instructionIds) {
-		final StandardisedStringSet set = new StandardisedStringSet();
-		final StandardisedStringSet searchFor = new StandardisedStringSet(instructionIds);
+		final StandardisedStringSet set = new StandardisedStringSet(false);
+		final StandardisedStringSet searchFor = new StandardisedStringSet(false,instructionIds);
 		visitOptions(root, new OptionVisitor() {
 
 			@Override
@@ -838,7 +838,7 @@ final public class ScriptUtils {
 	public static void validateIds(final Script script) {
 		final StandardisedStringSet[] sets = new StandardisedStringSet[IdType.values().length];
 		for (int i = 0; i < sets.length; i++) {
-			sets[i] = new StandardisedStringSet();
+			sets[i] = new StandardisedStringSet(false);
 		}
 
 		visitOptions(script, new OptionVisitor() {

@@ -44,7 +44,7 @@ public class Task extends BeanMappedRowExt{
 	}
 	
 	public static StandardisedStringSet toTaskIds(Iterable<Task> stops){
-		StandardisedStringSet ret = new StandardisedStringSet();
+		StandardisedStringSet ret = new StandardisedStringSet(true);
 		for(Task stop:stops){
 			ret.add(stop.getId());
 		}

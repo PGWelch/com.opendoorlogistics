@@ -16,7 +16,7 @@ import com.opendoorlogistics.api.components.ODLComponentProvider;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 
 public final class ODLComponentsList implements ODLComponentProvider , Iterable<ODLComponent>{
-	private final StandardisedStringTreeMap<ODLComponent> components = new StandardisedStringTreeMap<>();
+	private final StandardisedStringTreeMap<ODLComponent> components = new StandardisedStringTreeMap<>(false);
 	
 	@Override
 	public synchronized void register(ODLComponent component){

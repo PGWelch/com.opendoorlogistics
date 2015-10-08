@@ -6,7 +6,7 @@ package com.opendoorlogistics.core.utils.strings;
  *
  */
 public class EnumStdLookup<T extends Enum<?>> {
-	private final StandardisedStringTreeMap<T> enums = new StandardisedStringTreeMap<T>();
+	private final StandardisedStringTreeMap<T> enums = new StandardisedStringTreeMap<T>(false);
 	
 	@SuppressWarnings("unchecked")
 	public EnumStdLookup(Class<T> enumClass){

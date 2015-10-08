@@ -2691,7 +2691,7 @@ public class Functions {
 				return Functions.EXECUTION_ERROR;				
 			}
 			
-			StandardisedStringTreeMap<String> map = new StandardisedStringTreeMap<String>();
+			StandardisedStringTreeMap<String> map = new StandardisedStringTreeMap<String>(false);
 			String [] split = s.split(",");
 			for(String keyvalue : split){
 				String[] extraSplit = keyvalue.split("=");

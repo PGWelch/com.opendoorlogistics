@@ -29,7 +29,7 @@ public final class ODLCostMatrixImpl extends ODLTableDefinitionImpl implements O
 	// final private int fromCol;
 	// final private int toCol;
 	// final private int costCol;
-	final private StandardisedStringTreeMap<Integer> idsToIndices = new StandardisedStringTreeMap<>();
+	final private StandardisedStringTreeMap<Integer> idsToIndices = new StandardisedStringTreeMap<>(false);
 
 	public enum MatrixType {
 		SINGLE_COST, DISTANCE_TIME

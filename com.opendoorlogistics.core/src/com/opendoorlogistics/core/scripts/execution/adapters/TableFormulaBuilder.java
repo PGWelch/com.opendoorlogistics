@@ -97,7 +97,7 @@ public class TableFormulaBuilder {
 	
 	private static final StandardisedStringTreeMap<ODLColumnType> STD_TYPE_IDENTIFIER;
 	static{
-		STD_TYPE_IDENTIFIER = new StandardisedStringTreeMap<ODLColumnType> ();
+		STD_TYPE_IDENTIFIER = new StandardisedStringTreeMap<ODLColumnType> (false);
 		for(ODLColumnType type:ODLColumnType.standardTypes()){
 			STD_TYPE_IDENTIFIER.put(type.name(), type);
 		}

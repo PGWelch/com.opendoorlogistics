@@ -11,7 +11,7 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 
 final public class BuiltAdapters {
-	private final StandardisedStringTreeMap<ODLDatastore<? extends ODLTable>> adapters = new StandardisedStringTreeMap<>();
+	private final StandardisedStringTreeMap<ODLDatastore<? extends ODLTable>> adapters = new StandardisedStringTreeMap<>(false);
 
 	public void addAdapter(String id, ODLDatastore<? extends ODLTable> adapter){
 		if(id==null){

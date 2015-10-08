@@ -41,7 +41,7 @@ public class SuggestedFillValuesManager {
 		Pair<String,String> id = new Pair<String, String>(Strings.std(table), Strings.std(field));
 		StandardisedStringTreeMap<Long> fldMap = maps.get(id);
 		if(fldMap==null){
-			fldMap = new StandardisedStringTreeMap<>();
+			fldMap = new StandardisedStringTreeMap<>(true);
 			maps.put(id, fldMap);
 		}
 		return fldMap;
@@ -50,7 +50,7 @@ public class SuggestedFillValuesManager {
 	public List<String> getSuggestions( ODLTableReadOnly table, int col, Iterable<? extends DrawableObject> drawables){
 		
 		// get all possible values...
-		StandardisedStringTreeMap<String> canonical = new StandardisedStringTreeMap<>();
+		StandardisedStringTreeMap<String> canonical = new StandardisedStringTreeMap<>(true);
 		for(DrawableObject o:drawables){
 			if(o.getSelectable()!=0 && TableUtils.getTableId(o.getGlobalRowId())==table.getImmutableId()){
 				Object value = table.getValueById(o.getGlobalRowId(), col);

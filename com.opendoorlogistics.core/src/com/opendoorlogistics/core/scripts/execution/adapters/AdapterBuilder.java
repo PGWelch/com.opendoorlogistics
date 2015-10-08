@@ -82,7 +82,7 @@ final public class AdapterBuilder {
 	private final BuiltAdapters builtAdapters;
 	private final ScriptExecutionBlackboard env;
 	private final StandardisedStringSet callerAdapters;
-	private final StandardisedStringTreeMap<Integer> datasourceMap = new StandardisedStringTreeMap<>();
+	private final StandardisedStringTreeMap<Integer> datasourceMap = new StandardisedStringTreeMap<>(false);
 	private final ArrayList<ODLDatastore<? extends ODLTable>> datasources = new ArrayList<>();
 	private final AdapterConfig inputConfig;
 	private final ProcessingApi continueCb;
@@ -425,7 +425,7 @@ final public class AdapterBuilder {
 			// build this adapter
 			AdapterConfig dummy = new AdapterConfig();
 			dummy.getTables().add(standardised);
-			AdapterBuilder builder = new AdapterBuilder(dummy, callerAdapters != null ? new StandardisedStringSet(callerAdapters) : new StandardisedStringSet(), env,continueCb, builtAdapters);
+			AdapterBuilder builder = new AdapterBuilder(dummy, callerAdapters != null ? new StandardisedStringSet(false,callerAdapters) : new StandardisedStringSet(false), env,continueCb, builtAdapters);
 			try {
 				ODLDatastore<? extends ODLTable> constituentDs = builder.build();
 				if (constituentDs == null || report.isFailed()) {
@@ -775,7 +775,7 @@ final public class AdapterBuilder {
 		mapping.setTableSourceId(destTable.getImmutableId(), tableRef.dsIndex, srcTable.getImmutableId());
 
 		// Process each of the destination fields
-		StandardisedStringSet destFieldNames = new StandardisedStringSet();
+		StandardisedStringSet destFieldNames = new StandardisedStringSet(false);
 		for (int destFieldIndx = 0; destFieldIndx < tableConfig.getColumnCount() && !report.isFailed(); destFieldIndx++) {
 			AdapterColumnConfig field = tableConfig.getColumn(destFieldIndx);
 			if (field.isUseFormula()) {
@@ -1442,7 +1442,7 @@ final public class AdapterBuilder {
 
 	private int recurseBuild(AdapterConfig recurseConfig) {
 		// recursively build and save to the datastores in this builder
-		StandardisedStringSet newSet = callerAdapters!=null?new StandardisedStringSet(callerAdapters) : new StandardisedStringSet();
+		StandardisedStringSet newSet = callerAdapters!=null?new StandardisedStringSet(false,callerAdapters) : new StandardisedStringSet(false);
 		if (processedConfig!=null && processedConfig.getId() != null) {
 			newSet.add(processedConfig.getId());
 		}

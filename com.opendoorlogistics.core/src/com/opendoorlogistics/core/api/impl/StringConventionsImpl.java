@@ -77,17 +77,17 @@ public class StringConventionsImpl implements StringConventions{
 
 	@Override
 	public <T> Map<String, T> createStandardisedMap() {
-		return new StandardisedStringTreeMap<>();
+		return new StandardisedStringTreeMap<>(true);
 	}
 
 	@Override
 	public Set<String> createStandardisedSet() {
-		return new StandardisedStringSet();
+		return new StandardisedStringSet(true);
 	}
 
 	@Override
 	public int compareStandardised(String a, String b) {
-		return Strings.compareStd(a, b);
+		return Strings.compareStd(a, b, true);
 	}
 
 	@Override
@@ -140,7 +140,7 @@ public class StringConventionsImpl implements StringConventions{
 
 	@Override
 	public <T> Map<String, T> createStandardisedMap(Factory<T> factory) {
-		return new StandardisedStringTreeMap<>(factory);
+		return new StandardisedStringTreeMap<>(true,factory);
 	}
 
 	@Override

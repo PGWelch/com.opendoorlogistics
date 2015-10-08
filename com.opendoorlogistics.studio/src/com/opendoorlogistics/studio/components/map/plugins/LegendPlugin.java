@@ -76,7 +76,7 @@ public class LegendPlugin implements MapPlugin {
 		
 		public LegendState(LegendDrawableTableBuilder builder, LegendState oldState) {
 			items = builder.build(new Dimension(20,20));
-			visible = new StandardisedStringTreeMap<Boolean>();
+			visible = new StandardisedStringTreeMap<Boolean>(true);
 			for(Map.Entry<String, BufferedImage> item : items){
 				
 				// visible by default

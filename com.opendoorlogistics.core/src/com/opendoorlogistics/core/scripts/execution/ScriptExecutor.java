@@ -376,7 +376,7 @@ final public class ScriptExecutor {
 			// build it
 			ODLDatastore<? extends ODLTable> adapter = null;
 			if (!result.isFailed()) {
-				AdapterBuilder builder = new AdapterBuilder(tmpAdapterConfig, new StandardisedStringSet(), result, internalExecutionApi, new BuiltAdapters());
+				AdapterBuilder builder = new AdapterBuilder(tmpAdapterConfig, new StandardisedStringSet(false), result, internalExecutionApi, new BuiltAdapters());
 				adapter = builder.build();
 				if (adapter == null) {
 					result.setFailed();
@@ -1053,7 +1053,7 @@ final public class ScriptExecutor {
 		AdapterConfig adapterConfig = env.getAdapterConfig(id);
 		if (adapterConfig != null) {
 			internalExecutionApi.postStatusMessage("Building data adapter: " + (id != null ? id : "<no id>"));
-			AdapterBuilder builder = new AdapterBuilder(adapterConfig, new StandardisedStringSet(), env, internalExecutionApi, new BuiltAdapters());
+			AdapterBuilder builder = new AdapterBuilder(adapterConfig, new StandardisedStringSet(false), env, internalExecutionApi, new BuiltAdapters());
 			ds = builder.build();
 			if (!env.isFailed() && ds != null) {
 				return ds;
@@ -1087,7 +1087,7 @@ final public class ScriptExecutor {
 			sourceTable = null;
 		}
 
-		final AdapterBuilder builder = new AdapterBuilder((AdapterConfig) null, new StandardisedStringSet(), result, internalExecutionApi, new BuiltAdapters());
+		final AdapterBuilder builder = new AdapterBuilder((AdapterConfig) null, new StandardisedStringSet(false), result, internalExecutionApi, new BuiltAdapters());
 
 		// ensure we have the input datastore
 		final int dsIndx;

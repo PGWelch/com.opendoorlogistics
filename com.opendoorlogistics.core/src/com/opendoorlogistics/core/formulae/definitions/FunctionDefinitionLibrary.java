@@ -117,7 +117,7 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 public final class FunctionDefinitionLibrary {
 	public static FunctionDefinitionLibrary DEFAULT_LIB = new FunctionDefinitionLibrary().buildStd();
 	
-	private StandardisedStringTreeMap<List<FunctionDefinition>> map = new StandardisedStringTreeMap<>();
+	private StandardisedStringTreeMap<List<FunctionDefinition>> map = new StandardisedStringTreeMap<>(false);
 	private int nextOperatorPrecedence = 0;
 
 	public void add(FunctionDefinition definition) {

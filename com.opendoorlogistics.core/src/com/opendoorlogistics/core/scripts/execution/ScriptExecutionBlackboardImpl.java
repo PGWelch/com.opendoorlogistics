@@ -26,7 +26,7 @@ final public class ScriptExecutionBlackboardImpl extends ExecutionReportImpl imp
 	private final TreeMap<String, SavedDatastore> datastoresByStringId = new TreeMap<>();
 	private final HashMap<InstructionConfig,SavedDatastore> outputDatastoreByInstruction = new HashMap<>();
 	private final ArrayList<SavedDatastore> datastoresList = new ArrayList<>();
-	private final StandardisedStringTreeMap<AdapterConfig> namedAdapterConfigs = new StandardisedStringTreeMap<>();
+	private final StandardisedStringTreeMap<AdapterConfig> namedAdapterConfigs = new StandardisedStringTreeMap<>(false);
 	private final boolean isCompileOnly;
 	
 	public ScriptExecutionBlackboardImpl( boolean isCompileOnly){

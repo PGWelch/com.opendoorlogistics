@@ -7,7 +7,7 @@ import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 public class CommandLineInterface {
-	private static final StandardisedStringTreeMap<Command> COMMANDS = new StandardisedStringTreeMap<CommandLineInterface.Command>();
+	private static final StandardisedStringTreeMap<Command> COMMANDS = new StandardisedStringTreeMap<CommandLineInterface.Command>(true);
 	
 	public interface Command {
 

@@ -517,7 +517,7 @@ final public class PoiIO {
 		}
 		else if(tables.size()>1){
 			// first table is key value map
-			ret.keyValues = new StandardisedStringTreeMap<>();
+			ret.keyValues = new StandardisedStringTreeMap<>(false);
 			ODLTableReadOnly kvTable = tables.get(0);
 			for(int i = 0 ; i < kvTable.getRowCount();i++){
 				if(kvTable.getValueAt(i, 0)!=null){

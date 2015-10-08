@@ -150,7 +150,7 @@ final public class TagUtils {
 	 * @return
 	 */
 	private static StandardisedStringSet getStdColumnTags(ODLTableDefinition table, int column) {
-		StandardisedStringSet ret = new StandardisedStringSet(table.getColumnTags(column));
+		StandardisedStringSet ret = new StandardisedStringSet(false,table.getColumnTags(column));
 		ret.add(table.getColumnName(column));
 		if(table.getColumnType(column)==ODLColumnType.GEOM){
 			ret.add(PredefinedTags.GEOMETRY);

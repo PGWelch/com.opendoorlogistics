@@ -282,7 +282,7 @@ final public class AdapterBuilderUtils {
 	 */
 	public static ODLDatastore<? extends ODLTable> buildEmptyJoinTable(ODLTableDefinition outerTable, ODLTableDefinition innerTable){
 		ODLDatastoreAlterable<ODLTableAlterable> ret = ODLDatastoreImpl.alterableFactory.create();
-		StandardisedStringSet fieldNames = new StandardisedStringSet();
+		StandardisedStringSet fieldNames = new StandardisedStringSet(false);
 		int no = outerTable.getColumnCount();
 		ODLTableAlterable table = ret.createTable(innerTable.getName(), -1);
 		TableUtils.removeTableFlags(table, TableFlags.UI_EDIT_PERMISSION_FLAGS);		

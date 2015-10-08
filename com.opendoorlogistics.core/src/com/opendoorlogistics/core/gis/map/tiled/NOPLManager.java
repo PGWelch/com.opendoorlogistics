@@ -24,7 +24,7 @@ import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 public class NOPLManager {
-	final private StandardisedStringTreeMap<LayerCache> currentLayers = new StandardisedStringTreeMap<>();
+	final private StandardisedStringTreeMap<LayerCache> currentLayers = new StandardisedStringTreeMap<>(false);
 	final private ObjectRenderer renderer =new DatastoreRenderer(){
 		
 		/**
@@ -51,7 +51,7 @@ public class NOPLManager {
 		// get new layers by splitting the drawables
 		List<DrawableObjectLayer> newLayers = splitDrawablesIntoLayers(newDrawables);
 		
-		StandardisedStringSet newLayerIds = new StandardisedStringSet();
+		StandardisedStringSet newLayerIds = new StandardisedStringSet(false);
 		
 		// parse all new NOVLP layers
 		for(DrawableObjectLayer newLayer:newLayers){

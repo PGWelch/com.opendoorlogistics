@@ -474,7 +474,7 @@ public final class DistancesSingleton implements Closeable{
 	}
 
 	private StandardisedStringTreeMap<LatLong> getPoints(ODLTableReadOnly... tables) {
-		StandardisedStringTreeMap<LatLong> points = new StandardisedStringTreeMap<>();
+		StandardisedStringTreeMap<LatLong> points = new StandardisedStringTreeMap<>(false);
 		for (ODLTableReadOnly table : tables) {
 			InputTableAccessor accessor = new InputTableAccessor(table);
 			int nr = table.getRowCount();

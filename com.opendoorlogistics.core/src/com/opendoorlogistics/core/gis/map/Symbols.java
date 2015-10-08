@@ -15,7 +15,7 @@ import com.opendoorlogistics.codefromweb.shapes.StarPolygon;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 
 public class Symbols {
-	private final StandardisedStringTreeMap<SymbolType> typesByKeyword = new StandardisedStringTreeMap<>();
+	private final StandardisedStringTreeMap<SymbolType> typesByKeyword = new StandardisedStringTreeMap<>(false);
 	private final int maxOutline;
 	
 	public enum SymbolType {

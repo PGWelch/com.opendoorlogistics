@@ -17,7 +17,7 @@ import com.opendoorlogistics.studio.components.map.plugins.selection.SelectPlugi
 import com.opendoorlogistics.studio.components.map.plugins.snapshot.SnapshotPlugin;
 
 public class GlobalMapPluginManager {
-	private static final StandardisedStringTreeMap<MapPlugin> GLOBAL = new StandardisedStringTreeMap<MapPlugin>();
+	private static final StandardisedStringTreeMap<MapPlugin> GLOBAL = new StandardisedStringTreeMap<MapPlugin>(false);
 	
 	private static final Logger logger = Logger.getLogger(GlobalMapPluginManager.class.getName());
 	

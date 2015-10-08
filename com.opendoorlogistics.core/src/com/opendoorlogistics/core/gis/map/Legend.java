@@ -351,7 +351,7 @@ final public class Legend {
 
 				@Override
 				public int compare(CalcLegendEntry o1, CalcLegendEntry o2) {
-					return Strings.compareStd(o1.std, o2.std);
+					return Strings.compareStd(o1.std, o2.std, true);
 				}
 			});
 			

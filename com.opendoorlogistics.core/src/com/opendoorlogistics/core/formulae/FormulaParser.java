@@ -115,7 +115,7 @@ public final class FormulaParser {
 		private final String name;
 		private final List<String> parameters = new ArrayList<String>();
 		private final List<StringToken> definition;
-		private StandardisedStringTreeMap<Integer> parameterNumbers = new StandardisedStringTreeMap<Integer>();
+		private StandardisedStringTreeMap<Integer> parameterNumbers = new StandardisedStringTreeMap<Integer>(false);
 		
 		UserFormulaInternal(String formula){
 			List<StringToken> tokens = StringTokeniser.tokenise(formula);
@@ -230,7 +230,7 @@ public final class FormulaParser {
 
 	final private FunctionDefinitionLibrary library;
 	
-	final private StandardisedStringTreeMap<ArrayList<UserFormulaInternal>> userFormulae = new StandardisedStringTreeMap<ArrayList<UserFormulaInternal>>();
+	final private StandardisedStringTreeMap<ArrayList<UserFormulaInternal>> userFormulae = new StandardisedStringTreeMap<ArrayList<UserFormulaInternal>>(false);
 
 //	public FormulaParser( UserVariableProvider userVariableProvider, FunctionDefinitionLibrary lib) {
 //		this(userVariableProvider, lib, new ArrayList<String>());
@@ -528,7 +528,7 @@ public final class FormulaParser {
 			}
 			
 			// Create a string map of parameter name to ReadFunctionToken tree
-			StandardisedStringTreeMap<ReadFunctionToken> parameters = new StandardisedStringTreeMap<FormulaParser.ReadFunctionToken>();
+			StandardisedStringTreeMap<ReadFunctionToken> parameters = new StandardisedStringTreeMap<FormulaParser.ReadFunctionToken>(false);
 			for(int i =0 ; i<nc ; i++){
 				parameters.put(found.parameters.get(i), rft.children.get(i));
 			}

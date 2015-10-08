@@ -26,7 +26,7 @@ class FilteredTableController   {
 	private boolean hasFilters;
 	
 	public static class FilterState{
-		private final  StandardisedStringTreeMap<String> map = new StandardisedStringTreeMap<>();
+		private final  StandardisedStringTreeMap<String> map = new StandardisedStringTreeMap<>(true);
 		
 		public String getColumnFilter(String column){
 			return map.get(column);

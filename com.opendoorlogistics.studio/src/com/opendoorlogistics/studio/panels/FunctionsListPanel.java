@@ -104,7 +104,7 @@ final public class FunctionsListPanel extends JPanel {
 
 		// Get the top level
 		topLevel = new ArrayList<FunctionDefinition>();
-		StandardisedStringSet groups = new StandardisedStringSet();
+		StandardisedStringSet groups = new StandardisedStringSet(true);
 		for(FunctionDefinition dfn : allFunctions){
 			if(dfn.getGroup()!=null){
 				// first time?

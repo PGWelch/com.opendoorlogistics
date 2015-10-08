@@ -16,13 +16,16 @@ import java.util.TreeMap;
 import com.opendoorlogistics.api.Factory;
 
 public class StandardisedStringTreeMap <T> implements Map<String, T> {
+	private final boolean useNumberSortationLogic;
 	private final Factory<T> factory;
 	
-	public StandardisedStringTreeMap(){
+	public StandardisedStringTreeMap(boolean useNumberSortationLogic){
+		this.useNumberSortationLogic = useNumberSortationLogic;
 		this.factory = null;
 	}
 	
-	public StandardisedStringTreeMap(Factory<T> factory){
+	public StandardisedStringTreeMap(boolean useNumberSortationLogic,Factory<T> factory){
+		this.useNumberSortationLogic= useNumberSortationLogic;
 		this.factory = factory;
 	}
 	
@@ -30,7 +33,7 @@ public class StandardisedStringTreeMap <T> implements Map<String, T> {
 
 		@Override
 		public int compare(String o1, String o2) {
-			return Strings.compareStd(o1, o2);
+			return Strings.compareStd(o1, o2,useNumberSortationLogic);
 		}
 		
 	});
@@ -147,7 +150,7 @@ public class StandardisedStringTreeMap <T> implements Map<String, T> {
 	
 	
 	public static StandardisedStringTreeMap<String> fromProperties(Properties p){
-		StandardisedStringTreeMap<String> ret = new StandardisedStringTreeMap<>();
+		StandardisedStringTreeMap<String> ret = new StandardisedStringTreeMap<>(true);
 		for(Map.Entry<Object, Object> entry:p.entrySet()){
 			if(entry.getKey()!=null){
 				String val = entry.getValue()!=null?entry.getValue().toString():null;

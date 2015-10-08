@@ -164,7 +164,7 @@ public class VLSBuilder {
 			this.keywords = keywords;
 		}
 
-		private static final StandardisedStringTreeMap<LayerType> KEYWORD_MAP = new StandardisedStringTreeMap<VLSBuilder.LayerType>();
+		private static final StandardisedStringTreeMap<LayerType> KEYWORD_MAP = new StandardisedStringTreeMap<VLSBuilder.LayerType>(false);
 
 		static {
 			for (LayerType type : LayerType.values()) {

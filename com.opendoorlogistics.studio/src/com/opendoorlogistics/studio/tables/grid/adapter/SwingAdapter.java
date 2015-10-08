@@ -294,7 +294,7 @@ public final class SwingAdapter implements TableModel {
 	
 	public StandardisedStringSet getUniqueUnfilteredColumnValues(int col){
 		// get the unfiltered table
-		StandardisedStringSet ret = new StandardisedStringSet();
+		StandardisedStringSet ret = new StandardisedStringSet(true);
 		ODLTableReadOnly unfiltered = ds.getTableByImmutableId(tableId);
 		if(col>0 && unfiltered!=null){
 			col--;

@@ -13,24 +13,30 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class StandardisedStringSet implements Set<String>{
+	private final boolean useNumberSortationLogic;
+	
 	private TreeSet<String> set = new TreeSet<>(new Comparator<String>(){
 
 		@Override
 		public int compare(String o1, String o2) {
-			return Strings.compareStd(o1, o2);
+			return Strings.compareStd(o1, o2, useNumberSortationLogic);
 		}
 		
 	});
 	
-	public StandardisedStringSet(){}
+	public StandardisedStringSet(boolean useNumberSortationLogic){
+		this.useNumberSortationLogic = useNumberSortationLogic;
+	}
 
-	public StandardisedStringSet(Iterable<String> iterable){
+	public StandardisedStringSet(boolean useNumberSortationLogic,Iterable<String> iterable){
+		this.useNumberSortationLogic = useNumberSortationLogic;
 		for(String s : iterable){
 			add(s);
 		}
 	}
 	
-	public StandardisedStringSet(String ...strs){
+	public StandardisedStringSet(boolean useNumberSortationLogic,String ...strs){
+		this.useNumberSortationLogic = useNumberSortationLogic;
 		for(String s:strs){
 			add(s);
 		}
