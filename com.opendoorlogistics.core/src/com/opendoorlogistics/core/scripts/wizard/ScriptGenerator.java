@@ -146,7 +146,7 @@ final public class ScriptGenerator {
 		// Deep copy the new portion of the script to ensure we don't maintain references
 		// to default configuration objects owned by the component - which could potentially be
 		// modified later-on by the script editor.
-		Script deepCopiedScript = new ScriptIO().deepCopy(script);
+		Script deepCopiedScript = ScriptIO.instance().deepCopy(script);
 		if(parent==null){
 			ret = deepCopiedScript;
 		}else{

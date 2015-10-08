@@ -431,7 +431,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 	}
 
 	protected String getXML() {
-		return new ScriptIO(ODLGlobalComponents.getProvider()).toXMLString(script);
+		return ScriptIO.instance().toXMLString(script);
 	}
 
 	protected File createDefaultFilename() {
@@ -498,7 +498,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 				
 				// Take copy of the script and set all unsynced options.
 				// This will avoid problems if part of the script is set to sync incorrectly...
-				Script copy = new ScriptIO().deepCopy(script);
+				Script copy = ScriptIO.instance().deepCopy(script);
 				ScriptUtils.setAllUnsynced(copy);
 				
 				// Remove other instructions from the option which are unneeded (otherwise table may appear twice etc...)
@@ -822,7 +822,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 		
 		// Take copy of the script and set all unsynced options.
 		// This will avoid problems if part of the script is set to sync incorrectly...
-		Script copy = new ScriptIO().deepCopy(script);
+		Script copy =ScriptIO.instance().deepCopy(script);
 		ScriptUtils.setAllUnsynced(copy);
 	
 		// get the instruction index

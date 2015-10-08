@@ -199,7 +199,7 @@ final public class ScriptExecutor {
 		
 		// deep copy and add any global formulae to all table adapters...
 		if(script.getUserFormulae()!=null && script.getUserFormulae().size()>0){
-			script = new ScriptIO().deepCopy(script);
+			script = ScriptIO.instance().deepCopy(script);
 			for (AdapterConfig config : script.getAdapters()) {
 				for(AdaptedTableConfig table: config.getTables()){
 					if(table.getUserFormulae()==null){

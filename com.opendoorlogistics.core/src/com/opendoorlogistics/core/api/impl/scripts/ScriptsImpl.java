@@ -6,9 +6,9 @@ import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
-import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStatusObservable;
+import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.scripts.ScriptOption;
 import com.opendoorlogistics.api.scripts.Scripts;
 import com.opendoorlogistics.api.scripts.parameters.Parameters;
@@ -16,7 +16,6 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
-import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.execution.OptionsSubpath;
@@ -37,7 +36,7 @@ public class ScriptsImpl implements Scripts {
 
 	@Override
 	public ScriptOption loadScript(File file) {
-		Script script = new ScriptIO(ODLGlobalComponents.getProvider()).fromFile(file);
+		Script script = ScriptIO.instance().fromFile(file);
 		if(script!=null){
 			return new ScriptOptionImpl(api, null, script, null);
 		}

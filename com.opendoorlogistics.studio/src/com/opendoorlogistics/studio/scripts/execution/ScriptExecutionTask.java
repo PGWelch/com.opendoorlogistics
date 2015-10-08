@@ -287,10 +287,10 @@ class ScriptExecutionTask {
 		// If we're not auto-refreshing, close any controls which used an old version of the script as they will be out-of-date
 		// providing they're not an 'never refresh' control which has a null script
 		if(!isScriptRefresh){
-			String myXML = new ScriptIO().toXMLString(unfiltered);
+			String myXML = ScriptIO.instance().toXMLString(unfiltered);
 			for(ReporterFrame<?> rf:runner.getReporterFrames()){
 				if(getScriptId().equals(rf.getId().getScriptId()) && rf.getUnfilteredScript()!=null){
-					String otherXML = new ScriptIO().toXMLString(rf.getUnfilteredScript());
+					String otherXML = ScriptIO.instance().toXMLString(rf.getUnfilteredScript());
 					if(!Strings.equalsStd(myXML, otherXML)){
 						rf.dispose();
 					}

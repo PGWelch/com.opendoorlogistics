@@ -323,7 +323,7 @@ class ScriptsTree implements HasScriptsProvider{
 		}
 		
 		this.items = new ScriptNode[files.length];
-		ScriptIO scriptIO = new ScriptIO();
+		ScriptIO scriptIO = ScriptIO.instance();
 		for (int i = 0; i < items.length; i++) {
 			final File file = files[i];
 

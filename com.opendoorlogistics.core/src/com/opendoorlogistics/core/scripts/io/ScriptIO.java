@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.scripts.io;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.UUID;
 
 import javax.xml.bind.Binder;
@@ -41,21 +42,39 @@ import com.opendoorlogistics.core.utils.XMLUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 final public class ScriptIO {
+	/**
+	 * We maintain a singleton instances as there is considerable overhead in creating a JAXBContext
+	 * and according the java docs the Oracle implementation (and hopefully others) of JAXBContext
+	 * is thread-safe. See https://jaxb.java.net/faq/index.html#threadSafety
+	 */
+	private static final ScriptIO SINGLETON = new ScriptIO();
+	
+	
+	/**
+	 * Access the singleton. If we get problems in the future with using a singleton
+	 * we can just create new objects in the map
+	 * @return
+	 */
+	public static ScriptIO instance(){
+		return SINGLETON;
+	}
+	
 	private final ODLComponentProvider components;
 	private final JAXBContext context;
-	private final Binder<Node> binder;
+	private final JAXBContextByClass byClass = new JAXBContextByClass();
+//	private final Binder<Node> binder;
 
-	public ScriptIO(ODLComponentProvider components) {
+	private ScriptIO(ODLComponentProvider components) {
 		this.components = components;
 		try {
 			context = JAXBContext.newInstance(Script.class);
-			binder = context.createBinder();
+		//	binder = context.createBinder();
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	public ScriptIO() {
+	private ScriptIO() {
 		this(ODLGlobalComponents.getProvider());
 	}
 
@@ -67,8 +86,9 @@ final public class ScriptIO {
 	 * @return
 	 */
 	public Script deepCopy(Script script) {
-		Document xml = toXML(script);
-		Script ret =  fromXML(xml);
+		Binder<Node> binder = context.createBinder();
+		Document xml = toXML(script,binder);
+		Script ret =  fromXML(xml,binder);
 		ret.setUuid(script.getUuid());
 		return ret;
 	}
@@ -96,7 +116,8 @@ final public class ScriptIO {
 		Document doc = XMLUtils.load(file);
 
 		// generate uuid from filename
-		Script script = fromXML(doc);
+		Binder<Node> binder =context.createBinder();
+		Script script = fromXML(doc,binder);
 		script.setUuid(getScriptUUID(file));
 		if (script.getScriptEditorUIType() == null) {
 			script.setScriptEditorUIType(ScriptEditorType.WIZARD_GENERATED_EDITOR);
@@ -116,7 +137,7 @@ final public class ScriptIO {
 		return ret;
 	}
 
-	public Script fromXML(Node node) {
+	private Script fromXML(Node node,Binder<Node> binder ) {
 		// sometimes node is document root and we need to go to child or grandchild
 		boolean found = false;
 		while (found == false && node != null) {
@@ -170,7 +191,7 @@ final public class ScriptIO {
 								case JAXB:
 									Node componentNode = configNode.getFirstChild();
 									if (componentNode != null) {
-										JAXBContext compContext = JAXBContext.newInstance(cls);
+										JAXBContext compContext = byClass.get(cls);
 										instruction.setComponentConfig((Serializable) compContext.createUnmarshaller().unmarshal(componentNode));
 									}
 									break;
@@ -216,14 +237,15 @@ final public class ScriptIO {
 	}
 
 	public String toXMLString(Script script) {
-		Document document = toXML(script);
+		Binder<Node> binder =context.createBinder();
+		Document document = toXML(script,binder);
 		if (document != null) {
 			return XMLUtils.toString(document, XMLUtils.getPrettyPrintFormat());
 		}
 		return null;
 	}
 
-	public Document toXML(Script script) {
+	private Document toXML(Script script, Binder<Node> binder ) {
 		try {
 			DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
@@ -238,17 +260,17 @@ final public class ScriptIO {
 				public boolean visitOption(Option parent, Option option, int depth) {
 					try {
 						for (ComponentConfig config : option.getComponentConfigs()) {
-							marshallComponentConfig(doc, config);
+							marshallComponentConfig(doc, binder,config);
 						}	
 						for (ComponentConfig config : option.getInstructions()) {
-							marshallComponentConfig(doc, config);
+							marshallComponentConfig(doc,binder, config);
 						}		
 					} catch (Exception e) {
 						throw new RuntimeException(e);
 					}
 					for (ComponentConfig config : option.getInstructions()) {
 						try {
-							marshallComponentConfig(doc, config);
+							marshallComponentConfig(doc,binder, config);
 						} catch (Exception e) {
 							throw new RuntimeException(e);
 						}
@@ -271,7 +293,7 @@ final public class ScriptIO {
 	 * @throws JAXBException
 	 * @throws IOException
 	 */
-	public void marshallComponentConfig(Document doc, ComponentConfig config) throws JAXBException, IOException {
+	private void marshallComponentConfig(Document doc,Binder<Node> binder, ComponentConfig config) throws JAXBException, IOException {
 		Node instructionNode = binder.getXMLNode(config);
 		Serializable componentConf = config.getComponentConfig();
 		if (componentConf != null) {
@@ -281,7 +303,7 @@ final public class ScriptIO {
 			switch (getComponentConfigIOType(componentConf.getClass())) {
 			case JAXB:
 				// marshall using JAXB...
-				JAXBContext compContext = JAXBContext.newInstance(componentConf.getClass());
+				JAXBContext compContext = byClass.get(componentConf.getClass());
 				Marshaller m = compContext.createMarshaller();
 				m.marshal(componentConf, confNode);
 				break;
@@ -297,6 +319,24 @@ final public class ScriptIO {
 				break;
 			}
 
+		}
+	}
+	
+	
+	private static class JAXBContextByClass{
+		private HashMap<Class<? extends Serializable>, JAXBContext>map = new HashMap<>();
+		
+		synchronized JAXBContext get(Class<? extends Serializable> cls){
+			JAXBContext ret = map.get(cls);
+			if(ret==null){
+				try{
+					ret = JAXBContext.newInstance(cls);					
+				}catch(Exception e){
+					throw new RuntimeException(e);
+				}
+				map.put(cls, ret);
+			}
+			return ret;
 		}
 	}
 

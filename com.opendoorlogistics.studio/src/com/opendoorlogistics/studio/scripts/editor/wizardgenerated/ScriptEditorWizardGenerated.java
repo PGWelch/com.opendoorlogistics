@@ -1627,7 +1627,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			public void actionPerformed(ActionEvent e) {
 				if (currentPane != null && currentPane.displayNode != null && currentPane.displayNode.adapter != null) {
 					// take a deep copy of the script
-					Script scriptCopy = new ScriptIO().deepCopy(script);
+					Script scriptCopy = ScriptIO.instance().deepCopy(script);
 
 					// save the deep copied adapter to the global data adapter
 					dataAdapterClipboard = ScriptUtils.getAdapterById(scriptCopy, currentPane.displayNode.adapter.getId(), true);
@@ -1655,7 +1655,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 					tmp.getAdapters().add(dataAdapterClipboard);
 
 					// deep copy it to get a fresh copy of the data adapter
-					tmp = new ScriptIO().deepCopy(tmp);
+					tmp = ScriptIO.instance().deepCopy(tmp);
 					AdapterConfig conf = tmp.getAdapters().get(0);
 
 					// ensure id is unique
@@ -1683,7 +1683,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			public void actionPerformed(ActionEvent e) {
 				if (currentPane != null && currentPane.displayNode != null && currentPane.displayNode.type == DisplayNodeType.OPTION) {
 					// take a deep copy of the script
-					Script scriptCopy = new ScriptIO().deepCopy(script);
+					Script scriptCopy = ScriptIO.instance().deepCopy(script);
 
 					// save the deep copied adapter to the global clipboard
 					if(currentPane.displayNode.isRoot){
@@ -1716,7 +1716,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 					// deep copy the option
 					Script tmp = new Script();
 					tmp.getOptions().add(optionClipboard);
-					tmp = new ScriptIO().deepCopy(tmp);
+					tmp = ScriptIO.instance().deepCopy(tmp);
 					Option option = tmp.getOptions().get(0);
 					
 					

@@ -258,7 +258,7 @@ final public class ScriptUtils {
 	 * @return
 	 */
 	public static Script removeChildOptions(Script script) {
-		script = new ScriptIO().deepCopy(script);
+		script = ScriptIO.instance().deepCopy(script);
 		script.getOptions().clear();
 		return script;
 	}

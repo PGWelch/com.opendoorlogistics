@@ -208,7 +208,7 @@ public class OptionsSubpath {
 		
 		Processor(Script script, final String[] optionIds, ExecutionReport report){
 			// take a deep copy of the input script
-			this.script = new ScriptIO().deepCopy(script);
+			this.script = ScriptIO.instance().deepCopy(script);
 			this.optionIds = optionIds;
 			this.report = report;	
 

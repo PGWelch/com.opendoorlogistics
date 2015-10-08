@@ -114,7 +114,7 @@ final public class ScriptUIManagerImpl implements ScriptUIManager, ODLListener {
 
 	private Script loadScript(File file) {
 		try {
-			ScriptIO scriptIO = new ScriptIO();
+			ScriptIO scriptIO = ScriptIO.instance();
 			Script script = scriptIO.fromFile(file);
 			if (script == null) {
 				throw new RuntimeException();
@@ -138,7 +138,7 @@ final public class ScriptUIManagerImpl implements ScriptUIManager, ODLListener {
 	@Override
 	public Future<Void> executeScript(Script script, String[]optionIds,String name) {
 		// take a deep copy of the script to ensure its immutable
-		script = new ScriptIO().deepCopy(script);
+		script = ScriptIO.instance().deepCopy(script);
 		
 		// test to see if we should launch multiple versions of a control
 		Option option = null;
