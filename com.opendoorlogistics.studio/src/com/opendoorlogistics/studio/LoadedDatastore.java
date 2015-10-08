@@ -8,6 +8,7 @@ package com.opendoorlogistics.studio;
 
 import java.io.File;
 import java.util.concurrent.Callable;
+import java.util.logging.Logger;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.components.ProcessingApi;
@@ -26,10 +27,14 @@ import com.opendoorlogistics.core.tables.io.PoiIO;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
+import com.opendoorlogistics.core.utils.LoggerUtils;
 import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
+import com.opendoorlogistics.studio.scripts.execution.ReporterFrame;
 import com.opendoorlogistics.studio.scripts.execution.ScriptsRunner;
 
 public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Disposable {
+	private final static Logger LOGGER = Logger.getLogger(LoadedDatastore.class.getName());
+
 	private final ODLDatastoreUndoable<ODLTableAlterable> ds;
 	private final AbstractAppFrame appFrame;
 	private File lastFile;
@@ -85,23 +90,36 @@ public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Dis
 		return TableUtils.runTransaction(ds, callable);
 	}
 
+	/**
+	 * This is called by a map selection list when the selection state changes. 
+	 * It modifies the selected flags in the rows in the global datastore as needed,
+	 * and then notifies all selection listeners that the selection state has changed.
+	 */
 	@Override
 	public void onMapSelectedChanged() {
 		// update selection state in the ds for everything
+		long countSelected=0;
+		long countChanged=0;
 		for(int i = 0 ;i<ds.getTableCount() ; i++){
 			ODLTable table = ds.getTableAt(i);
 			int n = table.getRowCount();
 			for(int row=0;row<n;row++){
 				long id = table.getRowId(row);
 				boolean selected = isRowSelectedInMap(id);
+				if(selected){
+					countSelected++;
+				}
 				long flags = table.getRowFlags(id);
 				boolean selectedInDs = (flags & TableFlags.FLAG_ROW_SELECTED_IN_MAP)==TableFlags.FLAG_ROW_SELECTED_IN_MAP;
 				if(selectedInDs!=selected){
 					flags = TableFlagUtils.setFlag(flags, TableFlags.FLAG_ROW_SELECTED_IN_MAP, selected);
 					table.setRowFlags(flags, id);
+					countChanged++;
 				}
 			}
 		}
+		
+		LOGGER.info(LoggerUtils.addPrefix(" - " + Long.toString(countSelected) + " obj(s) sel., " + Long.toString(countChanged) +" sel. state changes"));
 		
 		fireListeners();
 	}

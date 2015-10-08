@@ -10,6 +10,11 @@ import java.util.HashSet;
 
 import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList;
 import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList.MapSelectionListRegister;
+import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTable;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
 
 public abstract class GlobalMapSelectedRowsManager implements MapSelectionListRegister{
 	private HashSet<MapSelectionList> registeredSelectionLists = new HashSet<>();
@@ -51,5 +56,28 @@ public abstract class GlobalMapSelectedRowsManager implements MapSelectionListRe
 		}
 
 		return false;
+	}
+	
+	/**
+	 * Count the number of rows selected in the datastore
+	 * @param ds
+	 * @return
+	 */
+	public static long countSelectedInDs(ODLDatastore<? extends ODLTableReadOnly> ds){
+		long countSelected=0;
+		for(int i = 0 ;i<ds.getTableCount() ; i++){
+			ODLTableReadOnly table = ds.getTableAt(i);
+			int n = table.getRowCount();
+			for(int row=0;row<n;row++){
+				long id = table.getRowId(row);
+				long flags = table.getRowFlags(id);
+				boolean selectedInDs = (flags & TableFlags.FLAG_ROW_SELECTED_IN_MAP)==TableFlags.FLAG_ROW_SELECTED_IN_MAP;
+				if(selectedInDs){
+					countSelected++;
+				}
+			}
+		}
+		
+		return countSelected;
 	}
 }

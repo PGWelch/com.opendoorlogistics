@@ -126,7 +126,7 @@ final public class DatastoreComparer {
 				long bRowId = tb.getRowId(row);
 				if(aRowId!=-1 && bRowId!=-1){
 					boolean aSel = hasFlag(ta.getRowFlags(aRowId), TableFlags.FLAG_ROW_SELECTED_IN_MAP);					
-					boolean bSel = hasFlag(ta.getRowFlags(bRowId), TableFlags.FLAG_ROW_SELECTED_IN_MAP);
+					boolean bSel = hasFlag(tb.getRowFlags(bRowId), TableFlags.FLAG_ROW_SELECTED_IN_MAP);
 					if(aSel!=bSel){
 						return false;
 					}

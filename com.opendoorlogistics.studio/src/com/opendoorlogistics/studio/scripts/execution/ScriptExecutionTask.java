@@ -31,6 +31,7 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
+import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.scripts.elements.Option;
@@ -48,6 +49,7 @@ import com.opendoorlogistics.core.utils.LoggerUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.ModalDialog;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
+import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames.FramePlacement;
 import com.opendoorlogistics.studio.internalframes.ProgressFrame;
@@ -133,6 +135,7 @@ class ScriptExecutionTask {
 				public void run() {
 					// Copy the datastore in EDT so we never get a half-written copy
 					workingDatastoreCopy = runner.getDs().deepCopyWithShallowValueCopy(true);
+					LOGGER.info(LoggerUtils.addPrefix(" - took deep copy of datastore for script execution."));
 				}
 			});
 		} catch (Exception e) {
@@ -371,6 +374,11 @@ class ScriptExecutionTask {
 		// Set open controls to be dirty if the datastore changed during the script's execution
 		if (!result.isFailed() && allProcessedFrames.size()>0) {
 
+//			// DEBUG CODE - REMOVE LATER
+//			long workingSel = GlobalMapSelectedRowsManager.countSelectedInDs(workingDatastoreCopy);
+//			long globalSel = GlobalMapSelectedRowsManager.countSelectedInDs(runner.getDs());
+//			LOGGER.info(LoggerUtils.addPrefix(" - working ds sel " + Long.toString(workingSel) + ", global ds sel " + Long.toString(globalSel)));
+			
 			
 			// Check read tables in the main datastore against the working copy to determine if anything changed
 			boolean dataChanged = false;
@@ -414,8 +422,16 @@ class ScriptExecutionTask {
 				logMsg.append("]");
 				frameCount++;
 			}
-			logMsg.append(" with read table ids ");
-			logMsg.append(Strings.toCommas(wholeScriptDependencies.getReadTableIds()));
+			logMsg.append(" with read tables ");
+			int logTableCount=0;
+			for(int tableId : wholeScriptDependencies.getReadTableIds()){
+				ODLTableDefinition dfn = workingDatastoreCopy!=null ? workingDatastoreCopy.getTableByImmutableId(tableId):null;			
+				if(logTableCount>0){
+					logMsg.append(", ");
+				}
+				logMsg.append(dfn!=null ? dfn.getName() : "N/A");
+				logTableCount++;
+			}
 			if(dataChanged){
 				logMsg.append(" data changed during running");
 			}else{
