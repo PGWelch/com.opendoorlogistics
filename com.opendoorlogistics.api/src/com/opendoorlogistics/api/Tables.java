@@ -12,6 +12,8 @@ import java.util.Set;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLFlatDatastore;
+import com.opendoorlogistics.api.tables.ODLFlatDatastoreExt;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
@@ -151,4 +153,11 @@ public interface Tables {
 	
 	
 	Map<String, Integer> getColumnNamesMap(ODLTableDefinition table);
+	
+	/**
+	 * Wrap a flat datastore to create a normal (hierarchical) datastore
+	 * @param flatDatastore
+	 * @return
+	 */
+	ODLDatastoreAlterable<ODLTableAlterable> unflattenDs(ODLFlatDatastoreExt flatDatastore);
 }

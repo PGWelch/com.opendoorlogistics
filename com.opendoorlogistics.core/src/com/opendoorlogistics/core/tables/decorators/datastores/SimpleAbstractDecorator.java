@@ -43,7 +43,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 
 	
 	@Override
-	protected int getRowCount(int tableId) {
+	public int getRowCount(int tableId) {
 		ODLTableReadOnly table = readOnlyTable(tableId);
 		if(table!=null){
 			return table.getRowCount();
@@ -53,7 +53,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 
 	
 	@Override	
-	protected Object getValueAt(int tableId,int rowIndex, int columnIndex) {
+	public Object getValueAt(int tableId,int rowIndex, int columnIndex) {
 		ODLTableReadOnly table = readOnlyTable(tableId);
 		if(table!=null){
 			return table.getValueAt(rowIndex, columnIndex);
@@ -64,7 +64,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected Object getValueById(int tableId, long rowId, int columnIndex) {
+	public Object getValueById(int tableId, long rowId, int columnIndex) {
 		ODLTableReadOnly table = readOnlyTable(tableId);
 		if(table!=null){
 			return table.getValueById(rowId, columnIndex);
@@ -75,7 +75,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 	
 	@Override
-	protected ODLColumnType getColumnFieldType(int tableId,int colIndex) {
+	public ODLColumnType getColumnFieldType(int tableId,int colIndex) {
 		ODLTableDefinition dfn = definition(tableId);
 		if(dfn!=null){
 			return dfn.getColumnType(colIndex); 
@@ -85,7 +85,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected String getColumnName(int tableId,int colIndex) {
+	public String getColumnName(int tableId,int colIndex) {
 		ODLTableDefinition dfn = definition(tableId);
 		if(dfn!=null){
 			return dfn.getColumnName(colIndex); 
@@ -95,7 +95,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected int getColumnCount(int tableId) {
+	public int getColumnCount(int tableId) {
 		ODLTableDefinition dfn = definition(tableId);
 		if(dfn!=null){
 			return dfn.getColumnCount(); 
@@ -105,7 +105,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected String getName(int tableId) {
+	public String getName(int tableId) {
 		ODLTableDefinition dfn = definition(tableId);
 		if(dfn!=null){
 			return dfn.getName(); 
@@ -115,7 +115,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected long getFlags(int tableId) {
+	public long getFlags(int tableId) {
 		ODLTableDefinition dfn = definition(tableId);
 		if(dfn!=null){
 			return dfn.getFlags(); 
@@ -125,7 +125,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected long getColumnFlags(int tableId,int colIndx) {
+	public long getColumnFlags(int tableId,int colIndx) {
 		ODLTableDefinition dfn = definition(tableId);
 		if(dfn!=null){
 			return dfn.getColumnFlags(colIndx); 
@@ -135,7 +135,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected Object getColumnDefaultValue(int tableId, int col) {
+	public Object getColumnDefaultValue(int tableId, int col) {
 		ODLTableDefinition dfn = definition(tableId);
 		if(dfn!=null){
 			return dfn.getColumnDefaultValue(col); 
@@ -145,7 +145,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected int getColumnImmutableId(int tableId, int col) {
+	public int getColumnImmutableId(int tableId, int col) {
 		ODLTableDefinition dfn = definition(tableId);
 		if(dfn!=null){
 			return dfn.getColumnImmutableId(col); 
@@ -157,21 +157,21 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	protected abstract ODLTable writable(int tableId) ;
 	
 	@Override
-	protected void setValueAt(int tableId,Object aValue, int rowIndex, int columnIndex) {
+	public void setValueAt(int tableId,Object aValue, int rowIndex, int columnIndex) {
 		if(writable(tableId)!=null){
 			writable(tableId).setValueAt(aValue, rowIndex, columnIndex);			
 		}
 	}
 	
 	@Override
-	protected void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
+	public void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
 		if(writable(tableId)!=null){
 			writable(tableId).setValueById(aValue, rowId, columnIndex);			
 		}
 	}
 
 	@Override
-	protected int createEmptyRow(int tableId, long rowId) {
+	public int createEmptyRow(int tableId, long rowId) {
 		if(writable(tableId)!=null){
 			return writable(tableId).createEmptyRow(rowId);
 		}
@@ -179,21 +179,21 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected void insertEmptyRow(int tableId,int insertAtRowNb, long rowId) {
+	public void insertEmptyRow(int tableId,int insertAtRowNb, long rowId) {
 		if(writable(tableId)!=null){
 			writable(tableId).insertEmptyRow(insertAtRowNb,rowId);			
 		}
 	}
 
 	@Override
-	protected void deleteRow(int tableId,int rowNumber) {
+	public void deleteRow(int tableId,int rowNumber) {
 		if(writable(tableId)!=null){
 			writable(tableId).deleteRow(rowNumber);					
 		}
 	}
 
 	@Override
-	protected int addColumn(int tableId,int id,String name, ODLColumnType type, long flags) {
+	public int addColumn(int tableId,int id,String name, ODLColumnType type, long flags) {
 		if(alterable(tableId)!=null){
 			return alterable(tableId).addColumn(id,name, type, flags);			
 		}
@@ -201,14 +201,14 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected void setFlags(int tableId,long flags) {
+	public void setFlags(int tableId,long flags) {
 		if(alterable(tableId)!=null){
 			alterable(tableId).setFlags(flags);		
 		}
 	}
 
 	@Override
-	protected void setColumnFlags(int tableId,int col, long flags) {
+	public void setColumnFlags(int tableId,int col, long flags) {
 		if(alterable(tableId)!=null){		
 			alterable(tableId).setColumnFlags(col, flags);
 		}
@@ -218,7 +218,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	protected abstract ODLTableAlterable alterable(int tableId);
 
 	@Override
-	protected void deleteCol(int tableId, int col) {
+	public void deleteCol(int tableId, int col) {
 		if(alterable(tableId)!=null){
 			alterable(tableId).deleteColumn(col);			
 		}
@@ -226,7 +226,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 
 
 	@Override
-	protected boolean insertCol(int tableId,int id, int col,String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
+	public boolean insertCol(int tableId,int id, int col,String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
 		if(alterable(tableId)!=null){
 			return alterable(tableId).insertColumn(id,col,name,type,flags,allowDuplicateNames);		
 		}
@@ -235,7 +235,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 
 
 	@Override
-	protected long getRowGlobalId(int tableId, int rowIndex) {
+	public long getRowGlobalId(int tableId, int rowIndex) {
 		ODLTableReadOnly t = readOnlyTable(tableId);
 		if(t!=null){
 			return t.getRowId(rowIndex);
@@ -246,23 +246,23 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 
 
 	@Override
-	protected String getColumnDescription(int tableId, int col) {
+	public String getColumnDescription(int tableId, int col) {
 		return definition(tableId)!=null? definition(tableId).getColumnDescription(col):"";
 	}
 
 	@Override
-	protected java.util.Set<String> getColumnTags(int tableId, int col) {
+	public java.util.Set<String> getColumnTags(int tableId, int col) {
 		return definition(tableId)!=null?definition(tableId).getColumnTags(col):null;
 	}
 
 	@Override
-	protected java.util.Set<String> getTags(int tableId) {
+	public java.util.Set<String> getTags(int tableId) {
 		return definition(tableId)!=null?definition(tableId).getTags():null;
 	}
 
 
 	@Override
-	protected void setColumnDescription(int tableId, int col, String description) {
+	public void setColumnDescription(int tableId, int col, String description) {
 		if(alterable(tableId)!=null){
 			alterable(tableId).setColumnDescription(col, description);			
 		}
@@ -270,21 +270,21 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected void setColumnTags(int tableId, int col, Set<String> tags) {
+	public void setColumnTags(int tableId, int col, Set<String> tags) {
 		if(alterable(tableId)!=null){
 			alterable(tableId).setColumnTags(col, tags);			
 		}
 	}
 
 	@Override
-	protected void setTags(int tableId, Set<String> tags) {
+	public void setTags(int tableId, Set<String> tags) {
 		if(alterable(tableId)!=null){
 			alterable(tableId).setTags(tags);					
 		}
 	}
 
 	@Override
-	protected void setColumnDefaultValue(int tableId, int col, Object value) {
+	public void setColumnDefaultValue(int tableId, int col, Object value) {
 		if(alterable(tableId)!=null){
 			alterable(tableId).setColumnDefaultValue(col, value);			
 		}
@@ -292,7 +292,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 
 
 	@Override
-	protected boolean containsRowId(int tableId, long rowId) {
+	public boolean containsRowId(int tableId, long rowId) {
 		ODLTableReadOnly t = readOnlyTable(tableId);
 		if(t!=null){
 			return t.containsRowId(rowId);
@@ -302,7 +302,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected long[] find(int tableId, int col, Object value) {
+	public long[] find(int tableId, int col, Object value) {
 		ODLTableReadOnly t = readOnlyTable(tableId);
 		if(t!=null){
 			return t.find(col,value);
@@ -312,7 +312,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 
 	@Override
-	protected long getRowFlags(int tableId, long rowId) {
+	public long getRowFlags(int tableId, long rowId) {
 		ODLTableReadOnly t = readOnlyTable(tableId);
 		if(t!=null){
 			return t.getRowFlags(rowId);
@@ -323,7 +323,7 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 
 
 	@Override
-	protected long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
+	public long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
 		ODLTableReadOnly t = readOnlyTable(tableId);
 		if(t!=null){
 			return t.getRowLastModifiedTimeMillsecs(rowId);
@@ -334,14 +334,14 @@ public abstract class SimpleAbstractDecorator<T extends ODLTableDefinition> exte
 	}
 	
 	@Override
-	protected void setRowFlags(int tableId, long flags, long rowId) {
+	public void setRowFlags(int tableId, long flags, long rowId) {
 		if(writable(tableId)!=null){
 			writable(tableId).setRowFlags(flags, rowId);
 		}
 	}
 
 	@Override
-	protected ODLTableReadOnly query(int tableId, TableQuery query){
+	public ODLTableReadOnly query(int tableId, TableQuery query){
 		ODLTableReadOnly table = readOnlyTable(tableId);
 		if(table!=null){
 			return table.query(query);

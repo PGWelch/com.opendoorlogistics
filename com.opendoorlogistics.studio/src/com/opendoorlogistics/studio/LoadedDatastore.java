@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.components.ProcessingApi;
+import com.opendoorlogistics.api.tables.DatastoreManagerPlugin;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLListener;
@@ -19,6 +20,7 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.tables.DatastoreManagerGlobalPlugin;
 import com.opendoorlogistics.core.tables.decorators.datastores.DataUpdaterDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.deepcopying.OptimisedDeepCopierDecorator;
@@ -48,6 +50,12 @@ public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Dis
 			throw new RuntimeException();
 		}
 		
+		// todo... apply the datastore manager plugin if we have one... only allow one (throw an exception if more found)
+		DatastoreManagerPlugin plugin = DatastoreManagerGlobalPlugin.getPlugin();
+		if(plugin!=null){
+			
+		}
+				
 		// wrap in the decorator that allows lazy deep copying first of all
 		OptimisedDeepCopierDecorator<ODLTableAlterable> odcd = new OptimisedDeepCopierDecorator<>(newDs);
 		

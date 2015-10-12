@@ -249,17 +249,17 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 	}
 	
 	@Override
-	protected void setValueAt(int id,Object aValue, int rowIndex, int columnIndex) {
+	public void setValueAt(int id,Object aValue, int rowIndex, int columnIndex) {
 		doCommand(new Set(id, rowIndex, columnIndex, aValue));
 	}
 	
 	@Override
-	protected void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
+	public void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
 		doCommand(new SetByRowId(tableId, rowId, columnIndex, aValue));		
 	}
 
 	@Override
-	protected int createEmptyRow(int tableId,long rowId) {
+	public int createEmptyRow(int tableId,long rowId) {
 		doCommand(new InsertEmptyRow(tableId, ((ODLTableReadOnly)decorated.getTableByImmutableId(tableId)).getRowCount(),rowId));
 		return ((ODLTableReadOnly)decorated.getTableByImmutableId(tableId)).getRowCount()-1;
 	}
@@ -275,12 +275,12 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 	}
 	
 	@Override
-	protected void insertEmptyRow(int tableId,int insertAtRowNb,long rowId) {
+	public void insertEmptyRow(int tableId,int insertAtRowNb,long rowId) {
 		doCommand(new InsertEmptyRow(tableId,insertAtRowNb, rowId));
 	}
 
 	@Override
-	protected  int addColumn(int tableId,int id,String name, ODLColumnType type, long flags){
+	public  int addColumn(int tableId,int id,String name, ODLColumnType type, long flags){
 		DeleteEmptyCol undo=(DeleteEmptyCol) doCommand(new InsertEmptyCol(tableId,id,decorated.getTableByImmutableId(tableId).getColumnCount() , name, type, flags,null,false));
 		if(undo==null){
 			return -1;
@@ -290,12 +290,12 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 	}
 
 	@Override
-	protected boolean insertCol(int tableId,int id,int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames){
+	public boolean insertCol(int tableId,int id,int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames){
 		return doCommand(new InsertEmptyCol(tableId, id,col, name, type, flags,null,allowDuplicateNames))!=null;
 	}
 
 	@Override
-	protected void deleteRow(int id,int rowNumber) {
+	public void deleteRow(int id,int rowNumber) {
 		doCommand(new DeleteRow(id,rowNumber));	
 	}
 	
@@ -314,7 +314,7 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 	}
 	
 	@Override
-	protected void deleteCol(int tableId,int col){
+	public void deleteCol(int tableId,int col){
 		boolean transaction = isInTransaction();
 		if(!transaction){
 			startTransaction();
@@ -338,12 +338,12 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 	}
 
 	@Override
-	protected void setColumnFlags(int tableId,int col, long flags){
+	public void setColumnFlags(int tableId,int col, long flags){
 		doCommand(new SetColumnProperty(tableId, col,SetColumnProperty.PropertyType.FLAGS, flags));
 	}
 	
 	@Override
-	protected void setFlags(int tableId,long flags){
+	public void setFlags(int tableId,long flags){
 		doCommand(new SetTableProperty(tableId, SetTableProperty.PropertyType.FLAGS, flags));		
 	}
 
@@ -396,22 +396,22 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 
 
 	@Override
-	protected void setColumnTags(int tableId, int col, java.util.Set<String> tags) {
+	public void setColumnTags(int tableId, int col, java.util.Set<String> tags) {
 		doCommand(new SetColumnProperty(tableId, col,SetColumnProperty.PropertyType.TAGS, tags));
 	}
 
 	@Override
-	protected void setTags(int tableId, java.util.Set<String> tags) {
+	public void setTags(int tableId, java.util.Set<String> tags) {
 		doCommand(new SetTableProperty(tableId, SetTableProperty.PropertyType.TAGS, tags));
 	}
 
 	@Override
-	protected void setColumnDefaultValue(int tableId, int col, Object value) {
+	public void setColumnDefaultValue(int tableId, int col, Object value) {
 		doCommand(new SetColumnProperty(tableId, col,SetColumnProperty.PropertyType.DEFAULT_VALUE, value));
 	}
 
 	@Override
-	protected void setColumnDescription(int tableId, int col ,String description){
+	public void setColumnDescription(int tableId, int col ,String description){
 		doCommand(new SetColumnProperty(tableId, col,SetColumnProperty.PropertyType.DESCRIPTION, description));
 	}
 	

@@ -30,6 +30,7 @@ import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.tables.TableQuery;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.tables.decorators.listeners.ListenerRedirector;
+import com.opendoorlogistics.core.tables.decorators.tables.FlatDs2TableObject;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -288,7 +289,7 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	@Override
 	public T getTableByImmutableId(int tableId) {
 		if(tablesById.containsKey(tableId)){
-			return (T)new TableDecorator(tableId);			
+			return (T)new FlatDs2TableObject(this,tableId);			
 		}
 		return null;
 	}
@@ -339,12 +340,12 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
-	protected int getRowCount(int tableId) {
+	public int getRowCount(int tableId) {
 		return tablesById.get(tableId).size();
 	}
 
 	@Override
-	protected Object getValueById(int tableId, long rowId, int columnIndex) {
+	public Object getValueById(int tableId, long rowId, int columnIndex) {
 		ODLTableReadOnly srcTable = getSourceTable(tableId);
 		if(srcTable!= null){
 			return srcTable.getValueById(rowId, columnIndex);
@@ -353,7 +354,7 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 	
 	@Override
-	protected Object getValueAt(int tableId, int rowIndex, int columnIndex) {
+	public Object getValueAt(int tableId, int rowIndex, int columnIndex) {
 		FilteredTable filteredTable = tablesById.get(tableId);
 		long srcRowId = filteredTable.getRowId(rowIndex);
 		return getValueById(tableId, srcRowId, columnIndex);
@@ -366,32 +367,32 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
-	protected ODLColumnType getColumnFieldType(int tableId, int col) {
+	public ODLColumnType getColumnFieldType(int tableId, int col) {
 		return getSourceTable(tableId)!=null?getSourceTable(tableId).getColumnType(col):null;
 	}
 
 	@Override
-	protected String getColumnName(int tableId, int col) {
+	public String getColumnName(int tableId, int col) {
 		return getSourceTable(tableId)!=null?getSourceTable(tableId).getColumnName(col):null;
 	}
 
 	@Override
-	protected Object getColumnDefaultValue(int tableId, int col) {
+	public Object getColumnDefaultValue(int tableId, int col) {
 		return getSourceTable(tableId)!=null?getSourceTable(tableId).getColumnDefaultValue(col):null;
 	}
 	
 	@Override
-	protected int getColumnCount(int tableId) {
+	public int getColumnCount(int tableId) {
 		return getSourceTable(tableId)!=null?getSourceTable(tableId).getColumnCount():0;
 	}
 
 	@Override
-	protected String getName(int tableId) {
+	public String getName(int tableId) {
 		return getSourceTable(tableId)!=null?getSourceTable(tableId).getName():null;
 	}
 
 	@Override
-	protected long getFlags(int tableId) {
+	public long getFlags(int tableId) {
 		long ret=0;
 		if(getSourceTable(tableId)!=null){
 			ret = getSourceTable(tableId).getFlags();
@@ -403,19 +404,19 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
-	protected long getColumnFlags(int tableId, int col) {
+	public long getColumnFlags(int tableId, int col) {
 		return getSourceTable(tableId)!=null?getSourceTable(tableId).getColumnFlags(col):0;
 	}
 
 	@Override
-	protected void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
+	public void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
 		FilteredTable filteredTable = tablesById.get(tableId);
 		long srcRowId = filteredTable.getRowId(rowIndex);
 		setValueById(tableId, aValue, srcRowId, columnIndex);
 	}
 
 	@Override
-	protected void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
+	public void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
 		FilteredTable filteredTable = tablesById.get(tableId);
 		ODLTable srcTable =(ODLTable) src.getTableByImmutableId(filteredTable.tableId);
 		if(srcTable!=null){
@@ -424,7 +425,7 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
-	protected int createEmptyRow(int tableId, long rowId) {
+	public int createEmptyRow(int tableId, long rowId) {
 		ODLTable srcTable =(ODLTable) getSourceTable(tableId);
 		int indx = srcTable.createEmptyRow(rowId);
 		rowId = srcTable.getRowId(indx);
@@ -435,12 +436,12 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
-	protected void insertEmptyRow(int tableId, int insertAtRowNb, long rowId) {
+	public void insertEmptyRow(int tableId, int insertAtRowNb, long rowId) {
 		throwUnsupported();
 	}
 
 	@Override
-	protected void deleteRow(int tableId, int rowNumber) {
+	public void deleteRow(int tableId, int rowNumber) {
 		FilteredTable filteredTable = tablesById.get(tableId);
 		long rowId = filteredTable.getRowId(rowNumber);
 		filteredTable.removeAt(rowNumber);
@@ -452,47 +453,47 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
-	protected void deleteCol(int tableId, int col) {
+	public void deleteCol(int tableId, int col) {
 		throwUnsupported();
 	}
 
 	@Override
-	protected boolean insertCol(int tableId, int colId, int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
+	public boolean insertCol(int tableId, int colId, int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
 		throwUnsupported();
 		return false;
 	}
 
 	@Override
-	protected int addColumn(int tableId, int colId,String name, ODLColumnType type, long flags) {
+	public int addColumn(int tableId, int colId,String name, ODLColumnType type, long flags) {
 		throwUnsupported();
 		return -1;
 	}
 
 	@Override
-	protected void setFlags(int tableId, long flags) {
+	public void setFlags(int tableId, long flags) {
 		throwUnsupported();
 	}
 
 	@Override
-	protected void setColumnFlags(int tableId, int col, long flags) {
+	public void setColumnFlags(int tableId, int col, long flags) {
 		throwUnsupported();
 	}
 
 
 
 //	@Override
-//	protected int getRowIndexByGlobalId(int tableId, long globalId) {
+//	public int getRowIndexByGlobalId(int tableId, long globalId) {
 //		return getRowIndexByLocalId(tableId, Utils.getLocalRowId(globalId));
 //	}
 
 	@Override
-	protected long getRowGlobalId(int tableId, int rowIndex) {
+	public long getRowGlobalId(int tableId, int rowIndex) {
 		return tablesById.get(tableId).getRowId(rowIndex);
 	//	return getSourceTable(tableId)!=null? getSourceTable(tableId).getRowGlobalIdByLocal(localRowId):-1; 
 	}
 
 	@Override
-	protected boolean containsRowId(int tableId, long rowId) {
+	public boolean containsRowId(int tableId, long rowId) {
 		return tablesById.get(tableId).contains(rowId);
 	}
 
@@ -503,44 +504,44 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
-	protected String getColumnDescription(int tableId, int col) {
+	public String getColumnDescription(int tableId, int col) {
 		return getSourceTable(tableId)!=null?getSourceTable(tableId).getColumnDescription(col):null;
 	}
 
 	@Override
-	protected void setColumnDescription(int tableId, int col, String description) {
+	public void setColumnDescription(int tableId, int col, String description) {
 		if(getSourceTable(tableId)!=null){
 			getSourceTable(tableId).setColumnDescription(col, description);			
 		}
 	}
 
 	@Override
-	protected java.util.Set<String> getColumnTags(int tableId, int col) {
+	public java.util.Set<String> getColumnTags(int tableId, int col) {
 		return getSourceTable(tableId)!=null?getSourceTable(tableId).getColumnTags(col):null;
 	}
 
 	@Override
-	protected int getColumnImmutableId(int tableId, int col) {
+	public int getColumnImmutableId(int tableId, int col) {
 		return getSourceTable(tableId)!=null? getSourceTable(tableId).getColumnImmutableId(col):-1;
 	}
 	
 	@Override
-	protected java.util.Set<String> getTags(int tableId) {
+	public java.util.Set<String> getTags(int tableId) {
 		return getSourceTable(tableId)!=null?getSourceTable(tableId).getTags():null;
 	}
 
 	@Override
-	protected void setColumnTags(int tableId, int col, Set<String> tags) {
+	public void setColumnTags(int tableId, int col, Set<String> tags) {
 		throwUnsupported();
 	}
 
 	@Override
-	protected void setTags(int tableId, Set<String> tags) {
+	public void setTags(int tableId, Set<String> tags) {
 		throwUnsupported();
 	}
 
 	@Override
-	protected void setColumnDefaultValue(int tableId, int col, Object value) {
+	public void setColumnDefaultValue(int tableId, int col, Object value) {
 		throwUnsupported();
 	}
 	
@@ -549,7 +550,7 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
-	protected long[] find(int tableId, int col, Object value) {
+	public long[] find(int tableId, int col, Object value) {
 		FilteredTable table = tablesById.get(tableId);
 		if(table==null){
 			return null;
@@ -577,7 +578,7 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 	
 	@Override
-	protected ODLTableReadOnly query(int tableId, TableQuery query) {
+	public ODLTableReadOnly query(int tableId, TableQuery query) {
 		FilteredTable filteredRowIds = tablesById.get(tableId);
 		if(filteredRowIds==null){
 			return null;
@@ -609,7 +610,7 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
-	protected long getRowFlags(int tableId, long rowId) {
+	public long getRowFlags(int tableId, long rowId) {
 		ODLTableReadOnly srcTable = getSourceTable(tableId);
 		if(srcTable!= null){
 			return srcTable.getRowFlags(rowId);
@@ -619,7 +620,7 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
-	protected long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
+	public long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
 		ODLTableReadOnly srcTable = getSourceTable(tableId);
 		if(srcTable!= null){
 			return srcTable.getRowLastModifiedTimeMillsecs(rowId);
@@ -629,7 +630,7 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 	
 	@Override
-	protected void setRowFlags(int tableId, long flags, long rowId) {
+	public void setRowFlags(int tableId, long flags, long rowId) {
 		ODLTableReadOnly srcTable = getSourceTable(tableId);
 		if(srcTable!= null){
 			((ODLTable)srcTable).setRowFlags(flags,rowId);
@@ -649,12 +650,12 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 	}
 
 	@Override
-	protected boolean getTableExists(int tableId) {
+	public boolean getTableExists(int tableId) {
 		return src.getTableByImmutableId(tableId)!=null;
 	}
 
 	@Override
-	protected ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
+	public ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
 		throw new UnsupportedOperationException();
 
 	}

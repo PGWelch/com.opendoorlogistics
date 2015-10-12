@@ -118,7 +118,7 @@ final public class ListenerDecorator<T extends ODLTableDefinition> extends Simpl
 	}
 
 	@Override
-	protected void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
+	public void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
 		long id = getRowGlobalId(tableId, rowIndex);
 		if(id!=-1){
 			setValueById(tableId, aValue, id, columnIndex);
@@ -146,13 +146,13 @@ final public class ListenerDecorator<T extends ODLTableDefinition> extends Simpl
 	}
 
 //	@Override
-//	protected void setRowFlags(int tableId, long flags, long rowId) {
+//	public void setRowFlags(int tableId, long flags, long rowId) {
 //		super.setRowFlags(tableId, flags, rowId);
 //		fireTableModelListener(tableId, 0, Integer.MAX_VALUE);			
 //	}
 	
 	@Override
-	protected void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
+	public void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
 
 		Object oldValue = getValueById(tableId, rowId, columnIndex);
 		
@@ -177,26 +177,26 @@ final public class ListenerDecorator<T extends ODLTableDefinition> extends Simpl
 	}
 	
 	@Override
-	protected int createEmptyRow(int tableId, long rowId) {
+	public int createEmptyRow(int tableId, long rowId) {
 		int ret = super.createEmptyRow(tableId, rowId);
 		fireTableModelListener(tableId, ret - 1, Integer.MAX_VALUE);
 		return ret;
 	}
 	
 	@Override
-	protected void insertEmptyRow(int tableId, int insertAtRowNb,long rowId) {
+	public void insertEmptyRow(int tableId, int insertAtRowNb,long rowId) {
 		super.insertEmptyRow(tableId, insertAtRowNb, rowId);
 		fireTableModelListener(tableId, insertAtRowNb - 1, Integer.MAX_VALUE);
 	}
 
 	@Override
-	protected void deleteRow(int tableId, int rowNumber) {
+	public void deleteRow(int tableId, int rowNumber) {
 		super.deleteRow(tableId, rowNumber);
 		fireTableModelListener(tableId, rowNumber - 1, Integer.MAX_VALUE);
 	}
 
 	@Override
-	protected int addColumn(int tableId, int id,String name, ODLColumnType type, long flags) {
+	public int addColumn(int tableId, int id,String name, ODLColumnType type, long flags) {
 		int index =super.addColumn(tableId, id,name, type, flags); 
 		if (index!=-1) {
 			fireAllListeners(tableId);
@@ -206,7 +206,7 @@ final public class ListenerDecorator<T extends ODLTableDefinition> extends Simpl
 	}
 
 	@Override
-	protected boolean insertCol(int tableId,int id, int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
+	public boolean insertCol(int tableId,int id, int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
 		if (super.insertCol(tableId, id,col, name, type, flags, allowDuplicateNames)) {
 			fireAllListeners(tableId);
 			return true;
@@ -215,7 +215,7 @@ final public class ListenerDecorator<T extends ODLTableDefinition> extends Simpl
 	}
 
 	@Override
-	protected void deleteCol(int tableId, int col) {
+	public void deleteCol(int tableId, int col) {
 		super.deleteCol(tableId, col);
 		fireAllListeners(tableId);
 	}
@@ -247,13 +247,13 @@ final public class ListenerDecorator<T extends ODLTableDefinition> extends Simpl
 
 	
 	@Override
-	protected void setFlags(int tableId, long flags) {
+	public void setFlags(int tableId, long flags) {
 		super.setFlags(tableId, flags);
 		fireAllListeners(tableId);
 	}
 
 	@Override
-	protected void setColumnFlags(int tableId, int col, long flags) {
+	public void setColumnFlags(int tableId, int col, long flags) {
 		super.setColumnFlags(tableId, col, flags);
 		fireAllListeners(tableId);
 	}
@@ -265,25 +265,25 @@ final public class ListenerDecorator<T extends ODLTableDefinition> extends Simpl
 	
 
 	@Override
-	protected void setColumnDescription(int tableId, int col, String description) {
+	public void setColumnDescription(int tableId, int col, String description) {
 		super.setColumnDescription(tableId, col, description);
 		fireAllListeners(tableId);
 	}
 
 	@Override
-	protected void setColumnTags(int tableId, int col, Set<String> tags) {
+	public void setColumnTags(int tableId, int col, Set<String> tags) {
 		super.setColumnTags(tableId, col, tags);
 		fireAllListeners(tableId);
 	}
 
 	@Override
-	protected void setTags(int tableId, Set<String> tags) {
+	public void setTags(int tableId, Set<String> tags) {
 		super.setTags(tableId, tags);
 		fireAllListeners(tableId);
 	}
 
 	@Override
-	protected void setColumnDefaultValue(int tableId, int col, Object value) {
+	public void setColumnDefaultValue(int tableId, int col, Object value) {
 		super.setColumnDefaultValue(tableId, col, value);
 		fireAllListeners(tableId);
 	}

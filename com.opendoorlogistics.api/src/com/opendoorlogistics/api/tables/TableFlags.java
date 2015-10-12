@@ -111,5 +111,8 @@ public interface TableFlags {
 	 * original table name, not the destination table name
 	 */
 	public static final long FLAG_TABLE_NAME_USE_SOURCE = 1<<18;
+	
+	
+	public static final long FLAG_READ_ONLY = 1<<19;
 
 }

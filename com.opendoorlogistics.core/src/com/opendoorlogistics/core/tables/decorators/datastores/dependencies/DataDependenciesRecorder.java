@@ -41,7 +41,7 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 	}
 
 	@Override
-	protected int addColumn(int tableId,int id, String name, ODLColumnType type, long flags) {
+	public int addColumn(int tableId,int id, String name, ODLColumnType type, long flags) {
 		getDependencies().addWrittenTableId(tableId);
 		return super.addColumn(tableId, id,name, type, flags);
 	}
@@ -56,7 +56,7 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 
 	
 	@Override
-	protected int createEmptyRow(int tableId, long rowLocalId) {
+	public int createEmptyRow(int tableId, long rowLocalId) {
 		getDependencies().addWrittenTableId(tableId);
 		return super.createEmptyRow(tableId, rowLocalId);
 	}
@@ -71,13 +71,13 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 	}
 
 	@Override
-	protected void deleteCol(int tableId, int col) {
+	public void deleteCol(int tableId, int col) {
 		getDependencies().addWrittenTableId(tableId);
 		super.deleteCol(tableId, col);
 	}
 
 	@Override
-	protected void deleteRow(int tableId, int rowNumber) {
+	public void deleteRow(int tableId, int rowNumber) {
 		getDependencies().addWrittenTableId(tableId);
 		super.deleteRow(tableId, rowNumber);
 	}
@@ -101,31 +101,31 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 
 	
 	@Override
-	protected int getColumnCount(int tableId) {
+	public int getColumnCount(int tableId) {
 		getDependencies().addReadTableId(tableId,false);
 		return super.getColumnCount(tableId);
 	}
 
 	@Override
-	protected ODLColumnType getColumnFieldType(int tableId, int colIndex) {
+	public ODLColumnType getColumnFieldType(int tableId, int colIndex) {
 		getDependencies().addReadTableId(tableId,false);
 		return super.getColumnFieldType(tableId, colIndex);
 	}
 
 	@Override
-	protected long getColumnFlags(int tableId, int colIndx) {
+	public long getColumnFlags(int tableId, int colIndx) {
 		getDependencies().addReadTableId(tableId,false);
 		return super.getColumnFlags(tableId, colIndx);
 	}
 	
 	@Override
-	protected int getColumnImmutableId(int tableId, int col) {
+	public int getColumnImmutableId(int tableId, int col) {
 		getDependencies().addReadTableId(tableId,false);
 		return super.getColumnImmutableId(tableId, col);
 	}
 
 	@Override
-	protected String getColumnName(int tableId, int colIndex) {
+	public String getColumnName(int tableId, int colIndex) {
 		getDependencies().addReadTableId(tableId,false);
 		return super.getColumnName(tableId, colIndex);
 	}
@@ -137,13 +137,13 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 	}
 
 	@Override
-	protected long getFlags(int tableId) {
+	public long getFlags(int tableId) {
 		getDependencies().addReadTableId(tableId,false);
 		return super.getFlags(tableId);
 	}
 
 	@Override
-	protected String getName(int tableId) {
+	public String getName(int tableId) {
 		// Table names are considered a table set property, not an individual table's property.
 		// This allows the dependencies for adapters to only inculde the tables they use.
 		getDependencies().setReadTableSet();
@@ -151,39 +151,39 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 	}
 
 	@Override
-	protected int getRowCount(int tableId) {
+	public int getRowCount(int tableId) {
 		getDependencies().addReadTableId(tableId,true);
 		return super.getRowCount(tableId);
 	}
 
 	@Override
-	protected long getRowGlobalId(int tableId, int rowIndex) {
+	public long getRowGlobalId(int tableId, int rowIndex) {
 		getDependencies().addReadTableId(tableId,true);
 		return super.getRowGlobalId(tableId, rowIndex);
 	}
 
 	@Override
-	protected long getRowFlags(int tableId, long rowId) {
+	public long getRowFlags(int tableId, long rowId) {
 		getDependencies().addReadTableId(tableId,true);
 		getDependencies().setReadRowFlags(true);
 		return super.getRowFlags(tableId, rowId);
 	}
 
 	@Override
-	protected long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
+	public long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
 		getDependencies().addReadTableId(tableId,true);
 		return super.getRowLastModifiedTimeMillisecs(tableId, rowId);
 		
 	}
 	
 //	@Override
-//	protected int getRowIndexByGlobalId(int tableId, long immutableId) {
+//	public int getRowIndexByGlobalId(int tableId, long immutableId) {
 //		getDependencies().addReadTableId(tableId);
 //		return super.getRowIndexByGlobalId(tableId, immutableId);
 //	}
 
 //	@Override
-//	protected int getRowIndexByLocalId(int tableId, int localId) {
+//	public int getRowIndexByLocalId(int tableId, int localId) {
 //		getDependencies().addReadTableId(tableId);
 //		return super.getRowIndexByLocalId(tableId, localId);
 //	}
@@ -207,37 +207,37 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 	}
 
 	@Override
-	protected Object getValueAt(int tableId, int rowIndex, int columnIndex) {
+	public Object getValueAt(int tableId, int rowIndex, int columnIndex) {
 		getDependencies().addReadTableId(tableId,true);
 		return super.getValueAt(tableId, rowIndex, columnIndex);
 	}
 
 	@Override
-	protected long[] find(int tableId, int col, Object value) {
+	public long[] find(int tableId, int col, Object value) {
 		getDependencies().addReadTableId(tableId,true);
 		return super.find(tableId, col, value);
 	}
 
 	@Override
-	protected boolean containsRowId(int tableId, long rowId) {
+	public boolean containsRowId(int tableId, long rowId) {
 		getDependencies().addReadTableId(tableId,true);
 		return super.containsRowId(tableId, rowId);
 	}
 	
 	@Override
-	protected Object getValueById(int tableId, long rowId, int columnIndex) {
+	public Object getValueById(int tableId, long rowId, int columnIndex) {
 		getDependencies().addReadTableId(tableId,true);
 		return super.getValueById(tableId, rowId, columnIndex);
 	}
 	
 	@Override
-	protected boolean insertCol(int tableId, int id,int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
+	public boolean insertCol(int tableId, int id,int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
 		getDependencies().addWrittenTableId(tableId);
 		return super.insertCol(tableId,id, col, name, type, flags, allowDuplicateNames);
 	}
 
 	@Override
-	protected void insertEmptyRow(int tableId, int insertAtRowNb, long rowId) {
+	public void insertEmptyRow(int tableId, int insertAtRowNb, long rowId) {
 		getDependencies().addWrittenTableId(tableId);
 		super.insertEmptyRow(tableId, insertAtRowNb, rowId);
 	}
@@ -249,13 +249,13 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 	}
 
 	@Override
-	protected void setColumnFlags(int tableId, int col, long flags) {
+	public void setColumnFlags(int tableId, int col, long flags) {
 		getDependencies().addWrittenTableId(tableId);
 		super.setColumnFlags(tableId, col, flags);
 	}
 
 	@Override
-	protected void setFlags(int tableId, long flags) {
+	public void setFlags(int tableId, long flags) {
 		getDependencies().addWrittenTableId(tableId);
 		super.setFlags(tableId, flags);
 	}
@@ -275,13 +275,13 @@ final public class DataDependenciesRecorder<T extends ODLTableDefinition> extend
 	}
 
 	@Override
-	protected void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
+	public void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
 		getDependencies().addWrittenTableId(tableId);
 		super.setValueAt(tableId, aValue, rowIndex, columnIndex);
 	}
 
 	@Override
-	protected void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
+	public void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
 		getDependencies().addWrittenTableId(tableId);
 		super.setValueById(tableId, aValue, rowId, columnIndex);
 	}

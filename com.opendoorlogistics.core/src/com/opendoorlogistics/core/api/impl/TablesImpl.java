@@ -14,6 +14,9 @@ import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLFlatDatastore;
+import com.opendoorlogistics.api.tables.ODLFlatDatastoreExt;
+import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
@@ -22,6 +25,7 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.beans.BeanTypeConversion;
+import com.opendoorlogistics.core.tables.decorators.tables.FlatDs2TableObject;
 import com.opendoorlogistics.core.tables.utils.DatastoreComparer;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.ExampleData;
@@ -32,14 +36,14 @@ import com.opendoorlogistics.core.utils.strings.EnumStdLookup;
 public class TablesImpl implements Tables {
 	private static final EnumStdLookup<ODLColumnType> CT_LOOKUP = new EnumStdLookup<ODLColumnType>(ODLColumnType.class);
 	private final ODLApi api;
-	
+
 	public TablesImpl(ODLApi api) {
 		this.api = api;
 	}
 
 	@Override
 	public ODLTableDefinitionAlterable copyTableDefinition(ODLTableDefinition copyThis, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> copyTo) {
-		return DatastoreCopier.copyTableDefinition(copyThis, copyTo, copyThis.getName(), copyTo.getTableByImmutableId(copyThis.getImmutableId())==null? copyThis.getImmutableId():-1);
+		return DatastoreCopier.copyTableDefinition(copyThis, copyTo, copyThis.getName(), copyTo.getTableByImmutableId(copyThis.getImmutableId()) == null ? copyThis.getImmutableId() : -1);
 	}
 
 	@Override
@@ -65,9 +69,9 @@ public class TablesImpl implements Tables {
 	@Override
 	public void setColumnIsOptional(ODLTableDefinitionAlterable table, int col, boolean optional) {
 		long flags = table.getColumnFlags(col);
-		if(optional){
+		if (optional) {
 			flags |= TableFlags.FLAG_IS_OPTIONAL;
-		}else{
+		} else {
 			flags &= ~TableFlags.FLAG_IS_OPTIONAL;
 		}
 		table.setColumnFlags(col, flags);
@@ -80,28 +84,29 @@ public class TablesImpl implements Tables {
 
 	@Override
 	public void validateForeignKey(ODLTableReadOnly primaryKeyTable, int primaryKeyColIndx, ODLTable foreignKeyTable, int foreignKeyColIndx, KeyValidationMode mode) {
-		int row =0 ; 
-		while(row<foreignKeyTable.getRowCount()){
+		int row = 0;
+		while (row < foreignKeyTable.getRowCount()) {
 			Object value = foreignKeyTable.getValueAt(row, foreignKeyColIndx);
-			boolean missing=false;
-			if(value==null){
+			boolean missing = false;
+			if (value == null) {
 				missing = true;
 			}
-			
-			if(!missing){
-				long[]vals = primaryKeyTable.find(primaryKeyColIndx, value);
-				missing = vals==null || vals.length==0;
+
+			if (!missing) {
+				long[] vals = primaryKeyTable.find(primaryKeyColIndx, value);
+				missing = vals == null || vals.length == 0;
 			}
-			
-			if(missing){
-				switch(mode){
+
+			if (missing) {
+				switch (mode) {
 				case REMOVE_CORRUPT_FOREIGN_KEY:
 					// delete and continue here so we don't increment row
 					foreignKeyTable.deleteRow(row);
 					continue;
-					
+
 				case THROW_UNCHECKED_EXCEPTION:
-					throw new RuntimeException("Table \"" + foreignKeyTable.getName() + "\" has corrupt foreign key value. \"" + value + "\" cannot be found in table \"" + primaryKeyTable.getName() + "\".");
+					throw new RuntimeException(
+							"Table \"" + foreignKeyTable.getName() + "\" has corrupt foreign key value. \"" + value + "\" cannot be found in table \"" + primaryKeyTable.getName() + "\".");
 				}
 			}
 			row++;
@@ -109,7 +114,7 @@ public class TablesImpl implements Tables {
 	}
 
 	@Override
-	public int findColumnIndex(ODLTableDefinition table,String name) {
+	public int findColumnIndex(ODLTableDefinition table, String name) {
 		return TableUtils.findColumnIndx(table, name, true);
 	}
 
@@ -151,8 +156,7 @@ public class TablesImpl implements Tables {
 	}
 
 	@Override
-	public void addTableDefinitions(ODLDatastore<? extends ODLTableDefinition> schema, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds,
-			boolean changeFieldTypes) {
+	public void addTableDefinitions(ODLDatastore<? extends ODLTableDefinition> schema, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds, boolean changeFieldTypes) {
 		DatastoreCopier.enforceSchema(schema, ds, changeFieldTypes);
 	}
 
@@ -203,8 +207,8 @@ public class TablesImpl implements Tables {
 	@Override
 	public Set<String> getColumnNamesSet(ODLTableDefinition table) {
 		Set<String> ret = api.stringConventions().createStandardisedSet();
-		int nc= table.getColumnCount();
-		for(int i =0 ; i < nc ; i++){
+		int nc = table.getColumnCount();
+		for (int i = 0; i < nc; i++) {
 			ret.add(table.getColumnName(i));
 		}
 		return ret;
@@ -213,9 +217,9 @@ public class TablesImpl implements Tables {
 	@Override
 	public Map<String, Integer> getColumnNamesMap(ODLTableDefinition table) {
 		Map<String, Integer> ret = api.stringConventions().createStandardisedMap();
-		int nc= table.getColumnCount();
-		for(int i =0 ; i < nc ; i++){
-			ret.put(table.getColumnName(i),i );
+		int nc = table.getColumnCount();
+		for (int i = 0; i < nc; i++) {
+			ret.put(table.getColumnName(i), i);
 		}
 		return ret;
 	}
@@ -225,5 +229,108 @@ public class TablesImpl implements Tables {
 		DatastoreCopier.copyTableDefinition(copyThis, copyInto);
 	}
 
+	@Override
+	public ODLDatastoreAlterable<ODLTableAlterable> unflattenDs(ODLFlatDatastoreExt flatDatastore) {
+		FlatDs2TableObject.Flat2DsTableCache tableCache = new FlatDs2TableObject.Flat2DsTableCache(flatDatastore);
+
+		return new ODLDatastoreAlterable<ODLTableAlterable>() {
+
+			@Override
+			public ODLTableAlterable getTableByImmutableId(int id) {
+				return tableCache.getTable(id);
+			}
+
+			@Override
+			public void setFlags(long flags) {
+				flatDatastore.setFlags(flags);
+			}
+
+			@Override
+			public ODLDatastore<? extends ODLTableAlterable> deepCopyWithShallowValueCopy(boolean createLazyCopy) {
+				ODLFlatDatastoreExt copy = flatDatastore.deepCopyWithShallowValueCopy(createLazyCopy);
+				return unflattenDs(copy);
+			}
+
+			@Override
+			public int getTableCount() {
+				return flatDatastore.getTableCount();
+			}
+
+			@Override
+			public ODLTableAlterable getTableAt(int i) {
+				int id = flatDatastore.getTableId(i);
+				return getTableByImmutableId(id);
+			}
+
+			@Override
+			public void addListener(ODLListener tml, int... tableIds) {
+				flatDatastore.addListener(tml, tableIds);
+			}
+
+			@Override
+			public void removeListener(ODLListener tml) {
+				flatDatastore.removeListener(tml);
+			}
+
+			@Override
+			public void disableListeners() {
+				flatDatastore.disableListeners();
+			}
+
+			@Override
+			public void enableListeners() {
+				flatDatastore.enableListeners();
+			}
+
+			@Override
+			public void startTransaction() {
+				flatDatastore.startTransaction();
+			}
+
+			@Override
+			public void endTransaction() {
+				flatDatastore.endTransaction();
+			}
+
+			@Override
+			public boolean isInTransaction() {
+				return flatDatastore.isInTransaction();
+			}
+
+			@Override
+			public void rollbackTransaction() {
+				flatDatastore.rollbackTransaction();
+			}
+
+			@Override
+			public boolean isRollbackSupported() {
+				return flatDatastore.isRollbackSupported();
+			}
+
+			@Override
+			public long getFlags() {
+				return flatDatastore.getFlags();
+			}
+
+			@Override
+			public ODLTableAlterable createTable(String tablename, int id) {
+				id = flatDatastore.createTable(tablename, id);
+				if(id!=-1){
+					return getTableByImmutableId(id);
+				}
+				return null;
+			}
+
+			@Override
+			public void deleteTableById(int tableId) {
+				flatDatastore.deleteTableById(tableId);
+			}
+
+			@Override
+			public boolean setTableName(int tableId, String newName) {
+				return flatDatastore.setTableName(tableId, newName);
+			}
+		};
+	}
 
 }

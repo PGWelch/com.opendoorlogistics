@@ -296,7 +296,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected int getRowCount(int tableId) {
+	public int getRowCount(int tableId) {
 		T src = sourceTable(tableId);
 		if (src != null) {
 			return ((ODLTableReadOnly) src).getRowCount();
@@ -305,7 +305,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected long getRowGlobalId(int tableId, int rowIndex) {
+	public long getRowGlobalId(int tableId, int rowIndex) {
 		T src = sourceTable(tableId);
 		if (src != null) {
 			return ((ODLTableReadOnly) src).getRowId(rowIndex);
@@ -332,7 +332,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	// }
 
 	@Override
-	protected boolean containsRowId(int tableId, long rowId) {
+	public boolean containsRowId(int tableId, long rowId) {
 		ODLTableReadOnly src = (ODLTableReadOnly) sourceTable(tableId);
 		if (src == null) {
 			return false;
@@ -341,7 +341,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected Object getValueById(int tableId, long rowId, int columnIndex) {
+	public Object getValueById(int tableId, long rowId, int columnIndex) {
 		return getValue(tableId, rowId, -1, columnIndex);
 	}
 
@@ -461,32 +461,32 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected Object getValueAt(int tableId, int rowIndex, int columnIndex) {
+	public Object getValueAt(int tableId, int rowIndex, int columnIndex) {
 		return getValue(tableId, -1, rowIndex, columnIndex);
 	}
 
 	@Override
-	protected ODLColumnType getColumnFieldType(int tableId, int col) {
+	public ODLColumnType getColumnFieldType(int tableId, int col) {
 		return mapping.getDestinationModel().getTableByImmutableId(tableId).getColumnType(col);
 	}
 
 	@Override
-	protected String getColumnName(int tableId, int col) {
+	public String getColumnName(int tableId, int col) {
 		return mapping.getDestinationModel().getTableByImmutableId(tableId).getColumnName(col);
 	}
 
 	@Override
-	protected int getColumnCount(int tableId) {
+	public int getColumnCount(int tableId) {
 		return mapping.getDestinationModel().getTableByImmutableId(tableId).getColumnCount();
 	}
 
 	@Override
-	protected String getName(int tableId) {
+	public String getName(int tableId) {
 		return mapping.getDestinationModel().getTableByImmutableId(tableId).getName();
 	}
 
 	@Override
-	protected long getFlags(int tableId) {
+	public long getFlags(int tableId) {
 		long destFlags= mapping.getDestinationModel().getTableByImmutableId(tableId).getFlags();
 		long ret = destFlags;
 		T src = sourceTable(tableId);
@@ -506,7 +506,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected long getColumnFlags(int tableId, int col) {
+	public long getColumnFlags(int tableId, int col) {
 
 		long ret = mapping.getDestinationModel().getTableByImmutableId(tableId).getColumnFlags(col);
 		if (mapping.getFieldFormula(tableId, col) != null) {
@@ -516,32 +516,32 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected int getColumnImmutableId(int tableId, int col) {
+	public int getColumnImmutableId(int tableId, int col) {
 		return mapping.getDestinationModel().getTableByImmutableId(tableId).getColumnImmutableId(col);
 	}
 
 	@Override
-	protected String getColumnDescription(int tableId, int col) {
+	public String getColumnDescription(int tableId, int col) {
 		return mapping.getDestinationModel().getTableByImmutableId(tableId).getColumnDescription(col);
 	}
 
 	@Override
-	protected java.util.Set<String> getColumnTags(int tableId, int col) {
+	public java.util.Set<String> getColumnTags(int tableId, int col) {
 		return mapping.getDestinationModel().getTableByImmutableId(tableId).getColumnTags(col);
 	}
 
 	@Override
-	protected java.util.Set<String> getTags(int tableId) {
+	public java.util.Set<String> getTags(int tableId) {
 		return mapping.getDestinationModel().getTableByImmutableId(tableId).getTags();
 	}
 
 	@Override
-	protected void setColumnDescription(int tableId, int col, String description) {
+	public void setColumnDescription(int tableId, int col, String description) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	protected void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
+	public void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
 		setValue(tableId, aValue, rowId, -1, columnIndex);
 	}
 
@@ -585,12 +585,12 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
+	public void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
 		setValue(tableId, aValue, -1, rowIndex, columnIndex);
 	}
 
 	@Override
-	protected int createEmptyRow(int tableId, long rowId) {
+	public int createEmptyRow(int tableId, long rowId) {
 		T src = sourceTable(tableId);
 		if (src != null) {
 			return ((ODLTable) src).createEmptyRow(rowId);
@@ -599,7 +599,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected void insertEmptyRow(int tableId, int insertAtRowNb, long rowId) {
+	public void insertEmptyRow(int tableId, int insertAtRowNb, long rowId) {
 		T src = sourceTable(tableId);
 		if (src != null) {
 			((ODLTable) src).insertEmptyRow(insertAtRowNb, rowId);
@@ -607,7 +607,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected void deleteRow(int tableId, int rowNumber) {
+	public void deleteRow(int tableId, int rowNumber) {
 		T src = sourceTable(tableId);
 		if (src != null) {
 			((ODLTable) src).deleteRow(rowNumber);
@@ -615,30 +615,30 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected int addColumn(int tableId, int colId, String name, ODLColumnType type, long flags) {
+	public int addColumn(int tableId, int colId, String name, ODLColumnType type, long flags) {
 		// not supported for a mapped database
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	protected void setFlags(int tableId, long flags) {
+	public void setFlags(int tableId, long flags) {
 		// not supported for a mapped database
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	protected void setColumnFlags(int tableId, int col, long flags) {
+	public void setColumnFlags(int tableId, int col, long flags) {
 		// not supported for a mapped database
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	protected void deleteCol(int tableId, int col) {
+	public void deleteCol(int tableId, int col) {
 		throw new RuntimeException();
 	}
 
 	@Override
-	protected boolean insertCol(int tableId, int colId, int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
+	public boolean insertCol(int tableId, int colId, int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
 		throw new RuntimeException();
 	}
 
@@ -699,27 +699,27 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected void setColumnTags(int tableId, int col, Set<String> tags) {
+	public void setColumnTags(int tableId, int col, Set<String> tags) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	protected void setTags(int tableId, Set<String> tags) {
+	public void setTags(int tableId, Set<String> tags) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	protected Object getColumnDefaultValue(int tableId, int col) {
+	public Object getColumnDefaultValue(int tableId, int col) {
 		return mapping.getDestinationModel().getTableByImmutableId(tableId).getColumnDefaultValue(col);
 	}
 
 	@Override
-	protected void setColumnDefaultValue(int tableId, int col, Object value) {
+	public void setColumnDefaultValue(int tableId, int col, Object value) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	protected long[] find(int tableId, int col, Object value) {
+	public long[] find(int tableId, int col, Object value) {
 		T src = sourceTable(tableId);
 		if (src == null) {
 			return null;
@@ -737,7 +737,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected ODLTableReadOnly query(int tableId, TableQuery query) {
+	public ODLTableReadOnly query(int tableId, TableQuery query) {
 		class RemapHelper{
 			int remapCol(int destCol){
 				if(destCol==-1){
@@ -828,7 +828,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 	
 	@Override
-	protected long getRowFlags(int tableId, long rowId) {
+	public long getRowFlags(int tableId, long rowId) {
 		T src = sourceTable(tableId);
 		if (src != null) {
 			return ((ODLTableReadOnly) src).getRowFlags(rowId);
@@ -837,7 +837,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected void setRowFlags(int tableId, long flags, long rowId) {
+	public void setRowFlags(int tableId, long flags, long rowId) {
 		T src = sourceTable(tableId);
 		if (src != null) {
 			((ODLTable) src).setRowFlags(flags, rowId);
@@ -855,17 +855,17 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	protected boolean getTableExists(int tableId) {
+	public boolean getTableExists(int tableId) {
 		return true;
 	}
 
 	@Override
-	protected ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
+	public ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	protected long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
+	public long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
 		T src = sourceTable(tableId);
 		if (src != null) {
 			return ((ODLTableReadOnly) src).getRowLastModifiedTimeMillsecs(rowId);

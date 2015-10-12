@@ -13,6 +13,7 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.core.tables.decorators.tables.FlatDs2TableObject;
 
 /**
  * Base class for other decorators. Also allows replacing of the decorated datastore
@@ -68,7 +69,7 @@ public class SimpleDecorator<T extends ODLTableDefinition> extends SimpleAbstrac
 		T ret =null;
 		if(tableIndex < getTableCount()){
 			int id = decorated.getTableAt(tableIndex).getImmutableId();
-			ret= (T)new TableDecorator(id);
+			ret= (T)new FlatDs2TableObject(this,id);
 		}
 		return ret;
 	}
@@ -200,12 +201,12 @@ public class SimpleDecorator<T extends ODLTableDefinition> extends SimpleAbstrac
 	}
 
 	@Override
-	protected boolean getTableExists(int tableId) {
+	public boolean getTableExists(int tableId) {
 		return decorated.getTableByImmutableId(tableId)!=null;
 	}
 
 	@Override
-	protected ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
+	public ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
 		ODLTableDefinition t = readOnlyTable(tableId);
 		if(t!=null){
 			return t.deepCopyWithShallowValueCopy();

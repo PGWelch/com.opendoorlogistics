@@ -241,12 +241,12 @@ class OptimisedDeepCopy<T extends ODLTableDefinition> extends SimpleAbstractDeco
 	}
 
 	@Override
-	protected boolean getTableExists(int tableId) {
+	public boolean getTableExists(int tableId) {
 		return getTableHolder(tableId, false)!=null;
 	}
 
 	@Override
-	protected ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
+	public ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
 		throw new UnsupportedOperationException();
 	}
 
