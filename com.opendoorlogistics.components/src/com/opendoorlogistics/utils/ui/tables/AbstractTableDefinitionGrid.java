@@ -35,7 +35,7 @@ public abstract class AbstractTableDefinitionGrid extends JPanel {
 			super(config);
 		}
 
-		public void updateEnabled() {
+		public void updateEnabledState() {
 			setEnabled(requiresSelection == false || table.getSelectedRow() != -1);
 		}
 	}
@@ -168,7 +168,7 @@ public abstract class AbstractTableDefinitionGrid extends JPanel {
 	public void updateAppearance() {
 		for (ODLAction action : actions) {
 			if(action!=null){
-				action.updateEnabled();				
+				action.updateEnabledState();				
 			}
 		}
 	}

@@ -12,10 +12,10 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 public interface ODLDatastoreUndoable<T extends ODLTableDefinition> extends ODLDatastoreAlterable<T>, Undoable{
 
 	public interface UndoStateChangedListener<T extends ODLTableDefinition>{
-		void undoStateChanged( ODLDatastoreUndoable<T>datastoreUndoable );
+		void undoStateChanged( ODLDatastoreUndoable<? extends T>datastoreUndoable );
 	}
 	
-	void addUndoStateListener(UndoStateChangedListener<T> listener);
+	void addUndoStateListener(UndoStateChangedListener< T> listener);
 
 	void removeUndoStateListener(UndoStateChangedListener<T> listener);
 

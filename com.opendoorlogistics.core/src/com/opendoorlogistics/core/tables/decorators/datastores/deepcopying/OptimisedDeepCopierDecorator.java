@@ -56,7 +56,7 @@ public class OptimisedDeepCopierDecorator<T extends ODLTableDefinition> extends 
 	}
 
 	@Override
-	public synchronized ODLDatastore<? extends T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
+	public synchronized ODLDatastoreAlterable<? extends T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
 		if(!lazyCopy){
 			return decorated.deepCopyWithShallowValueCopy(lazyCopy);
 		}

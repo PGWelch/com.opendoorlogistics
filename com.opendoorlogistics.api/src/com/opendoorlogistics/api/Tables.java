@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.api;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,6 +20,8 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
+import com.opendoorlogistics.api.tables.beans.BeanTableMapping;
 
 /**
  * Provides utility functions to create and manipulate tables and datastores
@@ -35,9 +38,19 @@ public interface Tables {
 	ODLTableAlterable copyTable(ODLTableReadOnly copyThis, ODLDatastoreAlterable<? extends ODLTableAlterable> copyTo);
 
 	ODLDatastoreAlterable<? extends ODLTableAlterable> copyDs(ODLDatastore<? extends ODLTableReadOnly> ds);
-	
+
+	/**
+	 * Copy the datastore. All table and column level flags are preserved, row level flags are optionally preserved.
+	 * @param copyFrom
+	 * @param copyTo
+	 * @param rowFlagsToCopy Row-level flags which should be preserved in the copy.
+	 */
+	void copyDs(ODLDatastore<? extends ODLTableReadOnly> copyFrom, ODLDatastoreAlterable<? extends ODLTableAlterable> copyTo, long rowFlagsToCopy);
+
 	void copyColumnDefinition(ODLTableDefinition source, int sourceCol, ODLTableDefinitionAlterable destination);
-	
+
+	void copyColumnDefinition(ODLTableDefinition source, int sourceCol, ODLTableDefinitionAlterable destination, int destinationCol);
+
 	/**
 	 * Copy a row between identical tables
 	 * @param from
@@ -45,6 +58,8 @@ public interface Tables {
 	 * @param to
 	 */
 	void copyRow(ODLTableReadOnly from, int rowIndex, ODLTable to);
+
+	void copyRow(ODLTableReadOnly from, int fromRowIndex, ODLTable to, int toRowIndex);
 
 	void copyRowById(ODLTableReadOnly from, long rowId, ODLTable to);
 
@@ -65,6 +80,13 @@ public interface Tables {
 	void setColumnIsOptional(ODLTableDefinitionAlterable table, int col, boolean optional);
 	
 	void clearTable(ODLTable table);
+	
+	/**
+	 * Clear all tables from the datastore. Tables must be alterable in the input datastore
+	 * as we need to remove read-only flags before deletion is allowed.
+	 * @param ds
+	 */
+	void clearDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> ds);
 	
 	public enum KeyValidationMode{
 		REMOVE_CORRUPT_FOREIGN_KEY,
@@ -160,4 +182,20 @@ public interface Tables {
 	 * @return
 	 */
 	ODLDatastoreAlterable<ODLTableAlterable> unflattenDs(ODLFlatDatastoreExt flatDatastore);
+	
+	BeanTableMapping mapBeanToTable(Class<? extends BeanMappedRow> cls);
+	
+	<T extends ODLTableDefinition> List<T> getTables(ODLDatastore<T> ds);
+	
+	/**
+	 * Modify a table column whilst transforming data as appropriate.
+	 * Move the column, change its name or index
+	 * @param index
+	 * @param newIndx
+	 * @param newName
+	 * @param newType
+	 * @param tableDfn
+	 * @return
+	 */
+	boolean modifyColumn(int index, int newIndx, String newName, ODLColumnType newType,ODLTableAlterable table);
 }

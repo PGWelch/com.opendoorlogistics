@@ -6,15 +6,15 @@ import com.opendoorlogistics.api.tables.DatastoreManagerPlugin;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 
 public class DatastoreManagerGlobalPlugin {
-	private static final DatastoreManagerPlugin PLUGIN;
+	private static DatastoreManagerPlugin PLUGIN;
 	
 	static{
 		DatastoreManagerPlugin plugin=null;
 		List<DatastoreManagerPlugin> plugins = new ODLApiImpl().loadPlugins(DatastoreManagerPlugin.class);
 		if(plugins!=null){
 			if(plugins.size()==1){
-				
-			}else{
+				PLUGIN = plugins.get(0);
+			}else if(plugins.size()>1){
 				throw new RuntimeException("More than one " + DatastoreManagerPlugin.class.getName() + " loaded on startup.");
 			}
 		}
@@ -24,5 +24,9 @@ public class DatastoreManagerGlobalPlugin {
 	
 	public static DatastoreManagerPlugin getPlugin(){
 		return PLUGIN;
+	}
+	
+	public static void setPlugin(DatastoreManagerPlugin plugin){
+		PLUGIN = plugin;
 	}
 }

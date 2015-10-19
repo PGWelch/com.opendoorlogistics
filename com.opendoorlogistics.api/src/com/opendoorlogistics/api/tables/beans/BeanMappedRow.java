@@ -4,12 +4,14 @@
  * are made available under the terms of the GNU Lesser Public License v3
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
-package com.opendoorlogistics.core.tables.beans;
+package com.opendoorlogistics.api.tables.beans;
 
-import com.opendoorlogistics.core.tables.beans.annotations.ODLIgnore;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLIgnore;
 
-public interface HasGlobalRowId {
+public interface BeanMappedRow{
 	@ODLIgnore
 	long getGlobalRowId();
 	
+	@ODLIgnore 
+	void setGlobalRowId(long globalRowId);
 }

@@ -459,7 +459,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 								}
 
 								@Override
-								public void updateEnabled() {
+								public void updateEnabledState() {
 									long flags = adapter.getFlags();
 									if (table != null) {
 										flags |= table.getFlags();
@@ -1425,7 +1425,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 		}
 
 		for (ODLAction action : treeActions) {
-			action.updateEnabled();
+			action.updateEnabledState();
 		}
 	}
 
@@ -1511,7 +1511,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(hasOption());
 			}
 
@@ -1612,7 +1612,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 				}
 
 				@Override
-				public void updateEnabled() {
+				public void updateEnabledState() {
 					boolean enabled = currentPane != null && currentPane.displayNode != null && (currentPane.displayNode.type == DisplayNodeType.OPTION);
 					setEnabled(enabled);
 				}
@@ -1635,7 +1635,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				boolean enabled = currentPane != null && currentPane.displayNode != null
 						&& (currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER || currentPane.displayNode.type == DisplayNodeType.PARAMETER);
 				setEnabled(enabled);
@@ -1669,7 +1669,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				boolean enabled = currentPane != null && currentPane.displayNode != null && (currentPane.displayNode.type == DisplayNodeType.OPTION && dataAdapterClipboard != null);
 				setEnabled(enabled);
 			}
@@ -1695,7 +1695,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				boolean enabled = currentPane != null && currentPane.displayNode != null
 						&& (currentPane.displayNode.type == DisplayNodeType.OPTION);
 				setEnabled(enabled);
@@ -1769,7 +1769,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				boolean enabled = currentPane != null && currentPane.displayNode != null && (currentPane.displayNode.type == DisplayNodeType.OPTION && optionClipboard != null);
 				setEnabled(enabled);
 			}
@@ -1827,7 +1827,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				boolean enabled = currentPane != null && currentPane.displayNode != null && (currentPane.displayNode.type == DisplayNodeType.OPTION
 						|| currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER || currentPane.displayNode.type == DisplayNodeType.PARAMETER);
 				setEnabled(enabled);
@@ -1872,7 +1872,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(calcEnabled());
 			}
 
@@ -1917,7 +1917,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(isAllowed());
 			}
 
@@ -2035,7 +2035,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(hasOption() && option() != script);
 			}
 
@@ -2099,7 +2099,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				boolean enabled = currentPane != null && currentPane.displayNode != null && currentPane.displayNode.type != DisplayNodeType.AVAILABLE_TABLES && !currentPane.displayNode.isRoot;
 				setEnabled(enabled);
 			}

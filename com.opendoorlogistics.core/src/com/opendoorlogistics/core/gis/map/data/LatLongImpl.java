@@ -10,11 +10,11 @@ import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLDefaultDoubleValue;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTag;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMapping;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultDoubleValue;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTag;
 
 public class LatLongImpl extends BeanMappedRowImpl implements LatLong{
 	private double latitude;

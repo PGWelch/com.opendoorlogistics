@@ -499,7 +499,7 @@ final public class RowFilterDecorator <T extends ODLTableReadOnly> extends Abstr
 
 
 	@Override
-	public ODLDatastore<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
+	public ODLDatastoreAlterable<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
 		throw new UnsupportedOperationException();
 	}
 

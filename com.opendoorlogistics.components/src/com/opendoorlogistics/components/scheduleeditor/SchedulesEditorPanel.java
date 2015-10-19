@@ -50,7 +50,7 @@ import com.opendoorlogistics.components.scheduleeditor.data.DataProvider;
 import com.opendoorlogistics.components.scheduleeditor.data.EditorData;
 import com.opendoorlogistics.components.scheduleeditor.data.beans.Task;
 import com.opendoorlogistics.components.scheduleeditor.data.beans.TaskOrder;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.utils.ui.Icons;
@@ -428,7 +428,7 @@ public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposabl
 		}
 
 		ioDs.startTransaction();
-		BeanTableMapping beanMapping = new ScheduleEditorComponent().getBeanMapping().getTableMapping(ScheduleEditorConstants.TASK_ORDER_TABLE_INDEX);
+		BeanTableMappingImpl beanMapping = new ScheduleEditorComponent().getBeanMapping().getTableMapping(ScheduleEditorConstants.TASK_ORDER_TABLE_INDEX);
 		try {
 			// remove all stops being moved from the stop-order table
 			int row = 0;
@@ -510,7 +510,7 @@ public class SchedulesEditorPanel extends JPanel implements TaskMover, Disposabl
 		JOptionPane.showMessageDialog(this, message);
 	}
 
-	private void addTasks(String vehicleId, String[] stopIdsToAdd, BeanTableMapping beanMapping, ODLTable table, int row) {
+	private void addTasks(String vehicleId, String[] stopIdsToAdd, BeanTableMappingImpl beanMapping, ODLTable table, int row) {
 		for (String id : stopIdsToAdd) {
 			if (data.getTask(id) == null) {
 				throw new RuntimeException("Unknown stop-id " + id);

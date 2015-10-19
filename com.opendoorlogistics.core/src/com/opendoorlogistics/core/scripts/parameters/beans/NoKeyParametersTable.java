@@ -6,12 +6,12 @@ import com.opendoorlogistics.api.scripts.parameters.Parameters;
 import com.opendoorlogistics.api.scripts.parameters.Parameters.ParamDefinitionField;
 import com.opendoorlogistics.api.scripts.parameters.Parameters.PromptType;
 import com.opendoorlogistics.api.tables.ODLColumnType;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLNullAllowed;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 
 @ODLTableName(ParametersImpl.TABLE_NAME)
 @SuppressWarnings("unused") 

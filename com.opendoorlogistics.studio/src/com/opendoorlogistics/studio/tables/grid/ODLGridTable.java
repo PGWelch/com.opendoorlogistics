@@ -265,7 +265,7 @@ public class ODLGridTable extends GridTable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.alterStructure));
 			}
 		});
@@ -280,7 +280,7 @@ public class ODLGridTable extends GridTable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.alterStructure));
 			}
 		});
@@ -295,7 +295,7 @@ public class ODLGridTable extends GridTable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.alterStructure));
 			}
 		});
@@ -328,7 +328,7 @@ public class ODLGridTable extends GridTable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.alterStructure));
 			}
 
@@ -355,7 +355,7 @@ public class ODLGridTable extends GridTable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.alterStructure));
 			}
 		});
@@ -383,7 +383,7 @@ public class ODLGridTable extends GridTable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.alterStructure));
 			}
 		});

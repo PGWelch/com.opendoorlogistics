@@ -7,9 +7,9 @@
 package com.opendoorlogistics.components.cluster.capacitated.data;
 
 import com.opendoorlogistics.api.components.PredefinedTags;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTag;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTag;
 
 @ODLTag(PredefinedTags.TRAVEL_COSTS)
 final public class Travel extends BeanMappedRowImpl{

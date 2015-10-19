@@ -6,7 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.scheduleeditor.data;
 
-import com.opendoorlogistics.core.tables.beans.annotations.ODLIgnore;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLIgnore;
 
 public class Resource extends AbstractResource{
 	

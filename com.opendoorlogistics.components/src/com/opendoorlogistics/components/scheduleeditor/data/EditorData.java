@@ -17,6 +17,7 @@ import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor.EditorTable;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.components.scheduleeditor.DisplayFields;
 import com.opendoorlogistics.components.scheduleeditor.ScheduleEditorComponent;
 import com.opendoorlogistics.components.scheduleeditor.ScheduleEditorConstants;
@@ -24,9 +25,8 @@ import com.opendoorlogistics.components.scheduleeditor.data.beans.ResourceDescri
 import com.opendoorlogistics.components.scheduleeditor.data.beans.ResourceType;
 import com.opendoorlogistics.components.scheduleeditor.data.beans.Task;
 import com.opendoorlogistics.components.scheduleeditor.data.beans.TaskOrder;
-import com.opendoorlogistics.core.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
@@ -211,7 +211,7 @@ public class EditorData {
 	private static List<BeanMappedRow> readTable(ODLDatastore<? extends ODLTableReadOnly> ioDs, String name, boolean isOptional) {
 		ScheduleEditorComponent component = new ScheduleEditorComponent();
 		BeanDatastoreMapping beanMapping = component.getBeanMapping();			
-		BeanTableMapping mapping = beanMapping.getTableMapping(name);
+		BeanTableMappingImpl mapping = beanMapping.getTableMapping(name);
 		ODLTableReadOnly table = TableUtils.findTable(ioDs, name);
 		if (table == null) {
 			if(isOptional){

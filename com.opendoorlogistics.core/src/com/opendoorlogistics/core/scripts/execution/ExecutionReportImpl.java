@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.scripts.execution;
 import java.util.ArrayList;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 public class ExecutionReportImpl implements ExecutionReport{
@@ -92,16 +93,17 @@ public class ExecutionReportImpl implements ExecutionReport{
 			}
 		}
 		
+		StandardisedStringSet printedLines = new StandardisedStringSet(false);
+		
 		// put into single string
 		StringBuilder builder = new StringBuilder();
-		String lastLine = null;
 		for(String line:lines){
 			// don't repeat lines
-			if(!Strings.equalsStd(lastLine, line)){
+			if(!printedLines.contains(line)){
 				builder.append(line);				
 				builder.append(System.lineSeparator());
+				printedLines.add(line);
 			}
-			lastLine = line;
 		}
 		
 		if(showSuccessFailureMessage){

@@ -6,9 +6,9 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.scheduleeditor.data.beans;
 
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 
 @ODLTableName(ResourceDescription.TABLE_NAME)
 public class ResourceDescription extends BeanMappedRowImpl {

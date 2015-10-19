@@ -1,10 +1,10 @@
 package com.opendoorlogistics.core.scripts.parameters.beans;
 
 import com.opendoorlogistics.api.scripts.parameters.Parameters;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 
 @ODLTableName(ParametersImpl.TABLE_NAME)
 public class WithKeyParametersTable extends NoKeyParametersTable{

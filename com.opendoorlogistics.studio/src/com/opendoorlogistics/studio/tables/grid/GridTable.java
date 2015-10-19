@@ -477,7 +477,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.setValues));
 			}
 		});
@@ -495,7 +495,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.setValues));
 			}
 		});
@@ -509,7 +509,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.setValues));
 			}
 		});
@@ -540,7 +540,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.moveRows));
 			}
 
@@ -559,7 +559,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.createRows));
 			}
 		});
@@ -577,7 +577,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.deleteRows));
 			}
 		});
@@ -899,7 +899,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 		if(actions!=null){
 			for (ODLAction action : actions) {
 				if(action!=null){
-					action.updateEnabled();					
+					action.updateEnabledState();					
 				}
 			}			
 		}

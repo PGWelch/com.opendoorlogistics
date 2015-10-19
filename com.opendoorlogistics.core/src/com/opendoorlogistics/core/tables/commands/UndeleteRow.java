@@ -13,13 +13,15 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 final public class UndeleteRow extends Command{
 	private final int row;
 	private final long rowId;
+	private final long rowFlags;
 	private final Object [] values;
 	
-	public UndeleteRow(int tableId, int row,long rowId, Object[] values) {
+	public UndeleteRow(int tableId, int row,long rowId, long rowFlags, Object[] values) {
 		super(tableId);
 		this.row = row;
 		this.rowId = rowId;
 		this.values = values;
+		this.rowFlags = rowFlags;
 	}
 
 	@Override
@@ -35,13 +37,16 @@ final public class UndeleteRow extends Command{
 		for(int i =0 ; i<values.length ; i++){
 			table.setValueAt(values[i], row, i);
 		}
+		
+		table.setRowFlags(rowFlags, rowId);
+		
 		return new DeleteRow(tableId, row);
 	}
 
 	@Override
 	public long calculateEstimateSizeBytes() {
 		long ret=12;
-		ret += 4 + 8;
+		ret += 4 + 8 + 8;
 		if(values!=null){
 			for(Object v : values){
 				ret += getEstimatedObjectMemoryFootprintBytes(v);

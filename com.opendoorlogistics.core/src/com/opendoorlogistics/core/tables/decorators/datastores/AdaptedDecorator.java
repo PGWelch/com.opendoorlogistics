@@ -510,6 +510,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 
 		long ret = mapping.getDestinationModel().getTableByImmutableId(tableId).getColumnFlags(col);
 		if (mapping.getFieldFormula(tableId, col) != null) {
+			// ensure calculated columns are read-only as far as UI is concerned
 			ret |= TableFlags.FLAG_IS_READ_ONLY;
 		}
 		return ret;
@@ -694,7 +695,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 	}
 
 	@Override
-	public ODLDatastore<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
+	public ODLDatastoreAlterable<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
 		throw new UnsupportedOperationException();
 	}
 

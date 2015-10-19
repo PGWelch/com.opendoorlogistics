@@ -7,11 +7,11 @@
 package com.opendoorlogistics.components.cluster;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnDescription;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLNullAllowed;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnDescription;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
 
 public class BasicCluster extends BeanMappedRowImpl implements LatLong {
 

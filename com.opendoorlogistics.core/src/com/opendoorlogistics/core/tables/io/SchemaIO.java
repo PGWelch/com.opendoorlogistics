@@ -14,11 +14,11 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLNullAllowed;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMapping;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
@@ -126,7 +126,7 @@ final public class SchemaIO {
 		
 	}
 	
-	private static final BeanTableMapping schemaMapping = BeanMapping.buildTable(SchemaColumnDefinition.class, "Schema");
+	private static final BeanTableMappingImpl schemaMapping = BeanMapping.buildTable(SchemaColumnDefinition.class, "Schema");
 	
 	public static void main(String[]args){
 		ODLDatastore<? extends ODLTableDefinition> ds = ExampleData.createTerritoriesExample(2);

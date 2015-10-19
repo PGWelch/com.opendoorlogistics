@@ -107,5 +107,14 @@ public interface StringConventions {
 	 * @return
 	 */
 	String getExceptionReport(Throwable t);
+
+	
+	/**
+	 * Split a string into commas preserving strings in quotations which contain commas.
+	 * Warning - this method is slow!
+	 * @param s
+	 * @return
+	 */
+	List<String> splitCommas(String s);
 }
 

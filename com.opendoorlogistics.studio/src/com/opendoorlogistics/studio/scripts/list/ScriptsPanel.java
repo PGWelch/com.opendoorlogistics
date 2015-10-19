@@ -72,7 +72,8 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 			this.needsAvailable = needsAvailable;
 		}
 
-		public void updateEnabled() {
+		@Override
+		public void updateEnabledState() {
 			ScriptNode selected = scriptsTree.getSelectedValue();
 			boolean enabled = true;
 			if (requiresSelection && selected == null) {
@@ -226,7 +227,7 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 				}
 
 				@Override
-				public void updateEnabled() {
+				public void updateEnabledState() {
 					ScriptNode selected = scriptsTree.getSelectedValue();
 					boolean enabled = true;
 					if (selected == null) {
@@ -260,7 +261,7 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 				}
 
 				@Override
-				public void updateEnabled() {
+				public void updateEnabledState() {
 					setEnabled(ScriptNode.isRunnable(scriptsTree.getSelectedValue(), scriptUIManager));
 				}
 			});
@@ -272,7 +273,7 @@ final public class ScriptsPanel extends JPanel implements DirectoryChangedListen
 
 	public void updateAppearance() {
 		for (MyAction action : actions) {
-			action.updateEnabled();
+			action.updateEnabledState();
 		}
 		scriptsTree.updateAppearance();
 

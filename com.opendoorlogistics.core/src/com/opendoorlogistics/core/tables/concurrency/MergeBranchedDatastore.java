@@ -18,7 +18,7 @@ import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 
 final public class MergeBranchedDatastore {
-	public static boolean merge(WriteRecorderDecorator<ODLTableAlterable> mergeFrom, ODLDatastoreUndoable<ODLTableAlterable> mergeInto) {
+	public static boolean merge(WriteRecorderDecorator<? extends ODLTableAlterable> mergeFrom, ODLDatastoreUndoable<? extends ODLTableAlterable> mergeInto) {
 
 		boolean ok = true;
 		mergeInto.startTransaction();
@@ -59,7 +59,7 @@ final public class MergeBranchedDatastore {
 		WRITES_DONE
 	}
 	
-	private static MergeTableResult mergeTables(WriteRecorderDecorator<ODLTableAlterable> mergeFromDs, ODLTableAlterable source, ODLTable destination) {
+	private static MergeTableResult mergeTables(WriteRecorderDecorator<? extends ODLTableAlterable> mergeFromDs, ODLTableAlterable source, ODLTable destination) {
 
 		// We only support a couple of simple merging cases...
 		// 1. Simple appending of rows

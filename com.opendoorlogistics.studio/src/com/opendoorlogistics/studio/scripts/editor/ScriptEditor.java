@@ -284,7 +284,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(isRunScriptAllowed());
 			}
 
@@ -378,7 +378,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(ScriptEditor.this.file != null && ScriptEditor.this.file.isFile());
 			}
 		};

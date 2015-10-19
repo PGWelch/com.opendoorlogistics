@@ -6,13 +6,13 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.cluster.capacitated.data;
 
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnDescription;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLDefaultDoubleValue;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLDefaultLongValue;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLNullAllowed;
 import com.opendoorlogistics.components.cluster.BasicCluster;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnDescription;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultDoubleValue;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultLongValue;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
 
 final public class Cluster extends BasicCluster {
 	private double capacity=1;

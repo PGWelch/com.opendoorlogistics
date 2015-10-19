@@ -33,11 +33,11 @@ final public class DeleteRow extends Command{
 		}
 		
 		long rowid = table.getRowId(row);
-		
+		long flags = table.getRowFlags(rowid);
 	//	System.out.println("Deleting row " + rowid);
 		
 		table.deleteRow(row);
-		return new UndeleteRow(tableId, row,rowid, originals);
+		return new UndeleteRow(tableId, row,rowid,flags, originals);
 	}
 
 

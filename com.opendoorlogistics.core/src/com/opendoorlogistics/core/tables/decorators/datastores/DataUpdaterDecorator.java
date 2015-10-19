@@ -88,7 +88,7 @@ public class DataUpdaterDecorator extends SimpleDecorator<ODLTableAlterable> imp
 	}
 
 	@Override
-	public void removeUndoStateListener(ODLDatastoreUndoable.UndoStateChangedListener<ODLTableAlterable> listener) {
+	public void removeUndoStateListener(ODLDatastoreUndoable.UndoStateChangedListener< ODLTableAlterable> listener) {
 		undoable().removeUndoStateListener(listener);
 	}
 

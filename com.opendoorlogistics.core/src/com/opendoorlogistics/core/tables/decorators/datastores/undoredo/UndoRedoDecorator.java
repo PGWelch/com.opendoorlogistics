@@ -486,7 +486,7 @@ final public class UndoRedoDecorator<T extends ODLTableDefinition> extends Simpl
 		
 		if(lastFiredUndoState == null || lastFiredUndoState.equals(state)==false){
 			lastFiredUndoState = state;
-			for(UndoStateChangedListener<T> listener:undoStateListeners){
+			for(UndoStateChangedListener< T> listener:undoStateListeners){
 				listener.undoStateChanged(this);
 			}
 		}

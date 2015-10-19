@@ -54,7 +54,8 @@ public abstract class ItemsPanel<T> extends JPanel {
 			super(config);
 		}
 
-		public void updateEnabled() {
+		@Override
+		public void updateEnabledState() {
 			setEnabled(requiresSelection == false || getSelected() != null);
 		}
 	}
@@ -92,14 +93,14 @@ public abstract class ItemsPanel<T> extends JPanel {
 			}
 		});
 
-		// create double click event on list
-		itemsComponent.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent evt) {
-				if (evt.getClickCount() >= 2) {
-					// launchSelectedTable();
-				}
-			}
-		});
+//		// create double click event on list
+//		itemsComponent.addMouseListener(new MouseAdapter() {
+//			public void mouseClicked(MouseEvent evt) {
+//				if (evt.getClickCount() >= 2) {
+//					// launchSelectedTable();
+//				}
+//			}
+//		});
 
 		// create all actions and add as buttons and menu items
 		actions = createActions();
@@ -162,7 +163,7 @@ public abstract class ItemsPanel<T> extends JPanel {
 			}
 			
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(conversionHandler!=null && getSelected()!=null);
 			}
 		});
@@ -175,7 +176,7 @@ public abstract class ItemsPanel<T> extends JPanel {
 			}
 			
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(conversionHandler!=null );
 			}
 		});
@@ -227,7 +228,7 @@ public abstract class ItemsPanel<T> extends JPanel {
 
 	protected void updateAppearance() {
 		for (MyAction action : actions) {
-			action.updateEnabled();
+			action.updateEnabledState();
 		}
 	}
 	

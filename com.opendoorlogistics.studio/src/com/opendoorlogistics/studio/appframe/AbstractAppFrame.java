@@ -10,7 +10,7 @@ import com.opendoorlogistics.api.app.ODLApp;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.core.scripts.ScriptsProvider.HasScriptsProvider;
-import com.opendoorlogistics.studio.LoadedDatastore.HasLoadedDatastore;
+import com.opendoorlogistics.studio.LoadedState.HasLoadedDatastore;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
 
 public abstract class AbstractAppFrame extends JFrame implements HasInternalFrames, HasScriptsProvider,HasLoadedDatastore, HasApi, ODLApp {
@@ -38,10 +38,7 @@ public abstract class AbstractAppFrame extends JFrame implements HasInternalFram
 	public void saveDatastoreWithoutUserPrompt(File file) {
 		
 	}
-	
-	public void openEmptyDatastore() {
-		
-	}
+
 	
 	public void openDatastoreWithUserPrompt() {
 		

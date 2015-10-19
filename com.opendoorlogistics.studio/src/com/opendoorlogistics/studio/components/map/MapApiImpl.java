@@ -58,6 +58,7 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactory;
@@ -75,8 +76,7 @@ import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener;
-import com.opendoorlogistics.core.tables.beans.BeanMappedRow;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -1207,7 +1207,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	}
 
 	private ODLTableReadOnly toTable(Iterable<? extends DrawableObject> objs) {
-		BeanTableMapping btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
+		BeanTableMappingImpl btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
 		LinkedList<BeanMappedRow> rows = new LinkedList<BeanMappedRow>();
 		for (DrawableObject o : objs) {
 			rows.add((BeanMappedRow) o);
@@ -1272,7 +1272,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 						return;
 					}
 					
-					BeanTableMapping btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
+					BeanTableMappingImpl btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
 					int n = table.getRowCount();
 					for (int row = 0; row < n; row++) {
 						DrawableObject obj = btm.readObjectFromTableByRow(table, row);

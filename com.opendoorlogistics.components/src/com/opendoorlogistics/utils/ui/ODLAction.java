@@ -15,16 +15,18 @@ import javax.swing.JMenu;
 import javax.swing.JPopupMenu;
 import javax.swing.JToolBar;
 
+import com.opendoorlogistics.api.app.ui.UIAction;
 import com.opendoorlogistics.codefromweb.DropDownMenuButton;
 
-public abstract class ODLAction extends AbstractAction {
+public abstract class ODLAction extends AbstractAction implements UIAction {
 	private Iterable<ODLAction> childActions;
 
 	/**
 	 * This is overridden in subclasses to disable / enable the action
 	 * 
 	 */
-	public void updateEnabled() {
+	@Override
+	public void updateEnabledState() {
 
 	}
 
@@ -74,7 +76,7 @@ public abstract class ODLAction extends AbstractAction {
 				menu.add(nextLevel);
 				addToMenu(nextLevel, action.childActions);
 			} else {
-				action.updateEnabled();
+				action.updateEnabledState();
 				menu.add(action);
 			}
 		}
@@ -89,7 +91,7 @@ public abstract class ODLAction extends AbstractAction {
 				popup.add(nextLevel);
 				addToMenu(nextLevel, action.childActions);
 			} else {
-				action.updateEnabled();
+				action.updateEnabledState();
 				popup.add(action);
 			}
 		}
@@ -118,7 +120,7 @@ public abstract class ODLAction extends AbstractAction {
 				
 				toolbar.add(button);
 			} else {
-				action.updateEnabled();
+				action.updateEnabledState();
 				toolbar.add(action);
 			}
 

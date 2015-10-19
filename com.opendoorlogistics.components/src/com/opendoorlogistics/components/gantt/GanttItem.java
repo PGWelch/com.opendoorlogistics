@@ -10,12 +10,12 @@ import java.awt.Color;
 
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.tables.ODLTime;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLNullAllowed;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMapping;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
 
 public class GanttItem extends BeanMappedRowImpl {
 	final static BeanDatastoreMapping beanMapping = BeanMapping.buildDatastore(GanttItem.class);

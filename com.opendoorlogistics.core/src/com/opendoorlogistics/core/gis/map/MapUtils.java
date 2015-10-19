@@ -26,7 +26,7 @@ import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.ExampleData;
@@ -48,7 +48,7 @@ final public class MapUtils {
 	}
 
 	public static List<DrawableObjectImpl> getDrawables(ODLTableReadOnly table) {
-		BeanTableMapping btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
+		BeanTableMappingImpl btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
 		List<DrawableObjectImpl >pnts =  btm.readObjectsFromTable(table);
 		return pnts;
 	}
@@ -100,7 +100,7 @@ final public class MapUtils {
 		ODLDatastoreAlterable<ODLTableAlterable> ret = createEmptyDatastore();
 		BeanDatastoreMapping mapping = DrawableObjectImpl.getBeanMapping();
 		ODLTable table = ret.getTableAt(0);
-		BeanTableMapping tm = mapping.getTableMapping(0);
+		BeanTableMappingImpl tm = mapping.getTableMapping(0);
 		for(DrawableObjectImpl o:objs){
 			long gid = tm.writeObjectToTable(o, table);
 			if(writeGlobalIdBackToList){

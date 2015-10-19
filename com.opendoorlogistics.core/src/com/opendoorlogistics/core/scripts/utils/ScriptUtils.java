@@ -1118,31 +1118,31 @@ final public class ScriptUtils {
 		return "script";
 	}
 
-	public static boolean getReadsExternalDatastore(final ODLApi api, Script script) {
-		for (AdapterConfig adapterConfig : script.getAdapters()) {
-			for (AdaptedTableConfig table : adapterConfig.getTables()) {
-				if (ScriptConstants.isExternalDs(table.getFromDatastore())) {
-					return true;
-				}
-			}
-		}
-
-		for (InstructionConfig instruction : script.getInstructions()) {
-			try {
-				ODLComponent component = ScriptUtils.getComponent(instruction);
-				if (component != null) {
-					Serializable componentConfig = ScriptUtils.getComponentConfig(script, instruction);
-					if (component.getIODsDefinition(api, componentConfig) != null && ScriptConstants.isExternalDs(instruction.getDatastore())) {
-						return true;
-					}
-				}
-
-			} catch (Throwable e) {
-				// TODO: handle exception
-			}
-		}
-		return false;
-	}
+//	public static boolean getReadsExternalDatastore(final ODLApi api, Script script) {
+//		for (AdapterConfig adapterConfig : script.getAdapters()) {
+//			for (AdaptedTableConfig table : adapterConfig.getTables()) {
+//				if (ScriptConstants.isExternalDs(table.getFromDatastore())) {
+//					return true;
+//				}
+//			}
+//		}
+//
+//		for (InstructionConfig instruction : script.getInstructions()) {
+//			try {
+//				ODLComponent component = ScriptUtils.getComponent(instruction);
+//				if (component != null) {
+//					Serializable componentConfig = ScriptUtils.getComponentConfig(script, instruction);
+//					if (component.getIODsDefinition(api, componentConfig) != null && ScriptConstants.isExternalDs(instruction.getDatastore())) {
+//						return true;
+//					}
+//				}
+//
+//			} catch (Throwable e) {
+//				// TODO: handle exception
+//			}
+//		}
+//		return false;
+//	}
 
 	/**
 	 * Create a provider for the adapter's expected structure, based on whether its a VLS adapter or

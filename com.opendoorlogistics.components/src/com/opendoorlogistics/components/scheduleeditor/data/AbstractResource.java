@@ -7,7 +7,7 @@
 package com.opendoorlogistics.components.scheduleeditor.data;
 
 import com.opendoorlogistics.api.components.PredefinedTags;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnName;
 
 public class AbstractResource extends BeanMappedRowExt {
 

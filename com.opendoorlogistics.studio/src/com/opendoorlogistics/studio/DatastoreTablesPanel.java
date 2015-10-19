@@ -80,7 +80,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		}
 
 		@Override
-		public void updateEnabled() {
+		public void updateEnabledState() {
 			setEnabled(ds != null);
 		}
 		
@@ -96,7 +96,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		}
 
 		@Override
-		public void updateEnabled() {
+		public void updateEnabledState() {
 			setEnabled(ds != null && list.getSelectedValue() != null && list.getSelectedValuesList().size() == 1);
 		}
 	}
@@ -137,7 +137,8 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 			appFrame.launchScriptWizard(ids, component);
 		}
 
-		public void updateEnabled() {
+		@Override
+		public void updateEnabledState() {
 			// setEnabled(minNbTables == 0 || (ds!=null && hasSingleTableConfig
 			// && list.getSelectedValue()!=null));
 			setEnabled(true);
@@ -534,12 +535,12 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 
 	private void updateAppearance() {
 		for (MyAction action : actions) {
-			action.updateEnabled();
+			action.updateEnabledState();
 		}
 		
 		if(wizardActions!=null){
 			for (ODLAction action : wizardActions) {
-				action.updateEnabled();
+				action.updateEnabledState();
 			}			
 		}
 		

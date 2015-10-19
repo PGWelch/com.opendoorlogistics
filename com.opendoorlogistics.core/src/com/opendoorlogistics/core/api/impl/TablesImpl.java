@@ -6,6 +6,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.api.impl;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,7 +25,10 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
+import com.opendoorlogistics.api.tables.beans.BeanTableMapping;
 import com.opendoorlogistics.core.tables.ODLFactory;
+import com.opendoorlogistics.core.tables.beans.BeanMapping;
 import com.opendoorlogistics.core.tables.beans.BeanTypeConversion;
 import com.opendoorlogistics.core.tables.decorators.tables.FlatDs2TableObject;
 import com.opendoorlogistics.core.tables.utils.DatastoreComparer;
@@ -143,6 +148,22 @@ public class TablesImpl implements Tables {
 		DatastoreCopier.insertRow(from, rowIndex, to, to.getRowCount());
 	}
 
+
+	@Override
+	public void copyRow(ODLTableReadOnly from, int fromRowIndex, ODLTable to, int toRowIndex) {
+		// copy values first in case we're inserting into same table at an earlier position
+		int n = from.getColumnCount();
+		Object [] vals = new Object[n];
+		for(int i =0 ; i<n;i++){
+			vals[i] = from.getValueAt(fromRowIndex, i);
+		}
+		
+		to.insertEmptyRow(toRowIndex, -1);
+		for(int i =0 ; i<n;i++){
+			to.setValueAt(vals[0], toRowIndex, i);
+		}
+	}
+
 	@Override
 	public ODLTableAlterable createTable(ODLTableDefinition tableDefinition) {
 		ODLDatastoreAlterable<? extends ODLTableAlterable> ds = createAlterableDs();
@@ -182,6 +203,11 @@ public class TablesImpl implements Tables {
 	@Override
 	public void copyColumnDefinition(ODLTableDefinition source, int sourceCol, ODLTableDefinitionAlterable destination) {
 		DatastoreCopier.copyColumnDefinition(source, destination, sourceCol, false);
+	}
+	
+	@Override
+	public void copyColumnDefinition(ODLTableDefinition source, int sourceCol, ODLTableDefinitionAlterable destination, int destinationCol) {
+		DatastoreCopier.copyColumnDefinition(source, destination, sourceCol,destinationCol, false);
 	}
 
 	@Override
@@ -246,7 +272,7 @@ public class TablesImpl implements Tables {
 			}
 
 			@Override
-			public ODLDatastore<? extends ODLTableAlterable> deepCopyWithShallowValueCopy(boolean createLazyCopy) {
+			public ODLDatastoreAlterable<? extends ODLTableAlterable> deepCopyWithShallowValueCopy(boolean createLazyCopy) {
 				ODLFlatDatastoreExt copy = flatDatastore.deepCopyWithShallowValueCopy(createLazyCopy);
 				return unflattenDs(copy);
 			}
@@ -332,5 +358,70 @@ public class TablesImpl implements Tables {
 			}
 		};
 	}
+
+	@Override
+	public BeanTableMapping mapBeanToTable(Class<? extends BeanMappedRow> cls) {
+		return BeanMapping.buildTable(cls);
+	}
+
+	@Override
+	public <T extends ODLTableDefinition> List<T> getTables(ODLDatastore<T> ds) {
+		int n = ds.getTableCount();
+		ArrayList<T> ret = new ArrayList<>(n);
+		for(int i =0 ; i < n ; i++){
+			ret.add(ds.getTableAt(i));
+		}
+		return ret;
+	}
+
+	@Override
+	public boolean modifyColumn(int index, int newIndx, String newName, ODLColumnType newType, ODLTableAlterable table) {
+		return DatastoreCopier.modifyColumnWithoutTransaction(index, newIndx, newName, newType, table.getColumnFlags(index), table);
+	}
+
+	@Override
+	public void clearDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> ds) {
+		while(ds.getTableCount()>0){
+			// turn off linked excel table flags so we allow deletion
+			ODLTableAlterable table = ds.getTableAt(0);
+			table.setFlags(table.getFlags() & ~TableFlags.ALL_LINKED_EXCEL_FLAGS);
+			ds.deleteTableById(table.getImmutableId());
+		}
+	}
+
+	@Override
+	public void copyDs(ODLDatastore<? extends ODLTableReadOnly> copyFrom, ODLDatastoreAlterable<? extends ODLTableAlterable> copyTo, long rowFlagsToCopy) {
+		for(ODLTableReadOnly tableToCopy: getTables(copyFrom)){
+			
+			// don't duplicate table names...
+			if(findTable(copyTo, tableToCopy.getName())!=null){
+				continue;
+			}
+			
+			ODLTableAlterable copiedTable = copyTable(tableToCopy,copyTo);
+			
+			// preserve table level flags
+			copiedTable.setFlags( tableToCopy.getFlags());
+			
+			// preserve column flags
+			int nc = tableToCopy.getColumnCount();
+			for(int col=0;col < nc ; col++){
+				copiedTable.setColumnFlags(col, tableToCopy.getColumnFlags(col));
+			}
+			
+			// preserve the row flags we're told to...
+			int nr=tableToCopy.getRowCount();
+			for(int row=0;row< nr ; row++){
+				long originalRowId = tableToCopy.getRowId(row);
+				long copiedRowId = copiedTable.getRowId(row);
+				long flags = tableToCopy.getRowFlags(originalRowId);
+				flags &= rowFlagsToCopy;
+				copiedTable.setRowFlags(flags, copiedRowId);
+			}
+		}
+		
+	}
+
+
 
 }

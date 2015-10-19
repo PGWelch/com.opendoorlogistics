@@ -28,19 +28,21 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
+import com.opendoorlogistics.api.tables.beans.BeanTableMapping;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnDescription;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLDefaultDoubleValue;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLDefaultLongValue;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLDefaultStringValue;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLIgnore;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLNullAllowed;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableFlags;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTag;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnDescription;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultDoubleValue;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultLongValue;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultStringValue;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLIgnore;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableFlags;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTag;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.memory.ODLTableDefinitionImpl;
 import com.opendoorlogistics.core.tables.memory.ODLTableImpl;
@@ -150,21 +152,22 @@ final public class BeanMapping {
 	}
 	
 	public static interface ReadObjectFilter{
-		boolean acceptObject(Object obj, ODLTableReadOnly inputTable,int row, long rowId, BeanTableMapping btm);
+		boolean acceptObject(Object obj, ODLTableReadOnly inputTable,int row, long rowId, BeanTableMappingImpl btm);
 	}
 
-	public static class BeanTableMapping {
+	public static class BeanTableMappingImpl implements BeanTableMapping{
 		private final List<BeanColumnMapping> columns;
 		private final ODLTableDefinition table;
 		private final Class<? extends BeanMappedRow> objectType;
 		private ReadObjectFilter rowfilter;
 
-		public BeanTableMapping(Class<? extends BeanMappedRow> type, List<BeanColumnMapping> columns, ODLTableDefinition table) {
+		public BeanTableMappingImpl(Class<? extends BeanMappedRow> type, List<BeanColumnMapping> columns, ODLTableDefinition table) {
 			this.objectType = type;
 			this.columns = columns;
 			this.table = table;
 		}
 
+		@Override
 		public ODLTableDefinition getTableDefinition() {
 			return table;
 		}
@@ -214,6 +217,7 @@ final public class BeanMapping {
 		 * @param report
 		 * @return
 		 */
+		@Override
 		public <T extends BeanMappedRow> T readObjectFromTableByRow(ODLTableReadOnly inputTable, int row, ExecutionReport report) {
 			return readObjectFromTable(inputTable, row, -1,report);
 		}
@@ -305,10 +309,12 @@ final public class BeanMapping {
 			return val;
 		}
 
+		@Override
 		public <T extends BeanMappedRow> List<T> readObjectsFromTable(ODLTableReadOnly inputTable) {
 			return readObjectsFromTable(inputTable, null);
 		}
 		
+		@Override
 		public <T extends BeanMappedRow> List<T> readObjectsFromTable(ODLTableReadOnly inputTable, ExecutionReport report) {
 	
 			int nr = inputTable.getRowCount();
@@ -322,21 +328,34 @@ final public class BeanMapping {
 			return ret;
 		}
 
-		public void updateTableRow(BeanMappedRow object, ODLTable table, long rowId) {
+		@Override
+		public <T extends BeanMappedRow>  void updateTableRow(T object, ODLTable table, long rowId) {
+			updateTableRow(object, table, rowId,-1);
+		}
+
+		private void updateTableRow(BeanMappedRow object, ODLTable table, long rowId,int rowNb) {
 			try {
 				for (BeanColumnMapping bcm : columns) {
 					Object val = bcm.getDescriptor().getReadMethod().invoke(object);
 					int col = bcm.getTableColumnIndex();
 					ODLColumnType odlType = table.getColumnType(col);
 					val = ColumnValueProcessor.convertToMe(odlType,val);
-					table.setValueById(val, rowId, col);
+					
+					if(rowId!=-1){
+						table.setValueById(val, rowId, col);						
+					}
+					else if(rowNb!=-1 && rowNb < table.getRowCount()){
+						table.setValueAt(val, rowNb, col);
+					}
 				}
 
 			} catch (Throwable e) {
 				throw new RuntimeException(e);
 			}
 		}
+		
 
+		@Override
 		public long writeObjectToTable(BeanMappedRow o, ODLTable outTable) {
 			if (!DatastoreComparer.isSameStructure(this.table, outTable, 0)) {
 				throw new RuntimeException();
@@ -383,13 +402,29 @@ final public class BeanMapping {
 			return outTable;
 		}
 
+		@Override
+		public <T extends BeanMappedRow> void writeObjectsToTable(List<T> objs, ODLTable outTable) {
+			BeanMappedRow [] array = new BeanMappedRow[objs.size()];
+			objs.toArray(array);
+			writeObjectsToTable(array, outTable);
+		}
+
+		@Override
+		public <T extends BeanMappedRow> void writeObjectToTable(T obj, ODLTable outTable, int rowNb) {
+			while(rowNb>=outTable.getRowCount()){
+				outTable.createEmptyRow(-1);
+			}
+			updateTableRow(obj, outTable, -1, rowNb);
+		}
+
+
 	}
 
 	public static class BeanDatastoreMapping {
-		private final List<BeanTableMapping> tables;
+		private final List<BeanTableMappingImpl> tables;
 		private final ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds;
 
-		public BeanDatastoreMapping(List<BeanTableMapping> tables, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds) {
+		public BeanDatastoreMapping(List<BeanTableMappingImpl> tables, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds) {
 			super();
 			this.tables = tables;
 			this.ds = ds;
@@ -399,12 +434,12 @@ final public class BeanMapping {
 			return ds;
 		}
 
-		public BeanTableMapping getTableMapping(int tableIndx) {
+		public BeanTableMappingImpl getTableMapping(int tableIndx) {
 			return tables.get(tableIndx);
 		}
 		
-		public BeanTableMapping getTableMapping(String tableName){
-			for(BeanTableMapping btm: tables){
+		public BeanTableMappingImpl getTableMapping(String tableName){
+			for(BeanTableMappingImpl btm: tables){
 				if(Strings.equalsStd(btm.table.getName(), tableName)){
 					return btm;
 				}
@@ -442,9 +477,9 @@ final public class BeanMapping {
 	public static BeanDatastoreMapping buildDatastore(Class<? extends BeanMappedRow>... classes) {
 
 		ODLDatastoreAlterable<ODLTableDefinitionAlterable> ds = ODLFactory.createDefinition();
-		ArrayList<BeanTableMapping> tables = new ArrayList<>();
+		ArrayList<BeanTableMappingImpl> tables = new ArrayList<>();
 		for (Class<? extends BeanMappedRow> cls : classes) {
-			BeanTableMapping table = buildTable(cls, ds);
+			BeanTableMappingImpl table = buildTable(cls, ds);
 			if (table != null) {
 				tables.add(table);
 			}
@@ -453,17 +488,17 @@ final public class BeanMapping {
 		return new BeanDatastoreMapping(tables, ds);
 	}
 
-	private static BeanTableMapping buildTable(Class<? extends BeanMappedRow> cls, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds) {
+	private static BeanTableMappingImpl buildTable(Class<? extends BeanMappedRow> cls, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds) {
 		ODLTableDefinitionAlterable table = ds.createTable(getTableName(cls), -1);
 		if (table == null) {
 			return null;
 		}
 
 		List<BeanColumnMapping> list = buildTable(cls, table);
-		return new BeanTableMapping(cls, list, table);
+		return new BeanTableMappingImpl(cls, list, table);
 	}
 
-	public static BeanTableMapping buildTable(Class<? extends BeanMappedRow> cls) {
+	public static BeanTableMappingImpl buildTable(Class<? extends BeanMappedRow> cls) {
 		return buildTable(cls, getTableName(cls));
 	}
 	
@@ -476,7 +511,7 @@ final public class BeanMapping {
 	}
 	
 	public static <T extends BeanMappedRow> ODLTable convertToTable(Iterable<T> objs, Class<T> cls){
-		BeanTableMapping mapping = buildTable(cls);
+		BeanTableMappingImpl mapping = buildTable(cls);
 		ODLTable ret = mapping.createTable();
 		for(T obj:objs){
 			mapping.writeObjectToTable(obj, ret);
@@ -484,10 +519,10 @@ final public class BeanMapping {
 		return ret;
 	}	
 	
-	public static BeanTableMapping buildTable(Class<? extends BeanMappedRow> cls, String name) {
+	public static BeanTableMappingImpl buildTable(Class<? extends BeanMappedRow> cls, String name) {
 		ODLTableDefinitionImpl table = new ODLTableDefinitionImpl(-1, name);
 		List<BeanColumnMapping> list = buildTable(cls, table);
-		return new BeanTableMapping(cls, list, table);
+		return new BeanTableMappingImpl(cls, list, table);
 	}
 
 	private static void findTags(Annotation [] annotations, Set<String> tags){

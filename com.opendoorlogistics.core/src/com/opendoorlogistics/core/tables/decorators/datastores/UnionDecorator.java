@@ -122,7 +122,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	public ODLDatastore<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
+	public ODLDatastoreAlterable<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
 		throw new UnsupportedInUnion();
 	}
 

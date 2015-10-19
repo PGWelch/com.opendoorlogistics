@@ -147,7 +147,7 @@ final public class TableUtils {
 	 * @param callable
 	 * @return
 	 */
-	public static boolean runTransaction(ODLDatastoreUndoable<? extends ODLTableAlterable> ds,Callable<Boolean> callable) {
+	public static boolean runTransaction(ODLDatastoreUndoable<? extends ODLTableDefinition> ds,Callable<Boolean> callable) {
 		boolean started=false;
 		if(!ds.isInTransaction()){
 			ds.startTransaction();

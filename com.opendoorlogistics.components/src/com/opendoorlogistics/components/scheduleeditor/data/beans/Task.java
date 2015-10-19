@@ -7,9 +7,9 @@
 package com.opendoorlogistics.components.scheduleeditor.data.beans;
 
 import com.opendoorlogistics.api.components.PredefinedTags;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.components.scheduleeditor.data.BeanMappedRowExt;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 
 @ODLTableName(Task.TABLE_NAME)

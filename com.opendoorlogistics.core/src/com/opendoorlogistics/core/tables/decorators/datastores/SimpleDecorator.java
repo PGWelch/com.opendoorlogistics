@@ -181,8 +181,8 @@ public class SimpleDecorator<T extends ODLTableDefinition> extends SimpleAbstrac
 	}
 
 	@Override
-	public ODLDatastore<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
-		return (ODLDatastore<T>)decorated.deepCopyWithShallowValueCopy(lazyCopy);
+	public ODLDatastoreAlterable<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
+		return (ODLDatastoreAlterable<T>)decorated.deepCopyWithShallowValueCopy(lazyCopy);
 	}
 
 	@Override

@@ -218,13 +218,21 @@ public final class SwingAdapter implements TableModel {
 
 		tableCol--;
 
-		ODLTableDefinition table = getTable();
+		ODLTableReadOnly table = getTable();
 		if (table == null || table.getColumnType(tableCol) == ODLColumnType.IMAGE) {
 			return false;
 		}
 
+		// check for whole column being read-only
 		if ((table.getColumnFlags(tableCol) & TableFlags.FLAG_IS_READ_ONLY) != 0) {
 			return false;
+		}
+		
+		// or whole row being read-only
+		long rowId = table.getRowId(rowIndex);
+		long rowFlags = table.getRowFlags(rowId);
+		if((rowFlags & TableFlags.FLAG_IS_READ_ONLY) == TableFlags.FLAG_IS_READ_ONLY){
+			return false;	
 		}
 		return true;
 	}
