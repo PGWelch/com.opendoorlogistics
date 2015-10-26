@@ -5,8 +5,6 @@ import java.util.concurrent.Callable;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.app.DatastoreModifier;
-import com.opendoorlogistics.api.tables.ODLTableAlterable;
-import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -34,7 +32,11 @@ public class PluginDatastoreModifierTask extends DatastoreModifierTask{
 	@Override
 	protected ExecutionReport executeNonEDTAfterInitialisation() {
 		ExecutionReportImpl report = new ExecutionReportImpl();
-		modifier.modify(getNonEDTDatastoreCopy(), createProcessingApi(), report);
+		try {
+			modifier.modify(getNonEDTDatastoreCopy(), createProcessingApi(), report);			
+		} catch (Exception e) {
+			report.setFailed(e);
+		}
 		return report;
 	}
 
@@ -68,5 +70,10 @@ public class PluginDatastoreModifierTask extends DatastoreModifierTask{
 	protected String getFailureWindowTitle() {
 		return "Failed to run " + modifier.name();
 	}
+	
+	protected void finishOnEDTAfterExecutionReportShown(ExecutionReport report){
+		modifier.executionFinishedEDT(report);
+	}
+	
 
 }

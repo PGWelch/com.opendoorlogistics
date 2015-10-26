@@ -12,7 +12,7 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
  */
 public interface DatastoreModifier {
 	/**
-	 * Modify the datastore
+	 * Modify the datastore. Called on a worker thread.
 	 * @param ds
 	 * @param api
 	 * @param report
@@ -30,4 +30,11 @@ public interface DatastoreModifier {
 	 * @return
 	 */
 	int getMillisDelayUntilProgressAppears();
+	
+	
+	/**
+	 * Called on the EDT after execution has finished.
+	 * @param report
+	 */
+	void executionFinishedEDT(ExecutionReport report);
 }

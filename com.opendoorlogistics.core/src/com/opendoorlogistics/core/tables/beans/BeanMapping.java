@@ -160,6 +160,7 @@ final public class BeanMapping {
 		private final ODLTableDefinition table;
 		private final Class<? extends BeanMappedRow> objectType;
 		private ReadObjectFilter rowfilter;
+		private boolean readFailsOnDisallowedNull = true;
 
 		public BeanTableMappingImpl(Class<? extends BeanMappedRow> type, List<BeanColumnMapping> columns, ODLTableDefinition table) {
 			this.objectType = type;
@@ -172,7 +173,18 @@ final public class BeanMapping {
 			return table;
 		}
 
-		public Class<? extends BeanMappedRow> getObjectType() {
+		@Override
+		public boolean isReadFailsOnDisallowedNull() {
+			return readFailsOnDisallowedNull;
+		}
+
+		@Override
+		public void setReadFailsOnDisallowedNull(boolean failIfNulLValueNotAllowed) {
+			this.readFailsOnDisallowedNull = failIfNulLValueNotAllowed;
+		}
+
+		@Override
+		public Class<? extends BeanMappedRow> getBeanClass() {
 			return objectType;
 		}
 		
@@ -272,7 +284,7 @@ final public class BeanMapping {
 						bcm.getDescriptor().getWriteMethod().invoke(ret, new Object[] { val });
 					}
 						
-					if(val==null && bcm.getAnnotation(ODLNullAllowed.class)==null){
+					if(val==null && bcm.getAnnotation(ODLNullAllowed.class)==null && readFailsOnDisallowedNull){
 						// cannot read object
 						if(report!=null){
 							report.setFailed("Null values are not allowed on field " + bcm.getName() + " in table " + inputTable.getName() + ".");
@@ -502,7 +514,7 @@ final public class BeanMapping {
 		return buildTable(cls, getTableName(cls));
 	}
 	
-	private static String getTableName(Class<? extends BeanMappedRow> cls){
+	public static String getTableName(Class<? extends BeanMappedRow> cls){
 		ODLTableName tableName= cls.getAnnotation(ODLTableName.class);
 		if(tableName!=null){
 			return tableName.value();

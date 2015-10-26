@@ -33,6 +33,7 @@ import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -40,6 +41,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.JTableHeader;
@@ -49,8 +51,10 @@ import javax.swing.table.TableModel;
 import javax.swing.text.DefaultEditorKit;
 
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.tables.utils.SortColumn;
 import com.opendoorlogistics.core.utils.strings.Strings;
+import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
 import com.opendoorlogistics.studio.dialogs.SortDialog;
 import com.opendoorlogistics.studio.tables.ODLTableControl;
@@ -313,8 +317,11 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 		} catch (Throwable e2) {
 			rollbackTransaction();
-
-			JOptionPane.showMessageDialog(getRootPane(), "An error occurred." + (Strings.isEmpty(e2.getMessage()) == false ? " " + e2.getMessage() : ""));
+			ExecutionReportImpl report = new ExecutionReportImpl();
+			report.setFailed("An error occurred when editing the table data.");
+			report.setFailed(e2);
+			new ExecutionReportDialog((JFrame)SwingUtilities.getWindowAncestor(this), "Table editing error", report, false).setVisible(true);
+			//JOptionPane.showMessageDialog(getRootPane(), "An error occurred." + (Strings.isEmpty(e2.getMessage()) == false ? " " + e2.getMessage() : ""));
 		}
 		return false;
 	}

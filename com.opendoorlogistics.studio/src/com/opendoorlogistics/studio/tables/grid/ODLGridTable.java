@@ -13,6 +13,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -43,6 +44,7 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.codefromweb.PackTableColumn;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
@@ -513,7 +515,7 @@ public class ODLGridTable extends GridTable {
 
 			JLabel ret = prepareLabel(value, isSelected, hasFocus, row, column);
 
-			ODLTableDefinition odlTable = getTable();
+			ODLTableReadOnly odlTable = getTable();
 			if (odlTable != null && column > 0) {
 
 				if (odlTable.getColumnType(column - 1) == ODLColumnType.IMAGE && value != null) {
@@ -546,6 +548,13 @@ public class ODLGridTable extends GridTable {
 				}
 			}
 
+			// linked rows appear in italics
+			if(odlTable!=null && ret.getFont()!=null){
+				if((odlTable.getRowFlags(odlTable.getRowId(row))& TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA) == TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA  ){
+					ret.setFont(ret.getFont().deriveFont(Font.ITALIC));					
+				}
+			}
+			
 			// set anything after the last row to be grey
 			if (isSelected == false && row >= getTable().getRowCount()) {
 				ret.setBackground(afterTable);

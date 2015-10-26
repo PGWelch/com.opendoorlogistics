@@ -175,6 +175,10 @@ public class DatastoreLoader {
 			appFrame.setDecoratedDatastore(result,dmps, file);
 			PreferencesManager.getSingleton().addRecentFile(file);
 			PreferencesManager.getSingleton().setDirectory(PrefKey.LAST_IO_DIR, file);	
+			
+			if(report.size()>0){
+				ExecutionReportDialog.show(appFrame, "Warning when opening file", report);				
+			}
 		}else{
 			ExecutionReportDialog.show(appFrame, "Error opening file", report);		
 		}
@@ -187,6 +191,9 @@ public class DatastoreLoader {
 		
 		if(!report.isFailed()){
 			appFrame.setDecoratedDatastore(result,dmps, null);
+			if(report.size()>0){
+				ExecutionReportDialog.show(appFrame, "Warning when creating datastore", report);				
+			}
 		}else{
 			ExecutionReportDialog.show(appFrame, "Error creating datastore", report);
 		}

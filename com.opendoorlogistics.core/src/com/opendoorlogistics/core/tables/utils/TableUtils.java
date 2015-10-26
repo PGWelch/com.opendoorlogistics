@@ -22,6 +22,7 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 
+import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.tables.HasFlags;
 import com.opendoorlogistics.api.tables.ODLColumnType;
@@ -140,6 +141,10 @@ final public class TableUtils {
 		}
 		return col;
 	}
+
+	public static boolean runTransaction(ODLDatastore<? extends ODLTableDefinition> ds,Callable<Boolean> callable) {
+		return runTransaction(ds, callable, null);
+	}
 	
 	/**
 	 * Run the callable in a transaction if the datastore isn't already in one.
@@ -147,7 +152,7 @@ final public class TableUtils {
 	 * @param callable
 	 * @return
 	 */
-	public static boolean runTransaction(ODLDatastoreUndoable<? extends ODLTableDefinition> ds,Callable<Boolean> callable) {
+	public static boolean runTransaction(ODLDatastore<? extends ODLTableDefinition> ds,Callable<Boolean> callable, ExecutionReport report) {
 		boolean started=false;
 		if(!ds.isInTransaction()){
 			ds.startTransaction();
@@ -161,6 +166,9 @@ final public class TableUtils {
 				return true;
 			} 
 		} catch (Throwable e2) {
+			if(report!=null){
+				report.setFailed(e2);
+			}
 		}
 		
 		if(started){

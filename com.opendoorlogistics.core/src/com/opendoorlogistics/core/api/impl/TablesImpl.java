@@ -11,12 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
-import com.opendoorlogistics.api.tables.ODLFlatDatastore;
 import com.opendoorlogistics.api.tables.ODLFlatDatastoreExt;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
@@ -27,6 +27,9 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.api.tables.beans.BeanTableMapping;
+import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
+import com.opendoorlogistics.core.scripts.execution.adapters.AdapterBuilderUtils;
+import com.opendoorlogistics.core.scripts.wizard.ColumnNameMatch;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.beans.BeanMapping;
 import com.opendoorlogistics.core.tables.beans.BeanTypeConversion;
@@ -382,9 +385,26 @@ public class TablesImpl implements Tables {
 	@Override
 	public void clearDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> ds) {
 		while(ds.getTableCount()>0){
-			// turn off linked excel table flags so we allow deletion
+			// Turn off all linked excel flags to allow deletion.
+			// Deletion uses the undo / redo decorator which deletes row and columns first so 
+			// we must remove linked flags from everywhere or deletion will throw an exception.
+			
+			// Table flags first
 			ODLTableAlterable table = ds.getTableAt(0);
 			table.setFlags(table.getFlags() & ~TableFlags.ALL_LINKED_EXCEL_FLAGS);
+			
+			// Then table column flags
+			for(int col =0 ; col < table.getColumnCount() ; col++){
+				table.setColumnFlags(col, table.getColumnFlags(col) & ~TableFlags.ALL_LINKED_EXCEL_FLAGS);
+			}
+			
+			// The row flags
+			for(int row =0 ; row < table.getRowCount() ; row++){
+				long id = table.getRowId(row);
+				table.setRowFlags(table.getRowFlags(id) & ~TableFlags.ALL_LINKED_EXCEL_FLAGS, id);
+			}
+			
+			// Finally delete the table itself
 			ds.deleteTableById(table.getImmutableId());
 		}
 	}
@@ -420,6 +440,74 @@ public class TablesImpl implements Tables {
 			}
 		}
 		
+	}
+
+	@Override
+	public boolean getTableDefinitionExists(ODLTableDefinition dfn, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds, boolean checkFieldTypes, ExecutionReport report) {
+		ODLTableDefinition found = findTable(ds, dfn.getName());
+		if(found==null){
+			if(report!=null){
+				report.log("Table " + dfn.getName() + " was not found.");
+			}
+			return false;
+		}
+		ColumnNameMatch matcher = new ColumnNameMatch(dfn, found); 
+		if(matcher.getUnmatchedInA().size()>0){
+			if(report!=null){
+				StringBuilder builder = new StringBuilder();
+				builder.append("The following field(s) were not found in table " + dfn.getName() + ": " );
+				int count=0;
+				for(int i : matcher.getUnmatchedInA().toArray()){
+					if(count>0){
+						builder.append(", ");
+					}
+					builder.append(dfn.getColumnName(i));
+					count++;
+				}
+				report.log(builder.toString());
+			}
+			return false;
+		}
+		
+		if(checkFieldTypes){
+			int nbFailed=0;
+			StringBuilder builder = null;
+			for(int i =0 ; i < dfn.getColumnCount() ; i++){
+				if(dfn.getColumnType(i)!=found.getColumnType(matcher.getMatchForA(i))){
+					if(nbFailed==0){
+						builder=new StringBuilder();
+						builder.append("The following field(s) in table " + dfn.getName() + " had the wrong type: ");
+					}else{
+						builder.append(", ");
+					}
+					builder.append(dfn.getColumnName(i));
+					nbFailed++;
+					
+				}
+			}
+			if(nbFailed>0){
+				if(report!=null){
+					report.log(builder.toString());
+				}
+				return false;
+			}
+		}
+		
+		return true;
+	}
+
+	@Override
+	public <T extends ODLTableReadOnly> T adaptToTableUsingNames(ODLDatastore<? extends T> ds, String fromTable, ODLTableDefinition toTable, ExecutionReport report) {
+		
+		AdapterConfig adapterConfig = new AdapterConfig();
+		AdapterConfig.addSameNameTable(toTable, adapterConfig);
+		adapterConfig.getTable(0).setFromTable(fromTable);
+		ODLDatastore<?extends T> ret=AdapterBuilderUtils.createSimpleAdapter(ds, adapterConfig, report);
+		if(report.isFailed()){
+			return null;
+		}
+		
+		return ret.getTableAt(0);
 	}
 
 

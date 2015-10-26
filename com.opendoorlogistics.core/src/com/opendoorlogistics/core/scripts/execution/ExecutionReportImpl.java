@@ -7,6 +7,9 @@
 package com.opendoorlogistics.core.scripts.execution;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
@@ -58,12 +61,12 @@ public class ExecutionReportImpl implements ExecutionReport{
 	}
 
 	@Override
-	public void add(ExecutionReport report) {
+	public void add(ExecutionReport report, boolean copyFailedStatus) {
 		if(ExecutionReportImpl.class.isInstance(report)==false){
 			throw new RuntimeException();
 		}
 		
-		if(report.isFailed()){
+		if(copyFailedStatus && report.isFailed()){
 			failed = true;
 		}
 		
@@ -73,25 +76,14 @@ public class ExecutionReportImpl implements ExecutionReport{
 	}
 
 	@Override
+	public void add(ExecutionReport report) {
+		add(report,true);
+	}
+
+	@Override
 	public String getReportString(boolean includeExceptionTraces,boolean showSuccessFailureMessage) {
 		
-		// build list of lines first
-		ArrayList<String> lines = new ArrayList<>();
-		for (LogEntry line : logs) {
-			if(line.s!=null){
-				lines.add(line.s);		
-			}
-			
-			if(line.throwable!=null){
-				if(includeExceptionTraces){
-					lines.add(Strings.getStackTrace(line.throwable));
-				}else{
-					for(String s:Strings.getExceptionMessages(line.throwable)){
-						lines.add(s);
-					}
-				}
-			}
-		}
+		List<String> lines = getLines(includeExceptionTraces);
 		
 		StandardisedStringSet printedLines = new StandardisedStringSet(false);
 		
@@ -117,6 +109,64 @@ public class ExecutionReportImpl implements ExecutionReport{
 		return builder.toString();
 	}
 
+	public List<String> getLines(boolean includeExceptionTraces) {
+		// filter list of logs
+		ArrayList<LogEntry> filtered = new ArrayList<>(logs);
+		HashSet<Throwable> throwables = new HashSet<>();
+		Iterator<LogEntry> it = filtered.iterator();
+		while(it.hasNext()){
+			LogEntry entry = it.next();
+			
+			// add the throwable to the set
+			if(entry.throwable!=null){
+				throwables.add(entry.throwable);
+			}
+			
+			// filter runtimeexcepptions whose cause has already been logged; these are likely just a rethrow...
+			if(entry.throwable!=null && Strings.isEmpty(entry.s)){
+				Throwable throwable = entry.throwable;
+				
+				if(!RuntimeException.class.isInstance(throwable)){
+					continue;
+				}
+				
+				if(!Strings.isEmpty(throwable.getMessage())){
+					continue;
+				}
+				
+				if(throwable.getCause()==null){
+					continue;
+				}
+				
+				if(!throwables.contains(throwable.getCause())){
+					continue;		
+				}
+				
+				it.remove();
+				
+			}
+		}
+		
+		// build list of lines first
+		ArrayList<String> lines = new ArrayList<>();
+		for (LogEntry line : filtered) {
+			if(line.s!=null){
+				lines.add(line.s);		
+			}
+			
+			if(line.throwable!=null){
+				if(includeExceptionTraces){
+					lines.add(Strings.getStackTrace(line.throwable));
+				}else{
+					for(String s:Strings.getExceptionMessages(line.throwable)){
+						lines.add(s);
+					}
+				}
+			}
+		}
+		return lines;
+	}
+
 	@Override
 	public void setFailed() {
 		failed = true;
@@ -136,5 +186,6 @@ public class ExecutionReportImpl implements ExecutionReport{
 	public int size() {
 		return logs.size();
 	}
+
 
 }

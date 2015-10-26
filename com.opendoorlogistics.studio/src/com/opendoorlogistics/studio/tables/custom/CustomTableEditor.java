@@ -2,45 +2,33 @@ package com.opendoorlogistics.studio.tables.custom;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.Window;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.List;
+import java.awt.event.ActionListener;
 import java.util.concurrent.Callable;
 
-import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JToolBar;
-import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableModel;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.Tables;
-import com.opendoorlogistics.api.app.ui.UIAction;
-import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
+import com.opendoorlogistics.api.app.ui.BeanEditorFactory;
 import com.opendoorlogistics.api.tables.ODLListener;
-import com.opendoorlogistics.api.tables.ODLTable;
-import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
-import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
-import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
-import com.opendoorlogistics.studio.tables.custom.StandardEditActionHandlers.ActionType;
+import com.opendoorlogistics.studio.LoadedState.HasLoadedDatastore;
 
 /**
  * Shows a table which has a plugin popup box for editing items... Want simple controls to move items up and down, delete them and create new items. Want
@@ -51,17 +39,19 @@ import com.opendoorlogistics.studio.tables.custom.StandardEditActionHandlers.Act
  *
  * @param <T>
  */
-public class CustomTableEditor<T extends BeanMappedRow> extends JPanel implements Disposable {
-	private BeanMappingInfo<T> bmi;
-	private final JTable jTable;
-	private final List<UIAction> actions;
+public abstract class CustomTableEditor<T extends BeanMappedRow> extends JPanel implements Disposable {
+	private final BeanMappingInfo<T> bmi;
+	private final BeanEditorFactory<T> editorFactory;
+	private final Component parent;
 	private final ODLListener structureListener = new ODLListener() {
 
 		@Override
 		public void datastoreStructureChanged() {
-			updateAdapter();
-			((AbstractTableModel) jTable.getModel()).fireTableDataChanged();
-			updateEnabledActions();
+			if(tableActivePanel!=null){
+				tableActivePanel.datastoreStructureChanged();
+			}
+			
+			updateMode();
 		}
 
 		@Override
@@ -71,7 +61,9 @@ public class CustomTableEditor<T extends BeanMappedRow> extends JPanel implement
 
 		@Override
 		public void tableChanged(int tableId, int firstRow, int lastRow) {
-			((AbstractTableModel) jTable.getModel()).fireTableDataChanged();
+			if(tableActivePanel!=null){
+				tableActivePanel.tableChanged(tableId, firstRow, lastRow);;
+			}
 		}
 	};
 
@@ -79,9 +71,9 @@ public class CustomTableEditor<T extends BeanMappedRow> extends JPanel implement
 
 		@Override
 		public void tableChanged(int tableId, int firstRow, int lastRow) {
-			((AbstractTableModel) jTable.getModel()).fireTableDataChanged();
-			updateEnabledActions();
-
+			if(tableActivePanel!=null){
+				tableActivePanel.tableChanged(tableId, firstRow, lastRow);;
+			}
 		}
 
 		@Override
@@ -97,305 +89,59 @@ public class CustomTableEditor<T extends BeanMappedRow> extends JPanel implement
 
 	};
 
-	private final StandardEditActionHandlers editHandlers;
-	private final BeanEditorPanelFactory<T> editorFactory;
-	private ODLTable adaptedTable;
-	private ExecutionReport lastReport;
-
-	public CustomTableEditor(ODLApi api, Class<T> cls, BeanEditorPanelFactory<T> editorFactory,ODLDatastoreUndoable<? extends ODLTableAlterable>  ds) {
-
-		setLayout(new BorderLayout());
-
-		this.bmi = new BeanMappingInfo<>(api, cls, ds);
-		this.editorFactory = editorFactory;
-
-		ds.addListener(structureListener);
-		ds.addListener(dataListener, -1);
-
-		// init the table
-		jTable = new JTable(createTableModel());
-		jTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		jTable.setFillsViewportHeight(true);
-		jTable.getTableHeader().setReorderingAllowed(false);
-		jTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-
-			@Override
-			public void valueChanged(ListSelectionEvent e) {
-				updateEnabledActions();
-			}
-		});
-		jTable.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent evt) {
-				if (evt.getClickCount() >= 2) {
-					editHandlers.actionPerformed(null, null, ActionType.EDIT);
-				}
-			}
-		});
-
-		// place the table in a scrollpane
-		JScrollPane scrollPane = new JScrollPane(jTable);
-		add(scrollPane, BorderLayout.CENTER);
-
-		// add a toolbar
-		JToolBar toolBar = new JToolBar();
-		toolBar.setFloatable(false);
-		add(toolBar, BorderLayout.SOUTH);
-
-		// create right-click popup menu on the list
-		final JPopupMenu popup = new JPopupMenu();
-		jTable.addMouseListener(new PopupMenuMouseAdapter() {
-
-			@Override
-			protected void launchMenu(MouseEvent me) {
-				// ensure the correct row is selected
-				int row = jTable.rowAtPoint(me.getPoint());
-				if (row != -1) {
-					jTable.getSelectionModel().setSelectionInterval(row, row);
-				}
-
-				popup.show(me.getComponent(), me.getX(), me.getY());
-			}
-		});
-
-		// create the actions
-		editHandlers = createActionHandlers();
-		actions = StandardEditActionHandlers.createActions("linked file", editHandlers);
-		for (Action action : actions) {
-			toolBar.add(action);
-			popup.add(action);
-		}
-
-		updateAdapter();
-
-		updateEnabledActions();
+	private TableActivePanel<T> tableActivePanel;
+	
+	private enum Mode{
+		TABLE_IS_PRESENT_IN_DATASTORE,
+		TABLE_OR_FIELDS_MISSING
 	}
 	
-	/**
-	 * Ensure the structure expected by the bean exists..
-	 */
-	private void applyStructure(){
-		ExecutionReportImpl report = new ExecutionReportImpl();
-		
-		TableUtils.runTransaction(bmi.getDs(), new Callable<Boolean>() {
-			
-			@Override
-			public Boolean call() throws Exception {
-				bmi.getApi().tables().addTableDefinition(bmi.getMapping().getTableDefinition(), bmi.getDs(), true);
-				return null;
-			}
-		});
+	private Mode mode;
+	
+
+	private void fixDatastoreNoPrompt(){
+
+		ExecutionReport report = new ExecutionReportImpl();
+
+		if(bmi.getDs()==null){
+			report.setFailed("No datastore is open.");
+		}
+		else{
+			TableUtils.runTransaction(bmi.getDs(), new Callable<Boolean>() {
+				
+				@Override
+				public Boolean call() throws Exception {
+					bmi.getApi().tables().addTableDefinition(bmi.getMapping().getTableDefinition(), bmi.getDs(), true);
+					return true;
+				}
+			});		
+		}
+
 		
 		if (report.isFailed()) {
-			ExecutionReportDialog dlg = new ExecutionReportDialog((JFrame) getWindowAncestor(), "Error", report, true);
+			ExecutionReportDialog dlg = new ExecutionReportDialog((JFrame) SwingUtilities.getWindowAncestor(parent), "Error", report, true);
 			dlg.setVisible(true);
 		}
-	}
 
-
-	private Window getWindowAncestor() {
-		return SwingUtilities.getWindowAncestor(this);
+		updateMode();
 	}
 	
-	private StandardEditActionHandlers createActionHandlers() {
-		return new StandardEditActionHandlers() {
+	public CustomTableEditor(Component parent,ODLApi api, Class<T> cls, BeanEditorFactory<T> editorFactory,HasLoadedDatastore hasDs) {
 
-			private void doEdit(Callable<Boolean> callable, ActionType type) {
-				if (!TableUtils.runTransaction(bmi.getDs(), callable)) {
-					JOptionPane.showMessageDialog(CustomTableEditor.this, "Could not complete edit action:" + type);
-				}
-				;
-			}
+		this.parent = parent;
+		this.bmi = new BeanMappingInfo<>(api, cls, hasDs);
+		this.editorFactory = editorFactory;
+		
+		setLayout(new BorderLayout());
+		setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		
+		bmi.getDs().addListener(structureListener);
+		bmi.getDs().addListener(dataListener, -1);
 
-			@Override
-			public void actionPerformed(ActionEvent e, UIAction action, ActionType type) {
-				int selRow = jTable.getSelectedRow();
-				int nbRow = jTable.getRowCount();
-				ODLTable rawTable = bmi.getRawTable();
-				if (adaptedTable == null || rawTable == null) {
-					return;
-				}
-
-				Tables tables = bmi.getApi().tables();
-
-				switch (type) {
-				case ADD:
-					try {
-						T item = (T) bmi.getClass().newInstance();
-						runEditor(item, new Callable<Boolean>() {
-
-							@Override
-							public Boolean call() throws Exception {
-								bmi.getMapping().writeObjectToTable(item, adaptedTable);
-								return true;
-							}
-						}, type);
-					} catch (Exception e2) {
-						// TODO: handle exception
-					}
-
-					break;
-
-				case EDIT:
-					ExecutionReportImpl report = new ExecutionReportImpl();
-					T item = bmi.getMapping().readObjectFromTableByRow(adaptedTable, selRow, report);
-					if (report.isFailed()) {
-						ExecutionReportDialog dlg = new ExecutionReportDialog((JFrame) getWindowAncestor(), "Error reading object", report, true);
-						dlg.setVisible(true);
-					}
-
-					runEditor(item, new Callable<Boolean>() {
-
-						@Override
-						public Boolean call() throws Exception {
-							bmi.getMapping().updateTableRow(item, adaptedTable, item.getGlobalRowId());
-							return true;
-						}
-					}, type);
-
-					break;
-
-				case DELETE_ITEM:
-					if (selRow != -1) {
-						doEdit(new Callable<Boolean>() {
-
-							@Override
-							public Boolean call() throws Exception {
-								rawTable.deleteRow(selRow);
-								return true;
-							}
-						}, type);
-					}
-
-					break;
-
-				case MOVE_ITEM_UP:
-					if (selRow != -1 && selRow > 0) {
-						doEdit(new Callable<Boolean>() {
-
-							@Override
-							public Boolean call() throws Exception {
-								tables.copyRow(rawTable, selRow, rawTable, selRow - 1);
-								rawTable.deleteRow(selRow + 1);
-								jTable.getSelectionModel().setSelectionInterval(selRow - 1, selRow - 1);
-								return true;
-							}
-						}, type);
-					}
-					break;
-
-				case MOVE_ITEM_DOWN:
-					if (selRow != -1 && selRow < (nbRow - 1)) {
-						doEdit(new Callable<Boolean>() {
-
-							@Override
-							public Boolean call() throws Exception {
-								tables.copyRow(rawTable, selRow, rawTable, selRow + 2);
-								rawTable.deleteRow(selRow);
-								jTable.getSelectionModel().setSelectionInterval(selRow + 1, selRow + 1);
-								return true;
-							}
-						}, type);
-					}
-					break;
-
-				default:
-					break;
-				}
-
-			}
-
-			private void runEditor(T item, Callable<Boolean> callable, ActionType type) {
-				BeanEditorPanel<T> panel = editorFactory.createEditorPanel(item);
-
-				try {
-					OkCancelDialog dlg = new OkCancelDialog(getWindowAncestor(), true, true) {
-
-						protected Component createMainComponent(boolean inWindowsBuilder) {
-							return panel;
-						}
-
-					};
-					if (dlg.showModal() == OkCancelDialog.OK_OPTION) {
-						doEdit(callable, type);
-					}
-				} catch (Exception e) {
-					if (panel != null) {
-						panel.dispose();
-					}
-				}
-
-			}
-
-
-			@Override
-			public void updateEnabledState(UIAction action, ActionType type) {
-				int selRow = jTable.getSelectedRow();
-				int nbRow = jTable.getRowCount();
-				boolean enabled = adaptedTable != null;
-				if (enabled) {
-					switch (type) {
-					case EDIT:
-					case DELETE_ITEM:
-						enabled = selRow != -1;
-						break;
-
-					case MOVE_ITEM_UP:
-						enabled = selRow >= 1;
-						break;
-
-					case MOVE_ITEM_DOWN:
-						enabled = selRow != -1 && selRow < (nbRow - 1);
-						break;
-
-					case ADD:
-						enabled = true;
-						break;
-
-					default:
-						enabled = false;
-						break;
-					}
-				}
-				action.setEnabled(enabled);
-			}
-		};
+		updateMode();
 	}
+	
 
-	protected TableModel createTableModel() {
-		ODLTableDefinition definition = bmi.getMapping().getTableDefinition();
-
-		return new AbstractTableModel() {
-
-			@Override
-			public int getColumnCount() {
-				return definition.getColumnCount();
-			}
-
-			@Override
-			public int getRowCount() {
-				if (hasAdapter()) {
-					return adaptedTable.getRowCount();
-				}
-				return 0;
-			}
-
-			@Override
-			public Object getValueAt(int rowIndex, int columnIndex) {
-				if (hasAdapter()) {
-					return adaptedTable.getValueAt(rowIndex, columnIndex);
-				}
-				return null;
-			}
-
-			@Override
-			public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-				// if (hasAdapter() && rowIndex < adaptedTable.getRowCount() && columnIndex < adaptedTable.getColumnCount()) {
-				// adaptedTable.setValueAt(aValue, rowIndex, columnIndex);
-				// }
-			}
-
-		};
-	}
 
 	@Override
 	public void dispose() {
@@ -403,19 +149,73 @@ public class CustomTableEditor<T extends BeanMappedRow> extends JPanel implement
 		bmi.getDs().removeListener(dataListener);
 	}
 
-	private boolean hasAdapter() {
-		return lastReport != null && lastReport.isFailed() == false && adaptedTable != null;
-	}
+	private void updateMode(){
+		Tables tables = bmi.getApi().tables();
+		ExecutionReportImpl report = new ExecutionReportImpl();
+		ODLTableDefinition dfn = bmi.getMapping().getTableDefinition();
+		
+		Mode newMode = Mode.TABLE_IS_PRESENT_IN_DATASTORE;
+		if(bmi.getDs() == null || !tables.getTableDefinitionExists(dfn, bmi.getDs(), true, report)){
+			newMode = Mode.TABLE_OR_FIELDS_MISSING;
+		}
+		
+		if(newMode!=mode){
+			// remove all existing components
+			removeAll();
+			tableActivePanel = null;
+			
+			if(newMode == Mode.TABLE_IS_PRESENT_IN_DATASTORE){
+				tableActivePanel = new TableActivePanel<>(bmi, editorFactory);
+				add(tableActivePanel,BorderLayout.CENTER);
+				setPreferredSize(new Dimension(800, 600));
+			}else{
+				initInactiveMode(report);
+				setPreferredSize(null);
+			}
+			mode = newMode;
 
-	private void updateAdapter() {
-		lastReport = new ExecutionReportImpl();
-		adaptedTable = bmi.createTableAdapter(lastReport);
-	}
-
-	private void updateEnabledActions() {
-		for (UIAction action : actions) {
-			action.updateEnabledState();
+			onModeChange();
+			validate();
+			repaint();
 		}
 	}
-
+	
+	private void initInactiveMode(ExecutionReportImpl report){
+		JPanel panel = new JPanel();
+		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+		panel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+		
+		StringBuilder builder = new StringBuilder();
+		builder.append("<html>The table " + bmi.getMapping().getTableDefinition().getName() + " and its fields must be present in your datastore.");
+		builder.append("<br>Do you want to correct the issue(s) found below?<br>");
+		for(String line : report.getLines(false)){
+			builder.append("<br>-<i>");
+			builder.append(line);
+			builder.append("</i>");
+		}
+		builder.append("</html>");
+		
+		JLabel label = new JLabel(builder.toString());
+		//JScrollPane pane = new JScrollPane(textArea);
+		//textArea.setMinimumSize(new Dimension(600, 200));
+		
+		panel.add(label);
+		
+		panel.add(Box.createRigidArea(new Dimension(1, 10)));
+		
+		JButton button = new JButton("Click to fix datastore issues");
+		button.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				fixDatastoreNoPrompt();
+			}
+		});
+		
+		panel.add(button);
+		
+		add(new JScrollPane(panel),BorderLayout.CENTER);
+	}
+	
+	protected abstract void onModeChange();
 }

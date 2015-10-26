@@ -40,6 +40,17 @@ public interface Tables {
 	ODLDatastoreAlterable<? extends ODLTableAlterable> copyDs(ODLDatastore<? extends ODLTableReadOnly> ds);
 
 	/**
+	 * Adapt the from table in the input datastore to match the to table based on matching field names.
+	 * Failure to adapt will be logged in the report object.
+	 * @param ds
+	 * @param fromTable
+	 * @param toTable
+	 * @param report
+	 * @return
+	 */
+	<T extends ODLTableReadOnly> T adaptToTableUsingNames(ODLDatastore<? extends T> ds, String fromTable,ODLTableDefinition toTable, ExecutionReport report);
+	
+	/**
 	 * Copy the datastore. All table and column level flags are preserved, row level flags are optionally preserved.
 	 * @param copyFrom
 	 * @param copyTo
@@ -145,6 +156,16 @@ public interface Tables {
 	 */
 	void addTableDefinition( ODLTableDefinition schema, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds, boolean changeFieldTypes);
 
+	/**
+	 * Does the table exist in the datastore, are all its fields present and are they they correct type? (if checking type)
+	 * @param schema
+	 * @param ds
+	 * @param checkFieldTypes
+	 * @param ExecutionReport report Use this to record what's missing (can be null)
+	 * @return
+	 */
+	boolean getTableDefinitionExists(ODLTableDefinition schema, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds, boolean checkFieldTypes, ExecutionReport report);
+	
 	/**
 	 * Merge the source datastore into the destination.
 	 * Fields and tables are added as needed.

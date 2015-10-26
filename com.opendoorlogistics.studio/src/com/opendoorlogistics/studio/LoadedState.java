@@ -16,12 +16,16 @@ import com.opendoorlogistics.api.app.ODLAppLoadedState;
 import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.DatastoreManagerPlugin;
 import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.DatastoreManagerPluginState;
+import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.ProcessDatastoreResult;
+import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.tables.DatastoreManagerGlobalPlugin;
 import com.opendoorlogistics.core.tables.io.PoiIO;
 import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -67,6 +71,14 @@ public class LoadedState extends GlobalMapSelectedRowsManager implements Disposa
 	}
 
 	public boolean save(File file, boolean xlsx,ProcessingApi processing, ExecutionReport report) {
+		
+		// filter if we have a datastore manager plugin
+		DatastoreManagerPlugin plugin = DatastoreManagerGlobalPlugin.getPlugin();
+		if(plugin!=null && ds!=null){
+			ODLDatastore<? extends ODLTableReadOnly> filtered = plugin.getDatastore2Save(appFrame.getApi(), this);
+			return PoiIO.exportDatastore(filtered, file, xlsx, processing,report);
+		}					
+		
 		return PoiIO.exportDatastore(ds, file, xlsx, processing,report);
 	}
 

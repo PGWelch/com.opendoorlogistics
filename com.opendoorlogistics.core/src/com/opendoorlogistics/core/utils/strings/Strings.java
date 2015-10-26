@@ -841,19 +841,46 @@ final public class Strings {
 	 * @return
 	 */
 	public static List<String> getExceptionMessages(Throwable e) {
-		ArrayList<String> ret = new ArrayList<>();
-		while (e != null) {
-			if (isEmpty(e.getMessage()) == false) {
-				// only print the exception type if it gives the user some information
-				if (e.getClass() != Exception.class && e.getClass() != RuntimeException.class) {
-					ret.add("Exception of type \"" + e.getClass().getSimpleName() + "\" : " + e.getMessage());
-				} else {
-					ret.add(e.getMessage());
-				}
-			}
+		// get reversed list of causes so its chronological
+		ArrayList<Throwable> causes = new ArrayList<>();
+		while(e!=null){
+			causes.add(e);
 			e = e.getCause();
 		}
-		Collections.reverse(ret);
+		Collections.reverse(causes);
+
+		// get the list of messages
+		ArrayList<String> messages = new ArrayList<>();
+
+		ArrayList<String> ret = new ArrayList<>();
+		for(Throwable exception : causes){
+			if (isEmpty(exception.getMessage()) == false) {
+				String msg = exception.getMessage();
+				
+				// skip if part of the message has already been shown as its likely just the same message with
+				// the exception class name added to the start
+				boolean found = false;
+				for(String shown: messages){
+					if(shown.length() > 3 && msg.toLowerCase().contains(shown.toLowerCase())){
+						found = true;
+						break;
+					}
+				}
+				
+				if(!found){
+					// save to list of shown messages
+					messages.add(msg);
+
+					// only print the exception type if it gives the user some information
+					if (exception.getClass() != Exception.class && exception.getClass() != RuntimeException.class) {
+						ret.add("Exception of type \"" + exception.getClass().getSimpleName() + "\" : " + msg);
+					} else {
+						ret.add(msg);
+					}					
+				}
+
+			}
+		}
 		return ret;
 	}
 

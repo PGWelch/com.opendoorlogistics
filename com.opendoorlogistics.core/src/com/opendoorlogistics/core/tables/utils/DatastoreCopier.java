@@ -409,6 +409,12 @@ final public class DatastoreCopier {
 	}
 
 	public static ODLTableDefinitionAlterable copyTableDefinition(ODLTableDefinition copyThis, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> copyTo, String newName, int id){
+		
+		// reuse the original id if we can
+		if(id==-1){
+			id = copyThis.getImmutableId();
+		}
+		
 		// only use id if unique
 		if(id!=-1 && copyTo.getTableByImmutableId(id)!=null){
 			id = -1;

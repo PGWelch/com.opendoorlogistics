@@ -45,6 +45,7 @@ import com.opendoorlogistics.studio.internalframes.ODLInternalFrame.FramesChange
 import com.opendoorlogistics.studio.internalframes.ProgressFrame;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.execution.ReporterFrame;
+import com.opendoorlogistics.studio.tables.custom.CustomTableEditorFrame;
 import com.opendoorlogistics.studio.tables.grid.GridFrame;
 import com.opendoorlogistics.studio.tables.schema.TableSchemaEditor;
 import com.opendoorlogistics.studio.utils.WindowState;
@@ -264,7 +265,7 @@ public abstract class DesktopAppFrame extends AbstractAppFrame {
 					icon = rf.getComponent().getIcon(getApi(), ODLComponent.MODE_DEFAULT);
 				}
 			}
-			else if(GridFrame.class.isInstance(frame)){
+			else if(GridFrame.class.isInstance(frame)||CustomTableEditorFrame.class.isInstance(frame)){
 				icon = Icons.loadFromStandardPath("table-window-toolbar-icon.png");
 			}
 			else if(TableSchemaEditor.class.isInstance(frame)){

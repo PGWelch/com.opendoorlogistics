@@ -46,22 +46,22 @@ import org.apache.commons.io.FilenameUtils;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.app.DatastoreModifier;
-import com.opendoorlogistics.api.app.ODLApp;
 import com.opendoorlogistics.api.app.ODLAppLoadedState;
+import com.opendoorlogistics.api.app.ui.BeanEditorFactory;
 import com.opendoorlogistics.api.app.ui.ODLAppUI;
 import com.opendoorlogistics.api.app.ui.UIAction;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.tables.DatastoreManagerPlugin;
+import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.DatastoreManagerPluginState;
+import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.ProcessDatastoreResult;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable.UndoStateChangedListener;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
-import com.opendoorlogistics.api.tables.ODLTableReadOnly;
-import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.DatastoreManagerPluginState;
-import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.ProcessDatastoreResult;
+import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.codefromweb.IconToImage;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.CommandLineInterface;
@@ -75,19 +75,18 @@ import com.opendoorlogistics.core.scripts.ScriptsProvider;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.tables.DatastoreManagerGlobalPlugin;
+import com.opendoorlogistics.core.tables.beans.BeanMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.core.tables.decorators.datastores.DataUpdaterDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.deepcopying.OptimisedDeepCopierDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
-import com.opendoorlogistics.core.tables.io.PoiIO;
-import com.opendoorlogistics.core.tables.io.TableIOUtils;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
-import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.IOUtils;
-import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.TextInformationDialog;
+import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.studio.DatastoreTablesPanel;
 import com.opendoorlogistics.studio.DropFileImporterListener;
 import com.opendoorlogistics.studio.InitialiseStudio;
@@ -97,6 +96,7 @@ import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
 import com.opendoorlogistics.studio.controls.buttontable.ButtonTableDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog.OnFinishedSwingThreadCB;
+import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
 import com.opendoorlogistics.studio.internalframes.ProgressFrame;
 import com.opendoorlogistics.studio.panels.ProgressPanel;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
@@ -106,11 +106,12 @@ import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManagerImpl;
 import com.opendoorlogistics.studio.scripts.list.ScriptNode;
 import com.opendoorlogistics.studio.scripts.list.ScriptsPanel;
+import com.opendoorlogistics.studio.tables.custom.CustomTableEditor;
+import com.opendoorlogistics.studio.tables.custom.CustomTableEditorFrame;
 import com.opendoorlogistics.studio.tables.grid.ODLGridFrame;
 import com.opendoorlogistics.studio.tables.schema.TableSchemaEditor;
 import com.opendoorlogistics.studio.utils.WindowState;
 import com.opendoorlogistics.utils.ui.Icons;
-import com.opendoorlogistics.utils.ui.ODLAction;
 
 public class AppFrame extends DesktopAppFrame  {
 	private final JSplitPane splitterLeftSide;
@@ -717,7 +718,21 @@ public class AppFrame extends DesktopAppFrame  {
 	
 	@Override
 	public void setDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> undecoratedDs, File sourceFile) {
-		setDecoratedDatastore(decorateNewDatastore(undecoratedDs, sourceFile,null, null, null), null,sourceFile);
+		ExecutionReportImpl report = new ExecutionReportImpl();
+		setDecoratedDatastore(decorateNewDatastore(undecoratedDs, sourceFile,null, null, report), null,sourceFile);
+		
+		// This method can be called from ODL Connect when ODL Studio is starting up, so we show 
+		// a delayed warning message to ensure the appframe window is initialised
+		if(report.isFailed() || report.size()>0){
+			SwingUtilities.invokeLater(new Runnable() {
+				
+				@Override
+				public void run() {
+					String title = report.isFailed()? "Error": "Warning";
+					new ExecutionReportDialog(AppFrame.this, title, report, false);
+				}
+			});			
+		}
 
 	}
 
@@ -1004,13 +1019,33 @@ public class AppFrame extends DesktopAppFrame  {
 		return new ODLAppUI() {
 			
 			@Override
-			public void showModalMessage(String title, String message) {
+			public void showModalMessage(String title, String message, Dimension prefWindowSize){
 				TextInformationDialog dlg=new TextInformationDialog(AppFrame.this, title, message);
-				dlg.setMinimumSize(new Dimension(400, 200));
+			//	dlg.setMinimumSize(new Dimension(1000, 200));
 				dlg.setLocationRelativeTo(AppFrame.this);
+			//	dlg.pack();
+				
+				if(prefWindowSize!=null){
+					dlg.setPreferredSize(prefWindowSize);					
+				}
+				
 				dlg.pack();
 				dlg.setVisible(true);
+			
 			}
+
+			@Override
+			public void showModalMessage(String title, String message) {
+				showModalMessage(title, message,null);
+			}
+
+			@Override
+			public <T extends BeanMappedRow> void launchDataEditor(Class<T> beanDefinition, BeanEditorFactory<T> editorFactory) {		
+				CustomTableEditorFrame<T> editor = new CustomTableEditorFrame<>(AppFrame.this, getApi(), beanDefinition, editorFactory, AppFrame.this);
+				addInternalFrame(editor, FramePlacement.CENTRAL);
+			}
+
+
 		};
 	}
 

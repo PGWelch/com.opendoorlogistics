@@ -33,7 +33,7 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 public class ModalDialog extends JDialog {
 	private ModalDialogResult lastResult = null;
 
-	public ModalDialog(Window parent, JPanel content, String title, final ModalDialogResult... buttons) {
+	public ModalDialog(Window parent, JComponent content, String title, final ModalDialogResult... buttons) {
 		super(parent, title, ModalityType.DOCUMENT_MODAL);
 
 

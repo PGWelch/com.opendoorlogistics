@@ -23,5 +23,17 @@ public interface BeanTableMapping {
 	<T extends BeanMappedRow> void writeObjectToTable(T obj, ODLTable outTable, int rowNb);
 	
 	<T extends BeanMappedRow> void updateTableRow(T object, ODLTable table, long rowId);
+	
+	Class<? extends BeanMappedRow> getBeanClass();
+
+	boolean isReadFailsOnDisallowedNull();
+	
+	/**
+	 * Set the conversion to fail if we encounter a null value where one is not allowed.
+	 * This is true by default. If you are using the beans in a UI where the user
+	 * has the chance to correct the bean, set it to false or you won't be able to read it. 
+	 * @param failIfNulLValueNotAllowed
+	 */
+	void setReadFailsOnDisallowedNull(boolean failIfNulLValueNotAllowed) ;
 
 }

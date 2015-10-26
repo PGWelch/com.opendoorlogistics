@@ -173,8 +173,13 @@ public abstract class DatastoreModifierTask {
 			ExecutionUtils.showScriptFailureBox(appFrame, false, getFailureWindowTitle(), result);
 		}
 
+		finishOnEDTAfterExecutionReportShown(result);
 	}
 
+	protected void finishOnEDTAfterExecutionReportShown(ExecutionReport report){
+		
+	}
+	
 	protected abstract boolean mergeResultWithEDTDatastore();
 	
 	protected abstract String getFailureWindowTitle();
