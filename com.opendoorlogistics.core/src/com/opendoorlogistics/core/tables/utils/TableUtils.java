@@ -145,6 +145,10 @@ final public class TableUtils {
 	public static boolean runTransaction(ODLDatastore<? extends ODLTableDefinition> ds,Callable<Boolean> callable) {
 		return runTransaction(ds, callable, null);
 	}
+
+	public static boolean runTransaction(ODLDatastore<? extends ODLTableDefinition> ds,Callable<Boolean> callable, ExecutionReport report) {
+		return runTransaction(ds, callable, report, false);
+	}
 	
 	/**
 	 * Run the callable in a transaction if the datastore isn't already in one.
@@ -152,7 +156,7 @@ final public class TableUtils {
 	 * @param callable
 	 * @return
 	 */
-	public static boolean runTransaction(ODLDatastore<? extends ODLTableDefinition> ds,Callable<Boolean> callable, ExecutionReport report) {
+	public static boolean runTransaction(ODLDatastore<? extends ODLTableDefinition> ds,Callable<Boolean> callable, ExecutionReport report, boolean throwExceptions) {
 		boolean started=false;
 		if(!ds.isInTransaction()){
 			ds.startTransaction();
@@ -168,6 +172,16 @@ final public class TableUtils {
 		} catch (Throwable e2) {
 			if(report!=null){
 				report.setFailed(e2);
+			}
+			
+			if(throwExceptions){
+				// Can only throw an unchecked exception and its better (for debugging etc) to rethrow the original
+				if(e2 instanceof RuntimeException){
+					throw (RuntimeException)e2;
+				}
+				else{
+					throw new RuntimeException(e2);
+				}
 			}
 		}
 		

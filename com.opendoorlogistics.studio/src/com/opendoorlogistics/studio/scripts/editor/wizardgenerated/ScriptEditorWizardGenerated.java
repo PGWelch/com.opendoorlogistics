@@ -525,6 +525,7 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 								instruction.setDatastore(newText);
 							}
 						});
+						dsid.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 						ret.panel.add(dsid);
 						ret.panel.addHalfWhitespace();
 					}

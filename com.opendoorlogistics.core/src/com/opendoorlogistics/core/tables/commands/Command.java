@@ -13,6 +13,15 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTime;
 import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 
+/**
+ * A command holds a SINGLE modification to the datastore.
+ * As any modification could throw an exception, a command cannot include multiple
+ * modifications to the datastore (e.g. setcolumnflags, setvalue etc) or these may not be rolled back properly. 
+ * 
+ * Similarly the corresponding undo for a command can only hold a single datastore modification.
+ * @author Phil
+ *
+ */
 public abstract class Command {
 
 	protected final int tableId;

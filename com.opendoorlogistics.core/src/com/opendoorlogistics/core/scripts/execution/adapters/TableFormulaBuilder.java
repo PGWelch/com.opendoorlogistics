@@ -1,5 +1,6 @@
 package com.opendoorlogistics.core.scripts.execution.adapters;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -7,16 +8,24 @@ import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.core.JsonParser.NumberType;
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.PredefinedTags;
+import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
+import com.opendoorlogistics.core.cache.ApplicationCache;
+import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.formulae.FormulaParser;
 import com.opendoorlogistics.core.formulae.Functions.*;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionFactory;
+import com.opendoorlogistics.core.formulae.FunctionImpl;
+import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.FunctionUtils;
+import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.ArgumentType;
@@ -24,11 +33,15 @@ import com.opendoorlogistics.core.scripts.TableReference;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
+import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.formulae.tables.ConstTable;
+import com.opendoorlogistics.core.scripts.formulae.tables.DatastoreFormula;
 import com.opendoorlogistics.core.scripts.formulae.tables.EmptyTable;
 import com.opendoorlogistics.core.scripts.formulae.tables.Shapefile;
 import com.opendoorlogistics.core.scripts.formulae.tables.TableFormula;
+import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
+import com.opendoorlogistics.core.tables.utils.SizesInBytesEstimator;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 
@@ -39,16 +52,18 @@ public class TableFormulaBuilder {
 		ODLDatastore<? extends ODLTable> buildAdapter(AdapterConfig config);
 	}
 	
-	public static ODLDatastoreImpl<? extends ODLTableAlterable>  build(String formulaText, DependencyInjector injector, ExecutionReport report){
-		FunctionDefinitionLibrary lib = buildFunctionLib(injector, report);
+	public static ODLDatastore<? extends ODLTableAlterable>  executeTableFormula(String formulaText,ODLApi api, DependencyInjector injector, ExecutionReport report){
+		FunctionDefinitionLibrary lib = buildFunctionLib(api,injector, report);
 
 		FormulaParser loader = new FormulaParser(null, lib, null);
 
 		try{
-			Function formula =loader.parse(formulaText);		
-			if(formula==null || TableFormula.class.isInstance(formula)==false){
-				report.setFailed("Error building table formula; formula was either unidentified or does not return a table: " + formulaText);
-			}else{
+			Function formula =loader.parse(formulaText);
+			
+			if(formula==null){
+				report.setFailed("Error building table formula: " + formulaText);				
+			}
+			else if(TableFormula.class.isInstance(formula)){
 				ODLTableAlterable table =(ODLTableAlterable)formula.execute(null);
 				if(table==null){
 					report.setFailed("Error building table formula; formula did not return a table: " + formulaText);
@@ -57,7 +72,19 @@ public class TableFormulaBuilder {
 					ds.addTable(table);
 					return ds;
 				}
+			}else if(DatastoreFormula.class.isInstance(formula)){
+				@SuppressWarnings("unchecked")
+				ODLDatastoreAlterable<? extends ODLTableAlterable> ds =(ODLDatastoreAlterable<? extends ODLTableAlterable> )formula.execute(null) ;
+				if(ds==null){
+					report.setFailed("Error building table formula; formula did not return a datastore: " + formulaText);					
+				}else{
+					return ds;
+				}
 			}
+			else{				
+				report.setFailed("Error building table formula; formula does not return a table or datastore: " + formulaText);
+			}
+			
 		}catch(Exception e){
 			report.setFailed("Error building table formula: " + formulaText);
 			report.setFailed(e);
@@ -67,8 +94,8 @@ public class TableFormulaBuilder {
 		return null;
 	}
 	
-	private static FunctionDefinitionLibrary buildFunctionLib(DependencyInjector injector, ExecutionReport report){
-		FunctionDefinitionLibrary lib = new FunctionDefinitionLibrary();
+	private static FunctionDefinitionLibrary buildFunctionLib(ODLApi api,DependencyInjector injector, ExecutionReport report){
+		FunctionDefinitionLibrary lib = new FunctionDefinitionLibrary(FunctionDefinitionLibrary.DEFAULT_LIB);
 		lib.addStandardFunction(Shapefile.class, "shapefile", "Load the shapefile", "filename");
 		lib.addStandardFunction(EmptyTable.class, EmptyTable.KEYWORD, "Create a table with no columns and blank rows", "tablename", "rowcount");
 		
@@ -90,9 +117,17 @@ public class TableFormulaBuilder {
 		shapefileDfn.addVarArgs("fieldDefinition", ArgumentType.STRING_CONSTANT, "One or more field definitions in the form TYPE FIELDNAME=FUNCTION.");
 		shapefileDfn.setFactory(createLinkTableToShapefileFunctionFactory(injector, report));
 		lib.add(shapefileDfn);
+		
+		FunctionDefinition importDefn = new FunctionDefinition("import");
+		importDefn.setDescription("Import the XLS, tab-separated text file or shapefile, optionally caching.");
+		importDefn.addArg("filename");
+		importDefn.addArg("cache", "Should the file be cached (true or false).");
+		importDefn.setFactory(createImporterFunctionFactory(api, true));
+		lib.add(importDefn);
 		return lib;
 	}
 
+	
 	private static final Pattern FETCH_PARAM_PATTERN =  Pattern.compile("\\s*(\\w+)\\s+(\\w+)\\s*=(.*)", Pattern.CASE_INSENSITIVE|Pattern.MULTILINE);
 	
 	private static final StandardisedStringTreeMap<ODLColumnType> STD_TYPE_IDENTIFIER;
@@ -134,6 +169,108 @@ public class TableFormulaBuilder {
 	}
 	
 	private static final String LinkTableToShapefileFunctionName = "linkTableToShapefile";
+	
+	private static FunctionFactory createImporterFunctionFactory(ODLApi api, boolean cacheOption){
+		return new FunctionFactory() {
+			
+			@Override
+			public Function createFunction(Function... children) {
+	
+				class ImportFunction extends FunctionImpl implements DatastoreFormula{
+					public ImportFunction(Function filename, Function cache) {
+						super(filename,cache);
+					}
+					
+					@Override
+					public Object execute(FunctionParameters parameters) {
+						Object file = child(0).execute(parameters);
+						if(file == Functions.EXECUTION_ERROR){
+							return Functions.EXECUTION_ERROR;
+						}
+						
+						String sFile =(String) ColumnValueProcessor.convertToMe(ODLColumnType.STRING, file);
+						if(sFile==null){
+							return null;
+						}
+	
+						// see if we should use the cache
+						boolean useCache=false;
+						if(cacheOption){
+							Object oCache = child(1).execute(parameters);
+							if(oCache == Functions.EXECUTION_ERROR){
+								return Functions.EXECUTION_ERROR;
+							}
+							Long l = (Long)ColumnValueProcessor.convertToMe(ODLColumnType.LONG, oCache);
+							if(l!=null && l==1){
+								useCache = true;
+							}
+						}
+
+						// try to get from cache if used
+						RecentlyUsedCache myCache = ApplicationCache.singleton().get(ApplicationCache.FUNCTION_IMPORTED_DATASTORES);
+						if(useCache){
+							Object value = myCache.get(sFile);
+							if(value!=null){
+								return value;
+							}
+						}
+						
+						// load...
+						ExecutionReport tmpReport = new ExecutionReportImpl();
+						ODLDatastoreAlterable<? extends ODLTableAlterable> imported = api.io().importFile(new File(sFile), new ProcessingApi() {
+							
+							@Override
+							public ODLApi getApi() {
+								return api;
+							}
+							
+							@Override
+							public boolean isFinishNow() {
+								// TODO Auto-generated method stub
+								return false;
+							}
+							
+							@Override
+							public boolean isCancelled() {
+								// TODO Auto-generated method stub
+								return false;
+							}
+							
+							@Override
+							public void postStatusMessage(String s) {
+								// TODO Auto-generated method stub
+								
+							}
+							
+							@Override
+							public void logWarning(String warning) {
+								// TODO Auto-generated method stub
+								
+							}
+						}, tmpReport);
+						
+						if(tmpReport.isFailed() || imported==null){
+							return null;
+						}
+						
+						if(useCache){
+							long bytes=SizesInBytesEstimator.estimateBytes(imported);
+							myCache.put(sFile, imported, bytes);
+						}
+						
+						return imported;
+					}
+					
+					@Override
+					public Function deepCopy() {
+						throw new UnsupportedOperationException();
+					}
+				};
+				
+				return new ImportFunction(children[0],children[1]);
+			}
+		};
+	}
 	
 	private static FunctionFactory createLinkTableToShapefileFunctionFactory(DependencyInjector injector,ExecutionReport report) {
 		// Function type is linktabletoshapefile(filename, filelinkfield, tablename, tablelinkfield, , fieldmap1, fieldmap2, fieldmap3 )

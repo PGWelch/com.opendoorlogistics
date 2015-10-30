@@ -243,8 +243,12 @@ final public class DatastoreCopier {
 	public static ODLTableAlterable copyTable(ODLTableReadOnly copyThis, ODLDatastoreAlterable<? extends ODLTableAlterable> copyInto){
 		return copyTable(copyThis, copyInto, copyThis.getName());
 	}
-	
+
 	public static void copyData(ODLTableReadOnly tFrom, ODLTable tTo){
+		copyData(tFrom, tTo, true);
+	}
+	
+	public static void copyData(ODLTableReadOnly tFrom, ODLTable tTo, boolean copyRowFlags){
 			
 		if(!DatastoreComparer.isSameStructure(tFrom, tTo, 0)){
 			throw unequalStructureException();
@@ -252,7 +256,7 @@ final public class DatastoreCopier {
 
 		int nr = tFrom.getRowCount();
 		for(int srcRow =0 ; srcRow < nr ; srcRow++){
-			insertRow(tFrom, srcRow, tTo, tTo.getRowCount());
+			insertRow(tFrom, srcRow, tTo, tTo.getRowCount(),copyRowFlags);
 		}
 			
 	}
@@ -316,12 +320,19 @@ final public class DatastoreCopier {
 	
 
 	public static void insertRow(ODLTableReadOnly tFrom,int fromRow, ODLTable tTo, int toRow){
+		insertRow(tFrom, fromRow, tTo, toRow, true);
+	}
+	
+	public static void insertRow(ODLTableReadOnly tFrom,int fromRow, ODLTable tTo, int toRow, boolean copyRowFlags){
 		// use original id if available
 		long id = tFrom.getRowId(fromRow);
 		
 		// copy row flags but strip selection state and linked excel flags
-		long flags =removeLinkedExcelFlags(tFrom.getRowFlags(id));
-		flags &= ~TableFlags.FLAG_ROW_SELECTED_IN_MAP;
+		long flags =0;
+		if(copyRowFlags){
+			flags =removeLinkedExcelFlags(tFrom.getRowFlags(id));
+			flags &= ~TableFlags.FLAG_ROW_SELECTED_IN_MAP;			
+		}
 				
 		if(tTo.containsRowId(id)){
 			id = -1;
@@ -334,8 +345,10 @@ final public class DatastoreCopier {
 		}
 		
 		// Set flags
-		id = tTo.getRowId(toRow);
-		tTo.setRowFlags(id, flags);	
+		if(copyRowFlags){
+			id = tTo.getRowId(toRow);
+			tTo.setRowFlags(id, flags);				
+		}
 	}
 
 	public static void copyRowById(ODLTableReadOnly tFrom,long fromRowId, ODLTable tTo){

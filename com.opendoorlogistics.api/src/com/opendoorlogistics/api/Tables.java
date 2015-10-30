@@ -13,6 +13,7 @@ import java.util.Set;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLFlatDatastore;
 import com.opendoorlogistics.api.tables.ODLFlatDatastoreExt;
 import com.opendoorlogistics.api.tables.ODLTable;
@@ -202,7 +203,7 @@ public interface Tables {
 	 * @param flatDatastore
 	 * @return
 	 */
-	ODLDatastoreAlterable<ODLTableAlterable> unflattenDs(ODLFlatDatastoreExt flatDatastore);
+	ODLDatastoreUndoable<ODLTableAlterable> unflattenDs(ODLFlatDatastoreExt flatDatastore);
 	
 	BeanTableMapping mapBeanToTable(Class<? extends BeanMappedRow> cls);
 	

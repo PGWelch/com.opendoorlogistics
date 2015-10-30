@@ -166,7 +166,7 @@ final public class AdapterBuilder {
 		if(id!=null){
 			String formula = AdapterBuilderUtils.getFormulaFromText(id);
 			if(formula!=null){
-				ODLDatastore<? extends ODLTable> importedDs = TableFormulaBuilder.build(formula,new DependencyInjector() {
+				ODLDatastore<? extends ODLTable> importedDs = TableFormulaBuilder.executeTableFormula(formula,api,new DependencyInjector() {
 					
 					@Override
 					public ODLDatastore<? extends ODLTable> buildAdapter(AdapterConfig config) {
@@ -450,7 +450,7 @@ final public class AdapterBuilder {
 		// 7th Feb 2015. True 2-way union decorators create an issue in group-bys as rowids aren't unique.
 		// We therefore just copy the union result over to a different table.
 		ODLDatastoreAlterable<ODLTableAlterable> ret = mapToNewEmptyTable(destinationTableId, destDfn);
-		DatastoreCopier.copyData(union.getTableAt(0), ret.getTableAt(0));
+		DatastoreCopier.copyData(union.getTableAt(0), ret.getTableAt(0),false);
 
 	}
 
@@ -1218,7 +1218,7 @@ final public class AdapterBuilder {
 
 			// clear original table and copy sorted data back over
 			TableUtils.removeAllRows(groupedTable);
-			DatastoreCopier.copyData(tmpTable, groupedTable);
+			DatastoreCopier.copyData(tmpTable, groupedTable,false);
 		}
 
 		// Finally we need a dummy mapping to directly read the create table from the output adapter

@@ -3,6 +3,7 @@ package com.opendoorlogistics.studio.appframe;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.core.tables.io.TableIOUtils;
@@ -15,7 +16,7 @@ import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
  */
 public interface NewDatastoreProvider {
 	String name();
-	ODLDatastoreAlterable<? extends ODLTableAlterable> create();
+	ODLDatastoreAlterable<? extends ODLTableAlterable> create(ODLApi api);
 	
 	public static List<NewDatastoreProvider> createDefaults(){
 		ArrayList<NewDatastoreProvider> ret = new ArrayList<NewDatastoreProvider>();
@@ -28,7 +29,7 @@ public interface NewDatastoreProvider {
 			}
 			
 			@Override
-			public ODLDatastoreAlterable<? extends ODLTableAlterable> create() {
+			public ODLDatastoreAlterable<? extends ODLTableAlterable> create(ODLApi api) {
 				return ODLDatastoreImpl.alterableFactory.create();
 			}
 		});
@@ -44,7 +45,7 @@ public interface NewDatastoreProvider {
 				}
 				
 				@Override
-				public ODLDatastoreAlterable<? extends ODLTableAlterable> create() {
+				public ODLDatastoreAlterable<? extends ODLTableAlterable> create(ODLApi api) {
 					return TableIOUtils.importExampleDatastore(exampleDs + ".xlsx", null);
 				}
 			});

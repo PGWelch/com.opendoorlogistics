@@ -58,9 +58,12 @@ public class TableActivePanel<T extends BeanMappedRow> extends JPanel implements
 	public TableActivePanel(BeanMappingInfo<T> bmi, BeanEditorFactory<T> editorFactory) {
 
 		setLayout(new BorderLayout());
-
+		
 		this.bmi = bmi;
 		this.editorFactory = editorFactory;
+
+		// update the adapter first of all so we have a full table for the column packer to work on.. 
+		updateAdapter();
 
 		Component header = editorFactory.createTableHeader();
 		if(header!=null){
@@ -122,9 +125,7 @@ public class TableActivePanel<T extends BeanMappedRow> extends JPanel implements
 			toolBar.add(action);
 			popup.add(action);
 		}
-
-		updateAdapter();
-
+		
 		updateEnabledActions();
 	}
 	

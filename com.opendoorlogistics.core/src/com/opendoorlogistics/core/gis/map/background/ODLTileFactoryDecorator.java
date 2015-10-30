@@ -93,7 +93,9 @@ public class ODLTileFactoryDecorator implements ODLTileFactory{
 	}
 
 	public BufferedImage renderSynchronously(int x, int y, int zoom) {
-		return factory.renderSynchronously(x, y, zoom);
+		// get the image and apply the fade
+		BufferedImage img= factory.renderSynchronously(x, y, zoom);
+		return img!=null ? BackgroundMapUtils.fadeWithGreyscale(img, fadeConfig):null;
 	}
 	
 }

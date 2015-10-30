@@ -9,7 +9,7 @@ public class DatastoreManagerGlobalPlugin {
 	private static DatastoreManagerPlugin PLUGIN;
 	
 	static{
-		DatastoreManagerPlugin plugin=null;
+
 		List<DatastoreManagerPlugin> plugins = new ODLApiImpl().loadPlugins(DatastoreManagerPlugin.class);
 		if(plugins!=null){
 			if(plugins.size()==1){
@@ -18,8 +18,7 @@ public class DatastoreManagerGlobalPlugin {
 				throw new RuntimeException("More than one " + DatastoreManagerPlugin.class.getName() + " loaded on startup.");
 			}
 		}
-		
-		PLUGIN = plugin;
+
 	}
 	
 	public static DatastoreManagerPlugin getPlugin(){

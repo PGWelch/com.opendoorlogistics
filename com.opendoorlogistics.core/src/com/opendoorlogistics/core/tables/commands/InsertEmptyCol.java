@@ -18,22 +18,22 @@ final public class InsertEmptyCol extends Command{
 	private final ODLColumnType type;
 	private final long flags;
 	private final boolean allowDuplicateNames;
-	private final String description;
+	//private final String description;
 	
-	public InsertEmptyCol(int tableId,int id, int col,String name, ODLColumnType type, long flags,String description, boolean allowDuplicateNames) {
+	public InsertEmptyCol(int tableId,int id, int col,String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
 		super(tableId);
 		this.id = id;
 		this.col = col;
 		this.name = name;
 		this.type = type;
 		this.flags = flags;
-		this.description = description;
+		//this.description = description;
 		this.allowDuplicateNames = allowDuplicateNames;
 	}
 
 	@Override
 	public long calculateEstimateSizeBytes() {
-		return 12 + 4 + 4 + getEstimatedObjectMemoryFootprintBytes(name) + 4 + 8 + 4 + getEstimatedObjectMemoryFootprintBytes(description);
+		return 12 + 4 + 4 + getEstimatedObjectMemoryFootprintBytes(name) + 4 + 8 + 4 ;
 	}
 	
 	@Override
@@ -44,7 +44,6 @@ final public class InsertEmptyCol extends Command{
 		}
 		
 		if(table.insertColumn(id,col, name, type, flags,allowDuplicateNames)){
-			table.setColumnDescription(col, description);
 			return new DeleteEmptyCol(tableId, col); 			
 		}
 		return null;

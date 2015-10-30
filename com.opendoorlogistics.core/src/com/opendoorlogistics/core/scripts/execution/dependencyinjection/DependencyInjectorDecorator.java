@@ -6,6 +6,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.scripts.execution.dependencyinjection;
 
+import java.awt.Dimension;
+
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.ODLApi;
@@ -68,5 +70,10 @@ public class DependencyInjectorDecorator extends ProcessingApiDecorator implemen
 	@Override
 	public ODLGeom calculateRouteGeom(DistancesConfiguration request, LatLong from, LatLong to) {
 		return ((DependencyInjector)decorated).calculateRouteGeom(request, from,to);
+	}
+
+	@Override
+	public ModalDialogResult showModalPanel(JPanel panel, String title, Dimension minSize, ModalDialogResult... buttons) {
+		return ((DependencyInjector)decorated).showModalPanel(panel, title,minSize,buttons);
 	}
 }

@@ -69,4 +69,9 @@ public class IOImpl implements IO{
 		return null;
 	}
 
+	@Override
+	public String normalisePath(String s) {
+		return FilenameUtils.normalize(s);
+	}
+
 }

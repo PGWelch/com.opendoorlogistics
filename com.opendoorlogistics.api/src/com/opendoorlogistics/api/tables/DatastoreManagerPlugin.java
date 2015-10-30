@@ -16,7 +16,7 @@ import com.opendoorlogistics.api.components.ProcessingApi;
 public interface DatastoreManagerPlugin  extends net.xeoh.plugins.base.Plugin , ODLAppInitListener{
 	int getPriority();
 	
-	ProcessDatastoreResult processNewDatastore(File datastoreFileLocation,ODLDatastoreAlterable<? extends ODLTableAlterable> datastore,ProcessingApi processingApi, ExecutionReport report);
+	ProcessDatastoreResult processNewDatastore(File datastoreFileLocation,ODLDatastoreUndoable<? extends ODLTableAlterable> datastore,ProcessingApi processingApi, ExecutionReport report);
 	
 	/**
 	 * For a datastore which is wrapped by the plugin, get the datastore which should be saved to a file
@@ -27,7 +27,7 @@ public interface DatastoreManagerPlugin  extends net.xeoh.plugins.base.Plugin , 
 	
 	
 	public interface ProcessDatastoreResult{
-		ODLDatastoreAlterable<? extends ODLTableAlterable> getDs();
+		ODLDatastoreUndoable<? extends ODLTableAlterable> getDs();
 		DatastoreManagerPluginState getState();
 	}
 	

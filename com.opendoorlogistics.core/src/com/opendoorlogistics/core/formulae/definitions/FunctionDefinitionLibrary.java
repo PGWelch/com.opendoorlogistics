@@ -26,6 +26,7 @@ import com.opendoorlogistics.core.formulae.FunctionUtils;
 import com.opendoorlogistics.core.formulae.Functions.FmAbs;
 import com.opendoorlogistics.core.formulae.Functions.FmAcos;
 import com.opendoorlogistics.core.formulae.Functions.FmAnd;
+import com.opendoorlogistics.core.formulae.Functions.FmAppProperty;
 import com.opendoorlogistics.core.formulae.Functions.FmAsin;
 import com.opendoorlogistics.core.formulae.Functions.FmAtan;
 import com.opendoorlogistics.core.formulae.Functions.FmBitwiseOr;
@@ -199,6 +200,8 @@ public final class FunctionDefinitionLibrary {
 			addStandardFunction(FmColour.class, spelling,"Create a colour object from red, green, blue and alpha (transparency) values in the range 0 to 1.", "red", "green", "blue", "alpha");			
 			addStandardFunction(FmColourImage.class,spelling +  "image", "Apply the colour filter to the image. All non-transparent pixels are linearly interpolated (lerped) between their original colour and the input colour, according to the lerp fraction.", "image", "colour", "lerpFraction");
 		}
+		
+		addStandardFunction(FmAppProperty.class, "property", "Retrieve an application property from the application's properties file. Property is returned as a string.", "propertykey");
 		addStandardFunction(FmFadeImage.class, "fadeimage", "Fade the image, making it transparent by multiplying its alpha channel by the fade value.", "image", "fadevalue");
 		addStandardFunction(FmRandColour.class, "randcolor", "Create a random colour based on the input value.","seed_value");
 		addStandardFunction(FmRandColour.class, "randcolour", "Create a random colour based on the input value.","seed_value");

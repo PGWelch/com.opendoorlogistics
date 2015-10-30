@@ -56,9 +56,9 @@ import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.tables.DatastoreManagerPlugin;
 import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.DatastoreManagerPluginState;
 import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.ProcessDatastoreResult;
+import com.opendoorlogistics.api.tables.HasUndoStateListeners.UndoStateChangedListener;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
-import com.opendoorlogistics.api.tables.ODLDatastoreUndoable.UndoStateChangedListener;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
@@ -75,8 +75,6 @@ import com.opendoorlogistics.core.scripts.ScriptsProvider;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.tables.DatastoreManagerGlobalPlugin;
-import com.opendoorlogistics.core.tables.beans.BeanMapping;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.core.tables.decorators.datastores.DataUpdaterDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.deepcopying.OptimisedDeepCopierDecorator;
@@ -86,7 +84,6 @@ import com.opendoorlogistics.core.utils.IOUtils;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.TextInformationDialog;
-import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.studio.DatastoreTablesPanel;
 import com.opendoorlogistics.studio.DropFileImporterListener;
 import com.opendoorlogistics.studio.InitialiseStudio;
@@ -96,7 +93,6 @@ import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
 import com.opendoorlogistics.studio.controls.buttontable.ButtonTableDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog.OnFinishedSwingThreadCB;
-import com.opendoorlogistics.studio.internalframes.ODLInternalFrame;
 import com.opendoorlogistics.studio.internalframes.ProgressFrame;
 import com.opendoorlogistics.studio.panels.ProgressPanel;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
@@ -106,7 +102,6 @@ import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManagerImpl;
 import com.opendoorlogistics.studio.scripts.list.ScriptNode;
 import com.opendoorlogistics.studio.scripts.list.ScriptsPanel;
-import com.opendoorlogistics.studio.tables.custom.CustomTableEditor;
 import com.opendoorlogistics.studio.tables.custom.CustomTableEditorFrame;
 import com.opendoorlogistics.studio.tables.grid.ODLGridFrame;
 import com.opendoorlogistics.studio.tables.schema.TableSchemaEditor;
@@ -971,20 +966,10 @@ public class AppFrame extends DesktopAppFrame  {
 		if (ODLDatastoreImpl.class.isInstance(ds) == false) {
 			throw new RuntimeException();
 		}
-
+	
 		// wrap in the decorator that allows lazy deep copying first of all
 		ds = new OptimisedDeepCopierDecorator<>(ds);
-		
-		DatastoreManagerPlugin plugin = DatastoreManagerGlobalPlugin.getPlugin();
-		if(plugin!=null && ds!=null && papi!=null && report!=null){
-			ProcessDatastoreResult pdr = plugin.processNewDatastore(file, ds, papi, report);
-			ds = pdr.getDs();
-			
-			if(dsmps!=null && dsmps.length>0){
-				dsmps[0]=pdr.getState();
-			}
-		}					
-		
+							
 		// wrap in listener decorator
 		ds = new ListenerDecorator<ODLTableAlterable>(ODLTableAlterable.class, ds);
 		
@@ -994,6 +979,23 @@ public class AppFrame extends DesktopAppFrame  {
 		// then a data updater decorator automatically calls any data updater options in all loaded scripts
 		// whenever the datastore is modified in a transaction.
 		ret = new DataUpdaterDecorator(getApi(), ret, this);
+		
+		// finally any plugin logic
+		DatastoreManagerPlugin plugin = DatastoreManagerGlobalPlugin.getPlugin();
+		if(plugin!=null && ds!=null && papi!=null && report!=null){
+			ProcessDatastoreResult pdr = plugin.processNewDatastore(file, ret, papi, report);
+			if(report.isFailed()){
+				return null;
+			}
+			ret = pdr.getDs();
+			
+			if(dsmps!=null && dsmps.length>0){
+				dsmps[0]=pdr.getState();
+			}
+			
+			// ensure any changes not added to undo redo buffer as don't want them unable
+			ret.clearUndoBuffer();
+		}
 		return ret;
 	}
 

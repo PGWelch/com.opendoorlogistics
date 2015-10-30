@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.scripts.execution;
 
+import java.awt.Dimension;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -274,7 +275,7 @@ final public class ScriptExecutor {
 			ODLTable tableToUse = overrideTable != null ? overrideTable : paramTable;
 			if (factory.hasModalParameters(api, tableToUse, valuesTable)) {
 				JPanel panel = factory.createModalPanel(api, tableToUse, valuesTable);
-				ModalDialogResult mdr = internalExecutionApi.showModalPanel(panel, "Select parameter(s)", ModalDialogResult.OK, ModalDialogResult.CANCEL);
+				ModalDialogResult mdr = internalExecutionApi.showModalPanel(panel, "Select parameter(s)", new Dimension(400, 0),ModalDialogResult.OK, ModalDialogResult.CANCEL);
 				if (mdr == ModalDialogResult.CANCEL) {
 					return false;
 				}

@@ -10,6 +10,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 
 import net.xeoh.plugins.base.Plugin;
 import net.xeoh.plugins.base.PluginManager;
@@ -23,10 +25,12 @@ import com.opendoorlogistics.api.StandardComponents;
 import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.Values;
+import com.opendoorlogistics.api.app.ODLAppProperties;
 import com.opendoorlogistics.api.components.ODLComponentProvider;
 import com.opendoorlogistics.api.geometry.Geometry;
 import com.opendoorlogistics.api.scripts.Scripts;
 import com.opendoorlogistics.api.ui.UIFactory;
+import com.opendoorlogistics.core.AppProperties;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptsImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 
@@ -138,6 +142,55 @@ public class ODLApiImpl implements ODLApi{
 			ret.addAll(plugins);
 		}
 		return ret;
+	}
+
+	@Override
+	public ODLAppProperties properties() {
+		return new ODLAppProperties(){
+
+
+			@Override
+			public Double getDouble(String key) {
+				return AppProperties.getDouble(key);
+			}
+
+			@Override
+			public Double getDouble(String key, double defaultValueIfKeyMissing) {
+				return AppProperties.getDouble(key, defaultValueIfKeyMissing);
+			}
+
+			@Override
+			public String getString(String key) {
+				return AppProperties.getString(key);
+			}
+
+			@Override
+			public void add(Properties properties) {
+				AppProperties.add(properties);
+			}
+
+			@Override
+			public Boolean getBool(String key) {
+				return AppProperties.getBool(key);
+			}
+
+			@Override
+			public Set<String> getKeys() {
+				return AppProperties.getKeys();
+			}
+
+			@Override
+			public void put(String key, Object value) {
+				AppProperties.put(key,value);
+			}
+
+			@Override
+			public boolean isTrue(String key) {
+				Boolean b = getBool(key);
+				return b!=null && b;
+			}
+			
+		};
 	}
 
 

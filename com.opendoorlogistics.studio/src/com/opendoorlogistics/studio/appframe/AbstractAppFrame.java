@@ -1,5 +1,6 @@
 package com.opendoorlogistics.studio.appframe;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 
 import javax.swing.JComponent;
@@ -62,4 +63,6 @@ public abstract class AbstractAppFrame extends JFrame implements HasInternalFram
 	}
 
 	public abstract AppPermissions getAppPermissions();
+	
+	public abstract BufferedImage getBackgroundImage();
 }

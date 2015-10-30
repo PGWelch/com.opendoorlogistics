@@ -3,27 +3,18 @@ package com.opendoorlogistics.studio.appframe;
 import java.io.File;
 import java.util.concurrent.Callable;
 
-import javax.swing.JOptionPane;
-
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.io.ImportFileType;
-import com.opendoorlogistics.api.tables.DatastoreManagerPlugin;
 import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.DatastoreManagerPluginState;
-import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.ProcessDatastoreResult;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
-import com.opendoorlogistics.core.tables.DatastoreManagerGlobalPlugin;
-import com.opendoorlogistics.core.tables.decorators.datastores.DataUpdaterDecorator;
-import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
-import com.opendoorlogistics.core.tables.decorators.datastores.deepcopying.OptimisedDeepCopierDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.io.PoiIO;
 import com.opendoorlogistics.core.tables.io.TableIOUtils;
-import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.studio.PreferencesManager;
@@ -44,7 +35,7 @@ public class DatastoreLoader {
 	private final NewDatastoreProvider ndp;
 	private final ImportFileType importOption;
 	private final boolean hadDsOnStart;
-	private DatastoreManagerPluginState dmps;
+	private DatastoreManagerPluginState datastoreMgrPluginState;
 
 	private DatastoreLoader(AppFrame appFrame, LoadType loadType, File file, NewDatastoreProvider ndp, ImportFileType importOption) {
 		this.appFrame = appFrame;
@@ -120,7 +111,7 @@ public class DatastoreLoader {
 				return PoiIO.importExcel(file, papi, report);
 
 			case NDP:
-				return ndp.create();
+				return ndp.create(papi.getApi());
 
 			case IMPORT:
 				return TableIOUtils.importFile(file, importOption,papi,report);
@@ -148,7 +139,7 @@ public class DatastoreLoader {
 			}	
 			else{
 				// set as datastore
-				appFrame.setDecoratedDatastore(result,dmps, null);
+				appFrame.setDecoratedDatastore(result,datastoreMgrPluginState, null);
 				
 			}
 		}
@@ -172,7 +163,7 @@ public class DatastoreLoader {
 		}
 		
 		if(!report.isFailed()){
-			appFrame.setDecoratedDatastore(result,dmps, file);
+			appFrame.setDecoratedDatastore(result,datastoreMgrPluginState, file);
 			PreferencesManager.getSingleton().addRecentFile(file);
 			PreferencesManager.getSingleton().setDirectory(PrefKey.LAST_IO_DIR, file);	
 			
@@ -190,7 +181,7 @@ public class DatastoreLoader {
 		}
 		
 		if(!report.isFailed()){
-			appFrame.setDecoratedDatastore(result,dmps, null);
+			appFrame.setDecoratedDatastore(result,datastoreMgrPluginState, null);
 			if(report.size()>0){
 				ExecutionReportDialog.show(appFrame, "Warning when creating datastore", report);				
 			}
@@ -201,12 +192,14 @@ public class DatastoreLoader {
 	
 	private ODLDatastoreUndoable<? extends ODLTableAlterable> postProcessNewDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> ds, ProcessingApi papi) {
 		try{
+			// Are we completely replacing the DS (in which case we need to decorate it with extra functionality),
+			// or just importing into an existing DS (so no need to decorated again)?
 			boolean replacingDs = !(loadType == LoadType.IMPORT && hadDsOnStart);
 			ODLDatastoreUndoable<? extends ODLTableAlterable> ret=null;
 			if(replacingDs){	
 				DatastoreManagerPluginState [] tmpArr = new DatastoreManagerPluginState[1];
 				ret =appFrame.decorateNewDatastore(ds, file, papi,tmpArr, report);
-				dmps = tmpArr[0];
+				datastoreMgrPluginState = tmpArr[0];
 									
 			}else{
 				// just wrap in the undo / redo so we have the correct return type

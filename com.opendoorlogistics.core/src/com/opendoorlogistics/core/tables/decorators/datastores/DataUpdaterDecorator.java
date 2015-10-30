@@ -8,6 +8,7 @@ package com.opendoorlogistics.core.tables.decorators.datastores;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.tables.HasUndoStateListeners;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.core.scripts.ScriptsProvider.HasScriptsProvider;
@@ -83,13 +84,18 @@ public class DataUpdaterDecorator extends SimpleDecorator<ODLTableAlterable> imp
 	}
 
 	@Override
-	public void addUndoStateListener(ODLDatastoreUndoable.UndoStateChangedListener<ODLTableAlterable> listener) {
+	public void addUndoStateListener(HasUndoStateListeners.UndoStateChangedListener< ODLTableAlterable> listener) {
 		undoable().addUndoStateListener(listener);
 	}
 
 	@Override
-	public void removeUndoStateListener(ODLDatastoreUndoable.UndoStateChangedListener< ODLTableAlterable> listener) {
+	public void removeUndoStateListener(HasUndoStateListeners.UndoStateChangedListener< ODLTableAlterable> listener) {
 		undoable().removeUndoStateListener(listener);
+	}
+
+	@Override
+	public void clearUndoBuffer() {
+		undoable().clearUndoBuffer();
 	}
 
 }

@@ -101,7 +101,7 @@ public class CHMatrixGeneration implements Disposable {
 	}
 
 	private static GraphHopper createHopper(){
-		String config = AppProperties.getValue("graphhopper.config");
+		String config = AppProperties.getString("graphhopper.config");
 		GraphHopper ret = null;
 		if(Strings.equalsStd(config, "mobile")){
 			ret = new GraphHopper().forMobile();

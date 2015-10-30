@@ -14,9 +14,11 @@ import java.util.Set;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.Tables;
+import com.opendoorlogistics.api.tables.HasUndoStateListeners;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLFlatDatastoreExt;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
@@ -259,10 +261,10 @@ public class TablesImpl implements Tables {
 	}
 
 	@Override
-	public ODLDatastoreAlterable<ODLTableAlterable> unflattenDs(ODLFlatDatastoreExt flatDatastore) {
+	public ODLDatastoreUndoable<ODLTableAlterable> unflattenDs(ODLFlatDatastoreExt flatDatastore) {
 		FlatDs2TableObject.Flat2DsTableCache tableCache = new FlatDs2TableObject.Flat2DsTableCache(flatDatastore);
 
-		return new ODLDatastoreAlterable<ODLTableAlterable>() {
+		return new ODLDatastoreUndoable<ODLTableAlterable>() {
 
 			@Override
 			public ODLTableAlterable getTableByImmutableId(int id) {
@@ -276,8 +278,7 @@ public class TablesImpl implements Tables {
 
 			@Override
 			public ODLDatastoreAlterable<? extends ODLTableAlterable> deepCopyWithShallowValueCopy(boolean createLazyCopy) {
-				ODLFlatDatastoreExt copy = flatDatastore.deepCopyWithShallowValueCopy(createLazyCopy);
-				return unflattenDs(copy);
+				return flatDatastore.deepCopyWithShallowValueCopy(createLazyCopy);
 			}
 
 			@Override
@@ -359,6 +360,41 @@ public class TablesImpl implements Tables {
 			public boolean setTableName(int tableId, String newName) {
 				return flatDatastore.setTableName(tableId, newName);
 			}
+
+			@Override
+			public void undo() {
+				flatDatastore.undo();
+			}
+
+			@Override
+			public void redo() {
+				flatDatastore.redo();
+			}
+
+			@Override
+			public boolean hasRedo() {
+				return flatDatastore.hasRedo();
+			}
+
+			@Override
+			public boolean hasUndo() {
+				return flatDatastore.hasUndo();
+			}
+
+			@Override
+			public void addUndoStateListener(HasUndoStateListeners.UndoStateChangedListener<ODLTableAlterable> listener) {
+				flatDatastore.addUndoStateListener(listener);
+			}
+
+			@Override
+			public void removeUndoStateListener(HasUndoStateListeners.UndoStateChangedListener<ODLTableAlterable> listener) {
+				flatDatastore.removeUndoStateListener(listener);
+			}
+
+			@Override
+			public void clearUndoBuffer() {
+				flatDatastore.clearUndoBuffer();
+			}
 		};
 	}
 
@@ -398,7 +434,7 @@ public class TablesImpl implements Tables {
 				table.setColumnFlags(col, table.getColumnFlags(col) & ~TableFlags.ALL_LINKED_EXCEL_FLAGS);
 			}
 			
-			// The row flags
+			// Then row flags
 			for(int row =0 ; row < table.getRowCount() ; row++){
 				long id = table.getRowId(row);
 				table.setRowFlags(table.getRowFlags(id) & ~TableFlags.ALL_LINKED_EXCEL_FLAGS, id);
@@ -426,7 +462,8 @@ public class TablesImpl implements Tables {
 			// preserve column flags
 			int nc = tableToCopy.getColumnCount();
 			for(int col=0;col < nc ; col++){
-				copiedTable.setColumnFlags(col, tableToCopy.getColumnFlags(col));
+				long colFlags = tableToCopy.getColumnFlags(col);
+				copiedTable.setColumnFlags(col, colFlags);
 			}
 			
 			// preserve the row flags we're told to...

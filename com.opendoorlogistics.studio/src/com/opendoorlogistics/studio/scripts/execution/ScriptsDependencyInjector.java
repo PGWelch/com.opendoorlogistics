@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.studio.scripts.execution;
 
+import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,9 +68,17 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 	}
 
 	@Override
-	public ModalDialogResult showModalPanel(JPanel panel, String title, ModalDialogResult... buttons) {
+	public ModalDialogResult showModalPanel(JPanel panel, String title, Dimension minSize, ModalDialogResult... buttons) {
 		ModalDialog md = new ModalDialog(appFrame, panel, title, buttons);
+		if(minSize!=null){
+			md.setMinimumSize(minSize);
+		}
 		return showModal(md);
+	}
+	
+	@Override
+	public ModalDialogResult showModalPanel(JPanel panel, String title, ModalDialogResult... buttons) {
+		return showModalPanel(panel, title, null, buttons);
 	}
 
 	@Override

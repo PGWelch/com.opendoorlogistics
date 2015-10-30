@@ -37,6 +37,7 @@ import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImp
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
+import com.opendoorlogistics.core.scripts.utils.ScriptUtils.OptionVisitor;
 import com.opendoorlogistics.core.tables.concurrency.MergeBranchedDatastore;
 import com.opendoorlogistics.core.tables.concurrency.WriteRecorderDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.SimpleDecorator;
@@ -83,6 +84,32 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 	
 	@Override
 	protected String getProgressTitle(){
+		// get option name if this is a multi-option script and we're running a single option
+		String optionName=null;
+		if(api.properties().isTrue("scripts.progressbar.title.useoptionname") && unfiltered!=null && optionIds!=null && optionIds.length==1 && optionIds[0]!=null){
+			class OptionCount implements OptionVisitor{
+				int count=0;
+				String foundName;
+				@Override
+				public boolean visitOption(Option parent, Option option, int depth) {
+					if(api.stringConventions().equalStandardised(option.getOptionId(), optionIds[0])){
+						foundName = option.getName();
+					}
+					count++;
+					return true;
+				}				
+			}
+			OptionCount counter = new OptionCount();
+			ScriptUtils.visitOptions(unfiltered, counter);
+			if(counter.count>1){
+				optionName = counter.foundName;
+			}
+		}
+		
+		if(optionName!=null){
+			return optionName;
+		}
+		
 		String title = Strings.isEmpty(scriptName) == false ? "Running " + scriptName : "Running script";
 		return title;
 	}
@@ -414,26 +441,36 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 					frame.toFront();
 					frames.add(frame);
 				} else {
-					// window title is (a) name given by component, (b) option name (multi option scripts only), (c) filename/scriptName
+					
+					// Get frame title
 					String frameTitle = "";
-					class Adder{
-						String add(String s1, String s2){
-							if(!Strings.isEmpty(s2)){
-								if(s1.length()>0){
-									return s1 + " - " + s2;
-								}else{
-									return s2;
-								}								
-							}
-							return s1;
+					Boolean optionNameOnly=api.properties().getBool("scripts.reports.title.optionnameonly");
+					if(optionNameOnly!=null && optionNameOnly){
+						if(option!=null && option.getName()!=null){
+							frameTitle = option.getName();
 						}
+					}else{
+						// window title is (a) name given by component, (b) option name (multi option scripts only), (c) filename/scriptName
+						class Adder{
+							String add(String s1, String s2){
+								if(!Strings.isEmpty(s2)){
+									if(s1.length()>0){
+										return s1 + " - " + s2;
+									}else{
+										return s2;
+									}								
+								}
+								return s1;
+							}
+						}
+						Adder adder = new Adder();
+						frameTitle = adder.add(frameTitle, title);
+						if(ScriptUtils.getOptionsCount(unfiltered)>1 && option!=null){
+							frameTitle = adder.add(frameTitle, option.getName());						
+						}
+						frameTitle = adder.add(frameTitle , scriptName);						
 					}
-					Adder adder = new Adder();
-					frameTitle = adder.add(frameTitle, title);
-					if(ScriptUtils.getOptionsCount(unfiltered)>1 && option!=null){
-						frameTitle = adder.add(frameTitle, option.getName());						
-					}
-					frameTitle = adder.add(frameTitle , scriptName);
+
 					
 					frame = new ReporterFrame<T>(panel, id, frameTitle,cb.getComponent(), refreshMode, appFrame.getLoadedDatastore());
 					frames.add(frame);

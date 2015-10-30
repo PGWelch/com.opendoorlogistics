@@ -490,8 +490,9 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 	@Override
 	public void setSelectedIds(long... ids) {
-		selectionState.set(ids);
-		fireSelectionChangedListeners(this);
+		if(selectionState.set(ids)){
+			fireSelectionChangedListeners(this);			
+		}
 		repaint(false);
 	}
 

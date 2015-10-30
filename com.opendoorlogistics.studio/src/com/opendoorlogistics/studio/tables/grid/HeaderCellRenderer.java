@@ -20,7 +20,7 @@ import javax.swing.table.TableCellRenderer;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 
-class HeaderCellRenderer implements TableCellRenderer, MouseListener {
+abstract class HeaderCellRenderer implements TableCellRenderer, MouseListener {
 
 
 	protected final Color disabledColour = new Color(230, 230, 230);
@@ -42,20 +42,31 @@ class HeaderCellRenderer implements TableCellRenderer, MouseListener {
 
 	@Override
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-		prepareLabel(value, isSelected,columnNameLabel);
+		prepareLabel(value, isSelected,getColumnIsItalics(column),columnNameLabel);
 		return columnNameLabel;
 	}
 
+	protected abstract boolean getColumnIsItalics(int col);
+	
 	/**
 	 * @param value
 	 * @param isSelected
 	 */
-	protected void prepareLabel(Object value, boolean isSelected, JLabel label) {
+	protected void prepareLabel(Object value, boolean isSelected,boolean italics, JLabel label) {
+		StringBuilder builder = new StringBuilder();
 		if (value != null) {
-			label.setText("<html><strong>" + StringEscapeUtils.escapeHtml4(value.toString()) + "</strong></html>");
-		} else {
-			label.setText("");
+			builder.append("<html><strong>");
+			if(italics){
+				builder.append("<em>");				
+			}
+			builder.append(StringEscapeUtils.escapeHtml4(value.toString()));
+			if(italics){
+				builder.append("</em>");				
+			}
+			builder.append("</strong></html>");
+			
 		}
+		label.setText(builder.toString());
 
 		if (isSelected) {
 			label.setBackground(selectedColour);

@@ -12,12 +12,12 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 
 final public class InsertEmptyRow extends Command{
-	final private int insertAt;
+	final private int row;
 	final private long rowId;
 	
-	public InsertEmptyRow(int tableId, int insertAt, long rowId) {
+	public InsertEmptyRow(int tableId, int row, long rowId) {
 		super(tableId);
-		this.insertAt = insertAt;
+		this.row = row;
 		this.rowId = rowId;
 	}
 
@@ -30,8 +30,8 @@ final public class InsertEmptyRow extends Command{
 		
 	//	System.out.println("Inserting row " + rowId);
 		
-		table.insertEmptyRow(insertAt,rowId);
-		return new DeleteRow(tableId, insertAt);
+		table.insertEmptyRow(row,rowId);
+		return new DeleteEmptyRow(tableId, row);
 	}
 
 	@Override

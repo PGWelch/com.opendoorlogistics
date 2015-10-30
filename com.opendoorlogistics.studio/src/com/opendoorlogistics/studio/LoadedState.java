@@ -16,7 +16,6 @@ import com.opendoorlogistics.api.app.ODLAppLoadedState;
 import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.tables.DatastoreManagerPlugin;
 import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.DatastoreManagerPluginState;
-import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.ProcessDatastoreResult;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLListener;

@@ -5,9 +5,9 @@ package com.opendoorlogistics.api.tables;
  * @author Phil
  *
  */
-public interface ODLFlatDatastoreExt extends ODLFlatDatastore {
+public interface ODLFlatDatastoreExt extends ODLFlatDatastore, Undoable ,HasUndoStateListeners<ODLTableAlterable>{
 	int getTableId(int tableIndx);
-	ODLFlatDatastoreExt deepCopyWithShallowValueCopy(boolean createLazyCopy);
+	ODLDatastoreAlterable<? extends ODLTableAlterable> deepCopyWithShallowValueCopy(boolean createLazyCopy);
 	
 	/**
 	 * Create a table

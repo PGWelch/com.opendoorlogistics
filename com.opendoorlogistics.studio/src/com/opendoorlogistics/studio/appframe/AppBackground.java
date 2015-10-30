@@ -7,9 +7,13 @@
 package com.opendoorlogistics.studio.appframe;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.TexturePaint;
 import java.awt.font.TextLayout;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
@@ -189,5 +193,20 @@ final public class AppBackground {
 
 	public int getNbRendered(){
 		return quadtree.size();
+	}
+	
+	public static void paintBackground(Component c,Graphics g,BufferedImage background){
+		Graphics2D g2d = (Graphics2D) g;
+		if (background != null) {
+			TexturePaint paint = new TexturePaint(background, new Rectangle(0, 0, background.getWidth(), background.getHeight()));
+
+			if (paint != null) {
+				g2d.setPaint(paint);
+				g2d.fill(g2d.getClip());
+			}
+		} else {
+			g2d.setColor(AppBackground.BACKGROUND_COLOUR);
+			g2d.fillRect(0, 0, (int) c.getSize().getWidth(), (int) c.getSize().getHeight());
+		}
 	}
 }

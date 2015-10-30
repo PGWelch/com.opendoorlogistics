@@ -18,6 +18,7 @@ import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -33,6 +34,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelEvent;
+import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 
 import net.sf.jasperreports.swing.JRViewer;
@@ -144,13 +146,29 @@ public class ODLGridTable extends GridTable {
 	}
 
 	private void saveColumnSizes() {
-		for (int i = 1; i < getColumnCount() && preferredColumnWidths != null && getTable() != null; i++) {
-			int width = getColumnModel().getColumn(i).getWidth();
-			int id = getTable().getColumnImmutableId(i - 1);
-			preferredColumnWidths.set(((SwingAdapter) getModel()).getTableId(), id, width);
-		}
+		saveColumnSizes(preferredColumnWidths,false);
 	}
+	
+	
+	private void saveColumnSizes(PreferredColumnWidths pcw, boolean saveCol0) {
+		if(pcw!=null && getTable()!=null){
+			
+			if(saveCol0 && getColumnCount()>0){
+				pcw.set(((SwingAdapter) getModel()).getTableId(), -1,  getColumnModel().getColumn(0).getWidth());
+			}
+			
+			for (int i = 1; i < getColumnCount(); i++) {
+				int width = getColumnModel().getColumn(i).getWidth();
+				int id = getTable().getColumnImmutableId(i - 1);
+				pcw.set(((SwingAdapter) getModel()).getTableId(), id, width);
+			}
+				
+		}
 
+
+	}
+	
+	
 	public void replaceData(ODLDatastore<? extends ODLTableReadOnly> ds, int tableId, RowStyler rowStyler) {
 
 		// update the adapter
@@ -164,50 +182,72 @@ public class ODLGridTable extends GridTable {
 
 	@Override
 	public void tableChanged(TableModelEvent e) {
+		
+		// save column widths before anything changed
+		PreferredColumnWidths tmpWidths = new PreferredColumnWidths();
+		saveColumnSizes(tmpWidths, true);
+		
 		super.tableChanged(e);
 
 		// do automatic resizing of images. Get table using the model as
 		// datastore reference not saved yet
 		if (getModel() != null && SwingAdapter.class.isInstance(getModel())) {
-			ODLTableReadOnly table = ((SwingAdapter) getModel()).getTable();
+			ODLTableReadOnly odlTable = ((SwingAdapter) getModel()).getTable();
 
-			if (table != null) {
+			if (odlTable != null) {
 				int[] minColsSizes = new int[getColumnCount()];
+				int[] maxColsSizes = new int[getColumnCount()];
+				Arrays.fill(maxColsSizes, Integer.MAX_VALUE);
 
+				// Init min and max sizes based on previous sizes..
+				int savedWidth = tmpWidths.get(odlTable.getImmutableId(), -1);
+				if(savedWidth!=-1){
+					minColsSizes[0] = savedWidth;
+					maxColsSizes[0] = savedWidth;
+				}
+				for (int i = 0; i < odlTable.getColumnCount() && (i+1)<minColsSizes.length; i++) {
+					savedWidth = tmpWidths.get(odlTable.getImmutableId(), odlTable.getColumnImmutableId(i));
+					if(savedWidth!=-1){
+						minColsSizes[i+1] = savedWidth;
+						maxColsSizes[i+1] = savedWidth;
+					}
+				}
+				
 				// get image cols
 				TIntArrayList imageCols = new TIntArrayList();
-				for (int i = 0; i < table.getColumnCount(); i++) {
-					if (table.getColumnType(i) == ODLColumnType.IMAGE) {
+				for (int i = 0; i < odlTable.getColumnCount(); i++) {
+					if (odlTable.getColumnType(i) == ODLColumnType.IMAGE) {
 						imageCols.add(i);
 					}
 				}
 
+				// get first and last changed row
 				int minRow = 0;
 				int lastRow = getRowCount() - 1;
-
-				if (e.getFirstRow() != -1 && e.getFirstRow() != Integer.MAX_VALUE && e.getFirstRow() < table.getRowCount() - 1) {
+				if (e.getFirstRow() != -1 && e.getFirstRow() != Integer.MAX_VALUE && e.getFirstRow() < odlTable.getRowCount() - 1) {
 					minRow = e.getFirstRow();
 				}
-
-				if (e.getLastRow() != -1 && e.getLastRow() != Integer.MAX_VALUE && e.getLastRow() < table.getRowCount() - 1) {
+				if (e.getLastRow() != -1 && e.getLastRow() != Integer.MAX_VALUE && e.getLastRow() < odlTable.getRowCount() - 1) {
 					lastRow = e.getLastRow();
 				}
 
+				// Make min sizes wider based on image size
 				int nbImage = imageCols.size();
 				if (nbImage > 0) {
 					for (int row = minRow; row <= lastRow; row++) {
 						int height = DEFAULT_ROW_HEIGHT;
 
-						if (row < table.getRowCount()) {
+						if (row < odlTable.getRowCount()) {
 							for (int i = 0; i < nbImage; i++) {
 								int col = imageCols.get(i);
-								BufferedImage img = (BufferedImage) table.getValueAt(row, col);
+								BufferedImage img = (BufferedImage) odlTable.getValueAt(row, col);
 								if (img != null) {
 									height = Math.max(height, img.getHeight());
 
 									// keep a track of minimum column sizes
 									int viewerCol = col + 1;
 									minColsSizes[viewerCol] = Math.max(minColsSizes[viewerCol], img.getWidth());
+									maxColsSizes[viewerCol] = Math.max(maxColsSizes[viewerCol], img.getWidth());
 								}
 
 							}
@@ -232,13 +272,24 @@ public class ODLGridTable extends GridTable {
 				}
 
 				for (int col = 0; col < minColsSizes.length; col++) {
-					if (getColumnModel().getColumn(col).getWidth() < minColsSizes[col]) {
-						final int colWidth = minColsSizes[col];
+					
+					// resize if the current width is less than the min width
+					int currentWidth =getColumnModel().getColumn(col).getWidth(); 
+					if ( currentWidth< minColsSizes[col]) {
 						final int finalCol = col;
 						EventQueue.invokeLater(new Runnable() {
 							@Override
 							public void run() {
-								getColumnModel().getColumn(finalCol).setPreferredWidth(colWidth);
+								getColumnModel().getColumn(finalCol).setPreferredWidth( minColsSizes[finalCol]);
+							}
+						});
+					}
+					else if(currentWidth > maxColsSizes[col]){
+						final int finalCol = col;
+						EventQueue.invokeLater(new Runnable() {
+							@Override
+							public void run() {
+								getColumnModel().getColumn(finalCol).setPreferredWidth( maxColsSizes[finalCol]);
 							}
 						});
 					}
@@ -905,6 +956,49 @@ public class ODLGridTable extends GridTable {
 		}
 		
 		return tmp.toArray();
+	}
+	
+	@Override
+	protected void setHeaderRenderer() {
+		class IsItalic{
+			boolean isItalic(int col){
+				ODLTableDefinition table = getTable();
+				col--;
+				if(col>=0 && col < table.getColumnCount()){
+					return (table.getColumnFlags(col)& TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA) == TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA;
+				}
+				return false;
+			}
+		}
+		IsItalic isItalic = new IsItalic();
+		
+		JTableHeader header = getTableHeader();
+		if (showFilters) {
+			header.setDefaultRenderer(new FilterHeaderRender() {
+				@Override
+				public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+					return super.getTableCellRendererComponent(table, value, selectionManager != null ? selectionManager.isCellSelected(row, column) : isSelected, hasFocus, row, column);
+				}
+
+				@Override
+				protected boolean getColumnIsItalics(int col) {
+					return isItalic.isItalic(col);
+				}
+			});
+		} else {
+			header.setDefaultRenderer(new HeaderCellRenderer() {
+				@Override
+				public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+					return super.getTableCellRendererComponent(table, value, selectionManager != null ? selectionManager.isCellSelected(row, column) : isSelected, hasFocus, row, column);
+				}
+
+				@Override
+				protected boolean getColumnIsItalics(int col) {
+					return isItalic.isItalic(col);
+				}
+			});
+		}
+
 	}
 
 }

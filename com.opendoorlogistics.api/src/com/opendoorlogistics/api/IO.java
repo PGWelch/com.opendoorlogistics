@@ -33,4 +33,10 @@ public interface IO {
 	 */
 	ODLDatastoreAlterable<ODLTableAlterable> importFile(File file ,ProcessingApi processingApi, ExecutionReport report);
 
+	/**
+	 * Normalise a file path, internally calling Apache commons-io FilenameUtils.Normalize
+	 * @param s
+	 * @return
+	 */
+	String normalisePath(String s);
 }

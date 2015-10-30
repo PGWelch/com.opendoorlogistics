@@ -83,14 +83,21 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 	 * 
 	 */
 	private static final long serialVersionUID = 6615355902465336058L;
-	private boolean showFilters = false;
+	protected boolean showFilters = false;
 
 	protected List<SimpleAction> actions;
 	protected JScrollPane scrollPane;
 
 	protected TableCellRenderer myCellRenderer;
 
-	protected final TableCellRenderer firstColumnRenderer = new HeaderCellRenderer();
+	protected final TableCellRenderer firstColumnRenderer = new HeaderCellRenderer(){
+
+		@Override
+		protected boolean getColumnIsItalics(int col) {
+			return false;
+		}
+		
+	};
 	// protected TableCellRenderer my = new HeaderCellRenderer();
 
 	protected final int DEFAULT_ROW_HEIGHT = 24;
@@ -210,25 +217,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 		return new SelectionManager(this,false);
 	}
 	
-	private void setHeaderRenderer() {
-		JTableHeader header = getTableHeader();
-		if (showFilters) {
-			header.setDefaultRenderer(new FilterHeaderRender() {
-				@Override
-				public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-					return super.getTableCellRendererComponent(table, value, selectionManager != null ? selectionManager.isCellSelected(row, column) : isSelected, hasFocus, row, column);
-				}
-			});
-		} else {
-			header.setDefaultRenderer(new HeaderCellRenderer() {
-				@Override
-				public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-					return super.getTableCellRendererComponent(table, value, selectionManager != null ? selectionManager.isCellSelected(row, column) : isSelected, hasFocus, row, column);
-				}
-			});
-		}
-
-	}
+	protected abstract void setHeaderRenderer();
 
 	private void initTableHeader() {
 		final JTableHeader header = getTableHeader();

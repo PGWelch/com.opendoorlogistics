@@ -66,6 +66,7 @@ final public class TableSchemaEditor extends ODLInternalFrame implements Disposa
 			}
 		}
 
+		
 	}
 	
 	@Override

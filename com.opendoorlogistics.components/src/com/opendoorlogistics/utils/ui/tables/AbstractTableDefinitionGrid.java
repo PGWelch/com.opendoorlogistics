@@ -160,11 +160,20 @@ public abstract class AbstractTableDefinitionGrid extends JPanel {
 				}
 				
 			}
+			
+			@Override
+			public void updateEnabledState() {
+				setEnabled( (table.getSelectedRow() != -1) && isDeleteColumnAllowed(table.getSelectedRow()));
+			}
 		});
 
 		return ret;
 	}
 
+	protected boolean isDeleteColumnAllowed(int col){
+		return true;
+	}
+	
 	public void updateAppearance() {
 		for (ODLAction action : actions) {
 			if(action!=null){

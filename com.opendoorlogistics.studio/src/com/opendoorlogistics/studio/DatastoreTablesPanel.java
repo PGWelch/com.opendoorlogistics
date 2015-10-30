@@ -9,7 +9,7 @@ package com.opendoorlogistics.studio;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -19,8 +19,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import javax.swing.AbstractListModel;
-import javax.swing.Action;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.DefaultListSelectionModel;
@@ -49,7 +47,6 @@ import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
-import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.codefromweb.DropDownMenuButton;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptTemplatesImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
@@ -57,7 +54,6 @@ import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.Layer;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.Style;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.View;
-import com.opendoorlogistics.core.tables.decorators.tables.SimpleTableDefinitionDecorator;
 import com.opendoorlogistics.core.tables.decorators.tables.SimpleTableReadOnlyDecorator;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -67,6 +63,7 @@ import com.opendoorlogistics.core.utils.strings.Strings.DoesStringExist;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
 import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
+import com.opendoorlogistics.studio.appframe.AppBackground;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.ODLAction;
 import com.opendoorlogistics.utils.ui.SimpleAction;
@@ -78,10 +75,11 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 	private final List<MyAction> actions;
 	private final List<ODLAction> wizardActions;
 	private final JLabel tablesLabel;
+	private final boolean useBackgroundImage;
 
-	public DatastoreTablesPanel() {
-		this(null);
-	}
+//	public DatastoreTablesPanel() {
+//		this(null);
+//	}
 
 	private abstract class MyAction extends SimpleAction {
 
@@ -177,17 +175,17 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		        boolean cellHasFocus)
 		    {
 		    	Component ret = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-		    	ListModel<? extends ODLTableReadOnly> model = DatastoreTablesPanel.this.list.getModel();
-		    	if(model!=null && index < model.getSize()){
-		    		ODLTableReadOnly table = model.getElementAt(index);
-		    		if(table!=null && table.getRowCount()>0){
-		    			long flags = table.getRowFlags(table.getRowId(0));
-		    			if((flags & TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA) == TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA){
-		    				// as the linked data always appears at the top of the table, this table has read only data
-		    				ret.setFont(ret.getFont().deriveFont(Font.ITALIC));			    				
-		    			}
-		    		}
-		    	}
+//		    	ListModel<? extends ODLTableReadOnly> model = DatastoreTablesPanel.this.list.getModel();
+//		    	if(model!=null && index < model.getSize()){
+//		    		ODLTableReadOnly table = model.getElementAt(index);
+//		    		if(table!=null && table.getRowCount()>0){
+//		    			long flags = table.getRowFlags(table.getRowId(0));
+//		    			if((flags & TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA) == TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA){
+//		    				// as the linked data always appears at the top of the table, this table has read only data
+//		    				ret.setFont(ret.getFont().deriveFont(Font.ITALIC));			    				
+//		    			}
+//		    		}
+//		    	}
 		    	return ret;
 		    }
 		});
@@ -202,11 +200,36 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		selectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		list.setSelectionModel(selectionModel);
 
-
+		// put list in a scrollpane
 		JScrollPane listScrollPane = new JScrollPane();
 		listScrollPane.setViewportView(list);
 		setLayout(new BorderLayout());
-		add(listScrollPane, BorderLayout.CENTER);
+		
+		// get properties to see if we should use a background image
+		Boolean tmpBool = appFrame.getApi().properties().getBool("app.tablespanel.usebackgroundimage");
+		if(tmpBool!=null && tmpBool){
+			useBackgroundImage=true;
+		}else{
+			useBackgroundImage = false;
+		}
+		
+		if(useBackgroundImage){
+			// put in a further panel so we can draw a custom background
+			JPanel listPanel = new JPanel(new BorderLayout()){
+			     @Override
+			        protected void paintComponent(Graphics g) {
+			            super.paintComponent(g);
+			        	AppBackground.paintBackground(this, g, appFrame.getBackgroundImage());
+			        }
+			};
+			listScrollPane.setOpaque(false);
+			listScrollPane.getViewport().setOpaque(false);
+			listPanel.add(listScrollPane, BorderLayout.CENTER);
+			add(listPanel, BorderLayout.CENTER);	
+		}else{
+			add(listScrollPane, BorderLayout.CENTER);				
+		}
+
 
 		JToolBar toolBar = new JToolBar();
 		toolBar.setFloatable(false);
@@ -597,9 +620,16 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		// wizardsMenuButton.setEnabled(ds!=null);
 
 		if (ds == null) {
+			// set list to grey
 			list.setBackground(new Color(220, 220, 220));
+			if(useBackgroundImage){
+				list.setOpaque(false);				
+			}
 		} else {
 			list.setBackground(Color.WHITE);
+			if(useBackgroundImage){
+				list.setOpaque(true);				
+			}
 		}
 
 		tablesLabel.setEnabled(ds != null);
