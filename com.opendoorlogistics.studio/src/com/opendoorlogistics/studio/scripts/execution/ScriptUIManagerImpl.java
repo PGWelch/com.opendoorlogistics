@@ -154,13 +154,9 @@ final public class ScriptUIManagerImpl implements ScriptUIManager, ODLListener {
 			script.setUuid(UUID.randomUUID());
 		}
 		
-		if (getDs() == null && ScriptUtils.getReadsExternalDatastore(getApi(),script)) {
-			showMessage("Cannot execute as no data tables are loaded.", false);
+		if (getDs() == null ) {
+			showMessage("Cannot execute as no datastore is loaded.", false);
 			return null;
-		}
-
-		if (getDs() == null) {
-			appframe.openEmptyDatastore();
 		}
 
 		if(name==null){
@@ -181,10 +177,6 @@ final public class ScriptUIManagerImpl implements ScriptUIManager, ODLListener {
 		if (getDs() == null ) {
 			showMessage("Cannot compile as no data tables are loaded.", false);
 			return;
-		}
-
-		if (getDs() == null) {
-			appframe.openEmptyDatastore();
 		}
 
 		getScriptRunner().compileOnEDT(script,optionids, name);
@@ -302,7 +294,7 @@ final public class ScriptUIManagerImpl implements ScriptUIManager, ODLListener {
 		return appframe.getLoadedDatastore().getRunner();
 	}
 
-	protected ODLDatastoreUndoable<ODLTableAlterable> getDs() {
+	protected ODLDatastoreUndoable<? extends ODLTableAlterable> getDs() {
 		return appframe.getLoadedDatastore() != null ? appframe.getLoadedDatastore().getDs() : null;
 	}
 

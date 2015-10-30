@@ -7,8 +7,12 @@
 package com.opendoorlogistics.core.scripts.execution;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
 public class ExecutionReportImpl implements ExecutionReport{
@@ -57,12 +61,12 @@ public class ExecutionReportImpl implements ExecutionReport{
 	}
 
 	@Override
-	public void add(ExecutionReport report) {
+	public void add(ExecutionReport report, boolean copyFailedStatus) {
 		if(ExecutionReportImpl.class.isInstance(report)==false){
 			throw new RuntimeException();
 		}
 		
-		if(report.isFailed()){
+		if(copyFailedStatus && report.isFailed()){
 			failed = true;
 		}
 		
@@ -72,11 +76,80 @@ public class ExecutionReportImpl implements ExecutionReport{
 	}
 
 	@Override
+	public void add(ExecutionReport report) {
+		add(report,true);
+	}
+
+	@Override
 	public String getReportString(boolean includeExceptionTraces,boolean showSuccessFailureMessage) {
+		
+		List<String> lines = getLines(includeExceptionTraces);
+		
+		StandardisedStringSet printedLines = new StandardisedStringSet(false);
+		
+		// put into single string
+		StringBuilder builder = new StringBuilder();
+		for(String line:lines){
+			// don't repeat lines
+			if(!printedLines.contains(line)){
+				builder.append(line);				
+				builder.append(System.lineSeparator());
+				printedLines.add(line);
+			}
+		}
+		
+		if(showSuccessFailureMessage){
+			if (failed) {
+				builder.append("Execution of the operation failed." + System.lineSeparator());
+			} else {
+				builder.append("Execution of the operation succeeded." + System.lineSeparator());
+			}			
+		}
+
+		return builder.toString();
+	}
+
+	public List<String> getLines(boolean includeExceptionTraces) {
+		// filter list of logs
+		ArrayList<LogEntry> filtered = new ArrayList<>(logs);
+		HashSet<Throwable> throwables = new HashSet<>();
+		Iterator<LogEntry> it = filtered.iterator();
+		while(it.hasNext()){
+			LogEntry entry = it.next();
+			
+			// add the throwable to the set
+			if(entry.throwable!=null){
+				throwables.add(entry.throwable);
+			}
+			
+			// filter runtimeexcepptions whose cause has already been logged; these are likely just a rethrow...
+			if(entry.throwable!=null && Strings.isEmpty(entry.s)){
+				Throwable throwable = entry.throwable;
+				
+				if(!RuntimeException.class.isInstance(throwable)){
+					continue;
+				}
+				
+				if(!Strings.isEmpty(throwable.getMessage())){
+					continue;
+				}
+				
+				if(throwable.getCause()==null){
+					continue;
+				}
+				
+				if(!throwables.contains(throwable.getCause())){
+					continue;		
+				}
+				
+				it.remove();
+				
+			}
+		}
 		
 		// build list of lines first
 		ArrayList<String> lines = new ArrayList<>();
-		for (LogEntry line : logs) {
+		for (LogEntry line : filtered) {
 			if(line.s!=null){
 				lines.add(line.s);		
 			}
@@ -91,28 +164,7 @@ public class ExecutionReportImpl implements ExecutionReport{
 				}
 			}
 		}
-		
-		// put into single string
-		StringBuilder builder = new StringBuilder();
-		String lastLine = null;
-		for(String line:lines){
-			// don't repeat lines
-			if(!Strings.equalsStd(lastLine, line)){
-				builder.append(line);				
-				builder.append(System.lineSeparator());
-			}
-			lastLine = line;
-		}
-		
-		if(showSuccessFailureMessage){
-			if (failed) {
-				builder.append("Execution of the operation failed." + System.lineSeparator());
-			} else {
-				builder.append("Execution of the operation succeeded." + System.lineSeparator());
-			}			
-		}
-
-		return builder.toString();
+		return lines;
 	}
 
 	@Override
@@ -134,5 +186,6 @@ public class ExecutionReportImpl implements ExecutionReport{
 	public int size() {
 		return logs.size();
 	}
+
 
 }

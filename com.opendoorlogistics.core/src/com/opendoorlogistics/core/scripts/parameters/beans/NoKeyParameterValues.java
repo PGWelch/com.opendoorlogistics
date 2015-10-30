@@ -3,12 +3,12 @@ package com.opendoorlogistics.core.scripts.parameters.beans;
 import static com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParametersTable.COL_VALUE;
 
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLNullAllowed;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableFlags;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableFlags;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 
 @ODLTableName(ParametersImpl.PARAMETER_VALUES_TABLE_NAME)
 @ODLTableFlags(TableFlags.FLAG_IS_OPTIONAL)

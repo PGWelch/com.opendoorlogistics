@@ -18,7 +18,9 @@ public interface ExecutionReport {
 	boolean isFailed();
 
 	void add(ExecutionReport report);
-	
+
+	void add(ExecutionReport report, boolean copyFailedStatus);
+
 	String getReportString(boolean includeExceptionTraces,boolean showSuccessFailureMessage);
 	
 	ExecutionReport deepCopy();

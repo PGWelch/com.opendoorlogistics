@@ -231,7 +231,7 @@ final public class ODLDatastoreImpl <T extends ODLTableDefinition> implements OD
 	}
 
 	@Override
-	public ODLDatastore<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
+	public ODLDatastoreAlterable<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
 		return deepCopy();
 	}
 

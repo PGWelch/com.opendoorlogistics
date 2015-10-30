@@ -16,6 +16,7 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
@@ -89,7 +90,7 @@ final public class AdapterBuilderUtils {
 	 * @param result
 	 * @return
 	 */
-	public static ODLDatastore<ODLTable> createSimpleAdapter(ODLDatastore<? extends ODLTable> source, AdapterConfig destinationConfig,
+	public static <T extends ODLTableReadOnly> ODLDatastore<T> createSimpleAdapter(ODLDatastore<? extends T> source, AdapterConfig destinationConfig,
 			ExecutionReport result) {
 
 		// find source tables
@@ -135,7 +136,7 @@ final public class AdapterBuilderUtils {
 		AdapterMapping mapping = AdapterMapping.createUnassignedMapping(destination);
 
 		// now match fields
-		ArrayList<ODLDatastore<? extends ODLTable>> datasources = new ArrayList<>();
+		ArrayList<ODLDatastore<? extends T>> datasources = new ArrayList<>();
 		datasources.add(source);
 		for (int destTableIndx = 0; destTableIndx < destinationConfig.getTables().size(); destTableIndx++) {
 			AdaptedTableConfig tableConfig = destinationConfig.getTables().get(destTableIndx);
@@ -160,7 +161,7 @@ final public class AdapterBuilderUtils {
 		}
 
 		// now create the adapter from the mapping
-		AdaptedDecorator<ODLTable> ret = new AdaptedDecorator<ODLTable>(mapping, datasources);
+		AdaptedDecorator<T> ret = new AdaptedDecorator<T>(mapping, datasources);
 		return ret;
 	}
 

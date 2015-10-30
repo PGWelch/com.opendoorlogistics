@@ -294,4 +294,10 @@ final public class ImageUtils {
 		// Return the buffered image
 		return bimage;
 	}
+	
+	public static void main(String []args)throws Exception{
+		BufferedImage img = ImageIO.read(new File("img.png"));
+		img = scaleImage(img, new Dimension(img.getWidth()*2, img.getHeight()*2));
+		ImageIO.write(img, "png",new File("upscaled.png"));	
+	}
 }

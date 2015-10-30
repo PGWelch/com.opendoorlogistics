@@ -6,7 +6,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.tables.beans;
 
-import com.opendoorlogistics.core.tables.beans.annotations.ODLIgnore;
+import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLIgnore;
 
 public class BeanMappedRowImpl implements BeanMappedRow{
 	private long globalRowId;

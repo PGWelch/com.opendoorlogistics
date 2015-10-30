@@ -2,21 +2,23 @@ package com.opendoorlogistics.api.app;
 
 import java.io.File;
 
+import com.opendoorlogistics.api.HasApi;
+import com.opendoorlogistics.api.app.ui.ODLAppUI;
 import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.scripts.AsynchronousScriptExecutor;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 
-public interface ODLApp extends AsynchronousScriptExecutor{
+public interface ODLApp extends AsynchronousScriptExecutor, HasApi{
 	/**
-	 * See the datastore open in the app 
+	 * Set the datastore open in the app 
 	 * @param newDs
 	 * @param filesource
 	 */
 	void setDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> newDs, File filesource);
 	
 	/**
-	 * See the scripts directory used by the app
+	 * Set the scripts directory used by the app
 	 * @param directory
 	 */
 	void setScriptsDirectory(File directory);
@@ -41,5 +43,15 @@ public interface ODLApp extends AsynchronousScriptExecutor{
 	
 	
 	void addOnDisposedListener(AppDisposedListener listener);
+	
+	ODLAppLoadedState getLoadedState();
+	
+	/**
+	 * Post the datastore modifier to be asynchronously executed
+	 * @param modifier
+	 */
+	void postAsynchronousDatastoreModify(DatastoreModifier modifier);
+	
+	ODLAppUI getUI();
 
 }

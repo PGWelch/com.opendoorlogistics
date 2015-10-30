@@ -36,7 +36,7 @@ abstract public class ScriptEditorToolbar extends JToolBar {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(isToggleViewEnabled());
 			}
 		};
@@ -89,7 +89,7 @@ abstract public class ScriptEditorToolbar extends JToolBar {
 
 	public void updateEnabled() {
 		for (ODLAction action : actions) {
-			action.updateEnabled();
+			action.updateEnabledState();
 		}
 
 		if (syncBox != null) {

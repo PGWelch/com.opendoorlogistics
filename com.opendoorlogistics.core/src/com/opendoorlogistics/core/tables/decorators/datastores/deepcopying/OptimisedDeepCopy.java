@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
@@ -241,17 +242,17 @@ class OptimisedDeepCopy<T extends ODLTableDefinition> extends SimpleAbstractDeco
 	}
 
 	@Override
-	protected boolean getTableExists(int tableId) {
+	public boolean getTableExists(int tableId) {
 		return getTableHolder(tableId, false)!=null;
 	}
 
 	@Override
-	protected ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
+	public ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public ODLDatastore<? extends T> deepCopyWithShallowValueCopy(boolean createLazyCopy) {
+	public ODLDatastoreAlterable<? extends T> deepCopyWithShallowValueCopy(boolean createLazyCopy) {
 		throw new UnsupportedOperationException();
 	}
 

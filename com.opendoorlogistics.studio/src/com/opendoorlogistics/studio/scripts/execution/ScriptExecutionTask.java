@@ -6,9 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.studio.scripts.execution;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -16,15 +13,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.scripts.parameters.Parameters.TableType;
 import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList.MapSelectionListRegister;
 import com.opendoorlogistics.api.tables.ODLDatastore;
@@ -33,13 +31,13 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.ui.Disposable;
-import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImpl;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutor;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
+import com.opendoorlogistics.core.scripts.utils.ScriptUtils.OptionVisitor;
 import com.opendoorlogistics.core.tables.concurrency.MergeBranchedDatastore;
 import com.opendoorlogistics.core.tables.concurrency.WriteRecorderDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.SimpleDecorator;
@@ -49,37 +47,34 @@ import com.opendoorlogistics.core.utils.LoggerUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.ModalDialog;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
-import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
-import com.opendoorlogistics.studio.dialogs.ProgressDialog;
+import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
+import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
 import com.opendoorlogistics.studio.internalframes.HasInternalFrames.FramePlacement;
-import com.opendoorlogistics.studio.internalframes.ProgressFrame;
-import com.opendoorlogistics.studio.panels.ProgressPanel.ProgressReporter;
 import com.opendoorlogistics.studio.scripts.execution.ReporterFrame.RefreshMode;
 import com.opendoorlogistics.studio.scripts.execution.ScriptsDependencyInjector.RecordedLauncherCallback;
 
-class ScriptExecutionTask {
+class ScriptExecutionTask extends DatastoreModifierTask{
 	private final static Logger LOGGER = Logger.getLogger(ScriptExecutionTask.class.getName());
-	
-	private final ODLApi api = new ODLApiImpl();
-	private final ScriptsRunner runner;
+	private final AbstractAppFrame appFrame;
+	private final ODLApi api;
 	private final Script unfiltered;
 	private final String[] optionIds;
 	private final String scriptName;
 	private final boolean isScriptRefresh;
 	private final ODLDatastore<? extends ODLTable>  parametersDs;
-	private volatile ExecutionReport result;
 	private volatile Script filtered;
 	private volatile ScriptsDependencyInjector guiFascade;
-	private volatile ProgressReporter progressReporter;
+	private volatile Set<ReporterFrameIdentifier> reporterFrameIds;
+	private volatile DataDependencies wholeScriptDependencies;
 	private volatile SimpleDecorator<ODLTableAlterable> simple;
 	private volatile WriteRecorderDecorator<ODLTableAlterable> writeRecorder;
-	private volatile Set<ReporterFrameIdentifier> reporterFrameIds;
-	private volatile ODLDatastore<? extends ODLTableAlterable> workingDatastoreCopy;
-	private volatile DataDependencies wholeScriptDependencies;
 	private volatile boolean showingModalPanel = false;
 
-	ScriptExecutionTask(ScriptsRunner runner, final Script script, String[] optionIds, final String scriptName, boolean isScriptRefresh,ODLDatastore<? extends ODLTable>  parametersTable) {
-		this.runner = runner;
+
+	ScriptExecutionTask(AbstractAppFrame appFrame, final Script script, String[] optionIds, final String scriptName, boolean isScriptRefresh,ODLDatastore<? extends ODLTable>  parametersTable) {
+		super(appFrame);
+		this.appFrame = appFrame;
+		this.api = appFrame.getApi();
 		this.unfiltered = script;
 		this.optionIds = optionIds;
 		this.scriptName = scriptName;
@@ -87,6 +82,37 @@ class ScriptExecutionTask {
 		this.parametersDs = parametersTable;
 	}
 	
+	@Override
+	protected String getProgressTitle(){
+		// get option name if this is a multi-option script and we're running a single option
+		String optionName=null;
+		if(api.properties().isTrue("scripts.progressbar.title.useoptionname") && unfiltered!=null && optionIds!=null && optionIds.length==1 && optionIds[0]!=null){
+			class OptionCount implements OptionVisitor{
+				int count=0;
+				String foundName;
+				@Override
+				public boolean visitOption(Option parent, Option option, int depth) {
+					if(api.stringConventions().equalStandardised(option.getOptionId(), optionIds[0])){
+						foundName = option.getName();
+					}
+					count++;
+					return true;
+				}				
+			}
+			OptionCount counter = new OptionCount();
+			ScriptUtils.visitOptions(unfiltered, counter);
+			if(counter.count>1){
+				optionName = counter.foundName;
+			}
+		}
+		
+		if(optionName!=null){
+			return optionName;
+		}
+		
+		String title = Strings.isEmpty(scriptName) == false ? "Running " + scriptName : "Running script";
+		return title;
+	}
 
 	private ReporterFrameIdentifier getReporterFrameId(String instructionId, String panelId) {
 		return new ReporterFrameIdentifier(getScriptId(), instructionId, panelId);
@@ -100,16 +126,35 @@ class ScriptExecutionTask {
 		return unfiltered.getUuid().toString();
 	}
 
-	/**
-	 * Execute the entire task on a background thread. This method uses the EDT thread when needed.
-	 */
-	public void executeNonEDT() {
-		ExecutionUtils.throwIfEDT();
+	@Override
+	protected ExecutionReport executeNonEDTAfterInitialisation() {
+		// Wrap in a decorator which records the writes (needed for merging later)
+		writeRecorder = new WriteRecorderDecorator<>(ODLTableAlterable.class, getNonEDTDatastoreCopy());
 
+		// Place within a simple decorator where we can switch back to the main ds afterwards for launched controls
+		simple = new SimpleDecorator<>(ODLTableAlterable.class, writeRecorder);
+		
+		// Execute and get all dependencies afterwards
+		ODLApi api = appFrame.getApi();
+		ScriptExecutor executor = new ScriptExecutor(appFrame.getApi(),false, guiFascade);
+		if(parametersDs!=null){
+			executor.setInitialParametersTable(api.scripts().parameters().findTable(parametersDs, TableType.PARAMETERS));
+		}
+		
+		ExecutionReport result = executor.execute(filtered, simple);
+		if (!result.isFailed()) {
+			wholeScriptDependencies = executor.extractDependencies((ScriptExecutionBlackboardImpl) result);
+		}
+		
+		return result;
+	}
+
+	@Override
+	protected boolean initialiseNonEDTExecution() {
 		// Filter the script for the options
-		filtered = ExecutionUtils.getFilteredCollapsedScript(runner.getAppFrame(), unfiltered, optionIds, scriptName);
+		filtered = ExecutionUtils.getFilteredCollapsedScript(appFrame, unfiltered, optionIds, scriptName);
 		if (filtered == null) {
-			return;
+			return false;
 		}
 		
 		// Copy over the override use prompt information
@@ -126,111 +171,29 @@ class ScriptExecutionTask {
 
 		// Create the execution api we give to the script executor to allow it interact with the UI
 		initDependencyEjector();
-
-		// Execute copy on EDT now
-		try {
-			SwingUtilities.invokeAndWait(new Runnable() {
-
-				@Override
-				public void run() {
-					// Copy the datastore in EDT so we never get a half-written copy
-					workingDatastoreCopy = runner.getDs().deepCopyWithShallowValueCopy(true);
-					LOGGER.info(LoggerUtils.addPrefix(" - took deep copy of datastore for script execution."));
-				}
-			});
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-
-		// Wrap in a decorator which records the writes (needed for merging later)
-		writeRecorder = new WriteRecorderDecorator<>(ODLTableAlterable.class, workingDatastoreCopy);
-
-		// Place within a simple decorator where we can switch back to the main ds afterwards for launched controls
-		simple = new SimpleDecorator<>(ODLTableAlterable.class, writeRecorder);
-
-		// Create the progress on EDT as well but don't wait for it as it blocks the execution..
-		// If we're doing an automatic refresh wait longer to show the progress dialog, but still show
-		// it in-case the refresh takes a long time....
-		if (isAllowsUserInteraction(filtered)) {
-			Timer timer = new Timer(isScriptRefresh ? 1000 : 200, new ActionListener() {
-
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					startProgress();
-				}
-			});
-			timer.setRepeats(false);
-			timer.start();
-
-		} else {
-			// launch on EDT without delay, but don't wait for method to finish as the progress dialog blocks the EDIT if modal
-			SwingUtilities.invokeLater(new Runnable() {
-
-				@Override
-				public void run() {
-					startProgress();
-				}
-			});
-		}
-
-		// Execute and get all dependencies afterwards
-		ODLApi api = runner.getAppFrame().getApi();
-		ScriptExecutor executor = new ScriptExecutor(runner.getAppFrame().getApi(),false, guiFascade);
-		if(parametersDs!=null){
-			executor.setInitialParametersTable(api.scripts().parameters().findTable(parametersDs, TableType.PARAMETERS));
-		}
 		
-		result = executor.execute(filtered, simple);
-		if (!result.isFailed()) {
-			wholeScriptDependencies = executor.extractDependencies((ScriptExecutionBlackboardImpl) result);
-		}
-
-		// Finish up on the EDT
-		try {
-			SwingUtilities.invokeAndWait(new Runnable() {
-
-				@Override
-				public void run() {
-					finishOnEdt();
-				}
-			});
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		return true;
 	}
 
 	/**
 	 * 
 	 */
 	private void initDependencyEjector() {
-		guiFascade = new ScriptsDependencyInjector(runner.getAppFrame()) {
+		ProcessingApi papi = createProcessingApi();
+		guiFascade = new ScriptsDependencyInjector(appFrame) {
 			@Override
 			public boolean isCancelled() {
-				if (progressReporter != null) {
-					return progressReporter.getProgressPanel().isCancelled();
-				}
-				return false;
+				return papi.isCancelled();
 			}
 
 			@Override
 			public boolean isFinishNow() {
-				if (progressReporter != null) {
-					return progressReporter.getProgressPanel().isFinishedNow();
-				}
-				return false;
+				return papi.isFinishNow();
 			}
 
 			@Override
 			public void postStatusMessage(final String s) {
-				SwingUtils.invokeLaterOnEDT(new Runnable() {
-
-					@Override
-					public void run() {
-						if (progressReporter != null) {
-							progressReporter.getProgressPanel().setText(s);
-						}
-					}
-				});
+				papi.postStatusMessage(s);
 			}
 
 			@Override
@@ -281,14 +244,24 @@ class ScriptExecutionTask {
 		};
 	}
 
-	private void finishOnEdt() {
-		ExecutionUtils.throwIfNotOnEDT();
+	@Override
+	protected int getDelayMillisBeforeProgress(){
+		return isScriptRefresh ? 1000 : 200;
+	}
 
+	@Override
+	protected String getFailureWindowTitle(){
+		return scriptName;
+	}
+
+
+	@Override
+	protected void finishOnEDTAfterDatastoreMerge(ExecutionReport result) {
 		// If we're not auto-refreshing, close any controls which used an old version of the script as they will be out-of-date
 		// providing they're not an 'never refresh' control which has a null script
 		if(!isScriptRefresh){
 			String myXML = ScriptIO.instance().toXMLString(unfiltered);
-			for(ReporterFrame<?> rf:runner.getReporterFrames()){
+			for(ReporterFrame<?> rf:getReporterFrames(appFrame)){
 				if(getScriptId().equals(rf.getId().getScriptId()) && rf.getUnfilteredScript()!=null){
 					String otherXML = ScriptIO.instance().toXMLString(rf.getUnfilteredScript());
 					if(!Strings.equalsStd(myXML, otherXML)){
@@ -298,22 +271,12 @@ class ScriptExecutionTask {
 			}
 		}
 		
-		// Try merging the script result back into the primary datastore.
-		// The primary datastore is only modified on the EDT.
-		if (!result.isFailed()) {
-
-			// merge has a transaction so don't need to start one here
-			if (!MergeBranchedDatastore.merge(writeRecorder, runner.getDs())) {
-				result.setFailed("Failed to merge the result of running the script with the datastore." + System.lineSeparator() + "This may happen if the data or tables change whilst a script is running.");
-			}
-		}
-
 		// process controls after merging back to main datastore
 		HashSet<ReporterFrame<?>> allProcessedFrames = new HashSet<>();
 		if (result.isFailed() == false) {
 
 			// give the scripts execution the main datastore instead of the copy so it can interact directly
-			simple.replaceDecorated(runner.getDs());
+			simple.replaceDecorated(getEDTDatastore());
 
 			// process all the launch control callbacks
 			Iterator<RecordedLauncherCallback> it = guiFascade.getControlLauncherCallbacks().iterator();
@@ -344,8 +307,8 @@ class ScriptExecutionTask {
 							parameters = api.tables().copyDs(parameters);
 						}
 						
-						frame.setDependencies(runner.getDs(), unfiltered, dependencies, parameters,result);
-						frame.setRefresherCB(runner);
+						frame.setDependencies(getEDTDatastore(), unfiltered, dependencies, parameters,result);
+						frame.setRefresherCB(appFrame.getLoadedDatastore().getRunner());
 					}
 				}
 				
@@ -364,7 +327,7 @@ class ScriptExecutionTask {
 		// Also close any controls with identifiers associated to the task but which were not processed (they must be old)
 		if (reporterFrameIds != null) {
 			for (ReporterFrameIdentifier id : reporterFrameIds) {
-				ReporterFrame<?> frame = runner.getReporterFrame(id);
+				ReporterFrame<?> frame = getReporterFrame(appFrame,id);
 				if (frame != null && allProcessedFrames.contains(frame) == false) {
 					frame.dispose();
 				}
@@ -374,24 +337,18 @@ class ScriptExecutionTask {
 		// Set open controls to be dirty if the datastore changed during the script's execution
 		if (!result.isFailed() && allProcessedFrames.size()>0) {
 
-//			// DEBUG CODE - REMOVE LATER
-//			long workingSel = GlobalMapSelectedRowsManager.countSelectedInDs(workingDatastoreCopy);
-//			long globalSel = GlobalMapSelectedRowsManager.countSelectedInDs(runner.getDs());
-//			LOGGER.info(LoggerUtils.addPrefix(" - working ds sel " + Long.toString(workingSel) + ", global ds sel " + Long.toString(globalSel)));
-			
-			
 			// Check read tables in the main datastore against the working copy to determine if anything changed
 			boolean dataChanged = false;
 			for (int tableId : wholeScriptDependencies.getReadTableIds()) {
 				if(wholeScriptDependencies.hasTableValueRead(tableId)){
 					// structure and data
-					if (!DatastoreComparer.isSame(runner.getDs().getTableByImmutableId(tableId), workingDatastoreCopy.getTableByImmutableId(tableId), DatastoreComparer.CHECK_ALL|DatastoreComparer.CHECK_ROW_SELECTION_STATE)) {
+					if (!DatastoreComparer.isSame(getEDTDatastore().getTableByImmutableId(tableId), getNonEDTDatastoreCopy().getTableByImmutableId(tableId), DatastoreComparer.CHECK_ALL|DatastoreComparer.CHECK_ROW_SELECTION_STATE)) {
 						dataChanged = true;
 						break;
 					}	
 				}else{
 					// structure only
-					if (!DatastoreComparer.isSameStructure(runner.getDs().getTableByImmutableId(tableId), workingDatastoreCopy.getTableByImmutableId(tableId), DatastoreComparer.CHECK_ALL)) {
+					if (!DatastoreComparer.isSameStructure(getEDTDatastore().getTableByImmutableId(tableId), getNonEDTDatastoreCopy().getTableByImmutableId(tableId), DatastoreComparer.CHECK_ALL)) {
 						dataChanged = true;
 						break;
 					}	
@@ -425,7 +382,7 @@ class ScriptExecutionTask {
 			logMsg.append(" with read tables ");
 			int logTableCount=0;
 			for(int tableId : wholeScriptDependencies.getReadTableIds()){
-				ODLTableDefinition dfn = workingDatastoreCopy!=null ? workingDatastoreCopy.getTableByImmutableId(tableId):null;			
+				ODLTableDefinition dfn = getNonEDTDatastoreCopy()!=null ? getNonEDTDatastoreCopy().getTableByImmutableId(tableId):null;			
 				if(logTableCount>0){
 					logMsg.append(", ");
 				}
@@ -439,17 +396,6 @@ class ScriptExecutionTask {
 			}
 			LOGGER.info(logMsg.toString());
 		}
-		
-		// close the progress dialog
-		if (progressReporter != null) {
-			progressReporter.dispose();
-		}
-
-		// show message if failed
-		if (result.isFailed()) {
-			ExecutionUtils.showScriptFailureBox(runner.getAppFrame(), false, scriptName, result);
-		}
-
 	}
 
 	/**
@@ -482,7 +428,7 @@ class ScriptExecutionTask {
 				// try to get it first in-case already registered
 				ReporterFrameIdentifier id = getReporterFrameId( cb.getInstructionId(), panelId);
 				@SuppressWarnings("unchecked")
-				ReporterFrame<T> frame = (ReporterFrame<T>) runner.getReporterFrame(id);
+				ReporterFrame<T> frame = (ReporterFrame<T>) ScriptExecutionTask.getReporterFrame(appFrame,id);
 				if (frame != null && frame.getRefreshMode() != refreshMode) {
 					// wrong refresh mode; get rid of it
 					frame.dispose();
@@ -495,30 +441,40 @@ class ScriptExecutionTask {
 					frame.toFront();
 					frames.add(frame);
 				} else {
-					// window title is (a) name given by component, (b) option name (multi option scripts only), (c) filename/scriptName
-					String frameTitle = "";
-					class Adder{
-						String add(String s1, String s2){
-							if(!Strings.isEmpty(s2)){
-								if(s1.length()>0){
-									return s1 + " - " + s2;
-								}else{
-									return s2;
-								}								
-							}
-							return s1;
-						}
-					}
-					Adder adder = new Adder();
-					frameTitle = adder.add(frameTitle, title);
-					if(ScriptUtils.getOptionsCount(unfiltered)>1 && option!=null){
-						frameTitle = adder.add(frameTitle, option.getName());						
-					}
-					frameTitle = adder.add(frameTitle , scriptName);
 					
-					frame = new ReporterFrame<T>(panel, id, frameTitle,cb.getComponent(), refreshMode, runner.getAppFrame().getLoadedDatastore());
+					// Get frame title
+					String frameTitle = "";
+					Boolean optionNameOnly=api.properties().getBool("scripts.reports.title.optionnameonly");
+					if(optionNameOnly!=null && optionNameOnly){
+						if(option!=null && option.getName()!=null){
+							frameTitle = option.getName();
+						}
+					}else{
+						// window title is (a) name given by component, (b) option name (multi option scripts only), (c) filename/scriptName
+						class Adder{
+							String add(String s1, String s2){
+								if(!Strings.isEmpty(s2)){
+									if(s1.length()>0){
+										return s1 + " - " + s2;
+									}else{
+										return s2;
+									}								
+								}
+								return s1;
+							}
+						}
+						Adder adder = new Adder();
+						frameTitle = adder.add(frameTitle, title);
+						if(ScriptUtils.getOptionsCount(unfiltered)>1 && option!=null){
+							frameTitle = adder.add(frameTitle, option.getName());						
+						}
+						frameTitle = adder.add(frameTitle , scriptName);						
+					}
+
+					
+					frame = new ReporterFrame<T>(panel, id, frameTitle,cb.getComponent(), refreshMode, appFrame.getLoadedDatastore());
 					frames.add(frame);
-					runner.getAppFrame().addInternalFrame(frame, FramePlacement.AUTOMATIC);
+					appFrame.addInternalFrame(frame, FramePlacement.AUTOMATIC);
 				}
 				return true;
 			}
@@ -526,7 +482,7 @@ class ScriptExecutionTask {
 			@Override
 			public JPanel getRegisteredPanel(String panelId) {
 				ReporterFrameIdentifier id = getReporterFrameId( cb.getInstructionId(), panelId);
-				ReporterFrame<?> rf = runner.getReporterFrame(id);
+				ReporterFrame<?> rf = ScriptExecutionTask.getReporterFrame(appFrame,id);
 				if (rf != null) {
 					
 					if(!isScriptRefresh){
@@ -549,7 +505,7 @@ class ScriptExecutionTask {
 			public List<JPanel> getRegisteredPanels() {
 				ReporterFrameIdentifier id = getReporterFrameId( cb.getInstructionId(), "");
 				ArrayList<JPanel> ret = new ArrayList<JPanel>();
-				for(ReporterFrame<?> rf:runner.getReporterFrames(id.getScriptId(), id.getInstructionId())){
+				for(ReporterFrame<?> rf:getReporterFrames(appFrame,id.getScriptId(), id.getInstructionId())){
 					ret.add(rf.getUserPanel());
 				}
 				return ret;
@@ -564,7 +520,7 @@ class ScriptExecutionTask {
 			}
 			
 			private ReporterFrame<?> getReporterFrame(JPanel panel) {
-				for(ReporterFrame<?> rf : new ArrayList<ReporterFrame<?>>(runner.getReporterFrames())){
+				for(ReporterFrame<?> rf : new ArrayList<ReporterFrame<?>>(getReporterFrames(appFrame))){
 					if(rf.getUserPanel() == panel){
 						return rf;
 					}
@@ -590,18 +546,19 @@ class ScriptExecutionTask {
 
 			@Override
 			public ODLDatastoreUndoable<? extends ODLTableAlterable> getGlobalDatastore() {
-				return runner.getAppFrame().getLoadedDatastore()!=null?runner.getAppFrame().getLoadedDatastore().getDs():null;
+				return getEDTDatastore();
 			}
 
 			@Override
 			public MapSelectionListRegister getMapSelectionListRegister() {
-				return runner.getAppFrame().getLoadedDatastore();
+				return appFrame.getLoadedDatastore();
 			}
 		};
 	}
 
-	private boolean isAllowsUserInteraction(Script script) {
-		return ScriptUtils.hasComponentFlag(guiFascade.getApi(), script, ODLComponent.FLAG_ALLOW_USER_INTERACTION_WHEN_RUNNING);
+	@Override
+	protected boolean isAllowsUserInteraction() {
+		return ScriptUtils.hasComponentFlag(guiFascade.getApi(), filtered, ODLComponent.FLAG_ALLOW_USER_INTERACTION_WHEN_RUNNING);
 	}
 
 //	public Set<ReporterFrameIdentifier> getReporterFrameIds() {
@@ -612,33 +569,45 @@ class ScriptExecutionTask {
 		this.reporterFrameIds = reporterFrameIds;
 	}
 
-	/**
-	 * 
-	 */
-	private void startProgress() {
-		ExecutionUtils.throwIfNotOnEDT();
-		// only start progress if (a) we haven't already finished, (b) we're not in a modal and (c) haven't already launched it
-		if (result == null && !showingModalPanel && progressReporter == null) {
-			String title = Strings.isEmpty(scriptName) == false ? "Running " + scriptName : "Running script";
-			if (isAllowsUserInteraction(filtered)) {
-				// modeless
-				ProgressFrame progressFrame = new ProgressFrame(title, true,true);
-				runner.getAppFrame().addInternalFrame(progressFrame, FramePlacement.CENTRAL_RANDOMISED);
-				try {
-					// start it minimised so its visible but non-intrusive
-					progressFrame.setIcon(true);					
-				} catch (Exception e) {
-				}
-				progressFrame.getProgressPanel().start();
-				progressReporter = progressFrame;
-			} else {
-				// modal
-				ProgressDialog<Void> dlg = new ProgressDialog<>(runner.getAppFrame(), title, true,true);
-				dlg.setLocationRelativeTo(runner.getAppFrame());
-				progressReporter = dlg;
-				dlg.start();
+
+	private static List<ReporterFrame<?>> getReporterFrames(HasInternalFrames appFrame){
+		ArrayList<ReporterFrame<?>> ret = new ArrayList<>();
+		for(JInternalFrame frame : appFrame.getInternalFrames()){
+			if(ReporterFrame.class.isInstance(frame)){
+				ret.add((ReporterFrame<?>)frame);
 			}
 		}
+		return ret;
 	}
 
+	private static ReporterFrame<?> getReporterFrame(HasInternalFrames appFrame,ReporterFrameIdentifier id) {		
+		for(ReporterFrame<?> rf : getReporterFrames(appFrame)){
+			if (rf.getId().equals(id)) {
+				return rf;
+			}
+		}
+		return null;
+	}
+	
+	private static List<ReporterFrame<?>> getReporterFrames(HasInternalFrames appFrame,String scriptId, String instructionId){
+		ArrayList<ReporterFrame<?>> ret = new ArrayList<ReporterFrame<?>>();
+		for(ReporterFrame<?> rf : getReporterFrames(appFrame)){
+			ReporterFrameIdentifier id = rf.getId();
+			if(Strings.equals(id.getScriptId(), scriptId) && Strings.equals(id.getInstructionId(), instructionId)){
+				ret.add(rf);
+			}
+		}
+		return ret;
+	}
+
+	@Override
+	protected boolean mergeResultWithEDTDatastore() {
+		return MergeBranchedDatastore.merge(writeRecorder,getEDTDatastore());
+	}
+	
+	@Override
+	protected boolean isProgressShowable(){
+		return !showingModalPanel;
+	}
+	
 }

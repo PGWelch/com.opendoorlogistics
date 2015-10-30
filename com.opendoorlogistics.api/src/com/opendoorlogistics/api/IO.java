@@ -24,4 +24,19 @@ public interface IO {
 
 	ODLDatastoreAlterable<ODLTableAlterable> importFile(File file, ImportFileType type,ProcessingApi processingApi, ExecutionReport report);
 
+	/**
+	 * Import a supported file, using its extension to identify the type
+	 * @param file
+	 * @param processingApi
+	 * @param report
+	 * @return
+	 */
+	ODLDatastoreAlterable<ODLTableAlterable> importFile(File file ,ProcessingApi processingApi, ExecutionReport report);
+
+	/**
+	 * Normalise a file path, internally calling Apache commons-io FilenameUtils.Normalize
+	 * @param s
+	 * @return
+	 */
+	String normalisePath(String s);
 }

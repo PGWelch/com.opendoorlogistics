@@ -43,6 +43,7 @@ import com.opendoorlogistics.core.utils.LoggerUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
+import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
 
 /**
  * The script runner exists only whilst the current spreadsheet is open. It is closed when the spreadsheet is closed.
@@ -132,7 +133,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 			}
 			
 			// call execute which will run the script in the background
-			ScriptExecutionTask task = new ScriptExecutionTask(runner,top.getUnfilteredScript(), optionIds, "Refresh open report", true, parameters);
+			ScriptExecutionTask task = new ScriptExecutionTask(runner.getAppFrame(),top.getUnfilteredScript(), optionIds, "Refresh open report", true, parameters);
 			task.setReporterFrameIds(frameIdentifiers);
 			
 			return task;
@@ -173,7 +174,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 	}
 	private final AbstractAppFrame appFrame;
 	private final ExecutorService executorService;
-	private final ODLDatastoreUndoable<ODLTableAlterable> ds;
+	private final ODLDatastoreUndoable<? extends ODLTableAlterable> ds;
 	private final RefreshQueue reportRefreshQueue = new RefreshQueue(this);
 
 
@@ -210,7 +211,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 //	}
 
 
-	public ScriptsRunner(AbstractAppFrame parentFrame, ODLDatastoreUndoable<ODLTableAlterable> ds) {
+	public ScriptsRunner(AbstractAppFrame parentFrame, ODLDatastoreUndoable<? extends ODLTableAlterable> ds) {
 		this.appFrame = parentFrame;
 		this.ds = ds;
 		
@@ -376,7 +377,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 			@Override
 			protected Void doInBackground() throws Exception {
 				try {
-					new ScriptExecutionTask(ScriptsRunner.this,script, optionIds, name, false,null).executeNonEDT();					
+					new ScriptExecutionTask(appFrame,script, optionIds, name, false,null).executeNonEDT();					
 				} catch (Exception e) {
 				}
 				
@@ -393,7 +394,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 		return appFrame;
 	}
 	
-	ODLDatastoreUndoable<ODLTableAlterable> getDs(){
+	ODLDatastoreUndoable<? extends ODLTableAlterable> getDs(){
 		return ds;
 	}
 
@@ -455,34 +456,5 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 		}
 	}
 	
-	List<ReporterFrame<?>> getReporterFrames(){
-		ArrayList<ReporterFrame<?>> ret = new ArrayList<>();
-		for(JInternalFrame frame : appFrame.getInternalFrames()){
-			if(ReporterFrame.class.isInstance(frame)){
-				ret.add((ReporterFrame<?>)frame);
-			}
-		}
-		return ret;
-	}
-
-	ReporterFrame<?> getReporterFrame(ReporterFrameIdentifier id) {		
-		for(ReporterFrame<?> rf : getReporterFrames()){
-			if (rf.getId().equals(id)) {
-				return rf;
-			}
-		}
-		return null;
-	}
-	
-	List<ReporterFrame<?>> getReporterFrames(String scriptId, String instructionId){
-		ArrayList<ReporterFrame<?>> ret = new ArrayList<ReporterFrame<?>>();
-		for(ReporterFrame<?> rf : getReporterFrames()){
-			ReporterFrameIdentifier id = rf.getId();
-			if(Strings.equals(id.getScriptId(), scriptId) && Strings.equals(id.getInstructionId(), instructionId)){
-				ret.add(rf);
-			}
-		}
-		return ret;
-	}
 
 }

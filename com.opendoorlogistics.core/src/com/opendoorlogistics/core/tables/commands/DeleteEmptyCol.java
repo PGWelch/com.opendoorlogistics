@@ -24,7 +24,7 @@ final public class DeleteEmptyCol extends Command {
 		if(table!=null){
 
 			InsertEmptyCol undo = new InsertEmptyCol(tableId, table.getColumnImmutableId(col), col, table.getColumnName(col), table.getColumnType(col),
-					table.getColumnFlags(col),table.getColumnDescription(col),true);
+					table.getColumnFlags(col),true);
 			table.deleteColumn(col);
 			return undo;			
 		}

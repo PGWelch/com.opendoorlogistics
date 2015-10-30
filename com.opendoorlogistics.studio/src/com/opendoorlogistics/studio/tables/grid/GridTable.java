@@ -33,6 +33,7 @@ import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -40,6 +41,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.JTableHeader;
@@ -49,8 +51,10 @@ import javax.swing.table.TableModel;
 import javax.swing.text.DefaultEditorKit;
 
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.tables.utils.SortColumn;
 import com.opendoorlogistics.core.utils.strings.Strings;
+import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
 import com.opendoorlogistics.studio.dialogs.SortDialog;
 import com.opendoorlogistics.studio.tables.ODLTableControl;
@@ -79,14 +83,21 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 	 * 
 	 */
 	private static final long serialVersionUID = 6615355902465336058L;
-	private boolean showFilters = false;
+	protected boolean showFilters = false;
 
 	protected List<SimpleAction> actions;
 	protected JScrollPane scrollPane;
 
 	protected TableCellRenderer myCellRenderer;
 
-	protected final TableCellRenderer firstColumnRenderer = new HeaderCellRenderer();
+	protected final TableCellRenderer firstColumnRenderer = new HeaderCellRenderer(){
+
+		@Override
+		protected boolean getColumnIsItalics(int col) {
+			return false;
+		}
+		
+	};
 	// protected TableCellRenderer my = new HeaderCellRenderer();
 
 	protected final int DEFAULT_ROW_HEIGHT = 24;
@@ -206,25 +217,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 		return new SelectionManager(this,false);
 	}
 	
-	private void setHeaderRenderer() {
-		JTableHeader header = getTableHeader();
-		if (showFilters) {
-			header.setDefaultRenderer(new FilterHeaderRender() {
-				@Override
-				public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-					return super.getTableCellRendererComponent(table, value, selectionManager != null ? selectionManager.isCellSelected(row, column) : isSelected, hasFocus, row, column);
-				}
-			});
-		} else {
-			header.setDefaultRenderer(new HeaderCellRenderer() {
-				@Override
-				public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-					return super.getTableCellRendererComponent(table, value, selectionManager != null ? selectionManager.isCellSelected(row, column) : isSelected, hasFocus, row, column);
-				}
-			});
-		}
-
-	}
+	protected abstract void setHeaderRenderer();
 
 	private void initTableHeader() {
 		final JTableHeader header = getTableHeader();
@@ -313,8 +306,11 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 		} catch (Throwable e2) {
 			rollbackTransaction();
-
-			JOptionPane.showMessageDialog(getRootPane(), "An error occurred." + (Strings.isEmpty(e2.getMessage()) == false ? " " + e2.getMessage() : ""));
+			ExecutionReportImpl report = new ExecutionReportImpl();
+			report.setFailed("An error occurred when editing the table data.");
+			report.setFailed(e2);
+			new ExecutionReportDialog((JFrame)SwingUtilities.getWindowAncestor(this), "Table editing error", report, false).setVisible(true);
+			//JOptionPane.showMessageDialog(getRootPane(), "An error occurred." + (Strings.isEmpty(e2.getMessage()) == false ? " " + e2.getMessage() : ""));
 		}
 		return false;
 	}
@@ -477,7 +473,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.setValues));
 			}
 		});
@@ -495,7 +491,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.setValues));
 			}
 		});
@@ -509,7 +505,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.setValues));
 			}
 		});
@@ -540,7 +536,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.moveRows));
 			}
 
@@ -559,7 +555,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.createRows));
 			}
 		});
@@ -577,7 +573,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getPermissions().get(Permission.deleteRows));
 			}
 		});
@@ -899,7 +895,7 @@ public abstract class GridTable extends ODLTableControl implements Disposable {
 		if(actions!=null){
 			for (ODLAction action : actions) {
 				if(action!=null){
-					action.updateEnabled();					
+					action.updateEnabledState();					
 				}
 			}			
 		}

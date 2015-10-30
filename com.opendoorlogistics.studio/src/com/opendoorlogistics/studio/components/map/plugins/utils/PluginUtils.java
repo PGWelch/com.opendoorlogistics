@@ -23,10 +23,10 @@ import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnBuildT
 import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
-import com.opendoorlogistics.core.tables.beans.BeanMappedRow;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.studio.components.map.MapPopupMenuImpl;
 import com.opendoorlogistics.studio.components.map.MapToolbarImpl;
 import com.opendoorlogistics.utils.ui.Icons;
@@ -203,7 +203,7 @@ public class PluginUtils {
 
 
 	public static LinkedList<DrawableObject> toDrawables(ODLTableReadOnly drawablesTable) {
-		BeanTableMapping btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
+		BeanTableMappingImpl btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
 		LinkedList<DrawableObject> list = new LinkedList<DrawableObject>();
 		for(BeanMappedRow r: btm.readObjectsFromTable(drawablesTable)){
 			list.add((DrawableObject)r);

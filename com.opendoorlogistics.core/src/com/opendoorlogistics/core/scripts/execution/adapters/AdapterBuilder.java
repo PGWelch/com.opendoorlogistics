@@ -166,7 +166,7 @@ final public class AdapterBuilder {
 		if(id!=null){
 			String formula = AdapterBuilderUtils.getFormulaFromText(id);
 			if(formula!=null){
-				ODLDatastore<? extends ODLTable> importedDs = TableFormulaBuilder.build(formula,new DependencyInjector() {
+				ODLDatastore<? extends ODLTable> importedDs = TableFormulaBuilder.executeTableFormula(formula,api,new DependencyInjector() {
 					
 					@Override
 					public ODLDatastore<? extends ODLTable> buildAdapter(AdapterConfig config) {
@@ -450,7 +450,7 @@ final public class AdapterBuilder {
 		// 7th Feb 2015. True 2-way union decorators create an issue in group-bys as rowids aren't unique.
 		// We therefore just copy the union result over to a different table.
 		ODLDatastoreAlterable<ODLTableAlterable> ret = mapToNewEmptyTable(destinationTableId, destDfn);
-		DatastoreCopier.copyData(union.getTableAt(0), ret.getTableAt(0));
+		DatastoreCopier.copyData(union.getTableAt(0), ret.getTableAt(0),false);
 
 	}
 
@@ -1169,7 +1169,9 @@ final public class AdapterBuilder {
 				// execute formula against the grouped table; aggregate formulae redirect to source table
 				Object val = executeNonSortNonGroupByFormulaInGroupedTable(nonSortFormulae, groupedDsIndex, groupedTable, groupRow, col);
 				if (val == Functions.EXECUTION_ERROR) {
-					report.setFailed("Error executing formula or reading field in grouping.");
+					AdapterColumnConfig colObj = nonSortCols.getColumn(col);
+					report.setFailed("Error executing formula or reading field in grouping, destination field " + colObj.getName()
+						+ (!Strings.isEmpty(colObj.getFormula()) ? " with formula " + colObj.getFormula() + ".":"."));
 					return;
 				}
 
@@ -1218,7 +1220,7 @@ final public class AdapterBuilder {
 
 			// clear original table and copy sorted data back over
 			TableUtils.removeAllRows(groupedTable);
-			DatastoreCopier.copyData(tmpTable, groupedTable);
+			DatastoreCopier.copyData(tmpTable, groupedTable,false);
 		}
 
 		// Finally we need a dummy mapping to directly read the create table from the output adapter
@@ -1241,7 +1243,8 @@ final public class AdapterBuilder {
 	}
 
 	private Object executeNonSortNonGroupByFormulaInGroupedTable(final Function[] nonSortFormulae, final int groupedDsIndex, final ODLTableAlterable groupedTable,final int groupRow, int col) {
-		FunctionParameters parameters = new TableParameters(datasources, groupedDsIndex, groupedTable.getImmutableId(), groupRow, groupRow,new ODLRowReadOnly() {
+		long rowId =groupedTable.getRowId(groupRow);
+		FunctionParameters parameters = new TableParameters(datasources, groupedDsIndex, groupedTable.getImmutableId(), rowId, groupRow,new ODLRowReadOnly() {
 			
 			@Override
 			public int getRowIndex() {

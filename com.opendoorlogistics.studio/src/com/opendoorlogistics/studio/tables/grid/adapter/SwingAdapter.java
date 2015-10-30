@@ -7,6 +7,7 @@
 package com.opendoorlogistics.studio.tables.grid.adapter;
 
 import java.awt.Color;
+import java.util.concurrent.Callable;
 
 import javax.swing.SwingUtilities;
 import javax.swing.event.TableModelEvent;
@@ -60,12 +61,14 @@ public final class SwingAdapter implements TableModel {
 
 	@Override
 	public int getRowCount() {
-		return getTable().getRowCount() + 1;
+		ODLTableReadOnly table = getTable();
+		return (table!=null?table.getRowCount():0)+ 1;
 	}
 
 	@Override
 	public int getColumnCount() {
-		return getTable().getColumnCount() + 1;
+		ODLTableDefinition table = getTable();
+		return (table!=null?table.getColumnCount():0)+ 1;		
 	}
 
 //	private int getSourceColumn(int index){
@@ -80,7 +83,11 @@ public final class SwingAdapter implements TableModel {
 		}
 		columnIndex--;
 	
-		return getTable().getColumnName(columnIndex);
+		ODLTableDefinition table = getTable();
+		if(table!=null && columnIndex < table.getColumnCount()){
+			return table.getColumnName(columnIndex);
+		}
+		return "";
 	}
 
 	@Override
@@ -91,20 +98,27 @@ public final class SwingAdapter implements TableModel {
 		}
 		columnIndex--;
 
-		if (getTable().getColumnType(columnIndex) == ODLColumnType.COLOUR) {
+		ODLTableDefinition table = getTable();
+		ODLColumnType type = table!=null ? table.getColumnType(columnIndex):ODLColumnType.STRING;
+		
+		if (type == ODLColumnType.COLOUR) {
 			return String.class;
 		}
 
-		if (getTable().getColumnType(columnIndex) == ODLColumnType.TIME) {
+		if (type == ODLColumnType.TIME) {
 			return String.class;
 		}
 
-		return ColumnValueProcessor.getJavaClass(getTable().getColumnType(columnIndex));
+		return ColumnValueProcessor.getJavaClass(type);
 	}
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
 		ODLTableReadOnly table = getTable();
+		if(table==null){
+			return null;
+		}
+		
 		if (rowIndex >= table.getRowCount()) {
 			return null;
 		}
@@ -218,13 +232,25 @@ public final class SwingAdapter implements TableModel {
 
 		tableCol--;
 
-		ODLTableDefinition table = getTable();
+		ODLTableReadOnly table = getTable();
+		if(table==null){
+			return false;
+		}
+		
 		if (table == null || table.getColumnType(tableCol) == ODLColumnType.IMAGE) {
 			return false;
 		}
 
+		// check for whole column being read-only
 		if ((table.getColumnFlags(tableCol) & TableFlags.FLAG_IS_READ_ONLY) != 0) {
 			return false;
+		}
+		
+		// or whole row being read-only as its linked data
+		long rowId = table.getRowId(rowIndex);
+		long rowFlags = table.getRowFlags(rowId);
+		if((rowFlags & TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA) == TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA){
+			return false;	
 		}
 		return true;
 	}
@@ -236,6 +262,9 @@ public final class SwingAdapter implements TableModel {
 		}
 
 		ODLTable table = (ODLTable) getTable();
+		if(table==null){
+			return;
+		}
 
 		columnIndex--;
 
@@ -248,35 +277,26 @@ public final class SwingAdapter implements TableModel {
 			return;
 		}
 
-		boolean startedTransaction = false;
-		if (!ds.isInTransaction()) {
-			startedTransaction = true;
-			ds.startTransaction();
-		}
-		
-		try {
-			// grow if its not an empty or null string
-			if (aValue != null && aValue.toString().length() > 0) {
-				while (rowIndex >= table.getRowCount()) {
-					table.createEmptyRow(-1);
-				}
-			}
+	
+		int finalCol = columnIndex;
+		TableUtils.runTransaction(ds, new Callable<Boolean>() {
 
-			if (rowIndex < table.getRowCount()) {
-				if (!ds.isInTransaction()) {
-					startedTransaction = true;
-					ds.startTransaction();
+			@Override
+			public Boolean call() throws Exception {
+				// grow if its not an empty or null string
+				if (aValue != null && aValue.toString().length() > 0) {
+					while (rowIndex >= table.getRowCount()) {
+						table.createEmptyRow(-1);
+					}
+				}
+
+				if (rowIndex < table.getRowCount()) {
+					table.setValueAt(aValue, rowIndex, finalCol);				
 				}
 				
-				table.setValueAt(aValue, rowIndex, columnIndex);				
+				return true;
 			}
-			
-		} 
-		finally{
-			if (startedTransaction) {
-				ds.endTransaction();
-			}	
-		}
+		});
 
 	}
 
@@ -315,7 +335,11 @@ public final class SwingAdapter implements TableModel {
 	}
 	
 	public GridEditPermissions getPermissions(){
-		GridEditPermissions ret = GridEditPermissions.create(getTable(), filter.isFiltered()==false);
+		ODLTableDefinition table = getTable();
+		if(table==null){
+			return new GridEditPermissions();
+		}
+		GridEditPermissions ret = GridEditPermissions.create(table, filter.isFiltered()==false);
 		return ret;
 	}
 	

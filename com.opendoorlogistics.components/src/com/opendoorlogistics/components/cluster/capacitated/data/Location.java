@@ -7,11 +7,11 @@
 package com.opendoorlogistics.components.cluster.capacitated.data;
 
 import com.opendoorlogistics.api.components.PredefinedTags;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLDefaultDoubleValue;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLNullAllowed;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTag;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultDoubleValue;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTag;
 
 final public class Location extends LatLongImpl{
 	private double quantity=1;

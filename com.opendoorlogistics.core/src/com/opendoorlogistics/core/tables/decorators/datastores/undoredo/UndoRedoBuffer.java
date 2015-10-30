@@ -52,5 +52,9 @@ class UndoRedoBuffer{
 		}
 		return transaction;
 	}
+	
+	void clear(){
+		list.clear();
+	}
 
 }

@@ -37,6 +37,7 @@ import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 
@@ -44,15 +45,23 @@ import org.apache.commons.io.FilenameUtils;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
-import com.opendoorlogistics.api.app.ODLApp;
+import com.opendoorlogistics.api.app.DatastoreModifier;
+import com.opendoorlogistics.api.app.ODLAppLoadedState;
+import com.opendoorlogistics.api.app.ui.BeanEditorFactory;
+import com.opendoorlogistics.api.app.ui.ODLAppUI;
+import com.opendoorlogistics.api.app.ui.UIAction;
 import com.opendoorlogistics.api.components.ODLComponent;
+import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.io.ImportFileType;
+import com.opendoorlogistics.api.tables.DatastoreManagerPlugin;
+import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.DatastoreManagerPluginState;
+import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.ProcessDatastoreResult;
+import com.opendoorlogistics.api.tables.HasUndoStateListeners.UndoStateChangedListener;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
-import com.opendoorlogistics.api.tables.ODLDatastoreUndoable.UndoStateChangedListener;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
-import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.codefromweb.IconToImage;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.CommandLineInterface;
@@ -65,19 +74,20 @@ import com.opendoorlogistics.core.components.ODLWizardTemplateConfig;
 import com.opendoorlogistics.core.scripts.ScriptsProvider;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
-import com.opendoorlogistics.core.tables.io.PoiIO;
-import com.opendoorlogistics.core.tables.io.TableIOUtils;
+import com.opendoorlogistics.core.tables.DatastoreManagerGlobalPlugin;
+import com.opendoorlogistics.core.tables.decorators.datastores.DataUpdaterDecorator;
+import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
+import com.opendoorlogistics.core.tables.decorators.datastores.deepcopying.OptimisedDeepCopierDecorator;
+import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
-import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.IOUtils;
-import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
 import com.opendoorlogistics.core.utils.ui.TextInformationDialog;
 import com.opendoorlogistics.studio.DatastoreTablesPanel;
 import com.opendoorlogistics.studio.DropFileImporterListener;
 import com.opendoorlogistics.studio.InitialiseStudio;
-import com.opendoorlogistics.studio.LoadedDatastore;
+import com.opendoorlogistics.studio.LoadedState;
 import com.opendoorlogistics.studio.PreferencesManager;
 import com.opendoorlogistics.studio.PreferencesManager.PrefKey;
 import com.opendoorlogistics.studio.controls.buttontable.ButtonTableDialog;
@@ -87,15 +97,16 @@ import com.opendoorlogistics.studio.internalframes.ProgressFrame;
 import com.opendoorlogistics.studio.panels.ProgressPanel;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.editor.ScriptWizardActions;
+import com.opendoorlogistics.studio.scripts.execution.PluginDatastoreModifierTask;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManager;
 import com.opendoorlogistics.studio.scripts.execution.ScriptUIManagerImpl;
 import com.opendoorlogistics.studio.scripts.list.ScriptNode;
 import com.opendoorlogistics.studio.scripts.list.ScriptsPanel;
+import com.opendoorlogistics.studio.tables.custom.CustomTableEditorFrame;
 import com.opendoorlogistics.studio.tables.grid.ODLGridFrame;
 import com.opendoorlogistics.studio.tables.schema.TableSchemaEditor;
 import com.opendoorlogistics.studio.utils.WindowState;
 import com.opendoorlogistics.utils.ui.Icons;
-import com.opendoorlogistics.utils.ui.ODLAction;
 
 public class AppFrame extends DesktopAppFrame  {
 	private final JSplitPane splitterLeftSide;
@@ -106,11 +117,11 @@ public class AppFrame extends DesktopAppFrame  {
 	private final ScriptsPanel scriptsPanel;
 	private final JToolBar mainToolbar = new JToolBar(SwingConstants.VERTICAL);
 	private final ODLApi api = new ODLApiImpl();
-	private final List<ODLAction> allActions = new ArrayList<ODLAction>();
+	private final List<UIAction> allActions = new ArrayList<UIAction>();
 	private final AppPermissions appPermissions;
 	private List<NewDatastoreProvider> newDatastoreProviders = NewDatastoreProvider.createDefaults();
 	private JMenu mnScripts;
-	private LoadedDatastore loaded;
+	private LoadedState loaded;
 	private boolean datastoreCloseNeedsUseConfirmation = true;
 
 	/**
@@ -176,12 +187,10 @@ public class AppFrame extends DesktopAppFrame  {
 			setIconImage(appIcon);
 		}
 
-		// create actions
-		List<AppFrameAction> fileActions = actionFactory.createFileActions(this);
+		// create actions - this assumes that actions live for the lifetime of the app
+		List<UIAction> fileActions = actionFactory.createFileActions(this);
 		allActions.addAll(fileActions);
-		List<AppFrameAction> editActions = new ArrayList<AppFrameAction>();
-		editActions.add(actionFactory.createUndo(this));
-		editActions.add(actionFactory.createRedo(this));
+		List<UIAction> editActions = actionFactory.createEditActions(this);
 		allActions.addAll(editActions);
 
 		// create left-hand panel with scripts and tables
@@ -225,16 +234,19 @@ public class AppFrame extends DesktopAppFrame  {
 
 	}
 
-	private void initToolbar(ActionFactory actionBuilder, List<AppFrameAction> fileActions, List<AppFrameAction> editActions) {
+	private void initToolbar(ActionFactory actionBuilder, List<? extends Action> fileActions, List<? extends Action> editActions) {
 		getContentPane().add(mainToolbar, BorderLayout.WEST);
+		
 		mainToolbar.setFloatable(false);
-		for (AppFrameAction action : fileActions) {
-			if (action != null && action.getConfig().getLargeicon() != null) {
+		
+		mainToolbar.removeAll();
+		for (Action action : fileActions) {
+			if (action != null && action.getValue(Action.LARGE_ICON_KEY)!= null) {
 				mainToolbar.add(action);
 			}
 		}
 		for (Action action : editActions) {
-			if (action != null) {
+			if (action != null && action.getValue(Action.LARGE_ICON_KEY)!= null) {
 				mainToolbar.add(action);
 			}
 		}
@@ -244,14 +256,16 @@ public class AppFrame extends DesktopAppFrame  {
 			mainToolbar.add(helpsite);
 		}
 
+		mainToolbar.revalidate();
+		mainToolbar.repaint();
 	}
 
 	@Override
-	public LoadedDatastore getLoadedDatastore() {
+	public LoadedState getLoadedDatastore() {
 		return loaded;
 	}
 
-	private void initMenus(ActionFactory actionBuilder, MenuFactory menuBuilder, List<AppFrameAction> fileActions, List<AppFrameAction> editActions) {
+	private void initMenus(ActionFactory actionBuilder, MenuFactory menuBuilder, List<? extends Action> fileActions, List<? extends Action> editActions) {
 		final JMenuBar menuBar = new JMenuBar();
 		class AddSpace {
 			void add() {
@@ -294,11 +308,11 @@ public class AppFrame extends DesktopAppFrame  {
 		mnEdit.setMnemonic('E');
 		menuBar.add(mnEdit);
 		addSpace.add();
-		for (AppFrameAction action : editActions) {
-			JMenuItem item = mnEdit.add(action);
-			if (action.accelerator != null) {
-				item.setAccelerator(action.accelerator);
-			}
+		for (Action action : editActions) {
+			mnEdit.add(action);
+//			if (action.accelerator != null) {
+//				item.setAccelerator(action.accelerator);
+//			}
 		}
 
 		// add run scripts menu (hidden until a datastore is loaded)
@@ -453,68 +467,16 @@ public class AppFrame extends DesktopAppFrame  {
 
 	@Override
 	public void importFile(final File file, final ImportFileType option) {
-		final ExecutionReport report = new ExecutionReportImpl();
-
-		// open the datastore if we don't have it open
-		if (loaded == null) {
-			openEmptyDatastore();
-		}
-
-		String message = "Importing " + file;
-		final ProgressDialog<ODLDatastoreAlterable<ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, message, false, true);
-		pd.setLocationRelativeTo(this);
-		pd.setText("Importing file, please wait.");
-		pd.start(new Callable<ODLDatastoreAlterable<ODLTableAlterable>>() {
-
-			@Override
-			public ODLDatastoreAlterable<ODLTableAlterable> call() throws Exception {
-				try {
-					ODLDatastoreAlterable<ODLTableAlterable> imported = TableIOUtils.importFile(file, option, ProgressPanel.createProcessingApi(getApi(), pd),
-							report);
-					return imported;
-				} catch (Throwable e) {
-					report.setFailed(e);
-					return null;
-				}
-			}
-		}, new OnFinishedSwingThreadCB<ODLDatastoreAlterable<ODLTableAlterable>>() {
-
-			@Override
-			public void onFinished(ODLDatastoreAlterable<ODLTableAlterable> result, boolean userCancelled, boolean userFinishedNow) {
-				// try to add to main datastore
-				if (result != null) {
-					if (!TableUtils.addDatastores(loaded.getDs(), result, true)) {
-						result = null;
-					}
-				}
-
-				// report what happened
-				if (result != null) {
-					for (int i = 0; i < result.getTableCount(); i++) {
-						ODLTableReadOnly table = result.getTableAt(i);
-						report.log("Imported table \"" + table.getName() + "\" with " + table.getRowCount() + " rows and " + table.getColumnCount()
-								+ " columns.");
-					}
-					report.log("Imported " + result.getTableCount() + " tables.");
-
-				} else {
-					report.log("Error importing " + Strings.convertEnumToDisplayFriendly(option));
-					report.log("Could not import file: " + file.getAbsolutePath());
-					String message = report.getReportString(true, false);
-					if (message.length() > 0) {
-						message += System.lineSeparator();
-					}
-				}
-				ExecutionReportDialog.show(AppFrame.this, "Import result", report);
-			}
-		});
+		DatastoreLoader.importFile(this, file, option);
 	}
+	
+
 
 	@Override
 	public void updateAppearance() {
-		for (ODLAction action : allActions) {
+		for (UIAction action : allActions) {
 			if (action != null) {
-				action.updateEnabled();
+				action.updateEnabledState();
 			}
 		}
 
@@ -528,8 +490,8 @@ public class AppFrame extends DesktopAppFrame  {
 		String title = AppConstants.WEBSITE;
 		if (loaded != null) {
 			title += " - ";
-			if (loaded.getLastFile() != null) {
-				title += loaded.getLastFile();
+			if (loaded.getFile() != null) {
+				title += loaded.getFile();
 			} else {
 				title += "untitled";
 			}
@@ -561,39 +523,7 @@ public class AppFrame extends DesktopAppFrame  {
 
 	@Override
 	public void openFile(final File file) {
-
-		String message = "Loading " + file;
-		final ProgressDialog<ODLDatastoreAlterable<ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, message, false, true);
-		pd.setLocationRelativeTo(this);
-		pd.setText("Loading file, please wait.");
-		final ExecutionReport report = new ExecutionReportImpl();
-		pd.start(new Callable<ODLDatastoreAlterable<ODLTableAlterable>>() {
-
-			@Override
-			public ODLDatastoreAlterable<ODLTableAlterable> call() throws Exception {
-				try {
-					ODLDatastoreAlterable<ODLTableAlterable> ret = PoiIO.importExcel(file, ProgressPanel.createProcessingApi(getApi(), pd), report);
-					return ret;
-				} catch (Throwable e) {
-					report.setFailed(e);
-					return null;
-				}
-			}
-		}, new OnFinishedSwingThreadCB<ODLDatastoreAlterable<ODLTableAlterable>>() {
-
-			@Override
-			public void onFinished(ODLDatastoreAlterable<ODLTableAlterable> result, boolean userCancelled, boolean userFinishedNow) {
-
-				if (result != null) {
-					setDatastore(result, file);
-					PreferencesManager.getSingleton().addRecentFile(file);
-					PreferencesManager.getSingleton().setDirectory(PrefKey.LAST_IO_DIR, file);
-				} else {
-					report.setFailed("Could not open file " + file.getAbsolutePath());
-					ExecutionReportDialog.show(AppFrame.this, "Error opening file", report);
-				}
-			}
-		});
+		DatastoreLoader.loadExcel(this, file);
 	}
 
 	@Override
@@ -649,34 +579,7 @@ public class AppFrame extends DesktopAppFrame  {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-
-					final ProgressDialog<ODLDatastoreAlterable<? extends ODLTableAlterable>> pd = new ProgressDialog<>(AppFrame.this, "Creating new datastore",
-							false, false);
-					pd.setLocationRelativeTo(AppFrame.this);
-					pd.setText("Creating new datastore, please wait.");
-					pd.start(new Callable<ODLDatastoreAlterable<? extends ODLTableAlterable>>() {
-
-						@Override
-						public ODLDatastoreAlterable<? extends ODLTableAlterable> call() throws Exception {
-							try {
-								return ndp.create();
-							} catch (Throwable e) {
-								return null;
-							}
-
-						}
-					}, new OnFinishedSwingThreadCB<ODLDatastoreAlterable<? extends ODLTableAlterable>>() {
-
-						@Override
-						public void onFinished(ODLDatastoreAlterable<? extends ODLTableAlterable> result, boolean userCancelled, boolean userFinishedNow) {
-
-							if (result != null) {
-								setDatastore(result, null);
-							} else {
-								JOptionPane.showMessageDialog(AppFrame.this, "Failed to create new datastore");
-							}
-						}
-					});
+					DatastoreLoader.useNewDatastoreProvider(AppFrame.this, ndp);
 				}
 			}));
 		}
@@ -755,29 +658,39 @@ public class AppFrame extends DesktopAppFrame  {
 
 	}
 
-	public void setDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> newDs, File sourceFile) {
+	/**
+	 * Set the new datastore, which has already been decorated with listeners, undo / redo etc...
+	 * @param decoratedDs
+	 * @param sourceFile
+	 */
+	@SuppressWarnings("unchecked")
+	void setDecoratedDatastore(ODLDatastoreUndoable<? extends ODLTableAlterable> decoratedDs,DatastoreManagerPluginState dmps, File sourceFile){
 		if (loaded != null) {
 			closeDatastore();
 		}
 
-		loaded = new LoadedDatastore(newDs, sourceFile, this);
+		loaded = new LoadedState(decoratedDs, sourceFile, this);
 
+		DatastoreManagerPlugin plugin = DatastoreManagerGlobalPlugin.getPlugin();
+		if(plugin!=null && dmps!=null){
+			loaded.putPluginState(plugin, dmps);
+		}
+		
 		tables.setDatastore(loaded.getDs());
 
-		// loaded.lastSaveVersionNumber = loaded.ds.getDataVersion();
+		decoratedDs.addListener(scriptManager);
 
-		loaded.getDs().addListener(scriptManager);
-		loaded.getDs().addUndoStateListener(new UndoStateChangedListener<ODLTableAlterable>() {
+		UndoStateChangedListener<ODLTableAlterable> undoStateChangedListener = new UndoStateChangedListener< ODLTableAlterable>() {
 
 			@Override
-			public void undoStateChanged(ODLDatastoreUndoable<ODLTableAlterable> datastoreUndoable) {
+			public void undoStateChanged(ODLDatastoreUndoable<? extends ODLTableAlterable> datastoreUndoable) {
 				Runnable runnable = new Runnable() {
 
 					@Override
 					public void run() {
-						for (ODLAction action : allActions) {
+						for (UIAction action : allActions) {
 							if (action != null) {
-								action.updateEnabled();
+								action.updateEnabledState();
 							}
 						}
 					}
@@ -789,10 +702,32 @@ public class AppFrame extends DesktopAppFrame  {
 					SwingUtilities.invokeLater(runnable);
 				}
 			}
-		});
+		};
+		
+		// having java compilation oddities so we do the cast ... type erasure should ensure its safe
+		((ODLDatastoreUndoable< ODLTableAlterable>)decoratedDs).addUndoStateListener(undoStateChangedListener);
 
 		updateAppearance();
-		scriptManager.datastoreStructureChanged();
+		scriptManager.datastoreStructureChanged();	
+	}
+	
+	@Override
+	public void setDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> undecoratedDs, File sourceFile) {
+		ExecutionReportImpl report = new ExecutionReportImpl();
+		setDecoratedDatastore(decorateNewDatastore(undecoratedDs, sourceFile,null, null, report), null,sourceFile);
+		
+		// This method can be called from ODL Connect when ODL Studio is starting up, so we show 
+		// a delayed warning message to ensure the appframe window is initialised
+		if(report.isFailed() || report.size()>0){
+			SwingUtilities.invokeLater(new Runnable() {
+				
+				@Override
+				public void run() {
+					String title = report.isFailed()? "Error": "Warning";
+					new ExecutionReportDialog(AppFrame.this, title, report, false);
+				}
+			});			
+		}
 
 	}
 
@@ -915,27 +850,23 @@ public class AppFrame extends DesktopAppFrame  {
 
 	}
 
-	@Override
-	public void openEmptyDatastore() {
-		setDatastore(ODLDatastoreImpl.alterableFactory.create(), null);
-	}
 
 	public ScriptUIManager getScriptUIManager() {
 		return scriptManager;
 	}
 
-	private void initFileMenu(JMenu mnFile, List<AppFrameAction> fileActions, ActionFactory actionFactory, MenuFactory menuBuilder) {
+	private void initFileMenu(JMenu mnFile, List<? extends Action> fileActions, ActionFactory actionFactory, MenuFactory menuBuilder) {
 		mnFile.removeAll();
 
 		// non-dynamic
-		for (AppFrameAction action : fileActions) {
+		for (Action action : fileActions) {
 			if (action == null) {
 				mnFile.addSeparator();
 			} else {
-				JMenuItem item = mnFile.add(action);
-				if (action.accelerator != null) {
-					item.setAccelerator(action.accelerator);
-				}
+				mnFile.add(action);
+//				if (action.accelerator != null) {
+//					item.setAccelerator(action.accelerator);
+//				}
 			}
 		}
 
@@ -971,7 +902,7 @@ public class AppFrame extends DesktopAppFrame  {
 				System.exit(0);
 			}
 		});
-		item.setAccelerator(((AppFrameAction) item.getAction()).accelerator);
+	//	item.setAccelerator(((AppFrameAction) item.getAction()).accelerator);
 		mnFile.validate();
 	}
 
@@ -1015,5 +946,110 @@ public class AppFrame extends DesktopAppFrame  {
 	public void setDatastoreCloseNeedsUseConfirmation(boolean needsUserConfirmation) {
 		this.datastoreCloseNeedsUseConfirmation = needsUserConfirmation;
 	}
+
+	@Override
+	public ODLAppLoadedState getLoadedState() {
+		return loaded;
+	}
+	
+	/**
+	 * Decorate a new datastore to add functionality like undo / redo, listeners.
+	 * @param ds
+	 * @param file
+	 * @param papi
+	 * @param report
+	 * @return
+	 */
+	ODLDatastoreUndoable<? extends ODLTableAlterable> decorateNewDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> ds,
+			File file, ProcessingApi papi, DatastoreManagerPluginState []dsmps,ExecutionReport report) {
+		ODLDatastoreUndoable<? extends ODLTableAlterable> ret;
+		if (ODLDatastoreImpl.class.isInstance(ds) == false) {
+			throw new RuntimeException();
+		}
+	
+		// wrap in the decorator that allows lazy deep copying first of all
+		ds = new OptimisedDeepCopierDecorator<>(ds);
+							
+		// wrap in listener decorator
+		ds = new ListenerDecorator<ODLTableAlterable>(ODLTableAlterable.class, ds);
+		
+		// then undo / redo
+		ret = new UndoRedoDecorator<ODLTableAlterable>(ODLTableAlterable.class, ds);
+
+		// then a data updater decorator automatically calls any data updater options in all loaded scripts
+		// whenever the datastore is modified in a transaction.
+		ret = new DataUpdaterDecorator(getApi(), ret, this);
+		
+		// finally any plugin logic
+		DatastoreManagerPlugin plugin = DatastoreManagerGlobalPlugin.getPlugin();
+		if(plugin!=null && ds!=null && papi!=null && report!=null){
+			ProcessDatastoreResult pdr = plugin.processNewDatastore(file, ret, papi, report);
+			if(report.isFailed()){
+				return null;
+			}
+			ret = pdr.getDs();
+			
+			if(dsmps!=null && dsmps.length>0){
+				dsmps[0]=pdr.getState();
+			}
+			
+			// ensure any changes not added to undo redo buffer as don't want them unable
+			ret.clearUndoBuffer();
+		}
+		return ret;
+	}
+
+	@Override
+	public void postAsynchronousDatastoreModify(DatastoreModifier modifier) {
+		if (getLoadedDatastore() == null ) {
+			JOptionPane.showMessageDialog(AppFrame.this, "Cannot execute " + modifier.name() + " as no datastore is loaded.");
+			return;
+		}
+		
+		new SwingWorker<Void, Void>() {
+
+			@Override
+			protected Void doInBackground() throws Exception {
+				new PluginDatastoreModifierTask(AppFrame.this,modifier).executeNonEDT();
+				return null;
+			}
+		}.execute();;
+	}
+
+	@Override
+	public ODLAppUI getUI() {
+		return new ODLAppUI() {
+			
+			@Override
+			public void showModalMessage(String title, String message, Dimension prefWindowSize){
+				TextInformationDialog dlg=new TextInformationDialog(AppFrame.this, title, message);
+			//	dlg.setMinimumSize(new Dimension(1000, 200));
+				dlg.setLocationRelativeTo(AppFrame.this);
+			//	dlg.pack();
+				
+				if(prefWindowSize!=null){
+					dlg.setPreferredSize(prefWindowSize);					
+				}
+				
+				dlg.pack();
+				dlg.setVisible(true);
+			
+			}
+
+			@Override
+			public void showModalMessage(String title, String message) {
+				showModalMessage(title, message,null);
+			}
+
+			@Override
+			public <T extends BeanMappedRow> void launchDataEditor(Class<T> beanDefinition, BeanEditorFactory<T> editorFactory) {		
+				CustomTableEditorFrame<T> editor = new CustomTableEditorFrame<>(AppFrame.this, getApi(), beanDefinition, editorFactory, AppFrame.this);
+				addInternalFrame(editor, FramePlacement.CENTRAL);
+			}
+
+
+		};
+	}
+
 
 }

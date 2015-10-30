@@ -56,7 +56,7 @@ public class OptimisedDeepCopierDecorator<T extends ODLTableDefinition> extends 
 	}
 
 	@Override
-	public synchronized ODLDatastore<? extends T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
+	public synchronized ODLDatastoreAlterable<? extends T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
 		if(!lazyCopy){
 			return decorated.deepCopyWithShallowValueCopy(lazyCopy);
 		}
@@ -172,12 +172,12 @@ public class OptimisedDeepCopierDecorator<T extends ODLTableDefinition> extends 
 	}
 
 	@Override
-	protected boolean getTableExists(int tableId) {
+	public boolean getTableExists(int tableId) {
 		return decorated.getTableByImmutableId(tableId)!=null;
 	}
 
 	@Override
-	protected ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
+	public ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
 		ODLTableDefinition t = decorated.getTableByImmutableId(tableId);
 		if(t!=null){
 			return t.deepCopyWithShallowValueCopy();

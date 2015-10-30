@@ -12,5 +12,6 @@ public interface Undoable extends SupportsTransactions{
 	void undo();
 	void redo();
 	boolean hasRedo();
-	boolean hasUndo();	
+	boolean hasUndo();
+	void clearUndoBuffer();
 }

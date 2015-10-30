@@ -24,6 +24,7 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.tables.TableQuery;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
+import com.opendoorlogistics.core.tables.decorators.tables.FlatDs2TableObject;
 import com.opendoorlogistics.core.tables.utils.DatastoreComparer;
 import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
 import com.opendoorlogistics.core.utils.Long2Ints;
@@ -121,7 +122,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	public ODLDatastore<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
+	public ODLDatastoreAlterable<T> deepCopyWithShallowValueCopy(boolean lazyCopy) {
 		throw new UnsupportedInUnion();
 	}
 
@@ -137,7 +138,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 		T ret =null;
 		if(tableIndex < stores.get(0).getTableCount()){
 			int id = stores.get(0).getTableAt(tableIndex).getImmutableId();
-			ret= (T)new TableDecorator(id);
+			ret= (T)new FlatDs2TableObject(this,id);
 		}
 		return ret;
 	}
@@ -187,7 +188,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected int getRowCount(int tableId) {
+	public int getRowCount(int tableId) {
 		int sum=0;
 		for(ODLDatastore<? extends T> ds: stores){
 			ODLTableReadOnly table = (ODLTableReadOnly)ds.getTableByImmutableId(tableId);
@@ -199,7 +200,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 	
 	@Override
-	protected Object getValueAt(int tableId, int rowIndex, int columnIndex) {
+	public Object getValueAt(int tableId, int rowIndex, int columnIndex) {
 		long dsRow = dsRowIndx(tableId, rowIndex);
 		if(dsRow!=-1){
 			return readOnly(dsRow, tableId).getValueAt(rowIndx(dsRow), columnIndex);			
@@ -208,7 +209,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected Object getValueById(int tableId, long rowId, int columnIndex) {
+	public Object getValueById(int tableId, long rowId, int columnIndex) {
 		int dsIndx = dsIndexWithRowId(tableId, rowId);
 		if(dsIndx!=-1){
 			return ((ODLTableReadOnly)stores.get(dsIndx).getTableByImmutableId(tableId)).getValueById(rowId, columnIndex);
@@ -217,32 +218,32 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected ODLColumnType getColumnFieldType(int tableId, int col) {
+	public ODLColumnType getColumnFieldType(int tableId, int col) {
 		return stores.get(0).getTableByImmutableId(tableId).getColumnType(col);
 	}
 
 	@Override
-	protected String getColumnName(int tableId, int col) {
+	public String getColumnName(int tableId, int col) {
 		return stores.get(0).getTableByImmutableId(tableId).getColumnName(col);
 	}
 
 	@Override
-	protected Object getColumnDefaultValue(int tableId, int col) {
+	public Object getColumnDefaultValue(int tableId, int col) {
 		return stores.get(0).getTableByImmutableId(tableId).getColumnDefaultValue(col);
 	}
 
 	@Override
-	protected int getColumnCount(int tableId) {
+	public int getColumnCount(int tableId) {
 		return stores.get(0).getTableByImmutableId(tableId).getColumnCount();
 	}
 
 	@Override
-	protected String getName(int tableId) {
+	public String getName(int tableId) {
 		return stores.get(0).getTableByImmutableId(tableId).getName();
 	}
 
 	@Override
-	protected long getFlags(int tableId) {
+	public long getFlags(int tableId) {
 		// Remove all edit flags as they are ambiguous - particularly as the same physical row (in the external datastore)
 		// can appear multiple times in a union. 
 		long ret= stores.get(0).getTableByImmutableId(tableId).getFlags();
@@ -252,37 +253,37 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected long getColumnFlags(int tableId, int col) {
+	public long getColumnFlags(int tableId, int col) {
 		return stores.get(0).getTableByImmutableId(tableId).getColumnFlags(col);
 	}
 
 	@Override
-	protected int getColumnImmutableId(int tableId, int col) {
+	public int getColumnImmutableId(int tableId, int col) {
 		return stores.get(0).getTableByImmutableId(tableId).getColumnImmutableId(col);
 	}
 
 	@Override
-	protected boolean containsRowId(int tableId, long rowId) {
+	public boolean containsRowId(int tableId, long rowId) {
 		return dsIndexWithRowId(tableId, rowId)!=-1;
 	}
 
 	@Override
-	protected Set<String> getColumnTags(int tableId, int col) {
+	public Set<String> getColumnTags(int tableId, int col) {
 		return stores.get(0).getTableByImmutableId(tableId).getColumnTags(col);
 	}
 
 	@Override
-	protected Set<String> getTags(int tableId) {
+	public Set<String> getTags(int tableId) {
 		return stores.get(0).getTableByImmutableId(tableId).getTags();
 	}
 
 	@Override
-	protected String getColumnDescription(int tableId, int col) {
+	public String getColumnDescription(int tableId, int col) {
 		return stores.get(0).getTableByImmutableId(tableId).getColumnDescription(col);
 	}
 
 	@Override
-	protected void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
+	public void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
 		long dsRow = dsRowIndx(tableId, rowIndex);
 		if(dsRow!=-1){
 			writable(dsRow, tableId).setValueAt(aValue,rowIndx(dsRow), columnIndex);			
@@ -294,7 +295,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
+	public void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
 		int dsIndx = dsIndexWithRowId(tableId, rowId);
 		if(dsIndx!=-1){
 			((ODLTable)stores.get(dsIndx).getTableByImmutableId(tableId)).setValueById(aValue,rowId, columnIndex);
@@ -302,17 +303,17 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected int createEmptyRow(int tableId, long rowId) {
+	public int createEmptyRow(int tableId, long rowId) {
 		throw new UnsupportedInUnion();
 	}
 
 	@Override
-	protected void insertEmptyRow(int tableId, int insertAtRowNb, long rowId) {
+	public void insertEmptyRow(int tableId, int insertAtRowNb, long rowId) {
 		throw new UnsupportedInUnion();
 	}
 
 	@Override
-	protected void deleteRow(int tableId, int rowIndex) {
+	public void deleteRow(int tableId, int rowIndex) {
 		long dsRow = dsRowIndx(tableId, rowIndex);
 		if(dsRow!=-1){
 			writable(dsRow, tableId).deleteRow(rowIndx(dsRow));			
@@ -320,47 +321,47 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected void deleteCol(int tableId, int col) {
+	public void deleteCol(int tableId, int col) {
 		throw new UnsupportedInUnion();
 	}
 
 	@Override
-	protected boolean insertCol(int tableId, int id, int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
+	public boolean insertCol(int tableId, int id, int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
 		throw new UnsupportedInUnion();
 	}
 
 	@Override
-	protected int addColumn(int tableId, int columnid, String name, ODLColumnType type, long flags) {
+	public int addColumn(int tableId, int columnid, String name, ODLColumnType type, long flags) {
 		throw new UnsupportedInUnion();
 	}
 
 	@Override
-	protected void setFlags(int tableId, long flags) {
+	public void setFlags(int tableId, long flags) {
 		throw new UnsupportedInUnion();
 	}
 
 	@Override
-	protected void setColumnFlags(int tableId, int col, long flags) {
+	public void setColumnFlags(int tableId, int col, long flags) {
 		throw new UnsupportedInUnion();
 	}
 
 	@Override
-	protected void setColumnDefaultValue(int tableId, int col, Object value) {
+	public void setColumnDefaultValue(int tableId, int col, Object value) {
 		throw new UnsupportedInUnion();
 	}
 
 	@Override
-	protected void setColumnTags(int tableId, int col, Set<String> tags) {
+	public void setColumnTags(int tableId, int col, Set<String> tags) {
 		throw new UnsupportedInUnion();
 	}
 
 	@Override
-	protected void setTags(int tableId, Set<String> tags) {
+	public void setTags(int tableId, Set<String> tags) {
 		throw new UnsupportedInUnion();
 	}
 
 	@Override
-	protected void setColumnDescription(int tableId, int col, String description) {
+	public void setColumnDescription(int tableId, int col, String description) {
 		throw new UnsupportedInUnion();
 	}
 
@@ -370,7 +371,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 	
 	@Override
-	protected long getRowGlobalId(int tableId, int rowIndex) {
+	public long getRowGlobalId(int tableId, int rowIndex) {
 		long dsRow = dsRowIndx(tableId, rowIndex);
 		if(dsRow!=-1){
 			return readOnly(dsRow, tableId).getRowId(rowIndx(dsRow));			
@@ -379,7 +380,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected long getRowFlags(int tableId, long rowId) {
+	public long getRowFlags(int tableId, long rowId) {
 		int dsIndx = dsIndexWithRowId(tableId, rowId);
 		if(dsIndx!=-1){
 			return ((ODLTableReadOnly)stores.get(dsIndx).getTableByImmutableId(tableId)).getRowFlags(rowId);
@@ -388,7 +389,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected void setRowFlags(int tableId, long flags, long rowId) {
+	public void setRowFlags(int tableId, long flags, long rowId) {
 		int dsIndx = dsIndexWithRowId(tableId, rowId);
 		if(dsIndx!=-1){
 			((ODLTable)stores.get(dsIndx).getTableByImmutableId(tableId)).setRowFlags(flags,rowId);
@@ -402,17 +403,17 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected boolean getTableExists(int tableId) {
+	public boolean getTableExists(int tableId) {
 		return true;
 	}
 
 	@Override
-	protected ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
+	public ODLTableDefinition deepCopyWithShallowValueCopy(int tableId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	protected long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
+	public long getRowLastModifiedTimeMillisecs(int tableId, long rowId) {
 		int dsIndx = dsIndexWithRowId(tableId, rowId);
 		if(dsIndx!=-1){
 			return ((ODLTableReadOnly)stores.get(dsIndx).getTableByImmutableId(tableId)).getRowLastModifiedTimeMillsecs(rowId);
@@ -421,7 +422,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 
 	@Override
-	protected long[] find(int tableId, int col, Object value) {
+	public long[] find(int tableId, int col, Object value) {
 		TLongArrayList ret = new TLongArrayList();
 		
 		TLongHashSet hashset = new TLongHashSet();
@@ -444,7 +445,7 @@ final public class UnionDecorator<T extends ODLTableDefinition> extends Abstract
 	}
 	
 	@Override
-	protected ODLTableReadOnly query(int tableId, TableQuery query) {
+	public ODLTableReadOnly query(int tableId, TableQuery query) {
 		
 		// Create empty return table
 		ODLApiImpl api = new ODLApiImpl();

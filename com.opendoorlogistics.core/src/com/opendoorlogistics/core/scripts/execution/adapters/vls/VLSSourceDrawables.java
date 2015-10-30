@@ -4,14 +4,14 @@ import java.util.Set;
 
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLNullAllowed;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableFlags;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMapping;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableFlags;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 
 @ODLTableName(VLSSourceDrawables.SOURCE_PREFIX + "Your-Source-Name")
@@ -30,7 +30,7 @@ public class VLSSourceDrawables extends DrawableObjectImpl{
 	
 	public static final String SOURCE_PREFIX = "Source-";
 	
-	public static final BeanTableMapping BEAN_MAPPING =BeanMapping.buildDatastore(VLSSourceDrawables.class).getTableMapping(0); 
+	public static final BeanTableMappingImpl BEAN_MAPPING =BeanMapping.buildDatastore(VLSSourceDrawables.class).getTableMapping(0); 
 
 	public static final Set<String> STD_COLUMN_NAMES;
 	static{

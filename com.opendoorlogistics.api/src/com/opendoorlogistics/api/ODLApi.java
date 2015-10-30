@@ -10,6 +10,7 @@ import java.util.List;
 
 import net.xeoh.plugins.base.Plugin;
 
+import com.opendoorlogistics.api.app.ODLAppProperties;
 import com.opendoorlogistics.api.components.ODLComponentProvider;
 import com.opendoorlogistics.api.geometry.Geometry;
 import com.opendoorlogistics.api.scripts.Scripts;
@@ -27,6 +28,7 @@ public interface ODLApi {
 	Functions functions();
 	Scripts scripts();
 	IO io();
+	ODLAppProperties properties();
 	
 	/**
 	 * Load all plugins of the input class from the plugins directory

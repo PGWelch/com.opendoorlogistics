@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.lowagie.text.Table;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
@@ -21,6 +22,7 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.tables.*;
 import com.opendoorlogistics.core.tables.decorators.rows.ODLRowReadOnlyImpl;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
@@ -186,6 +188,7 @@ final public class DatastoreCopier {
 		}
 	}
 	
+
 	public static ODLTableAlterable copyTableIntoSameDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> ds, int tableId, String copyName){
 		boolean transaction = ds.isInTransaction();
 		if(!transaction){
@@ -240,8 +243,12 @@ final public class DatastoreCopier {
 	public static ODLTableAlterable copyTable(ODLTableReadOnly copyThis, ODLDatastoreAlterable<? extends ODLTableAlterable> copyInto){
 		return copyTable(copyThis, copyInto, copyThis.getName());
 	}
-	
+
 	public static void copyData(ODLTableReadOnly tFrom, ODLTable tTo){
+		copyData(tFrom, tTo, true);
+	}
+	
+	public static void copyData(ODLTableReadOnly tFrom, ODLTable tTo, boolean copyRowFlags){
 			
 		if(!DatastoreComparer.isSameStructure(tFrom, tTo, 0)){
 			throw unequalStructureException();
@@ -249,7 +256,7 @@ final public class DatastoreCopier {
 
 		int nr = tFrom.getRowCount();
 		for(int srcRow =0 ; srcRow < nr ; srcRow++){
-			insertRow(tFrom, srcRow, tTo, tTo.getRowCount());
+			insertRow(tFrom, srcRow, tTo, tTo.getRowCount(),copyRowFlags);
 		}
 			
 	}
@@ -313,8 +320,20 @@ final public class DatastoreCopier {
 	
 
 	public static void insertRow(ODLTableReadOnly tFrom,int fromRow, ODLTable tTo, int toRow){
+		insertRow(tFrom, fromRow, tTo, toRow, true);
+	}
+	
+	public static void insertRow(ODLTableReadOnly tFrom,int fromRow, ODLTable tTo, int toRow, boolean copyRowFlags){
 		// use original id if available
 		long id = tFrom.getRowId(fromRow);
+		
+		// copy row flags but strip selection state and linked excel flags
+		long flags =0;
+		if(copyRowFlags){
+			flags =removeLinkedExcelFlags(tFrom.getRowFlags(id));
+			flags &= ~TableFlags.FLAG_ROW_SELECTED_IN_MAP;			
+		}
+				
 		if(tTo.containsRowId(id)){
 			id = -1;
 		}
@@ -323,6 +342,12 @@ final public class DatastoreCopier {
 		int nc = tFrom.getColumnCount();
 		for(int col =0 ; col < nc; col++){
 			copyCell(tFrom, fromRow,col, tTo, toRow, col);
+		}
+		
+		// Set flags
+		if(copyRowFlags){
+			id = tTo.getRowId(toRow);
+			tTo.setRowFlags(id, flags);				
 		}
 	}
 
@@ -397,6 +422,12 @@ final public class DatastoreCopier {
 	}
 
 	public static ODLTableDefinitionAlterable copyTableDefinition(ODLTableDefinition copyThis, ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> copyTo, String newName, int id){
+		
+		// reuse the original id if we can
+		if(id==-1){
+			id = copyThis.getImmutableId();
+		}
+		
 		// only use id if unique
 		if(id!=-1 && copyTo.getTableByImmutableId(id)!=null){
 			id = -1;
@@ -422,8 +453,9 @@ final public class DatastoreCopier {
 	}
 	
 	public static boolean copyTableDefinition(ODLTableDefinition copyThis, ODLTableDefinitionAlterable copyTo, boolean copyColumnIds) {
-		copyTo.setFlags(copyThis.getFlags());
+		copyTo.setFlags(removeLinkedExcelFlags(copyThis.getFlags()));
 		copyTo.setTags(copyThis.getTags());
+
 		
 		boolean allAdded= true;
 		for(int fromCol =0 ;fromCol < copyThis.getColumnCount() ; fromCol++){
@@ -435,6 +467,11 @@ final public class DatastoreCopier {
 	}
 	
 	public static boolean copyColumnDefinition(ODLTableDefinition copyThis, ODLTableDefinitionAlterable copyTo, int fromCol, boolean copyColumnIds) {
+		return copyColumnDefinition(copyThis, copyTo, fromCol, -1, copyColumnIds);
+	}
+
+	
+	public static boolean copyColumnDefinition(ODLTableDefinition copyThis, ODLTableDefinitionAlterable copyTo, int fromCol,int toCol, boolean copyColumnIds) {
 		int id = copyColumnIds? copyThis.getColumnImmutableId(fromCol) : -1;
 		
 		// check id not already used
@@ -447,17 +484,31 @@ final public class DatastoreCopier {
 				}
 			}
 		}
+
+		// remove all flags indicating this data was from a linked excel (as its now a copy)
+		long flags = removeLinkedExcelFlags(copyThis.getColumnFlags(fromCol));
 		
-		boolean copied = copyTo.addColumn(id,copyThis.getColumnName(fromCol), copyThis.getColumnType(fromCol), copyThis.getColumnFlags(fromCol))!=-1;
+		boolean copied;
+		if(toCol==-1){
+			copied = copyTo.addColumn(id,copyThis.getColumnName(fromCol), copyThis.getColumnType(fromCol), flags)!=-1;
+			toCol = copyTo.getColumnCount()-1;
+		}else{
+			copied = copyTo.insertColumn(id, toCol, copyThis.getColumnName(fromCol), copyThis.getColumnType(fromCol), flags,false);
+		}
+		
 		if(copied){
-			int toCol = copyTo.getColumnCount()-1;
 			copyTo.setColumnDescription(toCol, copyThis.getColumnDescription(fromCol));
 			copyTo.setColumnTags(toCol, copyThis.getColumnTags(fromCol));
 			copyTo.setColumnDefaultValue(toCol, copyThis.getColumnDefaultValue(fromCol));
 		}
+		
 		return copied;
 	}
-
+	private static long removeLinkedExcelFlags(long flags) {
+		flags &= ~ TableFlags.ALL_LINKED_EXCEL_FLAGS;
+		return flags;
+	}
+	
 	private static RuntimeException notEmptyException() {
 		return new RuntimeException("Copy to database not empty");
 	}

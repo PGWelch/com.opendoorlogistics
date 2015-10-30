@@ -10,7 +10,7 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 
-public interface ODLDatastoreAlterable<T extends ODLTableDefinition> extends ODLDatastore<T> {
+public interface ODLDatastoreAlterable<T extends ODLTableDefinition> extends ODLDatastore<T>, TableDeleter,TableNameSetter {
 	/**
 	 * Create a new table
 	 * @param tablename
@@ -18,8 +18,6 @@ public interface ODLDatastoreAlterable<T extends ODLTableDefinition> extends ODL
 	 * @return null if the table wasn't created (usually if the name is not unique).
 	 */
 	T createTable(String tablename, int id);
-	void deleteTableById(int tableId);
-	boolean setTableName(int tableId, String newName);
 	
 	public interface ODLDatastoreAlterableFactory<T extends ODLTableAlterable>{
 		ODLDatastoreAlterable<T > create();

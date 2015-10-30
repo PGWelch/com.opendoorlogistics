@@ -46,7 +46,7 @@ import com.opendoorlogistics.core.scripts.wizard.ColumnNameMatch;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.tables.beans.BeanMapping;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.AdaptedDecorator.AdapterMapping;
 import com.opendoorlogistics.core.tables.decorators.datastores.UnionDecorator;
@@ -66,7 +66,7 @@ public class VLSBuilder {
 	private static final int INPUT_LAYER_INDX;
 	private static final int INPUT_STYLE_INDX;
 	private static final int INPUT_EXTRA_FIELDS_INDX;
-	private static final BeanTableMapping SOURCE_TABLE;
+	private static final BeanTableMappingImpl SOURCE_TABLE;
 	private static final Function[] APPEARANCE_KEY_ACCESSORS;
 
 	private final ODLApi api;

@@ -152,5 +152,10 @@ public class DrawableObjectDecorator implements DrawableObject {
 		return decorated.getLabelPriority();
 	}
 
+	@Override
+	public void setGlobalRowId(long globalRowId) {
+		decorated.setGlobalRowId(globalRowId);
+	}
+
 	
 }

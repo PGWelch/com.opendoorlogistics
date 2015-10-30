@@ -284,7 +284,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(isRunScriptAllowed());
 			}
 
@@ -378,7 +378,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(ScriptEditor.this.file != null && ScriptEditor.this.file.isFile());
 			}
 		};
@@ -423,7 +423,7 @@ public abstract class ScriptEditor extends ODLInternalFrame {
 			// set the uuid based on the file
 			script.setUuid(ScriptIO.getScriptUUID(file));
 		} catch (Throwable e) {
-			showMessage("Error saving file");
+			showMessage("Error saving script file. Do you have write access to the directory?");
 		}
 
 		updateTitle();

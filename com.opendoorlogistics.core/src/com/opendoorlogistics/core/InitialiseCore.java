@@ -28,7 +28,7 @@ final public class InitialiseCore {
 			try {
 				initialiseLogging();
 				logger.info("Reading properties");				
-				AppProperties.get();
+				AppProperties.getKeys();
 				
 				logger.info("Searching for components");								
 				ODLGlobalComponents.register(new UpdateQueryComponent());

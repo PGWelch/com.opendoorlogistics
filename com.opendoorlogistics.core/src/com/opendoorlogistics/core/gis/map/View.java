@@ -9,11 +9,11 @@ package com.opendoorlogistics.core.gis.map;
 import java.util.List;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
 import com.opendoorlogistics.core.utils.DoubleRange;
 
 /**

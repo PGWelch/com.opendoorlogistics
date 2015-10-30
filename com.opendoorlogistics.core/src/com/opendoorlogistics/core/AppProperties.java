@@ -12,18 +12,19 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.logging.Logger;
 
-import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.PropertiesUtils;
+import com.opendoorlogistics.core.utils.strings.Strings;
 
 /**
  * Class for the app-wide properties
  * @author Phil
  *
  */
-public class AppProperties {
+public class AppProperties  {
 	private static final Logger logger = Logger.getLogger(AppProperties.class.getName());
 	
 	private static Properties applicationProperties;
@@ -37,9 +38,9 @@ public class AppProperties {
 		}		
 	}
 
-	public static Properties get(){
-		return applicationProperties;
-	}
+//	public static Properties get(){
+//		return applicationProperties;
+//	}
 
 	public static final String SPATIAL_KEY = "spatial";
 	
@@ -49,9 +50,9 @@ public class AppProperties {
 	
 	public static final String SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE_LINESTRING = SPATIAL_RENDERER_SIMPLIFY_DISTANCE_TOLERANCE+ ".linestring";
 
-	public static Double getDouble(String key){
+	public synchronized static Double getDouble(String key){
 		if(applicationProperties!=null){
-			Object val = applicationProperties.get(key);
+			Object val = getValue(key);
 			if(val!=null){
 				return Numbers.toDouble(val);
 			}
@@ -59,7 +60,15 @@ public class AppProperties {
 		return null;
 	}
 
-	public static Double getDouble(String key, double defaultValueIfKeyMissing){
+	public synchronized static Object getValue(String key){
+		key = Strings.std(key);
+		if(applicationProperties!=null){
+			return applicationProperties.get(key);
+		}
+		return null;
+	}
+	
+	public synchronized static Double getDouble(String key, double defaultValueIfKeyMissing){
 		Double ret = getDouble(key);
 		if(ret==null){
 			ret = defaultValueIfKeyMissing;
@@ -67,9 +76,9 @@ public class AppProperties {
 		return ret;
 	}
 	
-	public static String getValue(String key){
+	public synchronized static String getString(String key){
 		if(applicationProperties!=null){
-			Object val = applicationProperties.get(key);
+			Object val = getValue(key);
 			if(val!=null){
 				return val.toString();
 			}
@@ -77,12 +86,14 @@ public class AppProperties {
 		return null;
 	}
 	
-	private static void loadEmbedded(Properties addTo){
+	private synchronized static void loadEmbedded(Properties addTo){
 		InputStream stream =null;
 		try {
 			// Use own class loader to prevent problems when jar loaded by reflection
 			stream = AppProperties.class.getResourceAsStream(AppConstants.ODL_EMBEDED_PROPERTIES_FILE);
-			addTo.load(stream);
+			Properties tmp = new Properties();
+			tmp.load(stream);
+			addTo(tmp, addTo);
 			logger.info("Loaded embedded properties.");
 		} catch (Exception e) {
 		}finally{
@@ -95,9 +106,46 @@ public class AppProperties {
 		}
 	}
 	
+	private synchronized static void addTo(Properties source, Properties addTo){
+		for(String key:source.stringPropertyNames()){
+			String std = Strings.std(key);
+			Object val = source.get(key);
+			addTo.put(std, val);
+		}
+	}
 	
-	public static void main(String []args){
+	public synchronized static void add(Properties properties){
+		if(applicationProperties==null){
+			applicationProperties = new Properties();
+		}
+		
+		addTo(properties, applicationProperties);
+	}
+	
+	public synchronized static void main(String []args){
 		loadEmbedded(new Properties());
 	}
 
+	public synchronized static Boolean getBool(String key){
+
+		String s =getString(key);
+		if(s!=null){
+			if(Strings.equalsStd("true", s) || Strings.equalsStd("1", s)){
+				return true;
+			}
+			if(Strings.equalsStd("false", s)){
+				return false;
+			}
+		}
+		return null;
+	}
+	
+	public synchronized static Set<String> getKeys(){
+		return applicationProperties.stringPropertyNames();
+	
+	}
+	
+	public synchronized static void put(String key,Object value){
+		applicationProperties.put(Strings.std(key), value);
+	}
 }

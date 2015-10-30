@@ -61,7 +61,7 @@ final public class WriteRecorderDecorator<T extends ODLTableDefinition> extends 
 	
 	
 	@Override
-	protected void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
+	public void setValueById(int tableId, Object aValue, long rowId, int columnIndex) {
 	//	doCommand(new SetByRowId(tableId, rowId, columnIndex, aValue));	
 		
 		super.setValueById(tableId, aValue, rowId, columnIndex);
@@ -79,7 +79,7 @@ final public class WriteRecorderDecorator<T extends ODLTableDefinition> extends 
 	}
 
 	@Override
-	protected void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
+	public void setValueAt(int tableId, Object aValue, int rowIndex, int columnIndex) {
 		long id = getRowGlobalId(tableId, rowIndex);
 		if(id!=-1){
 			setValueById(tableId, aValue, id, columnIndex);
@@ -87,14 +87,14 @@ final public class WriteRecorderDecorator<T extends ODLTableDefinition> extends 
 	}
 
 	@Override
-	protected int createEmptyRow(int tableId, long rowId) {
+	public int createEmptyRow(int tableId, long rowId) {
 		int indx= super.createEmptyRow(tableId, rowId);
 		appendedRowIds.add(getRowGlobalId(tableId, indx));
 		return indx;
 	}
 
 	@Override
-	protected void insertEmptyRow(int tableId, int insertAtRowNb, long rowId) {		
+	public void insertEmptyRow(int tableId, int insertAtRowNb, long rowId) {		
 		// only allow insertion at end
 		ODLTable table = (ODLTable)getTableByImmutableId(tableId);
 		if(insertAtRowNb == table.getRowCount()){
@@ -109,7 +109,7 @@ final public class WriteRecorderDecorator<T extends ODLTableDefinition> extends 
 	}
 
 	@Override
-	protected void deleteRow(int tableId, int rowNumber) {
+	public void deleteRow(int tableId, int rowNumber) {
 		long rowId = getRowGlobalId(tableId, rowNumber);
 		if(appendedRowIds.contains(rowId)==false){
 			deletedOriginalRowIds.add(rowId);			
@@ -119,7 +119,7 @@ final public class WriteRecorderDecorator<T extends ODLTableDefinition> extends 
 	}
 
 	@Override
-	protected int addColumn(int tableId,int id, String name, ODLColumnType type, long flags) {
+	public int addColumn(int tableId,int id, String name, ODLColumnType type, long flags) {
 		if(createdTableIds.contains(tableId)){
 			return super.addColumn(tableId, id,name, type, flags);
 		}
@@ -127,7 +127,7 @@ final public class WriteRecorderDecorator<T extends ODLTableDefinition> extends 
 	}
 
 	@Override
-	protected void setFlags(int tableId, long flags) {
+	public void setFlags(int tableId, long flags) {
 		if(createdTableIds.contains(tableId)){
 			super.setFlags(tableId, flags);
 			return;
@@ -136,7 +136,7 @@ final public class WriteRecorderDecorator<T extends ODLTableDefinition> extends 
 	}
 
 	@Override
-	protected void setColumnFlags(int tableId, int col, long flags) {
+	public void setColumnFlags(int tableId, int col, long flags) {
 		if(createdTableIds.contains(tableId)){
 			super.setColumnFlags(tableId, col, flags);
 			return;
@@ -145,7 +145,7 @@ final public class WriteRecorderDecorator<T extends ODLTableDefinition> extends 
 	}
 
 	@Override
-	protected void deleteCol(int tableId, int col) {
+	public void deleteCol(int tableId, int col) {
 		if(createdTableIds.contains(tableId)){
 			super.deleteCol(tableId, col);
 			return;
@@ -154,7 +154,7 @@ final public class WriteRecorderDecorator<T extends ODLTableDefinition> extends 
 	}
 
 	@Override
-	protected boolean insertCol(int tableId,int id, int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
+	public boolean insertCol(int tableId,int id, int col, String name, ODLColumnType type, long flags, boolean allowDuplicateNames) {
 		if(createdTableIds.contains(tableId)){
 			return super.insertCol(tableId, id,col, name, type, flags, allowDuplicateNames);
 		}

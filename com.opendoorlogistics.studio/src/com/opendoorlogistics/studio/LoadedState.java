@@ -7,73 +7,61 @@
 package com.opendoorlogistics.studio;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.logging.Logger;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.app.ODLAppLoadedState;
 import com.opendoorlogistics.api.components.ProcessingApi;
-import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.DatastoreManagerPlugin;
+import com.opendoorlogistics.api.tables.DatastoreManagerPlugin.DatastoreManagerPluginState;
+import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.api.ui.Disposable;
-import com.opendoorlogistics.core.tables.decorators.datastores.DataUpdaterDecorator;
-import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
-import com.opendoorlogistics.core.tables.decorators.datastores.deepcopying.OptimisedDeepCopierDecorator;
-import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
+import com.opendoorlogistics.core.tables.DatastoreManagerGlobalPlugin;
 import com.opendoorlogistics.core.tables.io.PoiIO;
-import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.utils.TableFlagUtils;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.LoggerUtils;
 import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
-import com.opendoorlogistics.studio.scripts.execution.ReporterFrame;
 import com.opendoorlogistics.studio.scripts.execution.ScriptsRunner;
 
-public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Disposable {
-	private final static Logger LOGGER = Logger.getLogger(LoadedDatastore.class.getName());
+public class LoadedState extends GlobalMapSelectedRowsManager implements Disposable,ODLAppLoadedState {
+	private final static Logger LOGGER = Logger.getLogger(LoadedState.class.getName());
 
-	private final ODLDatastoreUndoable<ODLTableAlterable> ds;
+	private final ODLDatastoreUndoable<? extends ODLTableAlterable> ds;
 	private final AbstractAppFrame appFrame;
 	private File lastFile;
 	private final ScriptsRunner runner;
+	private final HashMap<DatastoreManagerPlugin, DatastoreManagerPluginState> pluginStates = new HashMap<>();
 
-	public LoadedDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> newDs, File file, AbstractAppFrame appFrame) {
+	public LoadedState(ODLDatastoreUndoable<? extends ODLTableAlterable> decoratedDs, File file, AbstractAppFrame appFrame) {
 		this.appFrame = appFrame;
 		
+		this.ds = decoratedDs;
 		
-		if (ODLDatastoreImpl.class.isInstance(newDs) == false) {
-			throw new RuntimeException();
-		}
-		
-		// wrap in the decorator that allows lazy deep copying first of all
-		OptimisedDeepCopierDecorator<ODLTableAlterable> odcd = new OptimisedDeepCopierDecorator<>(newDs);
-		
-		// wrap in listener decorator, then undo/redo decorator, then data updater
-		ListenerDecorator<ODLTableAlterable> listeners = new ListenerDecorator<ODLTableAlterable>(ODLTableAlterable.class, odcd);
-		ODLDatastoreUndoable<ODLTableAlterable> undoable = new UndoRedoDecorator<ODLTableAlterable>(ODLTableAlterable.class, listeners);
-		ds = new DataUpdaterDecorator(appFrame.getApi(), undoable, appFrame);
-
 		lastFile = file;
 		
+		// create scripts runner - this has a thread-pool which exists for the lifetime of the open datastore
 		runner = new ScriptsRunner(appFrame,ds);
+		
+		// add listeners which cause the app to update appearance when the data changes
 		ds.addListener(tableChangeListener, -1);
 		ds.addListener(tableSetChangeListener);			
 
 	}
 
-
-	public File getLastFile() {
-		return lastFile;
+	public void putPluginState(DatastoreManagerPlugin plugin,DatastoreManagerPluginState state){
+		pluginStates.put(plugin, state);
 	}
-
-	void setLastFile(File lastFile) {
-		this.lastFile = lastFile;
-	}
-
-	public ODLDatastoreUndoable<ODLTableAlterable> getDs() {
+	
+	public ODLDatastoreUndoable<? extends ODLTableAlterable> getDs() {
 		return ds;
 	}
 
@@ -82,6 +70,14 @@ public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Dis
 	}
 
 	public boolean save(File file, boolean xlsx,ProcessingApi processing, ExecutionReport report) {
+		
+		// filter if we have a datastore manager plugin
+		DatastoreManagerPlugin plugin = DatastoreManagerGlobalPlugin.getPlugin();
+		if(plugin!=null && ds!=null){
+			ODLDatastore<? extends ODLTableReadOnly> filtered = plugin.getDatastore2Save(appFrame.getApi(), this);
+			return PoiIO.exportDatastore(filtered, file, xlsx, processing,report);
+		}					
+		
 		return PoiIO.exportDatastore(ds, file, xlsx, processing,report);
 	}
 
@@ -175,6 +171,16 @@ public class LoadedDatastore extends GlobalMapSelectedRowsManager implements Dis
 
 	public interface HasLoadedDatastore{
 
-		LoadedDatastore getLoadedDatastore();
+		LoadedState getLoadedDatastore();
+	}
+
+	@Override
+	public File getFile() {
+		return lastFile;
+	}
+
+	@Override
+	public DatastoreManagerPluginState getDatastorePluginState(DatastoreManagerPlugin plugin) {
+		return pluginStates.get(plugin);
 	}
 }

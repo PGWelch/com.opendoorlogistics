@@ -15,21 +15,21 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableDefinitionAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnDescription;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLDefaultDoubleValue;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLDefaultLongValue;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLDefaultStringValue;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLNullAllowed;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTag;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.gis.map.Symbols.SymbolType;
 import com.opendoorlogistics.core.gis.map.annotations.ImageFormulaKey;
 import com.opendoorlogistics.core.tables.beans.BeanMapping;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.ReadObjectFilter;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnDescription;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultDoubleValue;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultLongValue;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLDefaultStringValue;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTag;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
 import com.opendoorlogistics.core.tables.memory.ODLTableImpl;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
@@ -74,7 +74,7 @@ public class DrawableObjectImpl extends LatLongImpl implements DrawableObject{
 		ReadObjectFilter rowfilter = new ReadObjectFilter() {
 			
 			@Override
-			public boolean acceptObject(Object obj, ODLTableReadOnly inputTable, int row, long rowId, BeanTableMapping btm) {
+			public boolean acceptObject(Object obj, ODLTableReadOnly inputTable, int row, long rowId, BeanTableMappingImpl btm) {
 				DrawableObject o = (DrawableObject)obj;
 				if(o.getGeometry()!=null || o.getLatitude()!=0 || o.getLongitude()!=0){
 					return true;

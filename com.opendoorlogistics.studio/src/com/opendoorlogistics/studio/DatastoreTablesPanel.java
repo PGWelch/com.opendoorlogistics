@@ -8,6 +8,8 @@ package com.opendoorlogistics.studio;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -15,12 +17,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Callable;
 
-import javax.swing.AbstractListModel;
-import javax.swing.Action;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.DefaultListSelectionModel;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
@@ -32,6 +34,7 @@ import javax.swing.JToolBar;
 import javax.swing.ListModel;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.ListDataListener;
 import javax.swing.event.ListSelectionEvent;
@@ -39,6 +42,7 @@ import javax.swing.event.ListSelectionListener;
 
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
 import com.opendoorlogistics.api.tables.ODLListener;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
@@ -46,32 +50,36 @@ import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.codefromweb.DropDownMenuButton;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptTemplatesImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
+import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.Layer;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.Style;
 import com.opendoorlogistics.core.scripts.execution.adapters.vls.View;
-import com.opendoorlogistics.core.tables.decorators.tables.SimpleTableDefinitionDecorator;
+import com.opendoorlogistics.core.tables.decorators.tables.SimpleTableReadOnlyDecorator;
 import com.opendoorlogistics.core.tables.utils.DatastoreCopier;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.strings.Strings.DoesStringExist;
+import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.PopupMenuMouseAdapter;
 import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
+import com.opendoorlogistics.studio.appframe.AppBackground;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.ODLAction;
 import com.opendoorlogistics.utils.ui.SimpleAction;
 
 final public class DatastoreTablesPanel extends JPanel implements ODLListener {
-	private ODLDatastoreAlterable<? extends ODLTableAlterable> ds;
-	private final JList<ODLTableDefinition> list;
+	private ODLDatastoreUndoable<? extends ODLTableAlterable> ds;
+	private final JList<ODLTableReadOnly> list;
 	private final AbstractAppFrame appFrame;
 	private final List<MyAction> actions;
 	private final List<ODLAction> wizardActions;
 	private final JLabel tablesLabel;
+	private final boolean useBackgroundImage;
 
-	public DatastoreTablesPanel() {
-		this(null);
-	}
+//	public DatastoreTablesPanel() {
+//		this(null);
+//	}
 
 	private abstract class MyAction extends SimpleAction {
 
@@ -80,7 +88,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		}
 
 		@Override
-		public void updateEnabled() {
+		public void updateEnabledState() {
 			setEnabled(ds != null);
 		}
 		
@@ -96,7 +104,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		}
 
 		@Override
-		public void updateEnabled() {
+		public void updateEnabledState() {
 			setEnabled(ds != null && list.getSelectedValue() != null && list.getSelectedValuesList().size() == 1);
 		}
 	}
@@ -128,7 +136,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			List<ODLTableDefinition> selected = list.getSelectedValuesList();
+			List<ODLTableReadOnly> selected = list.getSelectedValuesList();
 			int[] ids = new int[selected.size()];
 			for (int i = 0; i < ids.length; i++) {
 				ids[i] = selected.get(i).getImmutableId();
@@ -137,7 +145,8 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 			appFrame.launchScriptWizard(ids, component);
 		}
 
-		public void updateEnabled() {
+		@Override
+		public void updateEnabledState() {
 			// setEnabled(minNbTables == 0 || (ds!=null && hasSingleTableConfig
 			// && list.getSelectedValue()!=null));
 			setEnabled(true);
@@ -152,20 +161,33 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		this.appFrame = launcher;
 		setLayout(new BorderLayout(0, 0));
 
-		list = new JList();
+		list = new JList<ODLTableReadOnly>();
 		list.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
-		list.setModel(new AbstractListModel() {
-			String[] values = new String[] {};
-
-			public int getSize() {
-				return values.length;
-			}
-
-			public Object getElementAt(int index) {
-				return values[index];
-			}
-		});
+		list.setModel(new DefaultListModel<ODLTableReadOnly>());
 		list.setCellRenderer(new DefaultListCellRenderer() {
+
+			@Override
+		    public Component getListCellRendererComponent(
+		        JList<?> list,
+		        Object value,
+		        int index,
+		        boolean isSelected,
+		        boolean cellHasFocus)
+		    {
+		    	Component ret = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+//		    	ListModel<? extends ODLTableReadOnly> model = DatastoreTablesPanel.this.list.getModel();
+//		    	if(model!=null && index < model.getSize()){
+//		    		ODLTableReadOnly table = model.getElementAt(index);
+//		    		if(table!=null && table.getRowCount()>0){
+//		    			long flags = table.getRowFlags(table.getRowId(0));
+//		    			if((flags & TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA) == TableFlags.FLAG_LINKED_EXCEL_READ_ONLY_DATA){
+//		    				// as the linked data always appears at the top of the table, this table has read only data
+//		    				ret.setFont(ret.getFont().deriveFont(Font.ITALIC));			    				
+//		    			}
+//		    		}
+//		    	}
+		    	return ret;
+		    }
 		});
 
 		DefaultListSelectionModel selectionModel = new DefaultListSelectionModel() {
@@ -178,11 +200,36 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		selectionModel.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		list.setSelectionModel(selectionModel);
 
-
+		// put list in a scrollpane
 		JScrollPane listScrollPane = new JScrollPane();
 		listScrollPane.setViewportView(list);
 		setLayout(new BorderLayout());
-		add(listScrollPane, BorderLayout.CENTER);
+		
+		// get properties to see if we should use a background image
+		Boolean tmpBool = appFrame.getApi().properties().getBool("app.tablespanel.usebackgroundimage");
+		if(tmpBool!=null && tmpBool){
+			useBackgroundImage=true;
+		}else{
+			useBackgroundImage = false;
+		}
+		
+		if(useBackgroundImage){
+			// put in a further panel so we can draw a custom background
+			JPanel listPanel = new JPanel(new BorderLayout()){
+			     @Override
+			        protected void paintComponent(Graphics g) {
+			            super.paintComponent(g);
+			        	AppBackground.paintBackground(this, g, appFrame.getBackgroundImage());
+			        }
+			};
+			listScrollPane.setOpaque(false);
+			listScrollPane.getViewport().setOpaque(false);
+			listPanel.add(listScrollPane, BorderLayout.CENTER);
+			add(listPanel, BorderLayout.CENTER);	
+		}else{
+			add(listScrollPane, BorderLayout.CENTER);				
+		}
+
 
 		JToolBar toolBar = new JToolBar();
 		toolBar.setFloatable(false);
@@ -291,17 +338,21 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 				};
 				String name = getTableNameFromDialog(newName);
 				if (name != null) {
-					ODLTableDefinition table = null;
-					try {
-						table = ds.createTable(name, -1);
-					} catch (Throwable e2) {
+					class Result{
+						ODLTableDefinition table;
+					}
+					Result result = new Result();
+					if(modifyDs(new Callable<Boolean>() {
 
-					}
-					if (table == null) {
-						showTableNameError();
-					} else {
-						appFrame.launchTableGrid(table.getImmutableId());
-					}
+						@Override
+						public Boolean call() throws Exception {
+							result.table = ds.createTable(name, -1);
+							return true;
+						}
+					})){
+						appFrame.launchTableGrid(result.table.getImmutableId());						
+					};
+	
 				}
 			}
 		});
@@ -312,7 +363,14 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 			public void actionPerformed(ActionEvent e) {
 				ODLTableDefinition table = getSelectedShowErrorIfNone();
 				if (table != null) {
-					ds.deleteTableById(table.getImmutableId());
+					modifyDs(new Callable<Boolean>() {
+
+						@Override
+						public Boolean call() throws Exception {
+							ds.deleteTableById(table.getImmutableId());
+							return true;
+						}
+					});
 				}
 			}
 		});
@@ -325,9 +383,13 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 				if (table != null) {
 					String name = getTableNameFromDialog(table.getName());
 					if (name != null) {
-						if (!ds.setTableName(table.getImmutableId(), name)) {
-							showTableNameError();
-						}
+						modifyDs(new Callable<Boolean>() {
+
+							@Override
+							public Boolean call() throws Exception {
+								return ds.setTableName(table.getImmutableId(), name);
+							}
+						});						
 					}
 				}
 			}
@@ -352,12 +414,22 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 				if (table != null) {
 					String name = getTableNameFromDialog("Copy of " + table.getName());
 					if (name != null) {
-						ODLTableReadOnly copy = DatastoreCopier.copyTableIntoSameDatastore(ds, table.getImmutableId(), name);
-						if (copy != null) {
-							appFrame.launchTableGrid(copy.getImmutableId());
-						} else {
-							showTableNameError();
+						class Result{
+							ODLTableReadOnly copy ;	
 						}
+						Result result = new Result();
+						if(modifyDs(new Callable<Boolean>(){
+
+							@Override
+							public Boolean call() throws Exception {
+								result.copy = DatastoreCopier.copyTableIntoSameDatastore(ds, table.getImmutableId(), name);
+								return true;
+							}
+							
+						})){
+							appFrame.launchTableGrid(result.copy.getImmutableId());	
+						}
+				
 					}
 				}
 			}
@@ -416,7 +488,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 
 	@Override
 	public void datastoreStructureChanged() {
-		ODLDatastoreAlterable<? extends ODLTableAlterable> currentDs = ds;
+		ODLDatastoreUndoable<? extends ODLTableAlterable> currentDs = ds;
 		onDatastoreClosed();
 		setDatastore(currentDs);
 	}
@@ -426,7 +498,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		return ODLListenerType.DATASTORE_STRUCTURE_CHANGED;
 	}
 
-	public void setDatastore(ODLDatastoreAlterable<? extends ODLTableAlterable> ds) {
+	public void setDatastore(ODLDatastoreUndoable<? extends ODLTableAlterable> ds) {
 		if (this.ds != null) {
 			throw new RuntimeException();
 		}
@@ -434,10 +506,10 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		this.ds = ds;
 		this.ds.addListener(this);
 
-		List<ODLTableDefinition> tables = getSortedTables(ds);
+		List<ODLTableReadOnly> tables = getSortedTables(ds);
 		
 		// update list
-		list.setModel(new ListModel<ODLTableDefinition>() {
+		list.setModel(new ListModel<ODLTableReadOnly>() {
 
 			@Override
 			public int getSize() {
@@ -445,8 +517,8 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 			}
 
 			@Override
-			public ODLTableDefinition getElementAt(int index) {
-				return new SimpleTableDefinitionDecorator(tables.get(index)) {
+			public ODLTableReadOnly getElementAt(int index) {
+				return new SimpleTableReadOnlyDecorator(tables.get(index)) {
 
 					@Override
 					public String toString() {
@@ -476,16 +548,16 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 	 * @param ds
 	 * @return
 	 */
-	private List<ODLTableDefinition> getSortedTables(ODLDatastoreAlterable<? extends ODLTableAlterable> ds) {
+	private List<ODLTableReadOnly> getSortedTables(ODLDatastoreAlterable<? extends ODLTableAlterable> ds) {
 		// Get sorted table names
-		List<ODLTableDefinition> tables = new ArrayList<>(ds.getTableCount());
+		List<ODLTableReadOnly> tables = new ArrayList<>(ds.getTableCount());
 		for(int i =0 ; i < ds.getTableCount() ; i++){
 			tables.add(ds.getTableAt(i));
 		}
-		Collections.sort(tables,new Comparator<ODLTableDefinition>(){
+		Collections.sort(tables,new Comparator<ODLTableReadOnly>(){
 			final String [] specials = new String[]{View.TABLE_NAME,Layer.TABLE_NAME,Style.TABLE_NAME};
 			@Override
-			public int compare(ODLTableDefinition o1, ODLTableDefinition o2) {
+			public int compare(ODLTableReadOnly o1, ODLTableReadOnly o2) {
 
 				int i1 = getNameScore(o1);
 				int i2 = getNameScore(o2);
@@ -494,6 +566,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 				}
 				return o1.getName().toLowerCase().compareTo(o2.getName().toLowerCase());
 			}
+			
 			private int getNameScore(ODLTableDefinition o1) {
 				ODLTableDefinition t = o1;
 				int i =0 ;
@@ -515,7 +588,7 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 			ds.removeListener(this);
 			ds = null;
 		}
-		list.setModel(new DefaultListModel<ODLTableDefinition>());
+		list.setModel(new DefaultListModel<ODLTableReadOnly>());
 		updateAppearance();
 	}
 
@@ -534,12 +607,12 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 
 	private void updateAppearance() {
 		for (MyAction action : actions) {
-			action.updateEnabled();
+			action.updateEnabledState();
 		}
 		
 		if(wizardActions!=null){
 			for (ODLAction action : wizardActions) {
-				action.updateEnabled();
+				action.updateEnabledState();
 			}			
 		}
 		
@@ -547,9 +620,16 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		// wizardsMenuButton.setEnabled(ds!=null);
 
 		if (ds == null) {
+			// set list to grey
 			list.setBackground(new Color(220, 220, 220));
+			if(useBackgroundImage){
+				list.setOpaque(false);				
+			}
 		} else {
 			list.setBackground(Color.WHITE);
+			if(useBackgroundImage){
+				list.setOpaque(true);				
+			}
 		}
 
 		tablesLabel.setEnabled(ds != null);
@@ -572,4 +652,14 @@ final public class DatastoreTablesPanel extends JPanel implements ODLListener {
 		JOptionPane.showMessageDialog(DatastoreTablesPanel.this, "Could not perform action. Is name already used?");
 	}
 
+	
+	private boolean modifyDs(Callable<Boolean> callable){
+		ExecutionReportImpl report = new ExecutionReportImpl();
+		if(!TableUtils.runTransaction(ds, callable,report)){
+			report.setFailed("An error occurred when attempting to modify the datastore.");
+			new ExecutionReportDialog((JFrame)SwingUtilities.getWindowAncestor(this), "Error", report, false).setVisible(true);
+			return false;
+		}
+		return true;
+	}
 }

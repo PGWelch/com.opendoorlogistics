@@ -9,10 +9,10 @@ package com.opendoorlogistics.core.gis.map.data;
 import java.awt.Color;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
-import com.opendoorlogistics.core.tables.beans.HasGlobalRowId;
 
-public interface DrawableObject extends LatLong, HasGlobalRowId{
+public interface DrawableObject extends LatLong, BeanMappedRow{
 	/**
 	 * We use grey to signify nothing is set...
 	 */

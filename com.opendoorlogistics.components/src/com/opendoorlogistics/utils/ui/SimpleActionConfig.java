@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.utils.ui;
 
+import javax.swing.Action;
 
 final public class SimpleActionConfig {
 	private final static String ITEMNAME = "#ITEMNAME#";
@@ -64,5 +65,25 @@ final public class SimpleActionConfig {
 	public static final SimpleActionConfig runScript = new SimpleActionConfig("Run script", "Run selected script " , "media-playback-start-7.png", null, true);
 	public static final SimpleActionConfig testCompileScript = new SimpleActionConfig("Test script by compiling it", "Test script by compiling but not running it" , "run-build-2.png", null, true);
 	
+	/**
+	 * Apply config to the action and return the action
+	 * @param action
+	 * @return
+	 */
+	public <T extends Action> T apply(T action){
+		action.putValue(Action.SHORT_DESCRIPTION, getToolTip());
+		action.putValue(Action.LONG_DESCRIPTION, getToolTip());
 		
+		if(getSmallIcon()!=null){
+			action.putValue(Action.SMALL_ICON,Icons.loadFromStandardPath(getSmallIcon()));			
+		}
+		
+		if(getLargeicon()!=null){
+			action.putValue(Action.LARGE_ICON_KEY, Icons.loadFromStandardPath( getLargeicon()));						
+		}
+		
+		action.putValue(Action.NAME,getName());	
+		return action;
+	    
+	}
 }

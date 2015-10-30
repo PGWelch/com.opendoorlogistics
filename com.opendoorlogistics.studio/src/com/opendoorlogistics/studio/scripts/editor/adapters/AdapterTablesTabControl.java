@@ -703,7 +703,7 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 
 			}
 		});
@@ -760,7 +760,7 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getCurrentTable() != null);
 			}
 		});
@@ -801,7 +801,7 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getIndex() != -1);
 			}
 		});
@@ -817,7 +817,7 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(targetDatastore != null && targetDatastore.getDatastoreDefinition() != null && TableUtils.findTable(targetDatastore.getDatastoreDefinition(), table.getName()) != null);
 			}
 		});
@@ -833,7 +833,7 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getIndex() != -1);
 			}
 		});
@@ -851,7 +851,7 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(config.getTableCount() > 0);
 			}
 		});
@@ -893,7 +893,7 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getIndex() > 0);
 			}
 		});
@@ -909,7 +909,7 @@ public class AdapterTablesTabControl extends JPanel {
 			}
 
 			@Override
-			public void updateEnabled() {
+			public void updateEnabledState() {
 				setEnabled(getIndex() < config.getTableCount() - 1);
 			}
 		});

@@ -1,10 +1,11 @@
 package com.opendoorlogistics.core.scripts.parameters.beans;
 
 import com.opendoorlogistics.api.scripts.parameters.Parameters;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnName;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.scripts.parameters.ParametersImpl;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnName;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
+
 import static com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParametersTable.COL_KEY;;
 
 @ODLTableName(ParametersImpl.PARAMETER_VALUES_TABLE_NAME)

@@ -61,7 +61,7 @@ final public class InitialiseStudio implements ODLStudioLoader{
 		
 	}
 	
-	public static synchronized void initialise(boolean preloadClasses) {
+	public static synchronized ODLApi initialise(boolean preloadClasses) {
 		if (!isInit) {
 			// Check the classname is as expected by the API (as its used with reflection)
 			Class<?> cls = InitialiseStudio.class;
@@ -95,6 +95,7 @@ final public class InitialiseStudio implements ODLStudioLoader{
 			isInit = true;
 		}
 
+		return new ODLApiImpl();
 	}
 
 	/**
@@ -184,7 +185,6 @@ final public class InitialiseStudio implements ODLStudioLoader{
 				com.opendoorlogistics.core.scripts.formulae.FmLookupNearest.class, com.opendoorlogistics.core.scripts.formulae.FmLookupWeightedCentroid.class,
 				com.opendoorlogistics.core.scripts.formulae.FmRow.class, com.opendoorlogistics.core.scripts.formulae.FmRowId.class,
 				com.opendoorlogistics.core.scripts.formulae.TableParameters.class, com.opendoorlogistics.core.scripts.TableReference.class,
-				com.opendoorlogistics.core.tables.commands.UndeleteRow.class, com.opendoorlogistics.core.tables.concurrency.MergeBranchedDatastore.class,
 				com.opendoorlogistics.core.tables.concurrency.WriteRecorderDecorator.class, com.opendoorlogistics.core.tables.decorators.datastores.RowFilterDecorator.class,
 				com.opendoorlogistics.core.tables.decorators.datastores.UnionDecorator.class, com.opendoorlogistics.core.tables.decorators.listeners.ListenerRedirector.class,
 				com.opendoorlogistics.core.utils.NullComparer.class, com.opendoorlogistics.core.utils.SimpleSoftReferenceMap.class,

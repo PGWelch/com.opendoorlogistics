@@ -65,7 +65,7 @@ public class ExecutionUtils {
 	static ODLDatastoreAlterable<ODLTableAlterable> wrapDsWithEditableFlags(ODLDatastoreUndoable<ODLTableAlterable> ds) {
 		return new SimpleDecorator<ODLTableAlterable>(ODLTableAlterable.class, ds) {
 			@Override
-			protected long getFlags(int tableId) {
+			public long getFlags(int tableId) {
 
 				long flags = super.getFlags(tableId);
 

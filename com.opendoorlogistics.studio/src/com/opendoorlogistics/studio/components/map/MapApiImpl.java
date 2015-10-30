@@ -1,9 +1,5 @@
 package com.opendoorlogistics.studio.components.map;
 
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.hash.TLongHashSet;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -47,9 +43,8 @@ import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapDataApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapMode;
 import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
-import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
 import com.opendoorlogistics.api.standardcomponents.map.MapSelectionList;
-import com.opendoorlogistics.api.tables.HasUndoableDatastore;
+import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLDatastoreUndoable;
@@ -58,9 +53,9 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.GeoPosition;
-import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactory;
 import com.opendoorlogistics.codefromweb.jxmapviewer2.fork.swingx.mapviewer.TileFactoryInfo;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
@@ -75,8 +70,7 @@ import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.data.LatLongBoundingBox;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer;
 import com.opendoorlogistics.core.gis.map.tiled.TileCacheRenderer.TileReadyListener;
-import com.opendoorlogistics.core.tables.beans.BeanMappedRow;
-import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMapping;
+import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
 import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
@@ -89,6 +83,10 @@ import com.opendoorlogistics.studio.InitialiseStudio;
 import com.opendoorlogistics.studio.components.map.plugins.CustomTooltipPlugin;
 import com.opendoorlogistics.studio.components.map.plugins.SummariseFieldValuesTooltipPlugin;
 
+import gnu.trove.list.array.TLongArrayList;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.hash.TLongHashSet;
+
 /**
  * The implementation of the api object is just an aggregate of other objects
  * which pumps messages between them as needed.
@@ -99,7 +97,7 @@ import com.opendoorlogistics.studio.components.map.plugins.SummariseFieldValuesT
 public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposable , MapSelectionList{
 	private final MapSelectionState selectionState;
 	private final ViewPosition position;
-	private final DisposablePanel containerLevel1Panel;
+	private final DisposableMapPanel containerLevel1Panel;
 	private final JPanel containerLevel2Panel;
 	private final MapToolbar toolBar;
 	private final ODLDatastoreUndoable<? extends ODLTableAlterable> globalDs;
@@ -119,7 +117,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	private boolean isPendingInitContainerPanels=false;
 	private volatile boolean isDisposed=false;
 	
-	public class DisposablePanel extends JPanel implements Disposable {
+	public class DisposableMapPanel extends JPanel implements Disposable {
 
 		@Override
 		public void dispose() {
@@ -189,7 +187,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 		});
 
 		// Init container panel
-		containerLevel1Panel = new DisposablePanel();
+		containerLevel1Panel = new DisposableMapPanel();
 		containerLevel1Panel.setPreferredSize(new Dimension(700, 600));
 		containerLevel1Panel.setLayout(new BorderLayout());
 		containerLevel2Panel = new JPanel() {
@@ -344,7 +342,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 //
 //	}
 
-	public DisposablePanel getPanel() {
+	public DisposableMapPanel getPanel() {
 		return containerLevel1Panel;
 	}
 	
@@ -492,8 +490,9 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 
 	@Override
 	public void setSelectedIds(long... ids) {
-		selectionState.set(ids);
-		fireSelectionChangedListeners(this);
+		if(selectionState.set(ids)){
+			fireSelectionChangedListeners(this);			
+		}
 		repaint(false);
 	}
 
@@ -1207,7 +1206,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	}
 
 	private ODLTableReadOnly toTable(Iterable<? extends DrawableObject> objs) {
-		BeanTableMapping btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
+		BeanTableMappingImpl btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
 		LinkedList<BeanMappedRow> rows = new LinkedList<BeanMappedRow>();
 		for (DrawableObject o : objs) {
 			rows.add((BeanMappedRow) o);
@@ -1272,7 +1271,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 						return;
 					}
 					
-					BeanTableMapping btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
+					BeanTableMappingImpl btm = DrawableObjectImpl.getBeanMapping().getTableMapping(0);
 					int n = table.getRowCount();
 					for (int row = 0; row < n; row++) {
 						DrawableObject obj = btm.readObjectFromTableByRow(table, row);
@@ -1306,7 +1305,7 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 					
 					@Override
 					public void launchControls(ComponentControlLauncherApi launcherApi) {
-						DisposablePanel panel = (DisposablePanel)launcherApi.getRegisteredPanel("Map");
+						DisposableMapPanel panel = (DisposableMapPanel)launcherApi.getRegisteredPanel("Map");
 						if(panel!=null){
 							panel.getApi().setObjects(objs,ioDs);
 						}

@@ -45,6 +45,7 @@ import com.opendoorlogistics.studio.internalframes.ODLInternalFrame.FramesChange
 import com.opendoorlogistics.studio.internalframes.ProgressFrame;
 import com.opendoorlogistics.studio.scripts.editor.ScriptEditor;
 import com.opendoorlogistics.studio.scripts.execution.ReporterFrame;
+import com.opendoorlogistics.studio.tables.custom.CustomTableEditorFrame;
 import com.opendoorlogistics.studio.tables.grid.GridFrame;
 import com.opendoorlogistics.studio.tables.schema.TableSchemaEditor;
 import com.opendoorlogistics.studio.utils.WindowState;
@@ -65,18 +66,19 @@ public abstract class DesktopAppFrame extends AbstractAppFrame {
 		@Override
 		protected void paintComponent(Graphics g) {
 			super.paintComponent(g);
-			Graphics2D g2d = (Graphics2D) g;
-			if (background != null) {
-				TexturePaint paint = new TexturePaint(background, new Rectangle(0, 0, background.getWidth(), background.getHeight()));
-
-				if (paint != null) {
-					g2d.setPaint(paint);
-					g2d.fill(g2d.getClip());
-				}
-			} else {
-				g2d.setColor(AppBackground.BACKGROUND_COLOUR);
-				g2d.fillRect(0, 0, (int) getSize().getWidth(), (int) getSize().getHeight());
-			}
+			AppBackground.paintBackground(this, g, background);
+//			Graphics2D g2d = (Graphics2D) g;
+//			if (background != null) {
+//				TexturePaint paint = new TexturePaint(background, new Rectangle(0, 0, background.getWidth(), background.getHeight()));
+//
+//				if (paint != null) {
+//					g2d.setPaint(paint);
+//					g2d.fill(g2d.getClip());
+//				}
+//			} else {
+//				g2d.setColor(AppBackground.BACKGROUND_COLOUR);
+//				g2d.fillRect(0, 0, (int) getSize().getWidth(), (int) getSize().getHeight());
+//			}
 
 			// g.drawImage(image, 0, 0, this);
 		}
@@ -95,6 +97,12 @@ public abstract class DesktopAppFrame extends AbstractAppFrame {
 		windowToolBar = new ODLScrollableToolbar();
 
 	}
+	
+	@Override
+	public BufferedImage getBackgroundImage(){
+		return background;
+	}
+
 
 	protected void initBackgroundImage() {
 		SwingWorker<Void, Void> createBackground = new SwingWorker<Void, Void>() {
@@ -264,7 +272,7 @@ public abstract class DesktopAppFrame extends AbstractAppFrame {
 					icon = rf.getComponent().getIcon(getApi(), ODLComponent.MODE_DEFAULT);
 				}
 			}
-			else if(GridFrame.class.isInstance(frame)){
+			else if(GridFrame.class.isInstance(frame)||CustomTableEditorFrame.class.isInstance(frame)){
 				icon = Icons.loadFromStandardPath("table-window-toolbar-icon.png");
 			}
 			else if(TableSchemaEditor.class.isInstance(frame)){

@@ -1,10 +1,10 @@
 package com.opendoorlogistics.core.scripts.execution.adapters.vls;
 
 import com.opendoorlogistics.api.tables.TableFlags;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableFlags;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableFlags;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 
 @ODLTableName(ExtraFields.TABLE_NAME)
 @ODLTableFlags(TableFlags.FLAG_IS_OPTIONAL)

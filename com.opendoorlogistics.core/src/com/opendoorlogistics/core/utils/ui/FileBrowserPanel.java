@@ -194,8 +194,7 @@ public class FileBrowserPanel extends JPanel {
 				if (textField.getText() != null) {
 					File file = new File(textField.getText());
 
-					// if the file doesn't exist but the directory does, get
-					// that
+					// if the file doesn't exist but the directory does, get that
 					if (!file.exists() && file.getParentFile() != null
 							&& file.getParentFile().exists()) {
 						file = file.getParentFile();

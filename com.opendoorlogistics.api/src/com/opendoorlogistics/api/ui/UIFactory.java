@@ -6,7 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.api.ui;
 
-import java.awt.Component;
 import java.awt.Window;
 
 import javax.swing.JComponent;

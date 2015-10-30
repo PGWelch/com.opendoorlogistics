@@ -26,11 +26,20 @@ public class MapSelectionState {
 		selectedGlobalRowIds.add(id);
 	}
 	
-	public synchronized void set(long [] ids){
+	/**
+	 * Set the ids 
+	 * @param ids
+	 * @return True if the ids changed.
+	 */
+	public synchronized boolean set(long [] ids){
+		TLongHashSet oldSet = new TLongHashSet(selectedGlobalRowIds);
+		
 		selectedGlobalRowIds.clear();
 		if(ids!=null){
 			selectedGlobalRowIds.addAll(ids);			
 		}
+		
+		return !oldSet.equals(selectedGlobalRowIds);
 	}
 	
 	public synchronized boolean contains(long id){

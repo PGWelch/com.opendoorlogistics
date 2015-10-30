@@ -10,14 +10,13 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 
-final public class DeleteRow extends Command{
+final public class DeleteEmptyRow extends Command{
 	private final int row;
 	
-	public DeleteRow(int tableId, int row) {
+	public DeleteEmptyRow(int tableId, int row) {
 		super(tableId);
 		this.row = row;
 	}
-
 
 	@Override
 	public Command doCommand(ODLDatastore<? extends ODLTableDefinition> database) {
@@ -26,18 +25,9 @@ final public class DeleteRow extends Command{
 			return null;
 		}
 		
-		int nbCol = table.getColumnCount();
-		Object [] originals = new Object[nbCol];
-		for(int i =0 ;i < nbCol ; i++){
-			originals[i] = table.getValueAt(row, i);
-		}
-		
 		long rowid = table.getRowId(row);
-		
-	//	System.out.println("Deleting row " + rowid);
-		
 		table.deleteRow(row);
-		return new UndeleteRow(tableId, row,rowid, originals);
+		return new InsertEmptyRow(tableId, row,rowid);
 	}
 
 

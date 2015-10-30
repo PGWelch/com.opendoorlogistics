@@ -50,6 +50,7 @@ public class ApplicationCache implements Disposable{
 	public static final String PROJECTED_GEOMETRY_CONTAINS_CACHE = "projected-geometry-contains-cache";
 	public static final String GRID_TRANSFORMS_CACHE = "grid-transforms-cache";
 	public static final String FAST_CONTAINED_POINTS_QUADTREE= "fast-contained-points-quadtree";
+	public static final String FUNCTION_IMPORTED_DATASTORES= "function-imported-datastores";
 	
 	public void clearCache(){
 		for(RecentlyUsedCache cache : caches.values()){
@@ -84,6 +85,7 @@ public class ApplicationCache implements Disposable{
 		create(PROJECTED_GEOMETRY_CONTAINS_CACHE, 64 * MB);
 		create(GRID_TRANSFORMS_CACHE, 6 * MB);
 		create(FAST_CONTAINED_POINTS_QUADTREE, 64 * MB);
+		create(FUNCTION_IMPORTED_DATASTORES, 512 * MB);
 		
 		
 		

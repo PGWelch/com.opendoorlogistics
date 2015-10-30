@@ -1,13 +1,13 @@
 package com.opendoorlogistics.core.scripts.execution.adapters.vls;
 
 import com.opendoorlogistics.api.tables.ODLColumnType;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLIgnore;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLNullAllowed;
+import com.opendoorlogistics.api.tables.beans.annotations.ODLTableName;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.gis.map.data.UserRenderFlags;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLIgnore;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLNullAllowed;
-import com.opendoorlogistics.core.tables.beans.annotations.ODLTableName;
 
 @ODLTableName(Style.TABLE_NAME)
 public class Style extends BeanMappedRowImpl {

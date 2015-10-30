@@ -6,6 +6,8 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.scripts.execution.dependencyinjection;
 
+import java.awt.Dimension;
+
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.HasApi;
@@ -26,6 +28,7 @@ import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.Data
 public interface DependencyInjector extends ProcessingApi, HasApi {
 	String getBatchKey();
 	ModalDialogResult showModalPanel(JPanel panel,String title, ModalDialogResult ...buttons);
+	ModalDialogResult showModalPanel(JPanel panel,String title,Dimension minSize, ModalDialogResult ...buttons);
 	<T extends JPanel & ClosedStatusObservable> void showModalPanel(T panel, String title);
 	ODLCostMatrix calculateDistances(DistancesConfiguration request, ODLTableReadOnly... tables);
 	ODLGeom calculateRouteGeom(DistancesConfiguration request, LatLong from, LatLong to);	

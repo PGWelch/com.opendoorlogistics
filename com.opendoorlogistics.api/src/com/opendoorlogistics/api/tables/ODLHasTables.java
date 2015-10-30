@@ -8,7 +8,6 @@ package com.opendoorlogistics.api.tables;
 
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 
-public interface ODLHasTables<T extends ODLTableDefinition> {
-	int getTableCount();
+public interface ODLHasTables<T extends ODLTableDefinition> extends ODLHasTableCount {
 	T getTableAt(int i);
 }

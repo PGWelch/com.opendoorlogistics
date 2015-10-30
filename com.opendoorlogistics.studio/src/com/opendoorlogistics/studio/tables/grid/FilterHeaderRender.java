@@ -36,7 +36,7 @@ import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.ui.ShowPanel;
 import com.opendoorlogistics.studio.tables.grid.adapter.SwingAdapter;
 
-public class FilterHeaderRender extends HeaderCellRenderer{
+public abstract class FilterHeaderRender extends HeaderCellRenderer{
 	private final JPanel panel;
 	private final JPanel filterPanel;
 	private final JLabel firstColumnLabel;
@@ -86,10 +86,10 @@ public class FilterHeaderRender extends HeaderCellRenderer{
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 
 		if(column==0){
-			prepareLabel(value, isSelected,firstColumnLabel);			
+			prepareLabel(value, isSelected,false,firstColumnLabel);			
 			return firstColumnLabel;
 		}
-		prepareLabel(value, isSelected,columnNameLabel);	
+		prepareLabel(value, isSelected,getColumnIsItalics(column),columnNameLabel);	
 		
 		if (isSelected) {
 			panel.setBackground(selectedColour);
@@ -104,38 +104,38 @@ public class FilterHeaderRender extends HeaderCellRenderer{
 		return panel;
 	}
 
-	public static void main(String[]args){
-		JTable table = new JTable();
-		table.setModel(new AbstractTableModel() {
-			
-			@Override
-			public Object getValueAt(int rowIndex, int columnIndex) {
-				return "hello";
-			}
-			
-			@Override
-			public int getRowCount() {
-				return 3;
-			}
-			
-			@Override
-			public int getColumnCount() {
-				return 3;
-			}
-		});
-		
-		JTableHeader tableHeader = table.getTableHeader();
-		tableHeader.setDefaultRenderer(new FilterHeaderRender());
-		tableHeader.invalidate();
-		tableHeader.revalidate();
-		tableHeader.updateUI();
-		
-		JScrollPane scrollPane = new JScrollPane(table);
-		JPanel panel = new JPanel();
-		panel.setLayout(new BorderLayout());
-		panel.add(scrollPane,BorderLayout.CENTER);
-		ShowPanel.showPanel(panel);
-	}
+//	public static void main(String[]args){
+//		JTable table = new JTable();
+//		table.setModel(new AbstractTableModel() {
+//			
+//			@Override
+//			public Object getValueAt(int rowIndex, int columnIndex) {
+//				return "hello";
+//			}
+//			
+//			@Override
+//			public int getRowCount() {
+//				return 3;
+//			}
+//			
+//			@Override
+//			public int getColumnCount() {
+//				return 3;
+//			}
+//		});
+//		
+//		JTableHeader tableHeader = table.getTableHeader();
+//		tableHeader.setDefaultRenderer(new FilterHeaderRender());
+//		tableHeader.invalidate();
+//		tableHeader.revalidate();
+//		tableHeader.updateUI();
+//		
+//		JScrollPane scrollPane = new JScrollPane(table);
+//		JPanel panel = new JPanel();
+//		panel.setLayout(new BorderLayout());
+//		panel.add(scrollPane,BorderLayout.CENTER);
+//		ShowPanel.showPanel(panel);
+//	}
 	
 	@Override
 	public void mouseClicked(MouseEvent e) {

@@ -11,13 +11,11 @@ import java.io.Serializable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 
 
-public interface ODLDatastore <T extends ODLTableDefinition> extends ODLHasTables<T>, Serializable, ODLHasListeners, SupportsTransactions,HasFlags{
+public interface ODLDatastore <T extends ODLTableDefinition> extends ODLHasTables<T>, Serializable, ODLHasListeners, SupportsTransactions,HasFlags, FlagSetter{
 	T getTableByImmutableId(int id);
 
 	public static final int FLAG_FILE_CREATED_BY_ODL = 1<<0;
-	
-	void setFlags(long flags);
-	
+		
 	public interface ODLDatastoreFactory<T extends ODLTableDefinition>{
 		ODLDatastore<T> create();
 	}
@@ -28,5 +26,5 @@ public interface ODLDatastore <T extends ODLTableDefinition> extends ODLHasTable
 	 * @return Do a lazy copy which avoids deep copying the tables until needed.
 	 * Laxy copies have restrictions - e.g. tables cannot be renamed, cannot be deep copied themselves
 	 */
-	ODLDatastore<? extends T> deepCopyWithShallowValueCopy(boolean createLazyCopy);
+	ODLDatastoreAlterable<? extends T> deepCopyWithShallowValueCopy(boolean createLazyCopy);
 }

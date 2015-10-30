@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import com.opendoorlogistics.api.geometry.ODLGeom;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTime;
+import com.opendoorlogistics.core.AppProperties;
 import com.opendoorlogistics.core.geometry.ODLGeomImpl;
 import com.opendoorlogistics.core.geometry.ODLLoadedGeometry;
 import com.opendoorlogistics.core.geometry.operations.LinestringFraction;
@@ -2233,6 +2234,37 @@ public class Functions {
 		}
 
 	}
+	
+	public static class FmAppProperty extends FunctionImpl{
+		public FmAppProperty(Function param){
+			super(param);
+		}
+
+		@Override
+		public Object execute(FunctionParameters parameters) {
+			Object o = child(0).execute(parameters);
+			if(o==Functions.EXECUTION_ERROR){
+				return Functions.EXECUTION_ERROR;
+			}
+			if(o==null){
+				return null;
+			}
+			
+			String key = (String)ColumnValueProcessor.convertToMe(ODLColumnType.STRING, o);
+			if(key!=null){
+				return AppProperties.getString(key);
+			}
+			return null;
+		}
+
+		@Override
+		public Function deepCopy() {
+			throw new UnsupportedOperationException();
+		}
+		
+		
+	}
+	
 
 	public static abstract class FmLerpToDefinedColour extends FunctionImpl{
 		public FmLerpToDefinedColour(Function colour, Function ammount){
@@ -2365,7 +2397,9 @@ public class Functions {
 
 			ODLGeomImpl geom = (ODLGeomImpl) ColumnValueProcessor.convertToMe(ODLColumnType.GEOM, child);
 			if (geom == null) {
-				return Functions.EXECUTION_ERROR;
+				// if there is no geometry, return null as (a) the property of a null geometry must obviously
+				// be null and (b) it allows to avoid having to use formula like this:  if(geom!=null, centroid(geom),null)
+				return null;
 			}
 
 			Geometry geometry = geom.getJTSGeometry();

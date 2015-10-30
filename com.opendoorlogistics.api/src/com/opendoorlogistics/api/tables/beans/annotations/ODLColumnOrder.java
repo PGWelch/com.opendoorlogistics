@@ -4,7 +4,7 @@
  * are made available under the terms of the GNU Lesser Public License v3
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
-package com.opendoorlogistics.core.tables.beans.annotations;
+package com.opendoorlogistics.api.tables.beans.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
