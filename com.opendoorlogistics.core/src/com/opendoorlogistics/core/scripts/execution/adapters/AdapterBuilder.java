@@ -1169,7 +1169,9 @@ final public class AdapterBuilder {
 				// execute formula against the grouped table; aggregate formulae redirect to source table
 				Object val = executeNonSortNonGroupByFormulaInGroupedTable(nonSortFormulae, groupedDsIndex, groupedTable, groupRow, col);
 				if (val == Functions.EXECUTION_ERROR) {
-					report.setFailed("Error executing formula or reading field in grouping.");
+					AdapterColumnConfig colObj = nonSortCols.getColumn(col);
+					report.setFailed("Error executing formula or reading field in grouping, destination field " + colObj.getName()
+						+ (!Strings.isEmpty(colObj.getFormula()) ? " with formula " + colObj.getFormula() + ".":"."));
 					return;
 				}
 
@@ -1241,7 +1243,8 @@ final public class AdapterBuilder {
 	}
 
 	private Object executeNonSortNonGroupByFormulaInGroupedTable(final Function[] nonSortFormulae, final int groupedDsIndex, final ODLTableAlterable groupedTable,final int groupRow, int col) {
-		FunctionParameters parameters = new TableParameters(datasources, groupedDsIndex, groupedTable.getImmutableId(), groupRow, groupRow,new ODLRowReadOnly() {
+		long rowId =groupedTable.getRowId(groupRow);
+		FunctionParameters parameters = new TableParameters(datasources, groupedDsIndex, groupedTable.getImmutableId(), rowId, groupRow,new ODLRowReadOnly() {
 			
 			@Override
 			public int getRowIndex() {
