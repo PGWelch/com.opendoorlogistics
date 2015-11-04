@@ -59,9 +59,9 @@ public class CheckboxTable  extends JScrollPane{
 		void buttonClicked(CheckBoxItem item, int buttonColumn);
 	}
 	
-	public CheckboxTable( Dimension checkboxSize, List<? extends CheckBoxItem> items){
-		this(null, checkboxSize, items);
-	}
+//	public CheckboxTable( Dimension checkboxSize, List<? extends CheckBoxItem> items){
+//		this(null, checkboxSize, items);
+//	}
 	
 	public CheckboxTable(Icon[] buttonIcons, Dimension checkboxSize, List<? extends CheckBoxItem> items){
 		this.checkboxSize = checkboxSize;

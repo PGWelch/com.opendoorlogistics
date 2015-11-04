@@ -59,6 +59,20 @@ public class Option extends ScriptBaseElementImpl{
 		return instructions;
 	}
 	
+	/**
+	 * Add the input option to this option.
+	 * Assumes ids are already unique
+	 * @param other
+	 */
+	public void mergeIntoMe(Option other){
+		getAdapters().addAll(other.getAdapters());
+		getInstructions().addAll(other.getInstructions());
+		getOutputs().addAll(other.getOutputs());
+		getOptions().addAll(other.getOptions());
+		getComponentConfigs().addAll(other.getComponentConfigs());
+		
+	}
+	
 	@XmlTransient
 	public InstructionConfig getLastInstruction(){
 		if(instructions!=null && instructions.size()>0){

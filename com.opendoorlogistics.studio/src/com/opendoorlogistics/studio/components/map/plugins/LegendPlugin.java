@@ -156,12 +156,13 @@ public class LegendPlugin implements MapPlugin {
 					Icons.loadFromStandardPath("select.png")},new Dimension(20, 20), new ArrayList<CheckBoxItem>());
 			legendFilterTable.addCheckChangedListener(this);
 			legendFilterTable.addButtonClickedListener(this);
+			legendFilterTable.setPreferredSize(new Dimension(150, 150));
 			add(legendFilterTable, BorderLayout.CENTER);
 
 			// add in a scrollpane
-			JScrollPane scroller = new JScrollPane(legendFilterTable);
-			add(scroller, BorderLayout.CENTER);
-			scroller.setPreferredSize(new Dimension(150, 150));
+		//	JScrollPane scroller = new JScrollPane(legendFilterTable);
+		//	add(scroller, BorderLayout.CENTER);
+		//	scroller.setPreferredSize(new Dimension(150, 150));
 			setBackground(LEGEND_BACKGROUND_COLOUR);
 			setAlignmentX(JInternalFrame.LEFT_ALIGNMENT);
 			

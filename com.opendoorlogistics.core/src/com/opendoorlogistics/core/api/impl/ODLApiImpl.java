@@ -26,12 +26,14 @@ import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.Values;
 import com.opendoorlogistics.api.app.ODLAppProperties;
+import com.opendoorlogistics.api.cache.ObjectCachePool;
 import com.opendoorlogistics.api.components.ODLComponentProvider;
 import com.opendoorlogistics.api.geometry.Geometry;
 import com.opendoorlogistics.api.scripts.Scripts;
 import com.opendoorlogistics.api.ui.UIFactory;
 import com.opendoorlogistics.core.AppProperties;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptsImpl;
+import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 
 public class ODLApiImpl implements ODLApi{
@@ -191,6 +193,11 @@ public class ODLApiImpl implements ODLApi{
 			}
 			
 		};
+	}
+
+	@Override
+	public ObjectCachePool cache() {
+		return ApplicationCache.singleton();
 	}
 
 

@@ -12,6 +12,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 final public class PCGeocoderConfig extends PCDatabaseSelectionConfig{
 	private boolean showSummary=true;
 	private boolean skipAlreadyGeocodedRecords=true;
+	private boolean strictMatch=false;
+	private int minimumLevel=0;
 	
 	public boolean isShowSummary() {
 		return showSummary;
@@ -28,6 +30,23 @@ final public class PCGeocoderConfig extends PCDatabaseSelectionConfig{
 	public void setSkipAlreadyGeocodedRecords(boolean skipAlreadyGeocodedRecords) {
 		this.skipAlreadyGeocodedRecords = skipAlreadyGeocodedRecords;
 	}
+
+	public boolean isStrictMatch() {
+		return strictMatch;
+	}
+
+	public void setStrictMatch(boolean strictMatch) {
+		this.strictMatch = strictMatch;
+	}
+
+	public int getMinimumLevel() {
+		return minimumLevel;
+	}
+
+	public void setMinimumLevel(int minimumLevel) {
+		this.minimumLevel = minimumLevel;
+	}
+
 	
 	
 	

@@ -382,18 +382,39 @@ public class FastContainedPointsQuadtree {
 			testids.add(id);
 			testCoords.add(coordinate);
 		}
-			
+
 		public FastContainedPointsQuadtree build(GeometryFactory factory){
+			return build(factory, null);
+		}
+		
+		public interface InsertedListener{
+			void inserted(Coordinate c, long count);
+		}
+		
+		public FastContainedPointsQuadtree build(GeometryFactory factory, InsertedListener listener){
 			if(e==null){
 				return null;
 			}
 			
 			Node root = new Node(e, factory);
+			
+			// small object to count number added
+			class Counter{
+				long count=0;
+			}
+			Counter counter = new Counter();
+			
 			points.forEach(new BiConsumer<Coordinate, TLongHashSet>() {
 
 				@Override
 				public void accept(Coordinate t, TLongHashSet u) {
 					root.insert(t, u.toArray());
+					
+					if(listener!=null){
+						listener.inserted(t, counter.count);
+					}
+					
+					counter.count++;
 				}
 			});
 			

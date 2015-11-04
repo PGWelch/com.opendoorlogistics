@@ -398,6 +398,14 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 		}
 	}
 
+	@Override
+	protected boolean isProgressMinimised(){
+		// Minimise by default if we're refreshing a script, but not on the 1st launch
+		// as often this can take longer - e.g. loading and caching a file for the first time (e.g. spatial query postcodes gdf file)
+		// and the progress is only intrusive when we're auto-refreshing anyway..
+		return isScriptRefresh;
+	}
+	
 	/**
 	 * @param cb
 	 * @param frames

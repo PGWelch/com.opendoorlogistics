@@ -6,18 +6,11 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.geocode.postcodes;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.Serializable;
-import java.util.Arrays;
 
 import javax.swing.Icon;
-import javax.swing.JFormattedTextField;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentConfigurationEditorAPI;
@@ -36,32 +29,11 @@ import com.opendoorlogistics.components.geocode.postcodes.impl.PCConstants;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCGeocodeFile;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCRecord;
 import com.opendoorlogistics.components.geocode.postcodes.impl.PCRecord.StrField;
-import com.opendoorlogistics.core.components.ODLWizardTemplateConfig;
 import com.opendoorlogistics.core.tables.ODLFactory;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
-import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.utils.ui.Icons;
 
 final public class PCImporterComponent implements ODLComponent {
-
-	@XmlRootElement
-	public static class PCImporterConfig extends PCDatabaseSelectionConfig {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = -285475347888278427L;
-		private int level;
-
-		public int getLevel() {
-			return level;
-		}
-
-		@XmlAttribute
-		public void setLevel(int level) {
-			this.level = level;
-		}
-
-	}
 
 	@Override
 	public Class<? extends Serializable> getConfigClass() {
@@ -70,33 +42,7 @@ final public class PCImporterComponent implements ODLComponent {
 
 	@Override
 	public JPanel createConfigEditorPanel(final ComponentConfigurationEditorAPI factory,int mode,Serializable config, boolean isFixedIO) {
-
-		class MyPanel extends PCGeocoderDatabaseSelectionPanel {
-
-			MyPanel(final PCImporterConfig pcConfig) {
-				super(factory.getApi(),pcConfig);
-				addWhitespace();
-				add(new JLabel("Import postcodes from level:"));
-
-				final JFormattedTextField level = new JFormattedTextField();
-				level.setValue(new Integer(pcConfig.getLevel()));
-				level.setColumns(10);
-				level.addPropertyChangeListener("value", new PropertyChangeListener() {
-
-					@Override
-					public void propertyChange(PropertyChangeEvent evt) {
-						int ilevel = ((Number) level.getValue()).intValue();
-						pcConfig.setLevel(ilevel);
-					}
-				});
-				add(level);
-				addWhitespace();
-
-			}
-
-		}
-
-		return new MyPanel((PCImporterConfig) config);
+		return PCImporterConfig.createConfigEditorPanel(factory,(PCImporterConfig) config, "Import");
 	}
 
 	@Override

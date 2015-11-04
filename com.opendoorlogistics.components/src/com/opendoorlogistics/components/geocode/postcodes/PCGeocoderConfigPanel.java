@@ -13,8 +13,13 @@ import java.awt.event.ActionListener;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.JCheckBox;
+import javax.swing.JLabel;
 
 import com.opendoorlogistics.api.ODLApi;
+import com.opendoorlogistics.api.ui.UIFactory.IntChangedListener;
+import com.opendoorlogistics.core.api.impl.ODLApiImpl;
+import com.opendoorlogistics.core.utils.ui.IntegerEntryPanel;
+import com.opendoorlogistics.core.utils.ui.ShowPanel;
 
 final public class PCGeocoderConfigPanel extends PCGeocoderDatabaseSelectionPanel{
 
@@ -39,6 +44,30 @@ final public class PCGeocoderConfigPanel extends PCGeocoderDatabaseSelectionPane
 			}
 		});
 		addLine(skipBox,Box.createRigidArea(new Dimension(20, 1)), summaryBox);
+		
+		// add strict line
+		addHalfWhitespace();
+		JCheckBox strict = new JCheckBox("Match to one postcode only, with minimum level ", pcConfig.isStrictMatch());
+		strict.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				pcConfig.setStrictMatch(strict.isSelected());
+			}
+		});
+		IntegerEntryPanel integerEntryPanel = new IntegerEntryPanel(null, pcConfig.getMinimumLevel(), null, new IntChangedListener() {
+			
+			@Override
+			public void intChange(int newInt) {
+				pcConfig.setMinimumLevel(newInt);
+			}
+		});
+		addLine(strict, integerEntryPanel);
+	}
+	
+	public static void main(String[]args){
+		PCGeocoderConfigPanel panel = new PCGeocoderConfigPanel(new ODLApiImpl(), new PCGeocoderConfig());
+		ShowPanel.showPanel(panel);
 	}
 
 }

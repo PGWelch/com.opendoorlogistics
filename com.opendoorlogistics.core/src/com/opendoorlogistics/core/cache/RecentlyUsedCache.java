@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import com.opendoorlogistics.api.cache.ObjectCache;
 import com.opendoorlogistics.core.utils.Pair;
 
 /**
@@ -21,7 +22,7 @@ import com.opendoorlogistics.core.utils.Pair;
  * @author Phil
  *
  */
-final public class RecentlyUsedCache {
+final public class RecentlyUsedCache implements ObjectCache{
 	private long timeIndex=0;
 	private long totalBytes;
 	private final long bytesLimit;
@@ -80,7 +81,10 @@ final public class RecentlyUsedCache {
 				}
 				Collections.sort(sorted);
 				
-				// keep on adding until we reach half the bytes limit
+				// Keep on adding until we reach half the bytes limit. This always keeps at least one object.
+				// Note if we decide to change this in the future to not cache any objects if the total size of every object is greater than the limit,
+				// we should update the component which does spatial queries against postcodes because for the UK postcode set,
+				// its quadtree will no longer be cached and performance will be very bad...
 				totalBytes = 0;
 				cached.clear();
 				int i =0;
@@ -99,7 +103,7 @@ final public class RecentlyUsedCache {
 		}
 	}
 	
-
+	@Override
 	public synchronized void put(Object objectKey, Object value, long nbBytes){
 		// remove the old object just in case it's already here so bytes count is correct
 		remove(objectKey);
@@ -121,7 +125,7 @@ final public class RecentlyUsedCache {
 		clearIfNeeded();
 	}
 	
-	
+	@Override
 	public synchronized Object get(Object key){
 		CacheEntry c = cached.get(key);
 		if(c!=null){
@@ -150,6 +154,7 @@ final public class RecentlyUsedCache {
 		}
 	}
 
+	@Override
 	public synchronized void clear(){
 		timeIndex=0;
 		totalBytes=0;
@@ -193,6 +198,7 @@ final public class RecentlyUsedCache {
 		return ret;
 	}
 	
+	@Override
 	public synchronized void remove(Object key){
 		CacheEntry container = cached.get(key);
 		if(container!=null){

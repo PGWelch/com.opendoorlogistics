@@ -121,7 +121,9 @@ public abstract class DatastoreModifierTask {
 				appFrame.addInternalFrame(progressFrame, FramePlacement.CENTRAL_RANDOMISED);
 				try {
 					// start it minimised so its visible but non-intrusive
-					progressFrame.setIcon(true);					
+					if(isProgressMinimised()){
+						progressFrame.setIcon(true);											
+					}
 				} catch (Exception e) {
 				}
 				progressFrame.getProgressPanel().start();
@@ -134,6 +136,10 @@ public abstract class DatastoreModifierTask {
 				dlg.start();
 			}
 		}
+	}
+	
+	protected boolean isProgressMinimised(){
+		return true;
 	}
 	
 	protected boolean isProgressShowable(){

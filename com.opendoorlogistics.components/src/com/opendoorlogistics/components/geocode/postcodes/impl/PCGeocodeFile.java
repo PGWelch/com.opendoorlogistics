@@ -18,6 +18,7 @@ import org.mapdb.DBMaker;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.components.geocode.Countries;
 import com.opendoorlogistics.components.geocode.Countries.Country;
+import com.opendoorlogistics.core.utils.LargeList;
 import com.opendoorlogistics.core.utils.Version;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
@@ -231,7 +232,7 @@ final public class PCGeocodeFile {
 
 	public List<PCRecord> getPostcodes(int level, ComponentExecutionApi reporter) {
 		Map<String, byte[]> pcMap = getPCMap(level);
-		ArrayList<PCRecord> ret = new ArrayList<>(pcMap.size());
+		LargeList<PCRecord> ret = new LargeList<>(pcMap.size());
 		int nbParsed = 0;
 		if (pcMap != null) {
 			Map<Integer, String> intToStr = db.get(PCConstants.DBNAME_INT2ST);
@@ -242,7 +243,7 @@ final public class PCGeocodeFile {
 
 				ret.addAll(PCSerialiser.multiDeserialise(bytes, intToStr));
 				if (nbParsed % 10000 == 0) {
-					reporter.postStatusMessage("Parsed " + nbParsed + " postcodes.");
+					reporter.postStatusMessage("Loaded " + nbParsed + " postcodes.");
 				}
 				nbParsed++;
 			}

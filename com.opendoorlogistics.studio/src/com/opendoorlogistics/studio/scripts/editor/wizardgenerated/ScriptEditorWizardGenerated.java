@@ -1536,17 +1536,24 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			}
 		}
 
-		treeActions.add(new EditOption("Add option using component", "Add a new option using a component to the script below the currently selected option.", "add-script-option.png") {
+		for(boolean mergeWithCurrent : new boolean[]{false,true}){
+			treeActions.add(new EditOption(!mergeWithCurrent?"Add option using component":"Merge component into option",
+					!mergeWithCurrent?"Add a new option using a component to the script below the currently selected option.":
+						"Merge the option created by a component with the currently selected option",
+					!mergeWithCurrent?"add-script-option.png":"add-component-to-current-option.png") {
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				SetupComponentWizard wizard = new SetupComponentWizard(SwingUtilities.getWindowAncestor(ScriptEditorWizardGenerated.this), api, createAvailableOptionsQuery());
-				Option newOption = wizard.showModal(script, currentPane.displayNode.option);
-				if (newOption != null) {
-					reinitTree(newOption.getOptionId());
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					SetupComponentWizard wizard = new SetupComponentWizard(SwingUtilities.getWindowAncestor(ScriptEditorWizardGenerated.this), api, createAvailableOptionsQuery());
+					wizard.setMergeWithInputOption(mergeWithCurrent);
+					Option newOption = wizard.showModal(script, currentPane.displayNode.option);
+					if (newOption != null) {
+						reinitTree(mergeWithCurrent? currentPane.displayNode.option.getOptionId():newOption.getOptionId());
+					}
 				}
-			}
-		});
+			});
+			
+		}
 
 		treeActions.add(new EditOption("Add empty option", "Add an empty option", "add-empty-script-option.png") {
 
@@ -1847,7 +1854,13 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 						if (option != null && index >= 1) {
 							moveUpList(currentPane.displayNode.parent.option.getOptions(), index);
 						}
-					} else {
+					} 
+					else if(currentPane.displayNode.type == DisplayNodeType.INSTRUCTION){
+						option = currentPane.displayNode.option;
+						int index = option.getInstructions().indexOf(currentPane.displayNode.instruction);
+						moveUpList(option.getInstructions(), index);
+					}
+					else {
 						// must be adapter
 						option = currentPane.displayNode.option;
 						int index = option.getAdapters().indexOf(currentPane.displayNode.adapter);
@@ -1884,7 +1897,11 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 				} else if (enabled && (currentPane.displayNode.type == DisplayNodeType.DATA_ADAPTER || currentPane.displayNode.type == DisplayNodeType.PARAMETER)
 						&& currentPane.displayNode.adapter != null) {
 					enabled = currentPane.displayNode.option.getAdapters().indexOf(currentPane.displayNode.adapter) >= 1;
-				} else {
+				} else if (enabled && (currentPane.displayNode.type == DisplayNodeType.INSTRUCTION )
+						&& currentPane.displayNode.instruction != null) {
+					enabled = currentPane.displayNode.option.getInstructions().indexOf(currentPane.displayNode.instruction) >= 1;
+				} 
+				else {
 					enabled = false;
 				}
 				return enabled;
@@ -1906,7 +1923,14 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 					Option parent = currentPane.displayNode.parent.option;
 					parent.getOptions().remove(index);
 					parent.getOptions().add(index + 1, option);
-				} else {
+				}
+				else if(currentPane.displayNode.type ==DisplayNodeType.INSTRUCTION){
+					option = currentPane.displayNode.option;
+					int index = option.getInstructions().indexOf(currentPane.displayNode.instruction);
+					option.getInstructions().remove(index);
+					option.getInstructions().add(index + 1, currentPane.displayNode.instruction);
+				}
+				else {
 					// must be adapter
 					option = currentPane.displayNode.option;
 					List<AdapterConfig> adapters = option.getAdapters();
@@ -1934,7 +1958,11 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 						Option parent = currentPane.displayNode.parent.option;
 						enabled = parent != null && index < (parent.getOptions().size() - 1);
 					}
-				} else if (enabled && (type == DisplayNodeType.DATA_ADAPTER || type == DisplayNodeType.PARAMETER) && currentPane.displayNode.adapter != null) {
+				}
+				 else if (enabled && (type == DisplayNodeType.INSTRUCTION ) && currentPane.displayNode.instruction != null) {
+						enabled = currentPane.displayNode.option.getInstructions().indexOf(currentPane.displayNode.instruction) < currentPane.displayNode.option.getInstructions().size() - 1;
+					}
+				else if (enabled && (type == DisplayNodeType.DATA_ADAPTER || type == DisplayNodeType.PARAMETER) && currentPane.displayNode.adapter != null) {
 					enabled = currentPane.displayNode.option.getAdapters().indexOf(currentPane.displayNode.adapter) < currentPane.displayNode.option.getAdapters().size() - 1;
 				} else {
 					enabled = false;

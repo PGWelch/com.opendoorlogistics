@@ -146,6 +146,21 @@ public class PCGeocoderComponent implements ODLComponent {
 		return null;
 	}
 
+	private boolean isStrictRejection(PCFindResult result, PCGeocoderConfig pgc, String [] reason){
+		if(pgc.isStrictMatch()){
+			if(result.getList().size()>1){
+				reason[0] = "Rejected as strict matching is on and matched to more than one postcode record.";
+				return true;
+			}
+			
+			if(result.getLevel() < pgc.getMinimumLevel()){
+				reason[0] = "Rejected as matched to a postcode less than the minimum level.";
+				return true;	
+			}
+		}
+		return false;
+	}
+	
 	@Override
 	public void execute(ComponentExecutionApi api,int mode,Object configuration, ODLDatastore<? extends ODLTable> input, ODLDatastoreAlterable<? extends  ODLTableAlterable> output) {
 		final PCGeocoderConfig pgc = (PCGeocoderConfig)configuration;
@@ -160,6 +175,9 @@ public class PCGeocoderComponent implements ODLComponent {
 			int nbUnmatched=0;
 			int nbSkipped=0;
 			int nr;
+			int nbRejectedStrictMatch=0;
+			int nbIncorrectFormat=0;
+			int nbNoMatchesFound=0;
 		}
 		final Counter counter = new Counter();
 		final Country country = pc.getCountry();
@@ -179,39 +197,48 @@ public class PCGeocoderComponent implements ODLComponent {
 				String pcValue = (String)table.getValueAt(row, 0);
 				
 				PCRecord matched=null;
-				String reason=null;
+				String []reason=new String[1];
 				if(pcValue!=null){
 					PCFindResult result = pc.find(pcValue);
 					List<PCRecord> list = result.getList();
 					if(list!=null && list.size()>0){
-						// merge matched results
-						matched = PCRecord.merge(list);
-						counter.nbMatched++;
-						int col=1;
-						table.setValueAt(matched.getLatitude(), row, col++);
-						table.setValueAt(matched.getLongitude(), row, col++);
 						
-						if(list.size()>1){
-							table.setValueAt("Matched to " + list.size() + " postcodes in level " + result.getLevel(), row, col++);							
+						if(isStrictRejection(result, pgc, reason)){
+							matched = null;
+							counter.nbRejectedStrictMatch++;
+						}else{
+							// merge matched results
+							matched = PCRecord.merge(list);
+							counter.nbMatched++;
+							int col=1;
+							table.setValueAt(matched.getLatitude(), row, col++);
+							table.setValueAt(matched.getLongitude(), row, col++);
+							
+							if(list.size()>1){
+								table.setValueAt("Matched to " + list.size() + " postcodes in level " + result.getLevel(), row, col++);							
+							}
+							else{
+								table.setValueAt("Matched to postcode " +  matched.getField(StrField.POSTAL_CODE) + " in level " + result.getLevel(), row, col++);
+							}
+							
+							table.setValueAt("1", row, col++);
+							for(StrField fld  :StrField.values()){
+								table.setValueAt(matched.getField(fld), row, col++);			
+							}	
 						}
-						else{
-							table.setValueAt("Matched to postcode " +  matched.getField(StrField.POSTAL_CODE) + " in level " + result.getLevel(), row, col++);
-						}
-						
-						table.setValueAt("1", row, col++);
-						for(StrField fld  :StrField.values()){
-							table.setValueAt(matched.getField(fld), row, col++);			
-						}
+
 
 					}else{
 						switch (result.getType()) {
 						case INVALID_FORMAT:
-							reason = "Could not identify input postcode format";
+							reason[0] = "Could not identify input postcode format";
+							counter.nbIncorrectFormat++;
 							break;
 
 						
 						case NO_MATCHES:
-							reason = "Input postcode format was correct but no matches found";
+							reason[0] = "Input postcode format was correct but no matches found";
+							counter.nbNoMatchesFound++;
 							break;
 							
 						default:
@@ -220,10 +247,10 @@ public class PCGeocoderComponent implements ODLComponent {
 						}
 					}
 				}else{
-					reason = "No input postcode provided";
+					reason[0] = "No input postcode provided";
 				}
 				
-				// blank if not matched
+				// blank if not matched and record reason
 				if(matched==null){
 					counter.nbUnmatched++;
 					int col=1;
@@ -232,7 +259,7 @@ public class PCGeocoderComponent implements ODLComponent {
 					table.setValueAt(null, row, col++);
 					table.setValueAt(null, row, col++);
 					
-					table.setValueAt(reason, row, col++);
+					table.setValueAt(reason[0], row, col++);
 					
 					// set isMatched to 0
 					table.setValueAt("0", row, col++);
@@ -266,6 +293,11 @@ public class PCGeocoderComponent implements ODLComponent {
 					builder.append("Number of records processed: " + (counter.nr-counter.nbSkipped) + System.lineSeparator());
 					builder.append("Number of records matched: " + counter.nbMatched + System.lineSeparator());
 					builder.append("Number of records unmatched: " + counter.nbUnmatched + System.lineSeparator());
+					if(pgc.isStrictMatch()){
+						builder.append("Number of records unmatched due to strict matching: " + counter.nbRejectedStrictMatch + System.lineSeparator());						
+					}
+					builder.append("Number of records unmatched due to incorrect postcode format: " + counter.nbIncorrectFormat + System.lineSeparator());						
+					builder.append("Number of records unmatched due to no matches found: " + counter.nbNoMatchesFound + System.lineSeparator());						
 
 					// create panel to report it
 					JTextPane textPane = new JTextPane();

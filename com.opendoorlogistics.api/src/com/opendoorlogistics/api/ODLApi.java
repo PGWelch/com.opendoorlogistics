@@ -11,6 +11,7 @@ import java.util.List;
 import net.xeoh.plugins.base.Plugin;
 
 import com.opendoorlogistics.api.app.ODLAppProperties;
+import com.opendoorlogistics.api.cache.ObjectCachePool;
 import com.opendoorlogistics.api.components.ODLComponentProvider;
 import com.opendoorlogistics.api.geometry.Geometry;
 import com.opendoorlogistics.api.scripts.Scripts;
@@ -18,6 +19,7 @@ import com.opendoorlogistics.api.ui.UIFactory;
 
 
 public interface ODLApi {
+	ObjectCachePool cache();
 	StringConventions stringConventions();
 	Geometry geometry();
 	StandardComponents standardComponents();

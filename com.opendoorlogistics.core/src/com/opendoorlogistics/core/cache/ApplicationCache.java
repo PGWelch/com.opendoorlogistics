@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.opendoorlogistics.api.cache.ObjectCachePool;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.utils.Pair;
 
@@ -25,7 +26,7 @@ import com.opendoorlogistics.core.utils.Pair;
  * @author Phil
  *
  */
-public class ApplicationCache implements Disposable{
+public class ApplicationCache implements Disposable, ObjectCachePool{
 	private static final ApplicationCache singleton = new ApplicationCache();
 	private final HashMap<String, RecentlyUsedCache> caches = new HashMap<>();
 	
@@ -92,11 +93,13 @@ public class ApplicationCache implements Disposable{
 				
 	}
 	
+	@Override
 	public RecentlyUsedCache get(String cacheId){
 		return caches.get(cacheId);
 	}
 	
-	private RecentlyUsedCache create(String cacheId, long maxSizeInBytes){
+	@Override
+	public RecentlyUsedCache create(String cacheId, long maxSizeInBytes){
 		if(get(cacheId)!=null){
 			throw new RuntimeException("Cache already exists with id: " + cacheId);
 		}

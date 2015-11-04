@@ -63,7 +63,7 @@ public class SetupComponentWizard extends JDialog {
 	final private ODLApi api;
 	final private QueryAvailableTables queryAvailableTables;
 	boolean userSelectedOk=false;
-	
+	private boolean mergeWithInputOption=false;
 	private ComponentWizardData data = new ComponentWizardData();
 
 
@@ -632,9 +632,26 @@ public class SetupComponentWizard extends JDialog {
 		if(userSelectedOk){
 			ScriptGeneratorInput sgi = getScriptGeneratorInput(api, queryAvailableTables, data);
 			Option option = ScriptGenerator.generate(api, script, parent, sgi);
+			if(mergeWithInputOption && parent!=null){
+				parent.getOptions().remove(option);
+				parent.mergeIntoMe(option);
+			}
 			return option;
 		}
 		return null;
 	}
+
+	public boolean isMergeWithInputOption() {
+		return mergeWithInputOption;
+	}
+
+	/**
+	 * Merge the new option with the input parent option
+	 * @param mergeWithInputOption
+	 */
+	public void setMergeWithInputOption(boolean mergeWithInputOption) {
+		this.mergeWithInputOption = mergeWithInputOption;
+	}
+	
 	
 }

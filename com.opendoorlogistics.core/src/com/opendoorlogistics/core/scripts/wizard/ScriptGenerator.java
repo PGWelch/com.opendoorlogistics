@@ -151,6 +151,7 @@ final public class ScriptGenerator {
 			ret = deepCopiedScript;
 		}else{
 			Option deepCopiedOption = ScriptUtils.getOption(deepCopiedScript, ret.getOptionId());
+			ret = deepCopiedOption;
 			parent.getOptions().set(parent.getOptions().size()-1, deepCopiedOption);
 		}
 		

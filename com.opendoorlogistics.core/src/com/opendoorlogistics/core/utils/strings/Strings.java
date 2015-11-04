@@ -485,7 +485,7 @@ final public class Strings {
 		if(useNumberSortationLogic){
 			return StdStringComparer.singleton().compare(a, b);			
 		}else{
-			return std(a).compareTo(b);
+			return std(a).compareTo(std(b));
 		}
 	}
 
