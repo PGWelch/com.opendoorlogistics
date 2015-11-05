@@ -40,7 +40,7 @@ public class FilterFormulaOptimiser {
 
 	private final List<FunctionRecord> records = new ArrayList<FilterFormulaOptimiser.FunctionRecord>();
 	private final String formulaText;
-	private final int nf ;
+	private final int nbFuncRecords ;
 	public enum OptMethod{
 		ROW_INDEPENDENT,
 		INNER_TABLE_INDEPENDENT,
@@ -246,7 +246,7 @@ public class FilterFormulaOptimiser {
 			Collections.sort(records);			
 		}
 		
-		nf = records.size();
+		nbFuncRecords = records.size();
 	}
 	
 	private boolean processExecError(Object exec, ExecutionReport report){
@@ -306,7 +306,7 @@ public class FilterFormulaOptimiser {
 		
 		int addIfOK(long outerRowId,long innerRowId, boolean testZeroOptMethodFunctionsOnly){
 			add(outerRowId, innerRowId);
-			for(int i =0 ; i < nf ; i++){
+			for(int i =0 ; i < nbFuncRecords ; i++){
 				if(!testZeroOptMethodFunctionsOnly || records.get(i).optMethodCount==0){
 					int result = execute(i);
 					if(result!=TRUE){
@@ -358,7 +358,7 @@ public class FilterFormulaOptimiser {
 		}
 		
 		// first check for anything global that rejects the whole table
-		for(int i =0 ; i < nf ; i++){
+		for(int i =0 ; i < nbFuncRecords ; i++){
 			FunctionRecord rec = records.get(i);
 			if(rec.get(OptMethod.ROW_INDEPENDENT)){		
 				FunctionParameters parameters = new TableParameters(datasources, datastoreIndx, joinTable.getImmutableId(), -1,-1,null);
@@ -375,7 +375,7 @@ public class FilterFormulaOptimiser {
 
 		// init any inner table lookup method we might have...
 		LookupOptMethod innerLookupOptMethod=null;
-		for(int i =0 ; i < nf && innerLookupOptMethod==null && !report.isFailed(); i++){
+		for(int i =0 ; i < nbFuncRecords && innerLookupOptMethod==null && !report.isFailed(); i++){
 			FunctionRecord rec = records.get(i);						
 			if(rec.get(OptMethod.UNPROJECTED_GEOMCONTAINS_WITH_OUTER_GEOM_INNER_LAT_LONG)){
 				innerLookupOptMethod = initOptMethod(rec, outerTable, innerTable,joinTable, datasources, datastoreIndx, report);
@@ -389,7 +389,7 @@ public class FilterFormulaOptimiser {
 			final long orid = outerTable.getRowId(outerRow);			
 			adder.add(orid, innerTable.getRowId(0));
 			boolean filterOuterRow=false;
-			for(int i =0 ; i < nf && !filterOuterRow; i++){
+			for(int i =0 ; i < nbFuncRecords && !filterOuterRow; i++){
 				if(records.get(i).get(OptMethod.INNER_TABLE_INDEPENDENT)){
 					int exe = adder.execute(i);
 					if(exe == ERROR){

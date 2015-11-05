@@ -10,6 +10,7 @@ import javax.swing.Action;
 import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.standardcomponents.map.MapActionFactory;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapDataApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
@@ -18,9 +19,8 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.studio.components.map.AbstractMapMode;
 import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils;
-import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils.ActionFactory;
 
-public class CreatePointPlugin implements MapPlugin, ActionFactory{
+public class CreatePointPlugin implements MapPlugin, MapActionFactory{
 	
 	private final static long NEEDS_FLAGS = TableFlags.UI_INSERT_ALLOWED | TableFlags.UI_SET_ALLOWED;
 

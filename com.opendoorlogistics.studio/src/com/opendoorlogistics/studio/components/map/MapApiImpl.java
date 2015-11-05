@@ -39,6 +39,7 @@ import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.LatLongToScreen;
+import com.opendoorlogistics.api.standardcomponents.map.MapActionFactory;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapDataApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapMode;
@@ -82,6 +83,7 @@ import com.opendoorlogistics.studio.GlobalMapSelectedRowsManager;
 import com.opendoorlogistics.studio.InitialiseStudio;
 import com.opendoorlogistics.studio.components.map.plugins.CustomTooltipPlugin;
 import com.opendoorlogistics.studio.components.map.plugins.SummariseFieldValuesTooltipPlugin;
+import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils;
 
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -1362,5 +1364,26 @@ public class MapApiImpl extends MapApiListenersImpl implements MapApi, Disposabl
 	@Override
 	public boolean isDisposed() {
 		return isDisposed;
+	}
+
+	@Override
+	public void registerActionFactory(MapActionFactory factory, int priority, String group,  boolean needsSetPermission, boolean needsInsertPermission, boolean needsDeletePermission) {
+		long flags=0;
+		if(needsSetPermission){
+			flags |= TableFlags.UI_SET_ALLOWED;
+		}
+		if(needsInsertPermission){
+			flags |= TableFlags.UI_INSERT_ALLOWED;
+		}
+		
+		if(needsDeletePermission){
+			flags |= TableFlags.UI_DELETE_ALLOWED;
+		}
+		
+		if(flags!=0){
+			PluginUtils.registerActionFactory(this, factory, priority, group, flags);
+		}else{
+			PluginUtils.registerActionFactory(this, factory, priority, group);		
+		}
 	}
 }

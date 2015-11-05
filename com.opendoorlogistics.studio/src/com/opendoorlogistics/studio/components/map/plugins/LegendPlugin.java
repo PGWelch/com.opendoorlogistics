@@ -1,7 +1,5 @@
 package com.opendoorlogistics.studio.components.map.plugins;
 
-import gnu.trove.set.hash.TLongHashSet;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -18,31 +16,25 @@ import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 
-import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.Tables;
+import com.opendoorlogistics.api.standardcomponents.map.MapActionFactory;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi.PanelPosition;
 import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners;
 import com.opendoorlogistics.api.standardcomponents.map.MapDataApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
 import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
-import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.gis.map.Legend;
 import com.opendoorlogistics.core.gis.map.Legend.LegendDrawableTableBuilder;
-import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
-import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.SwingUtils;
-import com.opendoorlogistics.studio.components.map.FindDrawableTables;
 import com.opendoorlogistics.studio.components.map.plugins.selection.SelectPlugin;
 import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils;
-import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckBoxItem;
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckBoxItemImpl;
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckboxTable;
@@ -50,7 +42,8 @@ import com.opendoorlogistics.studio.controls.checkboxtable.CheckboxTable.ButtonC
 import com.opendoorlogistics.studio.controls.checkboxtable.CheckboxTable.CheckChangedListener;
 import com.opendoorlogistics.utils.ui.Icons;
 import com.opendoorlogistics.utils.ui.SimpleAction;
-import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.*;
+
+import gnu.trove.set.hash.TLongHashSet;
 
 public class LegendPlugin implements MapPlugin {
 
@@ -101,7 +94,7 @@ public class LegendPlugin implements MapPlugin {
 	public void initMap(final MapApi api) {
 		final LegendHandler handler = new LegendHandler();
 
-		PluginUtils.registerActionFactory(api, new ActionFactory() {
+		PluginUtils.registerActionFactory(api, new MapActionFactory() {
 			
 			@Override
 			public Action create(MapApi api) {

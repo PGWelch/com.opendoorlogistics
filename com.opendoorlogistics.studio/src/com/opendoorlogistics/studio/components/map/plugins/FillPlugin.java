@@ -1,7 +1,5 @@
 package com.opendoorlogistics.studio.components.map.plugins;
 
-import gnu.trove.set.hash.TIntHashSet;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -19,6 +17,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import com.opendoorlogistics.api.standardcomponents.map.MapActionFactory;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi.PanelPosition;
 import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
@@ -34,9 +33,10 @@ import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.studio.components.map.AbstractMapMode;
 import com.opendoorlogistics.studio.components.map.SuggestedFillValuesManager;
 import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils;
-import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.controls.DynamicComboBox;
 import com.opendoorlogistics.studio.panels.FieldSelectorPanel;
+
+import gnu.trove.set.hash.TIntHashSet;
 
 public class FillPlugin implements MapPlugin {
 	private static final long NEEDS_FLAGS = TableFlags.UI_SET_ALLOWED;
@@ -52,7 +52,7 @@ public class FillPlugin implements MapPlugin {
 
 		final SuggestedFillValuesManager fillSuggestedValues = new SuggestedFillValuesManager();
 
-		PluginUtils.registerActionFactory(api, new ActionFactory() {
+		PluginUtils.registerActionFactory(api, new MapActionFactory() {
 
 			@Override
 			public Action create(MapApi api) {

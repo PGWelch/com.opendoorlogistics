@@ -15,6 +15,7 @@ import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.LatLongToScreen;
+import com.opendoorlogistics.api.standardcomponents.map.MapActionFactory;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
 import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
@@ -22,7 +23,6 @@ import com.opendoorlogistics.core.gis.map.SynchronousRenderer;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.studio.components.map.plugins.snapshot.CreateImageConfig.CaptureMode;
 import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils;
-import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog;
 import com.opendoorlogistics.studio.dialogs.ProgressDialog.OnFinishedSwingThreadCB;
 import com.opendoorlogistics.utils.ui.SimpleAction;
@@ -31,7 +31,7 @@ public class SnapshotPlugin implements MapPlugin {
 	private static ExportImageConfig lastCreateImageConfig;
 	@Override
 	public void initMap(final MapApi api) {
-		PluginUtils.registerActionFactory(api, new ActionFactory() {
+		PluginUtils.registerActionFactory(api, new MapActionFactory() {
 			
 			@Override
 			public Action create(MapApi api) {

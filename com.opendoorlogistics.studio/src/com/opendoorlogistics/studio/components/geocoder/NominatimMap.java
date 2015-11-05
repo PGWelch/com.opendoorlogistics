@@ -11,11 +11,10 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.standardcomponents.map.MapActionFactory;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
 import com.opendoorlogistics.api.standardcomponents.map.StandardMapMenuOrdering;
-import com.opendoorlogistics.api.tables.ODLDatastore;
-import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.studio.components.geocoder.model.GeocodeModel;
 import com.opendoorlogistics.studio.components.map.AbstractMapMode;
@@ -23,7 +22,6 @@ import com.opendoorlogistics.studio.components.map.MapApiImpl;
 import com.opendoorlogistics.studio.components.map.plugins.PanMapPlugin;
 import com.opendoorlogistics.studio.components.map.plugins.RenderCheckboxesPlugin;
 import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils;
-import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils.ActionFactory;
 
 public class NominatimMap implements Disposable{
 	private final GeocodeModel model;
@@ -52,7 +50,7 @@ public class NominatimMap implements Disposable{
 		map.setViewToBestFit(map.getMapDataApi().getUnfilteredActiveTable());
 	}
 	
-	private class MyMovePlugin implements MapPlugin, ActionFactory{
+	private class MyMovePlugin implements MapPlugin, MapActionFactory{
 
 		@Override
 		public String getId() {

@@ -17,9 +17,12 @@ import javax.imageio.ImageIO;
 import javax.swing.Action;
 import javax.swing.SwingUtilities;
 
+import com.opendoorlogistics.api.standardcomponents.map.MapActionFactory;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnBuildContextMenu;
 import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnBuildToolbarListener;
+import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnObjectsChanged;
+import com.opendoorlogistics.api.standardcomponents.map.MapPopupMenu;
 import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
@@ -27,16 +30,10 @@ import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.core.gis.map.data.DrawableObject;
 import com.opendoorlogistics.core.gis.map.data.DrawableObjectImpl;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanTableMappingImpl;
-import com.opendoorlogistics.studio.components.map.MapPopupMenuImpl;
-import com.opendoorlogistics.studio.components.map.MapToolbarImpl;
 import com.opendoorlogistics.utils.ui.Icons;
-import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.*;
-import com.opendoorlogistics.api.standardcomponents.map.*;
 
 public class PluginUtils {
-	public static interface ActionFactory{
-		Action create(MapApi api);
-	}
+
 
 //	final JPopupMenu wizardsPopupMenu = new JPopupMenu();
 //	JMenu wizardsMenu = new JMenu("Component wizard...");
@@ -55,7 +52,7 @@ public class PluginUtils {
 //	toolBar.add(wizardsMenuButton);
 //	popup.add(wizardsMenu);
 
-	public static void registerActionFactory(final MapApi api,final ActionFactory factory, int priority,final String group, final long needsFlags){
+	public static void registerActionFactory(final MapApi api,final MapActionFactory factory, int priority,final String group, final long needsFlags){
 
 		class WrapperAction implements Action{
 			final Action decorated;
@@ -145,7 +142,7 @@ public class PluginUtils {
 		}, priority);
 	}
 	
-	public static void registerActionFactory(MapApi api,final ActionFactory factory, int priority,final String group){
+	public static void registerActionFactory(MapApi api,final MapActionFactory factory, int priority,final String group){
 		api.registerOnBuildToolbarListener(new OnBuildToolbarListener() {
 			
 			@Override

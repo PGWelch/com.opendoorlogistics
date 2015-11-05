@@ -253,6 +253,8 @@ public class TableFormulaBuilder {
 							return null;
 						}
 						
+						TableUtils.removeAllUIEditFlags(imported);
+						
 						if(useCache){
 							long bytes=SizesInBytesEstimator.estimateBytes(imported);
 							myCache.put(sFile, imported, bytes);

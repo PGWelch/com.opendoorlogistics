@@ -1,7 +1,5 @@
 package com.opendoorlogistics.studio.components.map.plugins.selection;
 
-import gnu.trove.set.hash.TLongHashSet;
-
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Graphics2D;
@@ -21,13 +19,14 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 
+import com.opendoorlogistics.api.standardcomponents.map.MapActionFactory;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi;
 import com.opendoorlogistics.api.standardcomponents.map.MapApi.PanelPosition;
+import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners;
 import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnBuildContextMenu;
 import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnBuildToolbarListener;
 import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnChangeListener;
 import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners.OnObjectsChanged;
-import com.opendoorlogistics.api.standardcomponents.map.MapApiListeners;
 import com.opendoorlogistics.api.standardcomponents.map.MapPlugin;
 import com.opendoorlogistics.api.standardcomponents.map.MapPopupMenu;
 import com.opendoorlogistics.api.standardcomponents.map.MapToolbar;
@@ -40,11 +39,12 @@ import com.opendoorlogistics.codefromweb.DropDownMenuButton;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.studio.components.map.AbstractMapMode;
 import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils;
-import com.opendoorlogistics.studio.components.map.plugins.utils.PluginUtils.ActionFactory;
 import com.opendoorlogistics.studio.tables.grid.GridEditPermissions;
 import com.opendoorlogistics.studio.tables.grid.ODLGridTable;
 import com.opendoorlogistics.studio.tables.grid.PreferredColumnWidths;
 import com.opendoorlogistics.utils.ui.Icons;
+
+import gnu.trove.set.hash.TLongHashSet;
 
 public class SelectPlugin implements MapPlugin {
 	public final static long NEEDS_FLAGS = TableFlags.UI_SET_ALLOWED;
@@ -127,7 +127,7 @@ public class SelectPlugin implements MapPlugin {
 		final SelectionHandler handler = new SelectionHandler(api);
 
 		// selection mode
-		PluginUtils.registerActionFactory(api, new ActionFactory() {
+		PluginUtils.registerActionFactory(api, new MapActionFactory() {
 
 			@Override
 			public Action create(MapApi api) {

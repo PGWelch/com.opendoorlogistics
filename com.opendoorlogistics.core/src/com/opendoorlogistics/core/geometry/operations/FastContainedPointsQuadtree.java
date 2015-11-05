@@ -352,7 +352,9 @@ public class FastContainedPointsQuadtree {
 	
 	public QueryStats query(Geometry g, TLongHashSet ids){
 		QueryStats stats = new QueryStats();
-		root.query(g, ids, stats);
+		if(root!=null){
+			root.query(g, ids, stats);			
+		}
 		return stats;
 	}
 	
@@ -393,7 +395,8 @@ public class FastContainedPointsQuadtree {
 		
 		public FastContainedPointsQuadtree build(GeometryFactory factory, InsertedListener listener){
 			if(e==null){
-				return null;
+				// no points ... return dummy empty tree which will return nothing from all queries
+				return new FastContainedPointsQuadtree(new CacheKey(points), null);
 			}
 			
 			Node root = new Node(e, factory);
@@ -473,7 +476,9 @@ public class FastContainedPointsQuadtree {
 	public long getEstimatedSizeInBytes(){
 		long ret = 0;
 		ret += cacheKey.points.getEstimatedSizeInBytes();
-		ret += root.getEstimatedSizeInBytes();
+		if(root!=null){
+			ret += root.getEstimatedSizeInBytes();			
+		}
 		return ret;
 	}
 	

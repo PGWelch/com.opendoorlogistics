@@ -1021,5 +1021,14 @@ final public class TableUtils {
 		return Long2Ints.get(tableId, rowId);
 	}
 
+	public static void removeAllUIEditFlags(ODLDatastore<? extends ODLTableAlterable> ds){
+		ds.setFlags(ds.getFlags() & ~TableFlags.UI_EDIT_PERMISSION_FLAGS);
+		for(int i =0 ; i<ds.getTableCount();i++){
+			ODLTableDefinitionAlterable table = ds.getTableAt(i);
+			if(table!=null){
+				table.setFlags(table.getFlags() & ~TableFlags.UI_EDIT_PERMISSION_FLAGS);
+			}
+		}
+	}
 
 }
