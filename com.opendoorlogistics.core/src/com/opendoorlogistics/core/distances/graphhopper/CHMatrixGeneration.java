@@ -673,7 +673,7 @@ public class CHMatrixGeneration implements Disposable {
 
 	}
 
-	protected FlagEncoder getFlagEncoder(){
+	public FlagEncoder getFlagEncoder(){
 		return flagEncoder;
 	}
 	

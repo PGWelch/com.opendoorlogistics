@@ -16,10 +16,14 @@ public class ExamplePointsData {
 		this.points = points;
 	}
 
-	ExamplePointsData() {
+	public ExamplePointsData() {
 		this(createPoints());
 	}
 
+	public GHPoint [] getPoints(){
+		return points;
+	}
+	
 	private static GHPoint[] createPoints() {
 		return new GHPoint[] { new GHPoint(50.4407112452715, -3.57159398494507), new GHPoint(51.536669159572, 0.131777103342376),
 				new GHPoint(55.9289511956161, -3.30222149049984), new GHPoint(52.8003294178197, -0.365005633505327),
