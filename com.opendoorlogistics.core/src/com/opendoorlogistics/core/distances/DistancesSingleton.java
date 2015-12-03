@@ -25,28 +25,27 @@ import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.ODLTime;
-import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.api.impl.GeometryImpl;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
-import com.opendoorlogistics.core.distances.graphhopper.CHMatrixGeneration;
-import com.opendoorlogistics.core.distances.graphhopper.MatrixResult;
+import com.opendoorlogistics.core.distances.graphhopper.CHMatrixGenWithGeomFuncs;
 import com.opendoorlogistics.core.geometry.GreateCircle;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
-import com.opendoorlogistics.core.scripts.execution.dependencyinjection.ProcessingApiDecorator;
 import com.opendoorlogistics.core.scripts.wizard.TagUtils;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.utils.io.RelativeFiles;
 import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
+import com.opendoorlogistics.graphhopper.CHMatrixGeneration.CHProcessingApi;
+import com.opendoorlogistics.graphhopper.MatrixResult;
 
 
 public final class DistancesSingleton implements Closeable{
 	//private final RecentlyUsedCache recentMatrixCache = new RecentlyUsedCache(128 * 1024 * 1024);
 	//private final RecentlyUsedCache recentGeomCache = new RecentlyUsedCache(64 * 1024 * 1024);
-	private CHMatrixGeneration lastCHGraph;
+	private CHMatrixGenWithGeomFuncs lastCHGraph;
 	
 	private DistancesSingleton() {
 	}
@@ -130,14 +129,24 @@ public final class DistancesSingleton implements Closeable{
 			ghPoints[i++] = new GHPoint(entry.getValue().getLatitude(), entry.getValue().getLongitude());
 		}
 		
-		// calculate the matrix 
-		MatrixResult result = lastCHGraph.calculateMatrix(ghPoints,processingApi!=null? new ProcessingApiDecorator(processingApi) {
+		CHProcessingApi chpa=null;
+		if(processingApi!=null){
+			chpa = new CHProcessingApi() {
 				
-			@Override
-			public void postStatusMessage(String s) {
-				processingApi.postStatusMessage(statusMessage.toString() + System.lineSeparator() + s);
-			}
-		}:null);
+				@Override
+				public void postStatusMessage(String s) {
+					processingApi.postStatusMessage(statusMessage.toString() + System.lineSeparator() + s);
+				}
+				
+				@Override
+				public boolean isCancelled() {
+					return processingApi.isCancelled();
+				}
+			};
+		}
+		
+		// calculate the matrix 
+		MatrixResult result = lastCHGraph.calculateMatrix(ghPoints,chpa);
 		if(processingApi!=null && processingApi.isCancelled()){
 			return null;
 		}
@@ -200,7 +209,7 @@ public final class DistancesSingleton implements Closeable{
 		
 		// load the graph if needed
 		if(lastCHGraph==null){
-			lastCHGraph = new CHMatrixGeneration(current.getAbsolutePath());
+			lastCHGraph = new CHMatrixGenWithGeomFuncs(current.getAbsolutePath());
 		}
 	}
 

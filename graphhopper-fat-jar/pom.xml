@@ -15,15 +15,14 @@
 		<geotools.version>12-RC1</geotools.version>	
 	</properties>
 
-	<!-- This uses the Maven shade plugin to rename files that would otherwise write over each other - see http://docs.geotools.org/latest/userguide/faq.html -->
 	<build>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
 					<encoding>UTF-8</encoding>
-					<target>1.5</target>
-					<source>1.5</source>
+					<target>1.8</target>
+					<source>1.8</source>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -45,8 +44,6 @@
 										<Main-Class>com.opendoorlogistics.graphhopper.BuildGraphhopperFile</Main-Class>
 									</manifestEntries>
 								</transformer>
-								<!-- This bit merges the various GeoTools META-INF/services files   -->        
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
 							</transformers>
 						</configuration>
 					</execution>

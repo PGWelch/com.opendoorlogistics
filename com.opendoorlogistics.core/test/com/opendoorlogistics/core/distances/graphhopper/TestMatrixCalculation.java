@@ -5,13 +5,15 @@
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
 package com.opendoorlogistics.core.distances.graphhopper;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.graphhopper.util.shapes.GHPoint;
+import com.opendoorlogistics.graphhopper.CHMatrixGeneration;
+import com.opendoorlogistics.graphhopper.MatrixResult;
 
 public class TestMatrixCalculation {
 	private CHMatrixGeneration dijsktra;
@@ -22,7 +24,7 @@ public class TestMatrixCalculation {
 	@Before
 	public void setUp() throws Exception {
 		String graphFolder = "C:\\temp\\TestGH0.5\\great-britain-latest.osm-gh";
-		dijsktra = new CHMatrixGeneration(graphFolder);
+		dijsktra = new CHMatrixGenWithGeomFuncs(graphFolder);
 
 		int n = 25;
 		ExamplePointsData pnts = new ExamplePointsData();
