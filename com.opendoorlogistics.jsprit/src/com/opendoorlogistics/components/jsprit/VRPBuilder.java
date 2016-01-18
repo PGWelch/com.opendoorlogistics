@@ -8,6 +8,7 @@ package com.opendoorlogistics.components.jsprit;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,6 +19,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import jsprit.core.problem.Location;
+import jsprit.core.problem.Location.Builder;
 import jsprit.core.problem.Skills;
 import jsprit.core.problem.VehicleRoutingProblem;
 import jsprit.core.problem.VehicleRoutingProblem.FleetSize;
@@ -38,6 +40,7 @@ import jsprit.core.problem.vehicle.VehicleImpl;
 import jsprit.core.problem.vehicle.VehicleType;
 import jsprit.core.problem.vehicle.VehicleTypeImpl;
 import jsprit.core.problem.vehicle.VehicleTypeImpl.VehicleCostParams;
+import jsprit.core.util.Coordinate;
 
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.components.PredefinedTags;
@@ -134,17 +137,29 @@ public class VRPBuilder {
 	 *
 	 */
 	static class LocationsList {
-		private final HashMap<String, LatLong> locs = new HashMap<>();
+	//	private final HashMap<String, LatLong> locs = new HashMap<>();
 		private final HashMap<LatLong, String> ids = new HashMap<>();
+		private final HashMap<String, Location> locs = new HashMap<>();
 
-		String addLatLong(LatLong ll) {
-			String ret = ids.get(ll);
-			if (ret == null) {
-				ret = toId(ll);
-				locs.put(ret, ll);
-				ids.put(ll, ret);
+		Location addLatLong(LatLong ll) {
+			// try getting id from lat long object
+			String id = ids.get(ll);
+			if (id == null) {
+				
+				// save new id
+				id = toId(ll);
+				ids.put(ll, id);
+				
+				// save new location
+				Location.Builder locBuilder = new Builder();
+				locBuilder.setCoordinate(new Coordinate(ll.getLongitude(), ll.getLatitude()));
+				locBuilder.setId(id);
+				locs.put(id, locBuilder.build());
+
 			}
-			return ret;
+			
+			// retun location
+			return locs.get(id);
 		}
 
 //		LatLong getLatLong(String id) {
@@ -176,8 +191,8 @@ public class VRPBuilder {
 			table.addColumn(-1, PredefinedTags.LATITUDE, ODLColumnType.DOUBLE, 0);
 			table.addColumn(-1, PredefinedTags.LONGITUDE, ODLColumnType.DOUBLE, 0);
 			table.addColumn(-1, PredefinedTags.LOCATION_KEY, ODLColumnType.STRING, 0);
-			for (Map.Entry<String, LatLong> entry : locs.locs.entrySet()) {
-				api.getApi().tables().addRow(table, entry.getValue().getLatitude(), entry.getValue().getLongitude(), entry.getKey());
+			for (Map.Entry<LatLong,String> entry : locs.ids.entrySet()) {
+				api.getApi().tables().addRow(table, entry.getKey().getLatitude(), entry.getKey().getLongitude(), entry.getValue());
 			}
 
 			// call the api
@@ -192,7 +207,7 @@ public class VRPBuilder {
 		}
 
 		float getTime(String fromId, String toId) {
-			if(fromId == VRPConstants.NOWHERE || toId == VRPConstants.NOWHERE){
+			if(fromId == VRPConstants.NOWHERE_LOCATION_ID || toId == VRPConstants.NOWHERE_LOCATION_ID){
 				return 0;
 			}
 			return (float)distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.TIME.matrixIndex);
@@ -229,7 +244,7 @@ public class VRPBuilder {
 		 * @return
 		 */
 		float getCost(String fromId, String toId, double costPerMillisecond, double costPerMetre) {
-			if(fromId == VRPConstants.NOWHERE || toId == VRPConstants.NOWHERE){
+			if(fromId == VRPConstants.NOWHERE_LOCATION_ID || toId == VRPConstants.NOWHERE_LOCATION_ID){
 				return 0;
 			}
 			double distance= getDistance(fromId, toId);
@@ -244,7 +259,7 @@ public class VRPBuilder {
 		 * @return
 		 */
 		float getDistance(String fromId, String toId) {
-			if(fromId == VRPConstants.NOWHERE || toId == VRPConstants.NOWHERE){
+			if(fromId == VRPConstants.NOWHERE_LOCATION_ID || toId == VRPConstants.NOWHERE_LOCATION_ID){
 				return 0;
 			}			
 			return (float)distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.DISTANCE_KM.matrixIndex);
@@ -291,7 +306,7 @@ public class VRPBuilder {
 
 	private Service buildStop(ODLTableReadOnly table, int row, StopsTableDefn dfn, Service.Builder builder) {
 		LatLong ll = dfn.latLong.getLatLong(table, row,false);
-		builder.setLocationId(locs.addLatLong(ll));
+		builder.setLocation(locs.addLatLong(ll));
 
 		// validate and add quantities
 		for (int q = 0; q < dfn.quantityIndices.length; q++) {
@@ -393,15 +408,19 @@ public class VRPBuilder {
 
 			// set start and end (hopefully not used internal to jsprit)
 			// vehicleBuilder.setStartLocationCoordinate(Coordinate.newInstance(start.getLongitude(), start.getLatitude()));
-			vehicleBuilder.setStartLocationId(ends[0]!=null? locs.addLatLong(ends[0]): VRPConstants.NOWHERE);
-			vehicleBuilder.setEndLocationId(ends[1] !=null?locs.addLatLong(ends[1]): VRPConstants.NOWHERE);
+			vehicleBuilder.setStartLocation(ends[0]!=null? locs.addLatLong(ends[0]): VRPConstants.NOWHERE_LOCATION);
+			vehicleBuilder.setEndLocation(ends[1] !=null?locs.addLatLong(ends[1]): VRPConstants.NOWHERE_LOCATION);
 	   
 			// always set this as we always have depot stops - they just might be dummy
 			vehicleBuilder.setReturnToDepot(true);
 
 			// set time window
 			ODLTime[] tw = vDfn.getTimeWindow(vehicleTypesTable, rowInVehicleTypesTable);
+		//	double earliestStart=0;
+		//	double latestArrival=Double.MAX_VALUE;
 			if (tw != null) {
+			//	earliestStart = tw[0].getTotalMilliseconds();
+			//	latestArrival = tw[1].getTotalMilliseconds();
 				vehicleBuilder.setEarliestStart(tw[0].getTotalMilliseconds());
 				vehicleBuilder.setLatestArrival(tw[1].getTotalMilliseconds());
 			}
@@ -412,6 +431,9 @@ public class VRPBuilder {
 			}
 			
 			vehicles.add(vehicleBuilder.build());
+			
+			
+			//System.out.println("Built vehicle id " + id + ", tws " + new BigDecimal(earliestStart).toPlainString() + " - " + new BigDecimal(latestArrival).toPlainString());
 		}
 	}
 
@@ -534,15 +556,15 @@ public class VRPBuilder {
 
 				ODLTime serviceTime = stopsTableDfn.getDuration(stopsTable, row);
 				LatLong ll = stopsTableDfn.latLong.getLatLong(stopsTable, row,false);
-				String locId = locs.addLatLong(ll);
+				Location loc = locs.addLatLong(ll);
 
 				// service time and location	
 				if (i == 0) {
 					builder.setPickupServiceTime(serviceTime.getTotalMilliseconds());
-					builder.setPickupLocationId(locId);
+					builder.setPickupLocation(loc);
 				} else {
 					builder.setDeliveryServiceTime(serviceTime.getTotalMilliseconds());
-					builder.setDeliveryLocationId(locId);
+					builder.setDeliveryLocation(loc);
 				}
 
 				// time window

@@ -8,6 +8,9 @@ package com.opendoorlogistics.components.jsprit;
 
 import com.opendoorlogistics.api.components.ODLComponent;
 
+import jsprit.core.problem.Location;
+import jsprit.core.util.Coordinate;
+
 public class VRPConstants {
 	/**
 	 * We don't name the start 'depot' as sometimes we don't have a depot but may still
@@ -15,7 +18,15 @@ public class VRPConstants {
 	 */
 	static final String VEHICLE_START_ID = "Start";
 	static final String VEHICLE_END_ID = "End";
-	static final String NOWHERE = "<nowhere>"; 
+	static final String NOWHERE_LOCATION_ID = "<nowhere>"; 
+	
+	static final Location NOWHERE_LOCATION;
+	
+	static
+	{
+		NOWHERE_LOCATION = new Location.Builder().setCoordinate(new Coordinate(0, 0)).setId(NOWHERE_LOCATION_ID).build();
+		
+	}
 	
 	static final int SOLUTION_DETAILS_MODE = ODLComponent.MODE_FIRST_USER_MODE;
 

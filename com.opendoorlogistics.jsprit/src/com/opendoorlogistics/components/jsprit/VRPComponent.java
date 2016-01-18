@@ -16,47 +16,20 @@ import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
-import jsprit.core.algorithm.SearchStrategy.DiscoveredSolution;
-import jsprit.core.algorithm.VehicleRoutingAlgorithm;
-import jsprit.core.algorithm.VehicleRoutingAlgorithmBuilder;
-import jsprit.core.algorithm.box.SchrimpfFactory;
-import jsprit.core.algorithm.listener.IterationEndsListener;
-import jsprit.core.algorithm.state.StateManager;
-import jsprit.core.algorithm.termination.PrematureAlgorithmTermination;
-import jsprit.core.analysis.SolutionAnalyser;
-import jsprit.core.problem.VehicleRoutingProblem;
-import jsprit.core.problem.constraint.ConstraintManager;
-import jsprit.core.problem.constraint.ServiceDeliveriesFirstConstraint;
-import jsprit.core.problem.job.Job;
-import jsprit.core.problem.solution.VehicleRoutingProblemSolution;
-import jsprit.core.problem.solution.route.VehicleRoute;
-import jsprit.core.problem.solution.route.activity.TourActivity;
-import jsprit.core.problem.solution.route.activity.TourActivity.JobActivity;
-import jsprit.core.problem.vehicle.PenaltyVehicleType;
-import jsprit.core.problem.vehicle.Vehicle;
-import jsprit.core.util.Resource;
-import jsprit.core.util.Solutions;
-import net.xeoh.plugins.base.annotations.PluginImplementation;
-
 import com.opendoorlogistics.api.ODLApi;
-import com.opendoorlogistics.api.StringConventions;
-import com.opendoorlogistics.api.Tables.KeyValidationMode;
 import com.opendoorlogistics.api.components.ComponentConfigurationEditorAPI;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
@@ -81,6 +54,27 @@ import com.opendoorlogistics.components.jsprit.solution.StopOrder;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.InputTablesDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.OutputTablesDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;
+
+import jsprit.core.algorithm.SearchStrategy.DiscoveredSolution;
+import jsprit.core.algorithm.VehicleRoutingAlgorithm;
+import jsprit.core.algorithm.VehicleRoutingAlgorithmBuilder;
+import jsprit.core.algorithm.box.GreedySchrimpfFactory;
+import jsprit.core.algorithm.io.AlgorithmConfig;
+import jsprit.core.algorithm.io.AlgorithmConfigXmlReader;
+import jsprit.core.algorithm.listener.IterationEndsListener;
+import jsprit.core.algorithm.state.StateManager;
+import jsprit.core.algorithm.termination.PrematureAlgorithmTermination;
+import jsprit.core.problem.VehicleRoutingProblem;
+import jsprit.core.problem.constraint.ConstraintManager;
+import jsprit.core.problem.constraint.ServiceDeliveriesFirstConstraint;
+import jsprit.core.problem.solution.VehicleRoutingProblemSolution;
+import jsprit.core.problem.solution.route.VehicleRoute;
+import jsprit.core.problem.solution.route.activity.TourActivity;
+import jsprit.core.problem.solution.route.activity.TourActivity.JobActivity;
+import jsprit.core.problem.vehicle.Vehicle;
+import jsprit.core.util.Resource;
+import jsprit.core.util.Solutions;
+import net.xeoh.plugins.base.annotations.PluginImplementation;
 
 /**
  * Component which uses jsprit to optimise vehicle routing problems. All units used internally to this are metres and milliseconds (milliseconds are
@@ -303,8 +297,13 @@ public class VRPComponent implements ODLComponent {
 	}
 	
 	private VehicleRoutingAlgorithm initOptimiser(ODLApi api,VRPConfig config, VehicleRoutingProblem problem) {
-	
-        VehicleRoutingAlgorithmBuilder vraBuilder = new VehicleRoutingAlgorithmBuilder(problem,getConfigFilename(api));
+		// HACK turn off vehicle switching....
+        AlgorithmConfig algorithmConfig = new AlgorithmConfig();
+        URL resource = Resource.getAsURL("greedySchrimpf.xml");
+        new AlgorithmConfigXmlReader(algorithmConfig).read(resource);
+        	//            String allowVehicleSwitch = config.getString("allowVehicleSwitch"); 
+        
+        VehicleRoutingAlgorithmBuilder vraBuilder = new VehicleRoutingAlgorithmBuilder(problem,algorithmConfig);
         vraBuilder.addDefaultCostCalculators();
         vraBuilder.addCoreConstraints();
         
@@ -417,6 +416,8 @@ public class VRPComponent implements ODLComponent {
 		ODLTable roTable = ioDb.getTableByImmutableId(dfn.stopOrder.tableId);
 		api.getApi().tables().clearTable(roTable);
 		if(bestEver.solution!=null){
+			//SolutionPrinter.print(built.getJspritProblem(), bestEver.solution, Print.VERBOSE);
+			
 			List<StopOrder> order = getStopOrder(api.getApi(), ioDb, conf, built, bestEver.solution);
 			for (StopOrder stop : order) {
 				stop.writeRouteOrder(dfn.stopOrder, new RowWriter(roTable));
