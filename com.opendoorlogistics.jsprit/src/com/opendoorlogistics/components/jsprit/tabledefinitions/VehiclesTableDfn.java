@@ -10,6 +10,7 @@ import static com.opendoorlogistics.api.components.PredefinedTags.CAPACITY;
 import static com.opendoorlogistics.api.components.PredefinedTags.NUMBER_OF_VEHICLES;
 import static com.opendoorlogistics.api.components.PredefinedTags.VEHICLE_ID;
 import static com.opendoorlogistics.api.components.PredefinedTags.VEHICLE_NAME;
+import static com.opendoorlogistics.api.components.PredefinedTags.SPEED_MULTIPLIER;
 
 import java.util.Map;
 
@@ -36,7 +37,8 @@ public class VehiclesTableDfn extends TableDfn{
 	public final int number;
 	public final int [] costs;
 	public final int skills;
-	
+	public final int speedMultiplier;
+
 	public enum CostType{
 		COST_PER_KM,
 		COST_PER_HOUR,
@@ -74,6 +76,9 @@ public class VehiclesTableDfn extends TableDfn{
 		api.tables().setColumnIsOptional(table, number, true);
 		
 		table.setColumnDefaultValue(number, new Long(1));
+
+		speedMultiplier = addDblColumn(1, SPEED_MULTIPLIER);
+		table.setColumnFlags(speedMultiplier, table.getColumnFlags(speedMultiplier) | TableFlags.FLAG_IS_OPTIONAL);
 	}
 	
 	
@@ -178,7 +183,21 @@ public class VehiclesTableDfn extends TableDfn{
 		return tw.get(table, row);
 		
 	}
-	
+
+	public Double getSpeedMultiplier(ODLTableReadOnly table, int row)
+	{
+		Double val = (Double) table.getValueAt(row, speedMultiplier);
+		if (val == null)
+		{
+			return 1.0;
+		}
+		if (val == 0)
+		{
+			onRowException("Invalid speed multiplier", row);
+		}
+		return val;
+	}
+
 	public static class RowVehicleIndex{
 		final public int row;
 		final public int vehicleIndex;

@@ -210,6 +210,8 @@ public class DemoBuilder {
 		vehiclesTable.setValueAt(0.25, row, vehiclesDfn.costs[CostType.COST_PER_KM.ordinal()]);
 		
 		vehiclesTable.setValueAt((long)nbVehicles, row, vehiclesDfn.number);
+
+		vehiclesTable.setValueAt(1.0, row, vehiclesDfn.speedMultiplier);
 	}
 
 	private void createPDStops(double averageStopQuantity, int i, StopSeed seed, ODLTable stopsTable) {

@@ -42,6 +42,7 @@ public class RouteDetail {
 	public double waitingTime=0;
 	public TemporaryRouteInto temp = new TemporaryRouteInto();
 	public String skills;
+	public double speedMultiplier;
 	
 	public RouteDetail(int nbQuantities) {
 		capacity= new long[nbQuantities];
@@ -84,6 +85,7 @@ public class RouteDetail {
 		w.write(waitingTime, dfn.waitingTime);
 		w.write(hasViolation, dfn.hasViolation);
 		w.write(skills, dfn.skills);
+		w.write(speedMultiplier, dfn.speedMultiplier);
 	}
 	
 	

@@ -22,6 +22,7 @@ import com.opendoorlogistics.components.shapefileexporter.ShapefileExporterCompo
 import com.opendoorlogistics.components.tables.creator.CreateTablesComponent;
 import com.opendoorlogistics.core.InitialiseCore;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
+import com.opendoorlogistics.components.jsprit.VRPComponent;
 
 final public class InitialiseComponents {
 	private static boolean registered=false;
@@ -49,6 +50,7 @@ final public class InitialiseComponents {
 		ODLGlobalComponents.register(new ShapefileExporterComponent());
 		ODLGlobalComponents.register(new LineGraphComponent());
 		ODLGlobalComponents.register(new HeatmapComponent());
+		ODLGlobalComponents.register(new VRPComponent());
 		registered = true;
 	}
 }

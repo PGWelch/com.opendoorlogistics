@@ -71,11 +71,13 @@ public class VRPBuilder {
 	private VRPConfig config;
 	private ODLDatastore<? extends ODLTable> ioDb;
 	private final ComponentExecutionApi api;
-	
+	private HashMap<String, Double> speedMultiplierMap;
+
 	private VRPBuilder(ComponentExecutionApi api){
 		this.api = api;
 		jspritJobIdToStopRecords = api.getApi().stringConventions().createStandardisedMap();
 		stopIdToBuiltStopRecord= api.getApi().stringConventions().createStandardisedMap();
+		speedMultiplierMap = new HashMap<String, Double>();
 	}
 	
 	public enum TravelCostType {
@@ -191,11 +193,15 @@ public class VRPBuilder {
 			}
 		}
 
-		float getTime(String fromId, String toId) {
+		float getTime(String fromId, String toId, Vehicle vehicle) {
 			if(fromId == VRPConstants.NOWHERE || toId == VRPConstants.NOWHERE){
 				return 0;
 			}
-			return (float)distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.TIME.matrixIndex);
+			if (vehicle == null)
+			{
+				return (float) ((float)distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.TIME.matrixIndex));
+			}
+			return (float)(distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.TIME.matrixIndex)/speedMultiplierMap.get(vehicle.getId()));
 		}
 		
 		private float getCost(String fromId, String toId, Vehicle vehicle) {
@@ -208,7 +214,7 @@ public class VRPBuilder {
 				costPerMetre = vcp.perDistanceUnit;				
 			}
 			
-			return getCost(fromId, toId, costPerMillisecond, costPerMetre);
+			return getCost(fromId, toId, costPerMillisecond, costPerMetre, vehicle);
 //			if(vehicle != null){
 //				if(vehicle.getType() != null){
 //					costs = distance * vehicle.getType().getVehicleCostParams().perDistanceUnit;
@@ -228,12 +234,12 @@ public class VRPBuilder {
 		 * @param costPerMetre
 		 * @return
 		 */
-		float getCost(String fromId, String toId, double costPerMillisecond, double costPerMetre) {
+		float getCost(String fromId, String toId, double costPerMillisecond, double costPerMetre, Vehicle vehicle) {
 			if(fromId == VRPConstants.NOWHERE || toId == VRPConstants.NOWHERE){
 				return 0;
 			}
 			double distance= getDistance(fromId, toId);
-			double time = getTime(fromId, toId);
+			double time = getTime(fromId, toId, vehicle);
 			double cost = distance * costPerMetre + time * costPerMillisecond;
 			return (float)cost;
 		}
@@ -250,10 +256,10 @@ public class VRPBuilder {
 			return (float)distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.DISTANCE_KM.matrixIndex);
 		}
 		
-		private float get(String fromId, String toId,  TravelCostType type) {
+		private float get(String fromId, String toId,  TravelCostType type, Vehicle vehicle) {
 			switch(type){
 			case TIME:
-				return getTime(fromId, toId);
+				return getTime(fromId, toId, vehicle);
 				
 			case DISTANCE_KM:
 				return getDistance(fromId, toId);
@@ -278,12 +284,12 @@ public class VRPBuilder {
 
 		@Override
 		public double getBackwardTransportTime(Location fromId, Location toId, double arrivalTime, Driver driver, Vehicle vehicle) {
-			return getTime(fromId.getId(), toId.getId());
+			return getTime(fromId.getId(), toId.getId(), vehicle);
 		}
 
 		@Override
 		public double getTransportTime(Location fromId, Location toId, double departureTime, Driver driver, Vehicle vehicle) {
-			return getTime(fromId.getId(), toId.getId());
+			return getTime(fromId.getId(), toId.getId(), vehicle);
 		}
 	}
 
@@ -387,6 +393,9 @@ public class VRPBuilder {
 			// get id
 			String id = idProvider.getId(vehicleTypesTable, rowInVehicleTypesTable, i); //vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, i);
 
+			// add vehicle ID, speed multiplier to speedMultiplierMap
+			speedMultiplierMap.put(id,  vDfn.getSpeedMultiplier(vehicleTypesTable, rowInVehicleTypesTable));
+			
 			// build the vehicle
 			VehicleImpl.Builder vehicleBuilder = VehicleImpl.Builder.newInstance(id);
 			vehicleBuilder.setType(vehicleType);
@@ -693,7 +702,7 @@ public class VRPBuilder {
 //	}
 
 	public double getTravelDistanceKM(String from ,String to){
-		return matrix.get(from, to, TravelCostType.DISTANCE_KM);
+		return matrix.get(from, to, TravelCostType.DISTANCE_KM, null);
 	}
 	
 //	public Set<String> getJobIds(){

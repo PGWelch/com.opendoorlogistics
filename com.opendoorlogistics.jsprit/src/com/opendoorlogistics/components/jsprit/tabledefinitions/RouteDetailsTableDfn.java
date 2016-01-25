@@ -35,12 +35,14 @@ public class RouteDetailsTableDfn extends TableDfn{
 	public final int waitingTime;
 	public final int hasViolation;
 	public final int skills;
+	public final int speedMultiplier;
 
 	public RouteDetailsTableDfn(ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds, VRPConfig config) {
 		super(ds, "Route-Details");
 		vehicleName = addStrColumn(VEHICLE_NAME);
 		vehicleId = addStrColumn(VEHICLE_ID);
 		skills = addStrColumn("skills");
+		speedMultiplier = addDblColumn("speed-multiplier");
 		table.setColumnFlags(vehicleId, table.getColumnFlags(vehicleId) | TableFlags.FLAG_IS_REPORT_KEYFIELD);
 		stopCount = addLngColumn(STOPS_COUNT);
 		startTime = addTimeColumn(START_TIME);
