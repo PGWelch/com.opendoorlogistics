@@ -7,6 +7,7 @@
 package com.opendoorlogistics.components.jsprit;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.map.hash.TObjectDoubleHashMap;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,13 +72,13 @@ public class VRPBuilder {
 	private VRPConfig config;
 	private ODLDatastore<? extends ODLTable> ioDb;
 	private final ComponentExecutionApi api;
-	private HashMap<String, Double> speedMultiplierMap;
+	private TObjectDoubleHashMap speedMultiplierMap;
 
 	private VRPBuilder(ComponentExecutionApi api){
 		this.api = api;
 		jspritJobIdToStopRecords = api.getApi().stringConventions().createStandardisedMap();
 		stopIdToBuiltStopRecord= api.getApi().stringConventions().createStandardisedMap();
-		speedMultiplierMap = new HashMap<String, Double>();
+		speedMultiplierMap = new TObjectDoubleHashMap<String>();
 	}
 	
 	public enum TravelCostType {
