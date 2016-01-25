@@ -10,6 +10,6 @@
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/com.opendoorlogistics.api"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry exported="true" kind="lib" path="libs/mapdb-1.0.7.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Grace Yin/Documents/GitHub/com.opendoorlogistics/com.opendoorlogistics.components/libs/jsprit.jar"/>
+	<classpathentry kind="lib" path="libs/jsprit.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
