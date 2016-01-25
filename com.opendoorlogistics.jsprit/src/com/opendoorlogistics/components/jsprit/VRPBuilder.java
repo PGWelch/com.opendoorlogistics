@@ -88,7 +88,6 @@ public class VRPBuilder {
 
 		private TravelCostType(int matrixIndex) {
 			this.matrixIndex = matrixIndex;
-
 		}
 
 	}
