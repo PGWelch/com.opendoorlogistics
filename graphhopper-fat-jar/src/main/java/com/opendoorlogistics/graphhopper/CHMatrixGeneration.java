@@ -56,7 +56,7 @@ public class CHMatrixGeneration  {
 	}
 
 
-	private static GraphHopper createHopper() {
+	private static GraphHopper createHopper(boolean memoryMapped) {
 		GraphHopper ret = null;
 //		String config = AppProperties.getValue("graphhopper.config");
 
@@ -73,12 +73,20 @@ public class CHMatrixGeneration  {
 
 		// don't need to write so disable the lock file (allows us to run out of program files)
 		ret.setAllowWrites(false);
+		
+		if(memoryMapped){
+			ret.setMemoryMapped();
+		}
 		return ret;
 	}
 
 	public CHMatrixGeneration(String graphFolder) {
+		this(graphFolder, false);
+	}
+	
+	public CHMatrixGeneration(String graphFolder, boolean memoryMapped) {
 		this.graphFolder = graphFolder;
-		this.hopper = createHopper();
+		this.hopper = createHopper(memoryMapped);
 		hopper.setGraphHopperLocation(this.graphFolder);
 		hopper.setEncodingManager(new EncodingManager(EncodingManager.CAR));
 		flagEncoder = hopper.getEncodingManager().getEncoder(EncodingManager.CAR);

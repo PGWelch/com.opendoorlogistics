@@ -43,6 +43,6 @@
 	<classpathentry kind="lib" path="libs/poi-ooxml-schemas-3.11-beta2-20140822.jar"/>
 	<classpathentry kind="lib" path="libs/log4j-1.2.13.jar"/>
 	<classpathentry kind="lib" path="libs/mapsforge-SwingMapViewer-0.5.1-jar-with-dependencies.jar" sourcepath="C:/Users/Phil/Dropbox/Business/DevelopmentSpace/Github/mapsforge"/>
-	<classpathentry kind="lib" path="libs/graphhopper-fat-jar-1.0.jar"/>
+	<classpathentry kind="lib" path="libs/graphhopper-fat-jar-1.0.jar" sourcepath="/graphhopper-fat-jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
