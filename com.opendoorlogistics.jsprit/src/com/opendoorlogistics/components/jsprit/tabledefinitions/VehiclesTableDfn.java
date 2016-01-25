@@ -191,7 +191,7 @@ public class VehiclesTableDfn extends TableDfn{
 		{
 			return 1.0;
 		}
-		if (val == 0)
+		if (val <= 0)
 		{
 			onRowException("Invalid speed multiplier", row);
 		}
