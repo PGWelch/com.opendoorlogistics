@@ -48,7 +48,7 @@ import jsprit.core.problem.solution.VehicleRoutingProblemSolution;
 import jsprit.core.problem.solution.route.VehicleRoute;
 import jsprit.core.problem.solution.route.activity.TourActivity;
 import jsprit.core.problem.solution.route.activity.TourActivity.JobActivity;
-import jsprit.core.problem.vehicle.PenaltyVehicleType;
+//import jsprit.core.problem.vehicle.PenaltyVehicleType;
 import jsprit.core.problem.vehicle.Vehicle;
 import jsprit.core.util.Resource;
 import jsprit.core.util.Solutions;

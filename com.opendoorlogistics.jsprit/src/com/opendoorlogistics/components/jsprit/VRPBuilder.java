@@ -298,8 +298,11 @@ public class VRPBuilder {
 
 	private Service buildStop(ODLTableReadOnly table, int row, StopsTableDefn dfn, Service.Builder builder) {
 		LatLong ll = dfn.latLong.getLatLong(table, row,false);
-		builder.setLocationId(locs.addLatLong(ll));
 
+		
+		Location location = Location.newInstance(locs.addLatLong(ll));
+		builder.setLocation(location);
+		
 		// validate and add quantities
 		for (int q = 0; q < dfn.quantityIndices.length; q++) {
 			builder.addSizeDimension(q, dfn.getQuantity(table, row, q));
@@ -403,9 +406,9 @@ public class VRPBuilder {
 
 			// set start and end (hopefully not used internal to jsprit)
 			// vehicleBuilder.setStartLocationCoordinate(Coordinate.newInstance(start.getLongitude(), start.getLatitude()));
-			vehicleBuilder.setStartLocationId(ends[0]!=null? locs.addLatLong(ends[0]): VRPConstants.NOWHERE);
-			vehicleBuilder.setEndLocationId(ends[1] !=null?locs.addLatLong(ends[1]): VRPConstants.NOWHERE);
-	   
+			vehicleBuilder.setStartLocation(ends[0] != null? Location.newInstance(locs.addLatLong(ends[0])): Location.newInstance(VRPConstants.NOWHERE));
+			vehicleBuilder.setStartLocation(ends[1] != null? Location.newInstance(locs.addLatLong(ends[0])): Location.newInstance(VRPConstants.NOWHERE));
+
 			// always set this as we always have depot stops - they just might be dummy
 			vehicleBuilder.setReturnToDepot(true);
 
@@ -549,10 +552,12 @@ public class VRPBuilder {
 				// service time and location	
 				if (i == 0) {
 					builder.setPickupServiceTime(serviceTime.getTotalMilliseconds());
-					builder.setPickupLocationId(locId);
+					builder.setPickupLocation(Location.newInstance(locId));
+					
 				} else {
 					builder.setDeliveryServiceTime(serviceTime.getTotalMilliseconds());
-					builder.setDeliveryLocationId(locId);
+					builder.setDeliveryLocation(Location.newInstance(locId));
+					
 				}
 
 				// time window
