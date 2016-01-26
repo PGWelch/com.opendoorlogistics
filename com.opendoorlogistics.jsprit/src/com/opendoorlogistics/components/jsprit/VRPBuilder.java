@@ -72,13 +72,13 @@ public class VRPBuilder {
 	private VRPConfig config;
 	private ODLDatastore<? extends ODLTable> ioDb;
 	private final ComponentExecutionApi api;
-	private TObjectDoubleHashMap speedMultiplierMap;
+	private TObjectDoubleHashMap<String> invSpeedMultiplierMap;
 
 	private VRPBuilder(ComponentExecutionApi api){
 		this.api = api;
 		jspritJobIdToStopRecords = api.getApi().stringConventions().createStandardisedMap();
 		stopIdToBuiltStopRecord= api.getApi().stringConventions().createStandardisedMap();
-		speedMultiplierMap = new TObjectDoubleHashMap<String>();
+		invSpeedMultiplierMap = new TObjectDoubleHashMap<String>();
 	}
 	
 	public enum TravelCostType {
@@ -201,7 +201,7 @@ public class VRPBuilder {
 			{
 				return (float) ((float)distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.TIME.matrixIndex));
 			}
-			return (float)(distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.TIME.matrixIndex)/speedMultiplierMap.get(vehicle.getId()));
+			return (float)(distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.TIME.matrixIndex)*invSpeedMultiplierMap.get(vehicle.getId()));
 		}
 		
 		private float getCost(String fromId, String toId, Vehicle vehicle) {
@@ -397,7 +397,7 @@ public class VRPBuilder {
 			String id = idProvider.getId(vehicleTypesTable, rowInVehicleTypesTable, i); //vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, i);
 
 			// add vehicle ID, speed multiplier to speedMultiplierMap
-			speedMultiplierMap.put(id,  vDfn.getSpeedMultiplier(vehicleTypesTable, rowInVehicleTypesTable));
+			invSpeedMultiplierMap.put(id,  1.0/vDfn.getSpeedMultiplier(vehicleTypesTable, rowInVehicleTypesTable));
 			
 			// build the vehicle
 			VehicleImpl.Builder vehicleBuilder = VehicleImpl.Builder.newInstance(id);
