@@ -62,6 +62,7 @@ final public class PredefinedTags {
 	public static final String QUANTITY = "quantity";
 	public static final String ROW_FONT_COLOUR = "row-font-colour";
 	public static final String SERVICE_DURATION = "service-duration";
+	public static final String SPEED_MULTIPLIER = "speed-multiplier";
 	public static final String START_TIME = "start-time";
 	public static final String START_TIME_WINDOW = "start-time-window";
 	public static final String STOP_ADDRESS = "stop-address";
