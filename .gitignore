@@ -6,3 +6,5 @@ odl-geotools-fat-jar/target/odl-geotools-fat-jar-1.1.jar
 odl-geotools-fat-jar/target/original-odl-geotools-fat-jar-1.1.jar
 graphhopper-fat-jar/bin
 graphhopper-fat-jar/target
+.metadata
+.recommenders
