@@ -569,10 +569,15 @@ public class CHMatrixGeneration  {
 					if (meetingPointNode != -1) {
 
 						// use a cache of expanded CH edges for performance reasons
-						CacheablePath4CH pathCh = new CacheablePath4CH(snapToGraph, getFlagEncoder(), expansionCache);
+					//	PathBidirRef pathCh = new CacheablePath4CH(snapToGraph, getFlagEncoder(), expansionCache);
+						PathBidirRef pathCh = new Path4CH(snapToGraph, snapToGraph.getBaseGraph(),getFlagEncoder());
 						pathCh.setSwitchToFrom(false);
-						pathCh.setEdgeEntry(forwardTrees[fromIndex].get(meetingPointNode));
-						pathCh.setEdgeEntryTo(reverseTree.get(meetingPointNode));
+						EdgeEntry edgeEntry =forwardTrees[fromIndex].get(meetingPointNode); 
+						pathCh.setEdgeEntry(edgeEntry);
+						
+						EdgeEntry edgeEntryTo =reverseTree.get(meetingPointNode); 
+						pathCh.setEdgeEntryTo(edgeEntryTo);
+						
 						Path path = pathCh.extract();
 						ret.setTimeMilliseconds(fromIndex, toIndex, path.getTime());
 						ret.setDistanceMetres(fromIndex, toIndex, path.getDistance());

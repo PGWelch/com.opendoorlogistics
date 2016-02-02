@@ -4,7 +4,7 @@
  * are made available under the terms of the GNU Lesser Public License v3
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
-package com.opendoorlogistics.core.distances.graphhopper;
+package com.opendoorlogistics.graphhopper;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.After;
@@ -14,6 +14,7 @@ import org.junit.Test;
 import com.graphhopper.util.shapes.GHPoint;
 import com.opendoorlogistics.graphhopper.CHMatrixGeneration;
 import com.opendoorlogistics.graphhopper.MatrixResult;
+import com.opendoorlogistics.graphhopper.geocodes4profiling.UKGeocodes;
 
 public class TestMatrixCalculation {
 	private CHMatrixGeneration dijsktra;
@@ -23,18 +24,19 @@ public class TestMatrixCalculation {
 
 	@Before
 	public void setUp() throws Exception {
+		
 		String graphFolder = "C:\\temp\\TestGH0.5\\great-britain-latest.osm-gh";
-		dijsktra = new CHMatrixGenWithGeomFuncs(graphFolder);
+		dijsktra = new CHMatrixGeneration(graphFolder);
 
 		int n = 25;
-		ExamplePointsData pnts = new ExamplePointsData();
-		if (pnts.points.length < n) {
-			n = pnts.points.length;
+		GHPoint[] pnts = UKGeocodes.createUKGeocodes();
+		if (pnts.length < n) {
+			n = pnts.length;
 		}
 
 		points = new GHPoint[n];
 		for (int i = 0; i < n; i++) {
-			points[i] = pnts.points[i];
+			points[i] = pnts[i];
 		}
 
 		
