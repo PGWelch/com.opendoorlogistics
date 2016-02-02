@@ -38,7 +38,7 @@ import com.vividsolutions.jts.io.WKTReader;
  *
  */
 public class ColumnValueProcessor {
-	private static final Pattern STRICT_DOUBLE_TESTER = Pattern.compile(".*[a-zA-Z_].*");
+	//private static final Pattern STRICT_DOUBLE_TESTER = Pattern.compile(".*[a-zA-Z_].*");
 
 	private ColumnValueProcessor() {
 	}
@@ -247,18 +247,32 @@ public class ColumnValueProcessor {
 	}
 
 	/**
-	 * Does the string start with 00, 01, 02, ... , 09? Useful for detecting
-	 * French zip codes which are 5 digit, starting with 0 sometimes and should
-	 * not be converted to numeric.
-	 * 
+	 * Strict formatting test for a double (probably needs to be stricter!)
 	 * @param s
 	 * @return
 	 */
-	private static boolean startsWith0AndOtherDigit(String s) {
+	private static boolean cannotBeDouble(String s) {
+		// Does the string start with 00, 01, 02, ... , 09? Useful for detecting
+		// French zip codes which are 5 digit, starting with 0 sometimes and should
+		// not be converted to numeric.
 		String stdVal = Strings.std(s);
 		if (stdVal.length() >= 2 && stdVal.charAt(0) == '0' && Character.isDigit(stdVal.charAt(1))) {
 			return true;
 		}
+		
+		// A more elaborate version of this should probably use java regular expressions and take into account order.
+		// For the moment we just include any numberic characters irrespective of order, remembering:
+		// , used for decimal point in some countries
+		// scientific notation 1.2E+3
+		s = s.trim().toLowerCase();
+		int n = s.length();
+		for(int i = 0 ; i< n ; i++){
+			char c = s.charAt(i);
+			if(!Character.isDigit(c) && (c!='.') && (c!=',') && (c!='e') && (c!='+')){
+				return true;
+			}
+		}
+		
 		return false;
 	}
 
@@ -355,7 +369,7 @@ public class ColumnValueProcessor {
 				// Always trim whitespace
 				String sOther = ((String) other).trim();
 
-				if (onlyConvertStringIfFormatMatches && (startsWith0AndOtherDigit((String) other) || STRICT_DOUBLE_TESTER.matcher(sOther).matches())) {
+				if (onlyConvertStringIfFormatMatches && cannotBeDouble((String) other)) {
 					return null;
 				}
 
@@ -398,7 +412,7 @@ public class ColumnValueProcessor {
 				
 			case STRING:
 				if (onlyConvertStringIfFormatMatches) {
-					if(startsWith0AndOtherDigit((String) other)){
+					if(cannotBeDouble((String) other)){
 						return null;						
 					}else{
 						// use our more strict conversion
@@ -632,17 +646,10 @@ public class ColumnValueProcessor {
 	}
 
 	public static void main(String[] args) {
-		for (String s : new String[] { "07:52:200", "07:87:12", "31:01:02", "09:01:02", "1", "2days3:42", "2 day 3:42", "-1 day 12:05", "12:78:12", "12:23:23.121", "12:23:23.001", "12:23:23.021",
-				"12days 12:23:23.021" }) {
-			ODLTime parsed = parseTime(s);
-			String stringed = null;
-			ODLTime reparsed = null;
-			if (parsed != null) {
-				stringed = parsed.toString();
-				reparsed = parseTime(stringed);
-			}
+		for (String s : new String[] { "15:00:12", "1.2", "1" ,"15,4,3"}) {
 
-			System.out.println(s + "  [" + parsed + "]  [" + stringed + "]  [" + reparsed + "]");
+
+			System.out.println(s + " cannotBeDouble=" + cannotBeDouble(s) + " converToMe=" + convertToMe(ODLColumnType.DOUBLE, s, ODLColumnType.STRING, true));
 		}
 	}
 }
