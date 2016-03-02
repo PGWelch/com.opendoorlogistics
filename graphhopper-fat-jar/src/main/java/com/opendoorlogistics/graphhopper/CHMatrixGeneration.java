@@ -18,7 +18,6 @@ import com.graphhopper.GraphHopper;
 import com.graphhopper.routing.Path;
 import com.graphhopper.routing.PathBidirRef;
 import com.graphhopper.routing.QueryGraph;
-import com.graphhopper.routing.ch.Path4CH;
 import com.graphhopper.routing.ch.PreparationWeighting;
 import com.graphhopper.routing.util.DefaultEdgeFilter;
 import com.graphhopper.routing.util.EdgeFilter;
@@ -211,50 +210,6 @@ public class CHMatrixGeneration  {
 
 	}
 
-	private static class EdgeNodeIdHashKey {
-		private int edgeId;
-		private int endNodeId;
-
-		public EdgeNodeIdHashKey(int edgeId, int endNodeId) {
-			this.edgeId = edgeId;
-			this.endNodeId = endNodeId;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + edgeId;
-			result = prime * result + endNodeId;
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			EdgeNodeIdHashKey other = (EdgeNodeIdHashKey) obj;
-			if (edgeId != other.edgeId)
-				return false;
-			if (endNodeId != other.endNodeId)
-				return false;
-			return true;
-		}
-
-		public void setEdgeId(int edgeId) {
-			this.edgeId = edgeId;
-		}
-
-		public void setEndNodeId(int endNodeId) {
-			this.endNodeId = endNodeId;
-		}
-
-	}
-
 	public ShortestPathTree search(int startNode, EdgeExplorer edgeExplorer, boolean isBackwards) {
 		return search(startNode, edgeExplorer, levelEdgeFilter, isBackwards);
 	}
@@ -364,23 +319,23 @@ public class CHMatrixGeneration  {
 		return hopper;
 	}
 
-	public static void main(String[] args) {
-		CHMatrixGeneration gen = new CHMatrixGeneration("C:\\Demo\\Graphhopper");
-		int n = 1000;
-		GHPoint a = new GHPoint(52.407995203838, -1.50572174886011);
-		GHPoint b = new GHPoint(52., 0.3);
-		GHPoint[] array = new GHPoint[] { a, b };
-		gen.calculateMatrixOneByOne(array);
-		long startMillis = System.currentTimeMillis();
-		for (int i = 0; i < n; i++) {
-			gen.calculateMatrixOneByOne(array);
-		}
-		long endMillis = System.currentTimeMillis();
-		System.out.println("Time for " + n + " calculations:" + (endMillis - startMillis) + " milliseconds");
-		// System.out.println(result);
-
-		// noRouteExample();
-	}
+//	public static void main(String[] args) {
+//		CHMatrixGeneration gen = new CHMatrixGeneration("C:\\Demo\\Graphhopper");
+//		int n = 1000;
+//		GHPoint a = new GHPoint(52.407995203838, -1.50572174886011);
+//		GHPoint b = new GHPoint(52., 0.3);
+//		GHPoint[] array = new GHPoint[] { a, b };
+//		gen.calculateMatrixOneByOne(array);
+//		long startMillis = System.currentTimeMillis();
+//		for (int i = 0; i < n; i++) {
+//			gen.calculateMatrixOneByOne(array);
+//		}
+//		long endMillis = System.currentTimeMillis();
+//		System.out.println("Time for " + n + " calculations:" + (endMillis - startMillis) + " milliseconds");
+//		// System.out.println(result);
+//
+//		// noRouteExample();
+//	}
 
 	public static void noRouteExample() {
 		// problem position
@@ -410,40 +365,7 @@ public class CHMatrixGeneration  {
 		return flagEncoder;
 	}
 	
-	/**
-	 * Unpack a single edge of graph (either CH edge or base edge)
-	 * 
-	 * @param routingGraph
-	 * @param baseGraph
-	 * @param encoder
-	 * @param edge
-	 * @param endNode
-	 * @return
-	 */
-	public static Path unpackSingleEdge(Graph routingGraph, Graph baseGraph, FlagEncoder encoder, int edge, int endNode) {
 
-		class SingleEdgeUnpacker extends Path4CH {
-
-			public SingleEdgeUnpacker(Graph routingGraph, Graph baseGraph, FlagEncoder encoder) {
-				super(routingGraph, baseGraph, encoder);
-			}
-
-			/**
-			 * Parameters are passed into the method explicity because if we just use the outer method
-			 * parameters directly we accidentally get the endNode variable from the Path base class instead...
-			 * @param tmpEdge
-			 * @param endNode
-			 */
-			public void processSingleEdge(int tmpEdge, int endNode) {
-				// Access the protected method in the base class
-				super.processEdge(tmpEdge, endNode);
-			}
-		}
-
-		SingleEdgeUnpacker unpacker = new SingleEdgeUnpacker(routingGraph, baseGraph, encoder);
-		unpacker.processSingleEdge(edge, endNode);
-		return unpacker;
-	}
 
 	public MatrixResult calculateMatrix(GHPoint[] points, CHProcessingApi processingApi) {
 		if (outputText) {
@@ -508,7 +430,7 @@ public class CHMatrixGeneration  {
 		MatrixResult ret = new MatrixResult(n);
 
 		// create a cache of expanded edge results
-		final HashMap<EdgeNodeIdHashKey, DistanceTime> expansionCache;
+		final HashMap<EdgeExpansionCacheKey, DistanceTime> expansionCache;
 		if (useExpansionCache) {
 			expansionCache = new HashMap<>();
 		} else {
@@ -569,8 +491,8 @@ public class CHMatrixGeneration  {
 					if (meetingPointNode != -1) {
 
 						// use a cache of expanded CH edges for performance reasons
-					//	PathBidirRef pathCh = new CacheablePath4CH(snapToGraph, getFlagEncoder(), expansionCache);
-						PathBidirRef pathCh = new Path4CH(snapToGraph, snapToGraph.getBaseGraph(),getFlagEncoder());
+						PathBidirRef pathCh = new CacheablePath4CH(snapToGraph, getFlagEncoder(), expansionCache);
+					//	PathBidirRef pathCh = new Path4CH(snapToGraph, snapToGraph.getBaseGraph(),getFlagEncoder());
 						pathCh.setSwitchToFrom(false);
 						EdgeEntry edgeEntry =forwardTrees[fromIndex].get(meetingPointNode); 
 						pathCh.setEdgeEntry(edgeEntry);
@@ -628,79 +550,6 @@ public class CHMatrixGeneration  {
 		}
 	}
 	
-
-	/**
-	 * CH path extractor with caching
-	 * 
-	 * @author Phil
-	 *
-	 */
-	private static class CacheablePath4CH extends PathBidirRef {
-		private final Graph routingGraph;
-		private final HashMap<EdgeNodeIdHashKey, DistanceTime> expansionCache;
-		private final EdgeNodeIdHashKey cacheKey = new EdgeNodeIdHashKey(-1, -1);
-		private final FlagEncoder encoder;
-
-		public CacheablePath4CH(Graph chGraph, FlagEncoder encoder, HashMap<EdgeNodeIdHashKey, DistanceTime> expansionCache) {
-			super(chGraph.getBaseGraph(), encoder);
-			this.routingGraph = chGraph;
-			this.expansionCache = expansionCache;
-			this.encoder = encoder;
-		}
-
-		@Override
-		protected final void processEdge(int tmpEdge, int endNode) {
-			DistanceTime dt = null;
-			if (expansionCache != null) {
-				// try getting from cache
-				EdgeNodeIdHashKey edgnid = new EdgeNodeIdHashKey(tmpEdge, endNode);
-				cacheKey.setEdgeId(tmpEdge);
-				cacheKey.setEndNodeId(endNode);
-				dt = expansionCache.get(edgnid);
-
-				// calculate using a new instance without the cache if needed
-				if (dt == null) {
-					dt = unpackSingleEdge2DistTime(tmpEdge, endNode);
-					expansionCache.put(edgnid, dt);
-				}
-
-			} else {
-				DistanceTime dtTmp = unpackSingleEdge2DistTime(tmpEdge, endNode);
-				dt = dtTmp;
-
-			}
-
-			distance += dt.getDistance();
-			time += dt.getMillis();
-
-		}
-
-		private DistanceTime unpackSingleEdge2DistTime(int tmpEdge, int endNode) {
-			Path tmpPath = unpackSingleEdge(routingGraph, routingGraph.getBaseGraph(), encoder, tmpEdge, endNode);
-			DistanceTime dtTmp = new DistanceTime(tmpPath.getDistance(), tmpPath.getTime());
-			return dtTmp;
-		}
-	}
-
-
-	private static class DistanceTime {
-		private final double distance;
-		private final long time;
-
-		DistanceTime(double distance, long time) {
-			this.distance = distance;
-			this.time = time;
-		}
-
-		public double getDistance() {
-			return distance;
-		}
-
-		public long getMillis() {
-			return time;
-		}
-
-	}
 
 	private static class FromIndexEdge {
 		private final int fromIndex;
