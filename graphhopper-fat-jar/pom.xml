@@ -54,37 +54,11 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>com.graphhopper</groupId>
-			<artifactId>graphhopper</artifactId>
-			<version>0.5.0</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>1.7.14</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-simple</artifactId>
-			<version>1.7.14</version>
-		</dependency>
-				
-		<dependency>
-		  <groupId>junit</groupId>
-		  <artifactId>junit</artifactId>
-		  <version>4.12</version>
-		  <scope>test</scope>
-		</dependency>    	
-						
+			<groupId>com.opendoorlogistics</groupId>
+			<artifactId>graphhopper-odl-integration</artifactId>
+			<version>1.0</version>
+		</dependency>						
 	</dependencies>
 
-	<repositories>
-		<repository>
-			<id>maven2-repository.dev.java.net</id>
-			<name>Java.net repository</name>
-			<url>http://download.java.net/maven/2</url>
-		</repository>
-	</repositories>  
+
 </project>
