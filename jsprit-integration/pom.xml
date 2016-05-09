@@ -1,0 +1,88 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.opendoorlogistics</groupId>
+	<artifactId>jsprit-integration</artifactId>
+	<version>1.0</version>
+	<name>Archetype - jsprit-integration</name>
+	<url>http://maven.apache.org</url>
+
+	<properties>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>com.opendoorlogistics</groupId>
+			<artifactId>com.opendoorlogistics.api</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/libs/com.opendoorlogistics.api.jar</systemPath>
+		</dependency>
+
+		<dependency>
+			<!-- Using Maven's jsprit repository gives an error for v1.6.0 and later. 
+				The simplest thing is to just get the jsprit source code for the release 
+				and build locally with Maven, installing to local Maven repository. Use the 
+				command: mvn -DskipTests=true install. We skip tests due to an error 
+				in them (with a local file) which would otherwise prevent building. -->
+			<groupId>jsprit</groupId>
+			<artifactId>jsprit-core</artifactId>
+			<version>1.6.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>jsprit</groupId>
+			<artifactId>jsprit-analysis</artifactId>
+			<version>1.6.2</version>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>net.sf.trove4j</groupId>
+			<artifactId>trove4j</artifactId>
+			<version>3.0.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>uk.com.robust-it</groupId>
+			<artifactId>cloning</artifactId>
+			<version>1.9.2</version>
+		</dependency>	
+		
+	</dependencies>
+
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.4.3</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<artifactSet>
+								<!-- <excludes> <exclude>classworlds:classworlds</exclude> <exclude>junit:junit</exclude> 
+									<exclude>jmock:*</exclude> <exclude>*:xml-apis</exclude> <exclude>org.apache.maven:lib:tests</exclude> 
+									<exclude>log4j:log4j:jar:</exclude> </excludes> -->
+							</artifactSet>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

@@ -6,11 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.geometry;
 
-import static java.lang.Math.atan2;
-import static java.lang.Math.cos;
-import static java.lang.Math.sin;
-import static java.lang.Math.toRadians;
-
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -18,9 +13,9 @@ import org.geotools.referencing.datum.DefaultEllipsoid;
 
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
+import com.opendoorlogistics.graphhopper.*;
 
 final public class GreateCircle {
-	public static final double EARTH_RADIUS_METRES = 6371000;
 
 	/**
 	 * Returns great circle distance in metres
@@ -49,29 +44,7 @@ final public class GreateCircle {
 	 * @return
 	 */
 	public static double greatCircleApprox(LatLong from, LatLong to) {
-		double lat1 = toRadians(from.getLatitude());
-		double lat2 = toRadians(to.getLatitude());
-		double lng1 = toRadians(from.getLongitude());
-		double lng2 = toRadians(to.getLongitude());
-
-		double deltaLng = Math.abs(lng1 - lng2);
-
-		double a = cos(lat2) * sin(deltaLng);
-		a *= a;
-
-		double b = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(deltaLng);
-		b *= b;
-
-		double c = sin(lat1) * sin(lat2);
-
-		double d = cos(lat1) * cos(lat2) * cos(deltaLng);
-
-		double numerator = Math.sqrt(a + b);
-		double denominator = c + d;
-
-		double centralAngle = atan2(numerator, denominator);
-		double distance = EARTH_RADIUS_METRES * centralAngle;
-		return distance;
+		return GreateCircleVincetty.greatCircleApprox(from.getLatitude(), from.getLongitude(), to.getLatitude(), to.getLongitude());
 	}
 	
 //	public static double greatCircleApprox(LatLong from, LatLong to) {

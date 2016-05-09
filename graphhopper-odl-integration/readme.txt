@@ -1,0 +1,1 @@
+This projects builds some extra functionality on top of Graphhopper and builds as normal (non-fat / non uber / no-dependencies) jar which can be referenced in other Maven projects.
