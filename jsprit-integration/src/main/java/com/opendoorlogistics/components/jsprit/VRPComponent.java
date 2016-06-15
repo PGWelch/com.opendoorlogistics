@@ -392,7 +392,7 @@ public class VRPComponent implements ODLComponent {
 		// store the best every solution found and it isn't always the one returned...
 		class BestEver {
 			VehicleRoutingProblemSolution solution;
-			double cost = Double.POSITIVE_INFINITY;
+			//double cost = Double.POSITIVE_INFINITY;
 		}
 		final BestEver bestEver = new BestEver();
 
@@ -410,11 +410,24 @@ public class VRPComponent implements ODLComponent {
 
 			@Override
 			public void informIterationEnds(int i, VehicleRoutingProblem problem, Collection<VehicleRoutingProblemSolution> solutions) {
-				VehicleRoutingProblemSolution bestSolution = Solutions.bestOf(solutions);
-				if (bestSolution != null) {
-					if (bestSolution.getCost() < bestEver.cost) {
-						bestEver.solution = VehicleRoutingProblemSolution.copyOf(bestSolution);
-						bestEver.cost = bestSolution.getCost();
+				VehicleRoutingProblemSolution newSln = Solutions.bestOf(solutions);
+				if (newSln != null) {
+					// accept if we don't have a solution
+					boolean accept = bestEver.solution==null;
+					
+					// accept if the new solution has less unassigned jobs
+					if(!accept && (newSln.getUnassignedJobs().size() < bestEver.solution.getUnassignedJobs().size())){
+						accept = true;
+					}
+					
+					// accept if we have the same number of unassigned jobs but the cost is less
+					if(!accept && (newSln.getUnassignedJobs().size() == bestEver.solution.getUnassignedJobs().size())
+						&& (newSln.getCost() < bestEver.solution.getCost())){
+						accept = true;
+					}
+					
+					if (accept) {
+						bestEver.solution = VehicleRoutingProblemSolution.copyOf(newSln);
 					}
 				}
 
@@ -426,11 +439,9 @@ public class VRPComponent implements ODLComponent {
 
 					builder.append("Runtime " + ((time - startTime) / 1000) + "s");
 					builder.append(", Step " + i);
-					if (bestEver.cost != Double.POSITIVE_INFINITY) {
-						builder.append(", " + DecimalFormat.getInstance().format(bestEver.cost) + " cost");
-					}
-
+			
 					if (bestEver.solution != null) {
+						builder.append(", " + DecimalFormat.getInstance().format(bestEver.solution.getCost()) + " cost");
 						builder.append(", " + bestEver.solution.getRoutes().size() + " routes");
 						builder.append(", " + bestEver.solution.getUnassignedJobs().size() + " unassigned jobs");
 					}
