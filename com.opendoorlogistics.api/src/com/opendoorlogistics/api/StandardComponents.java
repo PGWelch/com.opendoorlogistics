@@ -9,6 +9,7 @@ package com.opendoorlogistics.api;
 import com.opendoorlogistics.api.standardcomponents.GanntChart;
 import com.opendoorlogistics.api.standardcomponents.LineGraph;
 import com.opendoorlogistics.api.standardcomponents.Maps;
+import com.opendoorlogistics.api.standardcomponents.MatrixExporter;
 import com.opendoorlogistics.api.standardcomponents.Reporter;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor;
 import com.opendoorlogistics.api.standardcomponents.TableCreator;
@@ -22,4 +23,5 @@ public interface StandardComponents {
 	TableCreator tableCreator();
 	ScheduleEditor scheduleEditor();
 	LineGraph lineGraph();
+	MatrixExporter matrixExporter();
 }

@@ -74,4 +74,10 @@ public class IOImpl implements IO{
 		return FilenameUtils.normalize(s);
 	}
 
+	@Override
+	public File getLoadedExcelFile() {
+		// This gets overridden within the ODL Studio project
+		return null;
+	}
+
 }

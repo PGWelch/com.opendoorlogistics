@@ -131,7 +131,7 @@ final public class InitialiseStudio implements ODLStudioLoader{
 				com.opendoorlogistics.core.distances.functions.FmDrivingDistance.Km.class, com.opendoorlogistics.core.distances.functions.FmDrivingDistance.Metres.class,
 				com.opendoorlogistics.core.distances.functions.FmDrivingDistance.Miles.class, com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeom.class,
 				com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeomFromLine.class, com.opendoorlogistics.core.distances.functions.FmDrivingTime.class,
-				com.opendoorlogistics.core.distances.ODLCostMatrixImpl.class, com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.class,
+				com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.class,
 				com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.ArgumentType.class,
 				com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.FunctionArgument.class,
 				com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.FunctionType.class, com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary.class,

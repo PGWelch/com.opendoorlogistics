@@ -6,15 +6,13 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.gis.map.data;
 
+import java.util.Random;
+
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.geometry.LatLong;
-import com.opendoorlogistics.api.tables.ODLDatastore;
-import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.beans.annotations.ODLColumnOrder;
-import com.opendoorlogistics.api.tables.beans.annotations.ODLDefaultDoubleValue;
 import com.opendoorlogistics.api.tables.beans.annotations.ODLTag;
 import com.opendoorlogistics.core.tables.beans.BeanMappedRowImpl;
-import com.opendoorlogistics.core.tables.beans.BeanMapping;
 
 public class LatLongImpl extends BeanMappedRowImpl implements LatLong{
 	private double latitude;
@@ -106,4 +104,16 @@ public class LatLongImpl extends BeanMappedRowImpl implements LatLong{
 	}
 	
 
+	public static LatLongImpl random(Random random){
+		return new LatLongImpl(-90 + 180*random.nextDouble(), -180 + 360*random.nextDouble());
+	}
+	
+//	public static LatLongImpl ensureRange(LatLong ll){
+//		double lat = ll.getLatitude();
+//		while(lat < -90){
+//			lat += 180;
+//		}
+//		double lng = ll.getLongitude();
+//		return null;
+//	}
 }

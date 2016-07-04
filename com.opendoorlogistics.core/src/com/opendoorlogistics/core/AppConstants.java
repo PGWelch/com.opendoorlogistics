@@ -26,12 +26,15 @@ final public class AppConstants {
 			
 	public static final String SHAPEFILES_DIRECTORY = DATA_DIRECTORY + "shapefiles" + File.separator;
 
+	public static final String EXTERNAL_MATRIX_DIRECTORY = DATA_DIRECTORY + "travelmatrices" + File.separator;
+
 	public static final String GRAPHHOPPER_DIRECTORY = DATA_DIRECTORY + "graphhopper" + File.separator;
 
 	public static final String MAPSFORGE_DIRECTORY = DATA_DIRECTORY + "mapsforge" + File.separator;
 
 	public static final String OSM_COPYRIGHT = "© OpenStreetMap contributors";
 	
+	public static final String EXTERNAL_MATRIX_TEXTFILE_EXTENSION = ".matrix.txt";
 	
 	// Don't use File.separator when loading resources as its wrong!
 	public static final String ODL_EMBEDED_PROPERTIES_FILE = "/resources/odl-defaults.properties";

@@ -11,6 +11,7 @@ import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.standardcomponents.GanntChart;
 import com.opendoorlogistics.api.standardcomponents.LineGraph;
 import com.opendoorlogistics.api.standardcomponents.Maps;
+import com.opendoorlogistics.api.standardcomponents.MatrixExporter;
 import com.opendoorlogistics.api.standardcomponents.Reporter;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor;
 import com.opendoorlogistics.api.standardcomponents.TableCreator;
@@ -61,5 +62,10 @@ public class StandardComponentsImpl implements StandardComponents{
 	@Override
 	public LineGraph lineGraph() {
 		return find(LineGraph.class);
+	}
+
+	@Override
+	public MatrixExporter matrixExporter() {
+		return find(MatrixExporter.class);
 	}
 }

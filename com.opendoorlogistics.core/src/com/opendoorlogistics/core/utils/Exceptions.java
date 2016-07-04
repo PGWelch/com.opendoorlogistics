@@ -18,4 +18,12 @@ final public class Exceptions {
 		t.printStackTrace(pw);
 		return sw.toString(); 
 	}
+	
+	public static RuntimeException asUnchecked(Throwable e){
+		if(RuntimeException.class.isInstance(e)){
+			return (RuntimeException)e;
+		}
+		return new RuntimeException(e);
+	}
+
 }

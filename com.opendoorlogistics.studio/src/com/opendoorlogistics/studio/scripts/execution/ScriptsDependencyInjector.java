@@ -7,11 +7,13 @@
 package com.opendoorlogistics.studio.scripts.execution;
 
 import java.awt.Dimension;
+import java.awt.Window;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JPanel;
 
+import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi.ControlLauncherCallback;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStateListener;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ClosedStatusObservable;
@@ -23,10 +25,9 @@ import com.opendoorlogistics.core.scripts.execution.dependencyinjection.Abstract
 import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.ui.ModalDialog;
-import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
 
 abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
-	private final AbstractAppFrame appFrame;
+	private final Window parentWindow;
 	private final ArrayList<RecordedLauncherCallback> controlLauncherCallbacks = new ArrayList<>();
 	private final StandardisedStringTreeMap<DataDependencies> dependenciesByInstructionId = new StandardisedStringTreeMap<>(false);
 
@@ -62,14 +63,14 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 		
 	}
 
-	ScriptsDependencyInjector(AbstractAppFrame appFrame) {
-		super(appFrame.getApi());
-		this.appFrame = appFrame;
+	ScriptsDependencyInjector(Window parentWindow, ODLApi api) {
+		super(api);
+		this.parentWindow = parentWindow;
 	}
 
 	@Override
 	public ModalDialogResult showModalPanel(JPanel panel, String title, Dimension minSize, ModalDialogResult... buttons) {
-		ModalDialog md = new ModalDialog(appFrame, panel, title, buttons);
+		ModalDialog md = new ModalDialog(parentWindow, panel, title, buttons);
 		if(minSize!=null){
 			md.setMinimumSize(minSize);
 		}
@@ -83,7 +84,7 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 
 	@Override
 	public <T extends JPanel & ClosedStatusObservable> void showModalPanel(T panel, String title) {
-		final ModalDialog md = new ModalDialog(appFrame, panel, title);
+		final ModalDialog md = new ModalDialog(parentWindow, panel, title);
 		
 		ClosedStateListener listener = new ClosedStateListener(){
 

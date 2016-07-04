@@ -17,10 +17,12 @@ import com.opendoorlogistics.core.utils.ui.DoubleEntryPanel;
 import com.opendoorlogistics.core.utils.ui.FileBrowserPanel;
 
 public class GraphhopperBox extends AbstractDistancesConfigBox{
+	private final GraphhopperConfiguration config;
 	
 	public GraphhopperBox(Window owner,final GraphhopperConfiguration config, long flags){
 		//super(owner, "Graphhopper configuration", true);
 		super(owner,"Graphhopper configuration", flags);
+		this.config = config;
 		
 		FileBrowserPanel dirBrowser  = new FileBrowserPanel("Built graph directory ", config.getGraphDirectory(), new FilenameChangeListener() {
 			
@@ -56,5 +58,10 @@ public class GraphhopperBox extends AbstractDistancesConfigBox{
 		});
 	}
 
+	public GraphhopperConfiguration getConfig() {
+		return config;
+	}
+
+	
 	
 }

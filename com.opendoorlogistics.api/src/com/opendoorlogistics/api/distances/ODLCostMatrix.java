@@ -19,7 +19,15 @@ public interface ODLCostMatrix extends ODLTableReadOnly{
 	long getSizeInBytes();
 	int getNbFroms();
 	int getNbTos();
+	String getFromId(int fromIndex);
+	String getToId(int toIndex);
 //	int getNbConnectedSubsets();
 //	Iterable<String> getConnectedSubset(int i);
 	boolean getIsConnected(int from, int to);
+	
+	/**
+	 * For external cost matrices they may become invalid if the file has changed
+	 * @return
+	 */
+	boolean isStillValid();
 }

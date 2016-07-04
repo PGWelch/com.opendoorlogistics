@@ -6,6 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.studio.scripts.execution;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -18,6 +19,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.IO;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentControlLauncherApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi.ModalDialogResult;
@@ -31,6 +33,8 @@ import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.ui.Disposable;
+import com.opendoorlogistics.core.api.impl.IODecorator;
+import com.opendoorlogistics.core.api.impl.ODLApiDecorator;
 import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ScriptExecutionBlackboardImpl;
@@ -134,11 +138,13 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 		// Place within a simple decorator where we can switch back to the main ds afterwards for launched controls
 		simple = new SimpleDecorator<>(ODLTableAlterable.class, writeRecorder);
 		
+		// Decorate the API so we can return the reference file (if available)
+		ODLApi decorated = createDecoratedApi();
+		
 		// Execute and get all dependencies afterwards
-		ODLApi api = appFrame.getApi();
-		ScriptExecutor executor = new ScriptExecutor(appFrame.getApi(),false, guiFascade);
+		ScriptExecutor executor = new ScriptExecutor(decorated,false, guiFascade);
 		if(parametersDs!=null){
-			executor.setInitialParametersTable(api.scripts().parameters().findTable(parametersDs, TableType.PARAMETERS));
+			executor.setInitialParametersTable(decorated.scripts().parameters().findTable(parametersDs, TableType.PARAMETERS));
 		}
 		
 		ExecutionReport result = executor.execute(filtered, simple);
@@ -147,6 +153,22 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 		}
 		
 		return result;
+	}
+
+	private ODLApi createDecoratedApi() {
+		ODLApi undecorated = appFrame.getApi();
+		ODLApi decorated = new ODLApiDecorator(undecorated){
+			@Override
+			public IO io() {
+				return new IODecorator(api.io()){
+					@Override
+					public File getLoadedExcelFile() {
+						return getReferenceFile();
+					}
+				};
+			}
+		};
+		return decorated;
 	}
 
 	@Override
@@ -180,7 +202,7 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 	 */
 	private void initDependencyEjector() {
 		ProcessingApi papi = createProcessingApi();
-		guiFascade = new ScriptsDependencyInjector(appFrame) {
+		guiFascade = new ScriptsDependencyInjector(appFrame,createDecoratedApi()) {
 			@Override
 			public boolean isCancelled() {
 				return papi.isCancelled();

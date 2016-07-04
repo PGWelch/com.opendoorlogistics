@@ -13,10 +13,11 @@ public final class DistancesConfiguration implements Serializable {
 	private DistancesOutputConfiguration outputConfig = new DistancesOutputConfiguration();
 	private GreatCircleConfiguration greatCircleConfig = new GreatCircleConfiguration();
 	private GraphhopperConfiguration graphhopperConfig = new GraphhopperConfiguration();
-
+	private ExternalMatrixFileConfiguration externalConfig = new ExternalMatrixFileConfiguration();
 	public enum CalculationMethod {
 		GREAT_CIRCLE("Crow fly distance (along the surface of the Earth) from one lat/long pair to another"), 
-		ROAD_NETWORK("Use a road network, calculated using the Graphhopper library");
+		ROAD_NETWORK("Use a road network, calculated using the Graphhopper library"),
+		EXTERNAL_MATRIX("Use an external text file contain a matrix of distance and time values");
 
 		private final String description;
 
@@ -38,6 +39,10 @@ public final class DistancesConfiguration implements Serializable {
 		}
 		if(graphhopperConfig!=null){
 			ret.graphhopperConfig = graphhopperConfig.deepCopy();
+		}
+		
+		if(externalConfig!=null){
+			ret.externalConfig = externalConfig.deepCopy();
 		}
 		return ret;
 	}
@@ -81,6 +86,10 @@ public final class DistancesConfiguration implements Serializable {
 			result = prime * result + graphhopperConfig.hashCode();
 			break;
 			
+		case EXTERNAL_MATRIX:
+			result = prime * result + externalConfig.hashCode();
+			break;
+			
 		default:
 			throw new RuntimeException();
 		}
@@ -119,6 +128,11 @@ public final class DistancesConfiguration implements Serializable {
 			}
 			break;
 			
+		case EXTERNAL_MATRIX:
+			if(!other.externalConfig.equals(externalConfig)){
+				return false;
+			}
+			break;
 		default:
 			throw new RuntimeException();
 		}
@@ -132,6 +146,14 @@ public final class DistancesConfiguration implements Serializable {
 
 	public void setGraphhopperConfig(GraphhopperConfiguration graphhopperConfig) {
 		this.graphhopperConfig = graphhopperConfig;
+	}
+
+	public ExternalMatrixFileConfiguration getExternalConfig() {
+		return externalConfig;
+	}
+
+	public void setExternalConfig(ExternalMatrixFileConfiguration externalConfig) {
+		this.externalConfig = externalConfig;
 	}
 	
 	

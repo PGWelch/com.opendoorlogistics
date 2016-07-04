@@ -15,6 +15,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.ui.UIFactory;
 import com.opendoorlogistics.api.ui.UIFactory.FilenameChangeListener;
@@ -31,6 +32,12 @@ import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
 import com.opendoorlogistics.core.utils.ui.TextEntryPanel.EntryType;
 
 public class UIFactoryImpl implements UIFactory{
+	private final ODLApi api;
+	
+	
+	public UIFactoryImpl(ODLApi api) {
+		this.api = api;
+	}
 
 	@Override
 	public JPanel createIntegerEntryPane(String label, int initialValue, String tooltip, IntChangedListener intChangedListener) {
@@ -39,7 +46,7 @@ public class UIFactoryImpl implements UIFactory{
 
 	@Override
 	public JPanel createDistancesEditor(DistancesConfiguration config, long flags) {
-		return new DistancesPanel((DistancesConfiguration)config,flags);
+		return new DistancesPanel(api,(DistancesConfiguration)config,flags);
 	}
 
 	@Override

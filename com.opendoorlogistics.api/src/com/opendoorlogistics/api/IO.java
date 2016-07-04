@@ -20,6 +20,13 @@ public interface IO {
 	
 	File getStandardScriptsDir();
 	
+	/**
+	 * If we're in ODL Studio this returns the file that the current datastore was loaded from.
+	 * Unlikely to work in ODL Connect...
+	 * @return
+	 */
+	File getLoadedExcelFile();
+	
 	boolean exportDatastore(ODLDatastore<? extends ODLTableReadOnly> ds, File file, boolean xlsx,ProcessingApi processing, ExecutionReport report);
 
 	ODLDatastoreAlterable<ODLTableAlterable> importFile(File file, ImportFileType type,ProcessingApi processingApi, ExecutionReport report);

@@ -6,9 +6,10 @@
  ******************************************************************************/
 package com.opendoorlogistics.api.tables;
 
+import javax.swing.event.TableModelListener;
+import javax.swing.table.TableModel;
 
-
-public interface ODLTableReadOnly extends ODLTableDefinition {
+public interface ODLTableReadOnly extends ODLTableDefinition, TableModel {
 	int getRowCount();
 	Object getValueAt(int rowIndex, int columnIndex);
 	Object getValueById(long rowId, int columnIndex);
@@ -35,6 +36,48 @@ public interface ODLTableReadOnly extends ODLTableDefinition {
 	 * @return
 	 */
 	long[] find(int col, Object value);
+
 	
+    /**
+     * Needed to make interface compatible with swing TableModel
+     */	
+    @Override
+    default void setValueAt(Object aValue, int rowIndex, int columnIndex){
+    
+    }
+
+    /**
+     * Needed to make interface compatible with swing TableModel
+     */    
+    @Override
+    default boolean isCellEditable(int rowIndex, int columnIndex){
+    	return false;
+    }
+    
+    /**
+     * Needed to make interface compatible with swing TableModel
+     */    
+    @Override
+    default void addTableModelListener(TableModelListener l){
+    	
+    }
+
+    /**
+     * Needed to make interface compatible with swing TableModel
+     */
+    @Override
+    default void removeTableModelListener(TableModelListener l){
+    	
+    }
+
+    /**
+     * Needed to make interface compatible with swing TableModel.
+     * We reutrn string as we only use this for display purposes...
+     */
+    @Override
+    default Class<?> getColumnClass(int columnIndex){
+    	return String.class;
+    }
+
 	//ODLTableReadOnly findGeo(LatLong min, LatLong max, int zoom, int geomCol);
 }

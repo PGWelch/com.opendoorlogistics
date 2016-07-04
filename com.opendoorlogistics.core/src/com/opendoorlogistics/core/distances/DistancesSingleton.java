@@ -8,9 +8,10 @@ package com.opendoorlogistics.core.distances;
 
 import java.io.Closeable;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.io.FilenameUtils;
 
 import com.graphhopper.util.shapes.GHPoint;
 import com.opendoorlogistics.api.components.PredefinedTags;
@@ -18,6 +19,7 @@ import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.distances.DistancesConfiguration.CalculationMethod;
 import com.opendoorlogistics.api.distances.DistancesOutputConfiguration;
+import com.opendoorlogistics.api.distances.ExternalMatrixFileConfiguration;
 import com.opendoorlogistics.api.distances.ODLCostMatrix;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
@@ -25,15 +27,19 @@ import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.api.tables.ODLTime;
-import com.opendoorlogistics.api.ui.Disposable;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.api.impl.GeometryImpl;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
+import com.opendoorlogistics.core.distances.external.FileVersionId;
+import com.opendoorlogistics.core.distances.external.LoadedMatrixFile;
+import com.opendoorlogistics.core.distances.external.MatrixFileReader;
+import com.opendoorlogistics.core.distances.external.RoundingGrid;
+import com.opendoorlogistics.core.distances.external.LoadedMatrixFile.ValueType;
+import com.opendoorlogistics.core.distances.external.RoundingGrid.GridNeighboursResult;
 import com.opendoorlogistics.core.distances.graphhopper.CHMatrixGenWithGeomFuncs;
 import com.opendoorlogistics.core.geometry.GreateCircle;
 import com.opendoorlogistics.core.gis.map.data.LatLongImpl;
-import com.opendoorlogistics.core.scripts.execution.dependencyinjection.ProcessingApiDecorator;
 import com.opendoorlogistics.core.scripts.wizard.TagUtils;
 import com.opendoorlogistics.core.tables.ColumnValueProcessor;
 import com.opendoorlogistics.core.utils.io.RelativeFiles;
@@ -43,8 +49,12 @@ import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.graphhopper.CHMatrixGeneration.CHProcessingApi;
 import com.opendoorlogistics.graphhopper.MatrixResult;
 
+import gnu.trove.list.array.TIntArrayList;
+
 
 public final class DistancesSingleton implements Closeable{
+	public static final double UNCONNECTED_TRAVEL_COST = Double.POSITIVE_INFINITY;
+	
 	//private final RecentlyUsedCache recentMatrixCache = new RecentlyUsedCache(128 * 1024 * 1024);
 	//private final RecentlyUsedCache recentGeomCache = new RecentlyUsedCache(64 * 1024 * 1024);
 	private CHMatrixGenWithGeomFuncs lastCHGraph;
@@ -153,7 +163,7 @@ public final class DistancesSingleton implements Closeable{
 		}
 
 		// convert result to the output data structure
-		ODLCostMatrixImpl output = createEmptyMatrix(list);
+		ODLCostMatrixImpl output = ODLCostMatrixImpl.createEmptyMatrix(list);
 		for (int ifrom = 0; ifrom < n; ifrom++) {
 			for (int ito = 0; ito < n; ito++) {
 				double timeSeconds = result.getTimeMilliseconds(ifrom, ito) * 0.001;
@@ -162,7 +172,7 @@ public final class DistancesSingleton implements Closeable{
 					setOutputValues(ifrom, ito, result.getDistanceMetres(ifrom, ito), timeSeconds, request.getOutputConfig(), output);					
 				}else{
 					for(int k=0; k<3 ;k++){
-						output.set(Double.POSITIVE_INFINITY, ifrom, ito, k);						
+						output.set(UNCONNECTED_TRAVEL_COST, ifrom, ito, k);						
 					}
 				}
 			}
@@ -220,7 +230,7 @@ public final class DistancesSingleton implements Closeable{
 		}
 		
 		List<Map.Entry<String, LatLong>> list = IteratorUtils.toList(points.entrySet());
-		ODLCostMatrixImpl output = createEmptyMatrix(list);
+		ODLCostMatrixImpl output = ODLCostMatrixImpl.createEmptyMatrix(list);
 
 		int n = list.size();
 		for (int ifrom = 0; ifrom < n; ifrom++) {
@@ -247,6 +257,67 @@ public final class DistancesSingleton implements Closeable{
 
 		return output;
 	}
+	
+	private ODLCostMatrix calculateFromFile(DistancesConfiguration request, StandardisedStringTreeMap<LatLong> points, ProcessingApi processingApi) {
+		File file = MatrixFileReader.resolveExternalMatrixFileOrThrowException(request.getExternalConfig(), processingApi.getApi().io().getLoadedExcelFile());
+		
+		// load the file
+		LoadedMatrixFile loadedMatrixFile = MatrixFileReader.loadFile(file, processingApi);		
+
+		// match to locations
+		List<Map.Entry<String, LatLong>> list = IteratorUtils.toList(points.entrySet());
+		RoundingGrid grid = MatrixFileReader.ROUNDING_GRID;		
+		TIntArrayList indices = new TIntArrayList(list.size());
+		for(Map.Entry<String, LatLong> entry:list){
+			
+			// check for a known entry in the rounding grid, checking within a couple of metres
+			Integer foundIndx=null;
+			List<GridNeighboursResult> ngbs =grid.calculateNeighbouringGridCells(entry.getValue(), 3); 
+			for(GridNeighboursResult ngb:ngbs){
+				foundIndx = loadedMatrixFile.getLocationsToIndices().get(ngb.getLatLong());
+				if(foundIndx!=-1){
+					break;
+				}
+			}
+			
+			if(foundIndx==-1){
+				throw new RuntimeException("Latitude-longitude " + entry.getValue().toString() + " does not exist in the matrix loaded from file " + file.getName() + ".");
+			}
+			
+			indices.add(foundIndx);
+		}
+
+		// create cost matrix, including the logic to check if the file has changed
+		@SuppressWarnings("serial")
+		ODLCostMatrixImpl output = new ODLCostMatrixImpl(points.keySet(), ODLCostMatrixImpl.STANDARD_COST_FIELDNAMES){
+			@Override
+			public boolean isStillValid() {
+				return !FileVersionId.isFileModified(loadedMatrixFile.getFileVersionId());
+			}	
+		};
+
+		// copy values across, calculating cost from distance and time
+		int n = list.size();
+		for (int ifrom = 0; ifrom < n; ifrom++) {
+			for (int ito = 0; ito < n; ito++) {
+				
+				double distanceMetres =loadedMatrixFile.get(indices.get(ifrom), indices.get(ito), ValueType.KM)* 1000;
+				double timeSecs =loadedMatrixFile.get(indices.get(ifrom), indices.get(ito), ValueType.SECONDS);
+
+				// output cost and time
+				setOutputValues(ifrom, ito, distanceMetres, timeSecs, request.getOutputConfig(), output);
+
+				// check for user cancellation
+				if (processingApi!=null && processingApi.isCancelled()) {
+					break;
+				}
+
+			}
+		}
+
+		return output;
+	}
+
 
 	private void setOutputValues(int ifrom, int ito, double distanceMetres, double timeSecs, DistancesOutputConfiguration outputConfig, ODLCostMatrixImpl output) {
 		double value = processOutput(distanceMetres, timeSecs, outputConfig);
@@ -255,14 +326,7 @@ public final class DistancesSingleton implements Closeable{
 		output.set(processedTime(timeSecs, outputConfig), ifrom, ito, ODLCostMatrix.COST_MATRIX_INDEX_TIME);
 	}
 
-	private ODLCostMatrixImpl createEmptyMatrix(List<Map.Entry<String, LatLong>> list) {
-		ArrayList<String> idList = new ArrayList<>();
-		for (Map.Entry<String, LatLong> entry : list) {
-			idList.add(entry.getKey());
-		}
-		ODLCostMatrixImpl output = new ODLCostMatrixImpl(idList, new String[] { PredefinedTags.TRAVEL_COST, PredefinedTags.DISTANCE, PredefinedTags.TIME });
-		return output;
-	}
+
 
 	public static DistancesSingleton singleton() {
 		return singleton;
@@ -321,12 +385,12 @@ public final class DistancesSingleton implements Closeable{
 	}
 	
 	private static class MatrixCacheKey {
-		final private DistancesConfiguration request;
+		final private DistancesConfiguration distanceConfig;
 		final private StandardisedStringTreeMap<LatLong> points;
 		final private int hashcode;
 
 		private MatrixCacheKey(DistancesConfiguration request, StandardisedStringTreeMap<LatLong> points) {
-			this.request = request.deepCopy();
+			this.distanceConfig = request.deepCopy();
 			this.points = points;
 
 			final int prime = 31;
@@ -355,17 +419,29 @@ public final class DistancesSingleton implements Closeable{
 					return false;
 			} else if (!points.equals(other.points))
 				return false;
-			if (request == null) {
-				if (other.request != null)
+			if (distanceConfig == null) {
+				if (other.distanceConfig != null)
 					return false;
-			} else if (!request.equals(other.request))
+			} else if (!distanceConfig.equals(other.distanceConfig))
 				return false;
 			return true;
 		}
 
 	}
 
+	/**
+	 * This is called from the driving distance function
+	 * @param request
+	 * @param from
+	 * @param to
+	 * @param processingApi
+	 * @return
+	 */
 	public synchronized double calculateDistanceMetres(DistancesConfiguration request, LatLong from, LatLong to, ProcessingApi processingApi){
+		if(request.getMethod() == CalculationMethod.EXTERNAL_MATRIX){
+			throw new RuntimeException("Unsupported mode: " + CalculationMethod.EXTERNAL_MATRIX.toString());
+		}
+		
 		if(request.getMethod() == CalculationMethod.GREAT_CIRCLE){
 			return GreateCircle.greatCircleApprox(from, to);
 		}
@@ -387,6 +463,14 @@ public final class DistancesSingleton implements Closeable{
 		return ret;
 	}
 
+	/**
+	 * This is called from the driving time function
+	 * @param request
+	 * @param from
+	 * @param to
+	 * @param processingApi
+	 * @return
+	 */
 	public synchronized ODLTime calculateDrivingTime(DistancesConfiguration request, LatLong from, LatLong to, ProcessingApi processingApi){
 		if(request.getMethod() != CalculationMethod.ROAD_NETWORK){
 			throw new IllegalArgumentException();
@@ -422,7 +506,9 @@ public final class DistancesSingleton implements Closeable{
 
 	
 	public synchronized ODLGeom calculateRouteGeom(DistancesConfiguration request, LatLong from, LatLong to, ProcessingApi processingApi){
-		if(request.getMethod() == CalculationMethod.GREAT_CIRCLE){
+		// If we're using great circle or external matrix just return a straight line.
+		// When using an external matrix the route geometry will be undefined / unavailable so a straight line is fine.
+		if(request.getMethod() == CalculationMethod.GREAT_CIRCLE || request.getMethod() == CalculationMethod.EXTERNAL_MATRIX){
 			ODLGeom geom = processingApi.getApi().geometry().createLineGeometry(from, to);
 			return geom;
 		}
@@ -459,7 +545,7 @@ public final class DistancesSingleton implements Closeable{
 		MatrixCacheKey key = new MatrixCacheKey(request, points);
 		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.DISTANCE_MATRIX_CACHE);
 		ODLCostMatrix ret = (ODLCostMatrix) cache.get(key);
-		if (ret != null) {
+		if (ret != null && ret.isStillValid()) {
 			return ret;
 		}
 
@@ -470,6 +556,10 @@ public final class DistancesSingleton implements Closeable{
 
 		case ROAD_NETWORK:
 			ret = calculateGraphhopper(request, points, processingApi);
+			break;
+			
+		case EXTERNAL_MATRIX:
+			ret = calculateFromFile(request, points, processingApi);
 			break;
 			
 		default:

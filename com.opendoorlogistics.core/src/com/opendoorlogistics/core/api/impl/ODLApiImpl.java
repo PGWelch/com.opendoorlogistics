@@ -82,7 +82,7 @@ public class ODLApiImpl implements ODLApi{
 	@Override
 	public UIFactory uiFactory() {
 		if(uiFactory==null){
-			uiFactory = new UIFactoryImpl();
+			uiFactory = new UIFactoryImpl(this);
 		}
 		return uiFactory;
 	}

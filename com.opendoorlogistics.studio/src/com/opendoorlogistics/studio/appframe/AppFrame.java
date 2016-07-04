@@ -44,6 +44,7 @@ import javax.swing.event.MenuListener;
 import org.apache.commons.io.FilenameUtils;
 
 import com.opendoorlogistics.api.ExecutionReport;
+import com.opendoorlogistics.api.IO;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.app.DatastoreModifier;
 import com.opendoorlogistics.api.app.ODLAppLoadedState;
@@ -66,6 +67,7 @@ import com.opendoorlogistics.codefromweb.IconToImage;
 import com.opendoorlogistics.core.AppConstants;
 import com.opendoorlogistics.core.CommandLineInterface;
 import com.opendoorlogistics.core.DisposeCore;
+import com.opendoorlogistics.core.api.impl.IOImpl;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptTemplatesImpl;
 import com.opendoorlogistics.core.cache.ApplicationCache;
@@ -116,7 +118,20 @@ public class AppFrame extends DesktopAppFrame  {
 	private final ScriptUIManagerImpl scriptManager;
 	private final ScriptsPanel scriptsPanel;
 	private final JToolBar mainToolbar = new JToolBar(SwingConstants.VERTICAL);
-	private final ODLApi api = new ODLApiImpl();
+	private final ODLApi api = new ODLApiImpl(){
+		private final IO io = new IOImpl(){
+			@Override
+			public File getLoadedExcelFile() {
+				return loaded!=null ? loaded.getFile():null;
+			}
+		};
+		@Override
+		public IO io() {
+			return io;
+		}
+
+	};
+	
 	private final List<UIAction> allActions = new ArrayList<UIAction>();
 	private final AppPermissions appPermissions;
 	private List<NewDatastoreProvider> newDatastoreProviders = NewDatastoreProvider.createDefaults();

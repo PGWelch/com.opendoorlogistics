@@ -27,6 +27,7 @@ import com.opendoorlogistics.components.jsprit.VRPConfig;
 import com.opendoorlogistics.components.jsprit.VRPUtils;
 
 public class VehiclesTableDfn extends TableDfn{
+	public static final String VEHICLE_TYPES_TABLE_NAME ="VehicleTypes"; 
 	private final ODLApi api;
 	public final int vehicleName;
 	public final int id;
@@ -56,7 +57,7 @@ public class VehiclesTableDfn extends TableDfn{
 		}
 	}
 	public VehiclesTableDfn(ODLApi api,ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds, VRPConfig conf) {
-		super(ds, "VehicleTypes");
+		super(ds, VEHICLE_TYPES_TABLE_NAME);
 		this.api = api;
 		
 		vehicleName = addStrColumn(VEHICLE_NAME);

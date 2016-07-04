@@ -30,7 +30,7 @@ import com.opendoorlogistics.components.jsprit.VRPConstants;
 import com.opendoorlogistics.components.jsprit.VRPUtils;
 
 public class StopsTableDefn extends TableDfn {
-
+	public static final String STOPS_TABLE_NAME = "Stops";
 	public final int[] quantityIndices;
 	private final ODLApi api;
 	public final int jobId;
@@ -120,7 +120,7 @@ public class StopsTableDefn extends TableDfn {
 	}
 
 	public StopsTableDefn(ODLApi api,ODLDatastoreAlterable<? extends ODLTableDefinitionAlterable> ds, VRPConfig config) {
-		super(ds, "Stops");
+		super(ds, STOPS_TABLE_NAME);
 		this.api = api;
 		id = addStrColumn(ID);
 		

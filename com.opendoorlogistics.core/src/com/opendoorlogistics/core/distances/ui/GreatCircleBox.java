@@ -77,5 +77,9 @@ public class GreatCircleBox extends AbstractDistancesConfigBox{
 		});
 	}
 
+	public GreatCircleConfiguration getConfig() {
+		return config;
+	}
+
 	
 }

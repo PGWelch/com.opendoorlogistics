@@ -26,6 +26,7 @@ import com.opendoorlogistics.api.standardcomponents.GanntChart;
 import com.opendoorlogistics.api.standardcomponents.LineGraph;
 import com.opendoorlogistics.api.standardcomponents.LineGraph.LGColumn;
 import com.opendoorlogistics.api.standardcomponents.Maps;
+import com.opendoorlogistics.api.standardcomponents.MatrixExporter;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor.EditorTable;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor.OrderField;
@@ -42,6 +43,8 @@ import com.opendoorlogistics.components.jsprit.tabledefinitions.InputTablesDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.OutputTablesDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.RouteDetailsTableDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.StopDetailsTableDfn;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn.StopType;
 
 class VRPScriptWizard {
@@ -412,10 +415,10 @@ class VRPScriptWizard {
 		// add the optimise option
 		buildOptimise(builder, inputDataAdapterId, settings);
 
-		// add edit routes option and hook this up to the main adapter
-		if(!VRPConstants.ROUTE_EDITING_SHOWS_STATS){
-			buildEditRoutes(new InputTablesDfn(api, config),inputDataAdapterId,null, builder);			
-		}
+//		// add edit routes option and hook this up to the main adapter
+//		if(!VRPConstants.ROUTE_EDITING_SHOWS_STATS){
+//			buildEditRoutes(new InputTablesDfn(api, config),inputDataAdapterId,null, builder);			
+//		}
 
 		// create show solution option
 		buildShowSolution(builder, config, inputDataAdapterId, settings);
@@ -462,6 +465,7 @@ class VRPScriptWizard {
 		
 		tools.addOption("Validate data relations", "Validate data relations").addInstruction(inputDataAdapterId, VRPConstants.COMPONENT_ID, ODLComponent.MODE_DATA_UPDATER, settings.getComponentConfigId());
 
+		buildMatrixExporter(new InputTablesDfn(api, config), inputDataAdapterId, tools);
 	}
 
 	/**
@@ -478,9 +482,9 @@ class VRPScriptWizard {
 		String detailsDsId = builder.createUniqueDatastoreId("Solution details");
 		instructionBuilder.setOutputDatastoreId(detailsDsId);
 
-		if(VRPConstants.ROUTE_EDITING_SHOWS_STATS){
-			buildEditRoutes(new InputTablesDfn(api, config),inputDataAdapterId,detailsDsId, showSolution);			
-		}
+	//	if(VRPConstants.ROUTE_EDITING_SHOWS_STATS){
+		buildEditRoutes(new InputTablesDfn(api, config),inputDataAdapterId,detailsDsId, showSolution);			
+	//	}
 
 		// create show map
 		buildShowMap(inputDataAdapterId, detailsDsId, showSolution);
@@ -516,6 +520,42 @@ class VRPScriptWizard {
 		instrBuilder.setName("Optimise routes");
 	}
 
+	private void buildMatrixExporter(InputTablesDfn inputDfn,final String inputDataAdapterId, ScriptOption builder){
+		ScriptOption option = builder.addOption("Export matrix", "Export travel matrix");
+		option.setEditorLabel(HTML_HEADER + "Run this option to export a matrix of travel distances and times between all locations to a text file. "
+				+ "<b>Warning</b> - the matrix exporter has its own settings for distance generation, independent of the main distances settings. "
+				+ "If you want to export the exact same matrix as the optimiser is using, ensure your matrix exporter distance settings are identical to the main ones.</html>");
+		ScriptAdapter ungrouped = option.addDataAdapter("1. Export matrix input data (ungrouped)");
+		ScriptAdapter grouped = option.addDataAdapter("2. Export matrix input data (grouped)");
+		MatrixExporter component = api.standardComponents().matrixExporter();
+		ScriptInstruction instruction = option.addInstruction(grouped.getAdapterId(),component.getId(), ODLComponent.MODE_DEFAULT, component.createConfig(false));
+		instruction.setName("Export matrix");
+		
+		ODLTableDefinition inputTable= instruction.getInstructionRequiredIO().getTableAt(0);
+		
+		// create the ungroup adapters
+		ScriptAdapterTable fromStops=ungrouped.addSourcelessTable(inputTable);
+		fromStops.setSourceTable(inputDataAdapterId, StopsTableDefn.STOPS_TABLE_NAME);
+		fromStops.setSourceColumn(PredefinedTags.LATITUDE, PredefinedTags.LATITUDE);
+		fromStops.setSourceColumn(PredefinedTags.LONGITUDE, PredefinedTags.LONGITUDE);
+		
+		for(int i =0 ; i<=1 ; i++){
+			String prefix = i==0?"start-" : "end-";
+			ScriptAdapterTable vehicleEnd = ungrouped.addSourcelessTable(inputTable);
+			vehicleEnd.setSourceTable(inputDataAdapterId, VehiclesTableDfn.VEHICLE_TYPES_TABLE_NAME);
+			vehicleEnd.setSourceColumn(PredefinedTags.LATITUDE, prefix + PredefinedTags.LATITUDE);
+			vehicleEnd.setSourceColumn(PredefinedTags.LONGITUDE, prefix + PredefinedTags.LONGITUDE);	
+		}
+
+		// now group them
+		ScriptAdapterTable groupedTable = grouped.addSourcedTableToAdapter(ungrouped.getAdapterId(), inputTable, inputTable);
+		for(String col : new String[]{PredefinedTags.LATITUDE,PredefinedTags.LONGITUDE}){
+			groupedTable.setColumnFlags(col, groupedTable.getColumnFlags(col)| TableFlags.FLAG_IS_GROUP_BY_FIELD);
+		}
+		
+	}
+	
+	
 	/**
 	 * @param inputDataAdapterId
 	 * @param builder

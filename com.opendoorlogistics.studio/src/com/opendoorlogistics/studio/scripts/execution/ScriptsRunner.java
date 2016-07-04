@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -23,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
-import javax.swing.JInternalFrame;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
@@ -43,11 +41,10 @@ import com.opendoorlogistics.core.utils.LoggerUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringSet;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.studio.appframe.AbstractAppFrame;
-import com.opendoorlogistics.studio.internalframes.HasInternalFrames;
 
 /**
  * The script runner exists only whilst the current spreadsheet is open. It is closed when the spreadsheet is closed.
- * 
+ * It holds an exuector service for the refreshes
  * @author Phil
  *
  */
@@ -324,16 +321,7 @@ public final class ScriptsRunner implements ReporterFrame.OnRefreshReport, Dispo
 //
 //	}
 
-	/**
-	 * Run the script. If forceEDT is not set, the runner decides whether to run on the EDT or in the background...
-	 * 
-	 * @param script
-	 * @param optionIds
-	 * @param name
-	 * @param guiFascade
-	 * @param isScriptRefresh
-	 * @return
-	 */
+
 	Future<Void> execute(final Script script,final String[] optionIds,final String name) {
 		//new ScriptExecutionTask(this,script, optionIds, name, false).start();
 

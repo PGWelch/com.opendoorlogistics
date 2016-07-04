@@ -4,19 +4,12 @@
  * are made available under the terms of the GNU Lesser Public License v3
  * which accompanies this distribution, and is available at http://www.gnu.org/licenses/lgpl.txt
  ******************************************************************************/
-package com.opendoorlogistics.api.geometry;
+package com.opendoorlogistics.api.standardcomponents;
 
-/**
- * Read-only interface for a lat-long
- * @author Phil
- *
- */
-public interface LatLong {
-	double getLatitude();
-	double getLongitude();
-	
-	default boolean isValid(){
-		return getLongitude()>= -180.0 && getLongitude() <= 180.0 && getLatitude() >= -90.0 && getLatitude() <=90.0;
-	}
-	
+import java.io.Serializable;
+
+import com.opendoorlogistics.api.components.ODLComponent;
+
+public interface MatrixExporter extends ODLComponent {
+	Serializable createConfig(boolean exportIds);
 }

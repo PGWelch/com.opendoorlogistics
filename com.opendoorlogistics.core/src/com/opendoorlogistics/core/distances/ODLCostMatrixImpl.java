@@ -6,10 +6,13 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.distances;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.distances.ODLCostMatrix;
+import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
@@ -20,8 +23,9 @@ import com.opendoorlogistics.core.utils.Numbers;
 import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 
-public final class ODLCostMatrixImpl extends ODLTableDefinitionImpl implements ODLTable,ODLCostMatrix {
+public class ODLCostMatrixImpl extends ODLTableDefinitionImpl implements ODLTable,ODLCostMatrix {
 	final private List<String> ids;
+	protected final static String [] STANDARD_COST_FIELDNAMES =  new String[] { PredefinedTags.TRAVEL_COST, PredefinedTags.DISTANCE, PredefinedTags.TIME };
 	final private double[][][] matrix;
 	final private int n;
 	final private int nSquared;
@@ -245,4 +249,29 @@ public final class ODLCostMatrixImpl extends ODLTableDefinitionImpl implements O
 	}
 
 
+	public static ODLCostMatrixImpl createEmptyMatrix(List<Map.Entry<String, LatLong>> list) {
+		ArrayList<String> idList = new ArrayList<>();
+		for (Map.Entry<String, LatLong> entry : list) {
+			idList.add(entry.getKey());
+		}
+		ODLCostMatrixImpl output = new ODLCostMatrixImpl(idList,STANDARD_COST_FIELDNAMES);
+		return output;
+	}
+
+	@Override
+	public boolean isStillValid() {
+		return true;
+	}
+
+	@Override
+	public String getFromId(int fromIndex) {
+		return ids.get(fromIndex);
+	}
+
+	@Override
+	public String getToId(int toIndex) {
+		return ids.get(toIndex);
+	}
+	
+	
 }

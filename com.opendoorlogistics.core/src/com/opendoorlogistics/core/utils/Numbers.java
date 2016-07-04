@@ -179,4 +179,14 @@ final public class Numbers {
 	public static void main(String[] args) {
 		System.out.println(toLong(" 3   "));
 	}
+	
+	public static double clamp(double number, double min, double max){
+		if(number<min){
+			number = min;
+		}
+		if(number>max){
+			number = max;
+		}
+		return number;
+	}
 }

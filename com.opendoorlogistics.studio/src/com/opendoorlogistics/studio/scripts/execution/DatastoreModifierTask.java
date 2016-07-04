@@ -2,6 +2,7 @@ package com.opendoorlogistics.studio.scripts.execution;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.util.logging.Logger;
 
 import javax.swing.SwingUtilities;
@@ -28,6 +29,7 @@ public abstract class DatastoreModifierTask {
 	private final AbstractAppFrame appFrame;
 	private volatile ODLDatastoreAlterable<? extends ODLTableAlterable> workingDatastoreCopy;
 	protected volatile ProgressReporter progressReporter;
+	private File referenceFile;
 
 	/**
 	 * Execute the entire task on a background thread. This method uses the EDT thread when needed.
@@ -48,6 +50,11 @@ public abstract class DatastoreModifierTask {
 					// Copy the datastore in EDT so we never get a half-written copy
 					workingDatastoreCopy = getEDTDatastore().deepCopyWithShallowValueCopy(true);
 					LOGGER.info(LoggerUtils.addPrefix(" - took deep copy of datastore for script execution."));
+					
+					// Also get the reference file
+					if(appFrame.getLoadedDatastore()!=null){
+						referenceFile = appFrame.getLoadedDatastore().getFile();		
+					}
 				}
 			});
 		} catch (Exception e) {
@@ -194,7 +201,7 @@ public abstract class DatastoreModifierTask {
 		
 	}
 
-	protected ODLDatastoreUndoable<? extends ODLTableAlterable> getEDTDatastore() {
+	final protected ODLDatastoreUndoable<? extends ODLTableAlterable> getEDTDatastore() {
 		if(appFrame.getLoadedDatastore()!=null){
 			return appFrame.getLoadedDatastore().getDs();			
 		}
@@ -252,5 +259,9 @@ public abstract class DatastoreModifierTask {
 	
 	protected ODLApi getApi(){
 		return appFrame.getApi();
+	}
+	
+	protected File getReferenceFile(){
+		return referenceFile;
 	}
 }
