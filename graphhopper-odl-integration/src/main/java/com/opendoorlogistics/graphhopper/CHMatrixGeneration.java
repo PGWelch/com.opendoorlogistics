@@ -79,29 +79,34 @@ public class CHMatrixGeneration  {
 		return ret;
 	}
 
-	public CHMatrixGeneration(String graphFolder, String vehicleType) {
-		this(graphFolder, false,vehicleType);
+	public CHMatrixGeneration(String graphFolder) {
+		this(graphFolder, false);
 	}
 	
-	public CHMatrixGeneration(String graphFolder, boolean memoryMapped, String vehicleType) {
+	public CHMatrixGeneration(String graphFolder, boolean memoryMapped) {
 		this.graphFolder = graphFolder;
 		this.hopper = createHopper(memoryMapped);
 		hopper.setGraphHopperLocation(this.graphFolder);
-	//	hopper.setEncodingManager(new EncodingManager(vehicleType));
 		hopper.importOrLoad();
-		flagEncoder = hopper.getEncodingManager().getEncoder(vehicleType);
+
+		// Pick the first supported encoder from a standard list, ordered by most commonly used first.
+		// This allows the user to build the graph for the speed profile they want and it just works...
 		encodingManager = hopper.getEncodingManager();
-
-		String vehicle = flagEncoder.toString();
-		if (!hopper.getEncodingManager().supports(vehicle)) {
-			throw new RuntimeException(new IllegalArgumentException("Vehicle " + vehicle + " unsupported. " + "Supported are: " + hopper.getEncodingManager()));
+		FlagEncoder foundFlagEncoder=null;
+		
+		for(String vehicleType : new String[]{EncodingManager.CAR,EncodingManager.BIKE,EncodingManager.FOOT,EncodingManager.BIKE2,EncodingManager.MOTORCYCLE,EncodingManager.RACINGBIKE,EncodingManager.MOUNTAINBIKE}){
+			if(encodingManager.supports(vehicleType)){
+				foundFlagEncoder = encodingManager.getEncoder(vehicleType);
+				break;
+			}
 		}
+		if(foundFlagEncoder==null){
+			throw new RuntimeException("The road network graph does not support any of the standard vehicle types");
+		}
+		flagEncoder= foundFlagEncoder;
 
-		edgeFilter = new DefaultEdgeFilter(encodingManager.getEncoder(vehicle));
+		edgeFilter = new DefaultEdgeFilter(flagEncoder);
 
-		// if (hopper.getPreparation() == null) {
-		// throw new RuntimeException("Preparation object is null. CH-preparation wasn't done or did you forgot to call disableCHShortcuts()?");
-		// }
 
 		WeightingMap weightingMap = new WeightingMap("fastest");
 		Weighting weighting = hopper.createWeighting(weightingMap, flagEncoder);
@@ -119,7 +124,8 @@ public class CHMatrixGeneration  {
 	}
 
 	public GHResponse getResponse(GHPoint from, GHPoint to) {
-		GHRequest req = new GHRequest(from, to).setVehicle("car");
+		// The flag encoder's toString method returns the vehicle type
+		GHRequest req = new GHRequest(from, to).setVehicle(flagEncoder.toString());
 		GHResponse rsp = hopper.route(req);
 		if (rsp.hasErrors()) {
 			return null;

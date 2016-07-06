@@ -27,7 +27,7 @@ public class TestMatrixCalculation {
 	public void setUp() throws Exception {
 		
 		String graphFolder = "C:\\temp\\TestGH0.5\\great-britain-latest.osm-gh";
-		dijsktra = new CHMatrixGeneration(graphFolder, EncodingManager.CAR);
+		dijsktra = new CHMatrixGeneration(graphFolder);
 
 		int n = 25;
 		GHPoint[] pnts = UKGeocodes.createUKGeocodes();

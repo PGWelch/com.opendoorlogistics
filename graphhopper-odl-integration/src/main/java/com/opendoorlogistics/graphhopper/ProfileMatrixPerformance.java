@@ -23,7 +23,7 @@ public class ProfileMatrixPerformance {
 		
 		
 		System.out.println(LocalDateTime.now() + " - loading matrix from:" + graphFolder);
-		CHMatrixGeneration ch = new CHMatrixGeneration(graphFolder, false, "bike");
+		CHMatrixGeneration ch = new CHMatrixGeneration(graphFolder, false);
 		System.out.println(LocalDateTime.now() + " - starting matrix profiling for " + pnts.length + " points");
 		MatrixResult result1 = ch.calculateMatrix(pnts,null);
 		System.out.println(result1);
