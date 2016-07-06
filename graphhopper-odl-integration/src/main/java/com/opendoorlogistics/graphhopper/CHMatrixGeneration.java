@@ -79,17 +79,17 @@ public class CHMatrixGeneration  {
 		return ret;
 	}
 
-	public CHMatrixGeneration(String graphFolder) {
-		this(graphFolder, false);
+	public CHMatrixGeneration(String graphFolder, String vehicleType) {
+		this(graphFolder, false,vehicleType);
 	}
 	
-	public CHMatrixGeneration(String graphFolder, boolean memoryMapped) {
+	public CHMatrixGeneration(String graphFolder, boolean memoryMapped, String vehicleType) {
 		this.graphFolder = graphFolder;
 		this.hopper = createHopper(memoryMapped);
 		hopper.setGraphHopperLocation(this.graphFolder);
-		hopper.setEncodingManager(new EncodingManager(EncodingManager.CAR));
-		flagEncoder = hopper.getEncodingManager().getEncoder(EncodingManager.CAR);
+	//	hopper.setEncodingManager(new EncodingManager(vehicleType));
 		hopper.importOrLoad();
+		flagEncoder = hopper.getEncodingManager().getEncoder(vehicleType);
 		encodingManager = hopper.getEncodingManager();
 
 		String vehicle = flagEncoder.toString();
