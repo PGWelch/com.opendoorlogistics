@@ -11,10 +11,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.graphhopper.routing.util.EncodingManager;
+import com.graphhopper.routing.util.FlagEncoderFactory;
 import com.graphhopper.util.shapes.GHPoint;
-import com.opendoorlogistics.graphhopper.CHMatrixGeneration;
-import com.opendoorlogistics.graphhopper.MatrixResult;
 import com.opendoorlogistics.graphhopper.geocodes4profiling.UKGeocodes;
 
 public class TestMatrixCalculation {
@@ -27,7 +25,7 @@ public class TestMatrixCalculation {
 	public void setUp() throws Exception {
 		
 		String graphFolder = "C:\\temp\\TestGH0.5\\great-britain-latest.osm-gh";
-		dijsktra = new CHMatrixGeneration(graphFolder, EncodingManager.CAR);
+		dijsktra = new CHMatrixGeneration(graphFolder);
 
 		int n = 25;
 		GHPoint[] pnts = UKGeocodes.createUKGeocodes();

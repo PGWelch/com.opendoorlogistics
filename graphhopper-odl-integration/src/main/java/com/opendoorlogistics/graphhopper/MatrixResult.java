@@ -61,6 +61,10 @@ public class MatrixResult {
 		ret.append(toString(times));
 		ret.append(System.lineSeparator());
 
+		ret.append("Speeds:");
+		ret.append(System.lineSeparator());
+		ret.append(toString(getAverageSpeedKMPerHour()));
+		ret.append(System.lineSeparator());
 		return ret.toString();
 	}
 	
@@ -76,5 +80,29 @@ public class MatrixResult {
 		}
 		return ret.toString();
 		
+	}
+	
+	public double getAverageSpeedKMPerHour(int i, int j){
+		double millis = getTimeMilliseconds(i, j);
+		if(millis==0){
+			return 0;
+		}
+		double metresPerMillisecond = getDistanceMetres(i, j) / millis;
+		double metresPerHour = metresPerMillisecond * (1000*60*60);
+		double kmPerHour = metresPerHour/ 1000;
+		return kmPerHour;
+	}
+	
+	public double [][]getAverageSpeedKMPerHour(){
+		int n = distances.length;
+		double [][] speeds = new double[n][n];
+		for(int i =0 ; i<n;i++){
+			for(int j =0 ; j<n;j++){
+				speeds[i][j] = getAverageSpeedKMPerHour(i, j);
+			}
+			
+		}
+		
+		return speeds;
 	}
 }

@@ -9,7 +9,8 @@ import com.opendoorlogistics.graphhopper.geocodes4profiling.UKGeocodes;
 
 public class ProfileMatrixPerformance {
 	public static void main(String []args){
-		String graphFolder = "C:\\Data\\Graphhopper0.5\\great-britain-latest.osm-gh";
+		String graphFolder = "C:\\Data\\Graphhopper0.7\\foot";
+//		String graphFolder = "C:\\Data\\Graphhopper0.7\\great-britain-latest.osm-gh";
 	//	String graphFolder = "C:\\temp\\TestGH0.5\\north-america-latest.osm-gh";
 		int n = 250;
 
@@ -21,15 +22,23 @@ public class ProfileMatrixPerformance {
 		// just take the problem points
 	//	pnts = new GHPoint[]{pnts[1],pnts[168]};
 		
+	//	String vehicle = "car";
 		
 		System.out.println(LocalDateTime.now() + " - loading matrix from:" + graphFolder);
-		CHMatrixGeneration ch = new CHMatrixGeneration(graphFolder, false, "bike");
+		CHMatrixGeneration ch = new CHMatrixGeneration(graphFolder, false);
 		System.out.println(LocalDateTime.now() + " - starting matrix profiling for " + pnts.length + " points");
+
 		MatrixResult result1 = ch.calculateMatrix(pnts,null);
 		System.out.println(result1);
 		
-		MatrixResult result2 = ch.calculateMatrixOneByOne(pnts);
-		System.out.println(result2);
+
+
+//		MatrixResult result2 = ch.calculateMatrixOneByOne(pnts,vehicle);
+//		System.out.println(result2);
+
+		
+
+		
 
 		
 		System.out.println(LocalDateTime.now() + " - finished" );

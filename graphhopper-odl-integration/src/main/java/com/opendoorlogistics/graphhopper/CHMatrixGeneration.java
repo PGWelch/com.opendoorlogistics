@@ -23,12 +23,13 @@ import com.graphhopper.routing.util.DefaultEdgeFilter;
 import com.graphhopper.routing.util.EdgeFilter;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.routing.util.FlagEncoder;
+import com.graphhopper.routing.util.FlagEncoderFactory;
+import com.graphhopper.routing.util.HintsMap;
 import com.graphhopper.routing.util.LevelEdgeFilter;
 import com.graphhopper.routing.util.Weighting;
-import com.graphhopper.routing.util.WeightingMap;
 import com.graphhopper.storage.CHGraph;
-import com.graphhopper.storage.EdgeEntry;
 import com.graphhopper.storage.Graph;
+import com.graphhopper.storage.SPTEntry;
 import com.graphhopper.storage.index.QueryResult;
 import com.graphhopper.util.EdgeExplorer;
 import com.graphhopper.util.EdgeIterator;
@@ -79,31 +80,39 @@ public class CHMatrixGeneration  {
 		return ret;
 	}
 
-	public CHMatrixGeneration(String graphFolder, String vehicleType) {
-		this(graphFolder, false,vehicleType);
+	public CHMatrixGeneration(String graphFolder) {
+		this(graphFolder, false);
 	}
 	
-	public CHMatrixGeneration(String graphFolder, boolean memoryMapped, String vehicleType) {
+	public CHMatrixGeneration(String graphFolder, boolean memoryMapped) {
 		this.graphFolder = graphFolder;
 		this.hopper = createHopper(memoryMapped);
 		hopper.setGraphHopperLocation(this.graphFolder);
 	//	hopper.setEncodingManager(new EncodingManager(vehicleType));
 		hopper.importOrLoad();
-		flagEncoder = hopper.getEncodingManager().getEncoder(vehicleType);
+
+		// Pick the first supported encoder from a standard list, ordered by most commonly used first.
+		// This allows the user to build the graph for the speed profile they want and it just works...
 		encodingManager = hopper.getEncodingManager();
-
-		String vehicle = flagEncoder.toString();
-		if (!hopper.getEncodingManager().supports(vehicle)) {
-			throw new RuntimeException(new IllegalArgumentException("Vehicle " + vehicle + " unsupported. " + "Supported are: " + hopper.getEncodingManager()));
+		FlagEncoder foundFlagEncoder=null;
+		for(String vehicleType : new String[]{FlagEncoderFactory.CAR,FlagEncoderFactory.BIKE,FlagEncoderFactory.FOOT,FlagEncoderFactory.BIKE2,FlagEncoderFactory.MOTORCYCLE,FlagEncoderFactory.RACINGBIKE,FlagEncoderFactory.MOUNTAINBIKE}){
+			if(encodingManager.supports(vehicleType)){
+				foundFlagEncoder = encodingManager.getEncoder(vehicleType);
+				break;
+			}
 		}
+		if(foundFlagEncoder==null){
+			throw new RuntimeException("The road network graph does not support any of the standard vehicle types");
+		}
+		flagEncoder= foundFlagEncoder;
 
-		edgeFilter = new DefaultEdgeFilter(encodingManager.getEncoder(vehicle));
+		edgeFilter = new DefaultEdgeFilter(flagEncoder);
 
 		// if (hopper.getPreparation() == null) {
 		// throw new RuntimeException("Preparation object is null. CH-preparation wasn't done or did you forgot to call disableCHShortcuts()?");
 		// }
 
-		WeightingMap weightingMap = new WeightingMap("fastest");
+		HintsMap weightingMap = new HintsMap("fastest");
 		Weighting weighting = hopper.createWeighting(weightingMap, flagEncoder);
 		prepareWeighting = new PreparationWeighting(weighting);
 
@@ -119,7 +128,8 @@ public class CHMatrixGeneration  {
 	}
 
 	public GHResponse getResponse(GHPoint from, GHPoint to) {
-		GHRequest req = new GHRequest(from, to).setVehicle("car");
+		// The flag encoder's toString method returns the vehicle type
+		GHRequest req = new GHRequest(from, to).setVehicle(flagEncoder.toString());
 		GHResponse rsp = hopper.route(req);
 		if (rsp.hasErrors()) {
 			return null;
@@ -145,8 +155,8 @@ public class CHMatrixGeneration  {
 				if (rsp == null) {
 					continue;
 				}
-				ret.setDistanceMetres(fromIndex, toIndex, rsp.getDistance());
-				ret.setTimeMilliseconds(fromIndex, toIndex, rsp.getTime());
+				ret.setDistanceMetres(fromIndex, toIndex, rsp.getBest().getDistance());
+				ret.setTimeMilliseconds(fromIndex, toIndex, rsp.getBest().getTime());
 			}
 		}
 
@@ -199,7 +209,7 @@ public class CHMatrixGeneration  {
 	 * @author Phil
 	 *
 	 */
-	public static class ShortestPathTree extends TIntObjectHashMap<EdgeEntry> {
+	public static class ShortestPathTree extends TIntObjectHashMap<SPTEntry> {
 		public final int startNodeId;
 		public final boolean reverseQuery;
 
@@ -216,10 +226,10 @@ public class CHMatrixGeneration  {
 
 	public ShortestPathTree search(int startNode, EdgeExplorer edgeExplorer, EdgeFilter edgeFilter, boolean isBackwards) {
 
-		PriorityQueue<EdgeEntry> openSet = new PriorityQueue<>();
+		PriorityQueue<SPTEntry> openSet = new PriorityQueue<>();
 		ShortestPathTree shortestWeightMap = new ShortestPathTree(startNode, isBackwards);
 
-		EdgeEntry firstEdge = new EdgeEntry(EdgeIterator.NO_EDGE, startNode, 0);
+		SPTEntry firstEdge = new SPTEntry(EdgeIterator.NO_EDGE, startNode, 0);
 		shortestWeightMap.put(startNode, firstEdge);
 		openSet.add(firstEdge);
 
@@ -228,7 +238,7 @@ public class CHMatrixGeneration  {
 		while (openSet.size() > 0) {
 
 			// The node at the adjacent edge is now settled.
-			EdgeEntry currEdge = openSet.poll();
+			SPTEntry currEdge = openSet.poll();
 			int currNode = currEdge.adjNode;
 			EdgeIterator iter = edgeExplorer.setBaseNode(currNode);
 
@@ -249,9 +259,9 @@ public class CHMatrixGeneration  {
 				int previousOrNextEdge = -1;
 				double tmpWeight = prepareWeighting.calcWeight(iter, isBackwards, previousOrNextEdge) + currEdge.weight;
 
-				EdgeEntry de = shortestWeightMap.get(adjNode);
+				SPTEntry de = shortestWeightMap.get(adjNode);
 				if (de == null) {
-					de = new EdgeEntry(iter.getEdge(), adjNode, tmpWeight);
+					de = new SPTEntry(iter.getEdge(), adjNode, tmpWeight);
 					de.parent = currEdge;
 					shortestWeightMap.put(adjNode, de);
 					openSet.add(de);
@@ -271,10 +281,10 @@ public class CHMatrixGeneration  {
 
 		// System.out.println("From " + startNode + (isBackwards?" (backwards) ":" (forwards) ") + shortestWeightMap.size() + " nodes found in search");
 		// if(shortestWeightMap.size()==1){
-		// shortestWeightMap.forEachEntry(new TIntObjectProcedure<EdgeEntry>() {
+		// shortestWeightMap.forEachEntry(new TIntObjectProcedure<SPTEntry>() {
 		//
 		// @Override
-		// public boolean execute(int a, EdgeEntry b) {
+		// public boolean execute(int a, SPTEntry b) {
 		// System.out.println("\t" + b.weight);
 		// return true;
 		// }
@@ -357,7 +367,7 @@ public class CHMatrixGeneration  {
 			System.out.println(thr);
 		}
 		// System.out.println("Found = " + rsp.isFound());
-		System.out.println("Distance = " + rsp.getDistance());
+		System.out.println("Distance = " + rsp.getBest().getDistance());
 
 	}
 
@@ -460,10 +470,10 @@ public class CHMatrixGeneration  {
 				Arrays.fill(minCost, Double.POSITIVE_INFINITY);
 				final int[] minCostNode = new int[n];
 				Arrays.fill(minCostNode, -1);
-				reverseTree.forEachEntry(new TIntObjectProcedure<EdgeEntry>() {
+				reverseTree.forEachEntry(new TIntObjectProcedure<SPTEntry>() {
 
 					@Override
-					public boolean execute(int meetingPointNode, EdgeEntry reverseEdge) {
+					public boolean execute(int meetingPointNode, SPTEntry reverseEdge) {
 						// Use list of all FROM trees which encountered this node
 						List<FromIndexEdge> list = visitedByNodeId.get(meetingPointNode);
 						if (list == null) {
@@ -473,7 +483,7 @@ public class CHMatrixGeneration  {
 						for (int i = 0; i < size; i++) {
 							FromIndexEdge fie = list.get(i);
 							int fromIndex = fie.fromIndex;
-							EdgeEntry forwardEdge = fie.edge;
+							SPTEntry forwardEdge = fie.edge;
 							// see if this meeting point has a lower cost than the other
 							double cost = forwardEdge.weight + reverseEdge.weight;
 							if (cost < minCost[fromIndex]) {
@@ -493,12 +503,13 @@ public class CHMatrixGeneration  {
 						// use a cache of expanded CH edges for performance reasons
 						PathBidirRef pathCh = new CacheablePath4CH(snapToGraph, getFlagEncoder(), expansionCache);
 					//	PathBidirRef pathCh = new Path4CH(snapToGraph, snapToGraph.getBaseGraph(),getFlagEncoder());
+					//	PathBidirRef pathCh = new PathBidirRef(snapToGraph, getFlagEncoder());
 						pathCh.setSwitchToFrom(false);
-						EdgeEntry edgeEntry =forwardTrees[fromIndex].get(meetingPointNode); 
-						pathCh.setEdgeEntry(edgeEntry);
+						SPTEntry edgeEntry =forwardTrees[fromIndex].get(meetingPointNode); 
+						pathCh.setSPTEntry(edgeEntry);
 						
-						EdgeEntry edgeEntryTo =reverseTree.get(meetingPointNode); 
-						pathCh.setEdgeEntryTo(edgeEntryTo);
+						SPTEntry edgeEntryTo =reverseTree.get(meetingPointNode); 
+						pathCh.setSPTEntryTo(edgeEntryTo);
 						
 						Path path = pathCh.extract();
 						ret.setTimeMilliseconds(fromIndex, toIndex, path.getTime());
@@ -533,10 +544,10 @@ public class CHMatrixGeneration  {
 			final int finalFromIndx = fromIndex;
 			if (snapToResults[fromIndex].isValid()) {
 				forwardTrees[fromIndex] = search(snapToResults[fromIndex].getClosestNode(), outEdgeExplorer, false);
-				forwardTrees[fromIndex].forEachEntry(new TIntObjectProcedure<EdgeEntry>() {
+				forwardTrees[fromIndex].forEachEntry(new TIntObjectProcedure<SPTEntry>() {
 
 					@Override
-					public boolean execute(int nodeId, EdgeEntry edge) {
+					public boolean execute(int nodeId, SPTEntry edge) {
 						List<FromIndexEdge> visited = visitedByNodeId.get(nodeId);
 						if (visited == null) {
 							visited = new ArrayList<>(1);
@@ -553,9 +564,9 @@ public class CHMatrixGeneration  {
 
 	private static class FromIndexEdge {
 		private final int fromIndex;
-		private final EdgeEntry edge;
+		private final SPTEntry edge;
 
-		FromIndexEdge(int fromIndex, EdgeEntry edge) {
+		FromIndexEdge(int fromIndex, SPTEntry edge) {
 			super();
 			this.fromIndex = fromIndex;
 			this.edge = edge;
