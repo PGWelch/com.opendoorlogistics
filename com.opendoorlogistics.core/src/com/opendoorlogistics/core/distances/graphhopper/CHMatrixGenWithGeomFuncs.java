@@ -48,8 +48,7 @@ public class CHMatrixGenWithGeomFuncs extends CHMatrixGeneration{
 	}
 	
 	public Geometry calculateJTSRouteGeom(LatLong from, LatLong to) {
-		GHRequest req = new GHRequest(from.getLatitude(), from.getLongitude(), to.getLatitude(), to.getLongitude()).setVehicle("car");
-		GHResponse rsp = hopper.route(req);
+		GHResponse rsp = getResponse(new GHPoint(from.getLatitude(), from.getLongitude()), new GHPoint(to.getLatitude(), to.getLongitude()));
 
 		if (rsp.hasErrors()) {
 			return null;
