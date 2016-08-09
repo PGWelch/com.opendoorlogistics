@@ -226,6 +226,7 @@ final public class InitialiseStudio implements ODLStudioLoader{
 			for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
 				if ("Nimbus".equals(info.getName())) {
 					UIManager.setLookAndFeel(info.getClassName());
+	//				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 
 					UIDefaults defaults = UIManager.getLookAndFeelDefaults();
 					defaults.put("Table.gridColor", new Color(214, 217, 223));

@@ -411,7 +411,7 @@ public class VRPBuilder {
 			// set start and end (hopefully not used internal to jsprit)
 			// vehicleBuilder.setStartLocationCoordinate(Coordinate.newInstance(start.getLongitude(), start.getLatitude()));
 			vehicleBuilder.setStartLocation(ends[0] != null? Location.newInstance(locs.addLatLong(ends[0])): Location.newInstance(VRPConstants.NOWHERE));
-			vehicleBuilder.setStartLocation(ends[1] != null? Location.newInstance(locs.addLatLong(ends[1])): Location.newInstance(VRPConstants.NOWHERE));
+			vehicleBuilder.setEndLocation(ends[1] != null? Location.newInstance(locs.addLatLong(ends[1])): Location.newInstance(VRPConstants.NOWHERE));
 
 			// always set this as we always have depot stops - they just might be dummy
 			vehicleBuilder.setReturnToDepot(true);
