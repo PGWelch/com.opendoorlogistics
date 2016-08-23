@@ -22,7 +22,7 @@ import com.opendoorlogistics.core.utils.Version;
 import com.opendoorlogistics.core.utils.ui.DisappearingPopup;
 
 public class UpdatedSoftwareChecker extends Thread {
-	private static final long DELAY_MILLIS_BETWEEN_CHECKS = minutesToMillis(20);
+	private static final long DELAY_MILLIS_BETWEEN_CHECKS = minutesToMillis(60);
 	private static final long MILLIS_BETWEEN_SHOWING_POPUP = minutesToMillis(60 * 24);
 	private final Random random = new Random();
 	private final JFrame parentFrame;
