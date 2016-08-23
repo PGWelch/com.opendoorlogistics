@@ -65,6 +65,7 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.beans.BeanMappedRow;
 import com.opendoorlogistics.codefromweb.IconToImage;
 import com.opendoorlogistics.core.AppConstants;
+import com.opendoorlogistics.core.AppProperties;
 import com.opendoorlogistics.core.CommandLineInterface;
 import com.opendoorlogistics.core.DisposeCore;
 import com.opendoorlogistics.core.api.impl.IOImpl;
@@ -247,6 +248,10 @@ public class AppFrame extends DesktopAppFrame  {
 		setVisible(true);
 		updateAppearance();
 
+		// start the software checker on a latter event so its called after UI has been drawn
+		if(AppProperties.getBool("checkforupdates")!=Boolean.FALSE){
+			SwingUtilities.invokeLater(()->new UpdatedSoftwareChecker(AppFrame.this).start());			
+		}
 	}
 
 	private void initToolbar(ActionFactory actionBuilder, List<? extends Action> fileActions, List<? extends Action> editActions) {
