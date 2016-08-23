@@ -301,8 +301,10 @@ public class VRPComponent implements ODLComponent {
 //		return Resource.getAsURL(getConfigFilename(api));
 //	}
 
-	private VehicleRoutingAlgorithm initOptimiser(ODLApi api, VRPConfig config, VehicleRoutingProblem problem) {
+	private VehicleRoutingAlgorithm initOptimiser(ODLApi api, VRPConfig config, VRPBuilder built) {
 
+		VehicleRoutingProblem problem = built.getJspritProblem();
+		
 		// get algorithm config
 		Jsprit.Builder builder = Jsprit.Builder.newInstance(problem);
 		AlgorithmConfig aconf = config.getAlgorithm();
@@ -310,6 +312,10 @@ public class VRPComponent implements ODLComponent {
 			aconf = AlgorithmConfig.createDefaults();
 		}
 
+		// jsprit uses 'maxcost' in calibration; however default maxcost does not handle infinite (i.e. unconnected)
+		// transport costs between locations, so we provide our own max cost
+		builder.setProperty(Parameter.MAX_TRANSPORT_COSTS, Double.toString(built.getMaxVehicleIndependentConnectedLocationsTravelCost()));
+		
 		// always use fast regret; we don't have any elements in our problem which would invalidate it
 		builder.setProperty(Parameter.FAST_REGRET, Boolean.TRUE.toString());
 
@@ -397,7 +403,7 @@ public class VRPComponent implements ODLComponent {
 		final BestEver bestEver = new BestEver();
 
 		// get the algorithm out-of-the-box
-		VehicleRoutingAlgorithm algorithm = initOptimiser(api.getApi(), conf, built.getJspritProblem());
+		VehicleRoutingAlgorithm algorithm = initOptimiser(api.getApi(), conf, built);
 		// VehicleRoutingAlgorithm algorithm = new SchrimpfFactory().createAlgorithm(built.getJspritProblem());
 		class LastUpdate {
 			long lastTime = System.currentTimeMillis();

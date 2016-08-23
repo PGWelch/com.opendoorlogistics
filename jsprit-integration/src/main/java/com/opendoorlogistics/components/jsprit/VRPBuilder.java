@@ -6,23 +6,39 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.jsprit;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
-import gnu.trove.map.hash.TObjectDoubleHashMap;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeSet;
 
+import com.opendoorlogistics.api.components.ComponentExecutionApi;
+import com.opendoorlogistics.api.components.PredefinedTags;
+import com.opendoorlogistics.api.distances.DistancesConfiguration;
+import com.opendoorlogistics.api.distances.DistancesOutputConfiguration.OutputDistanceUnit;
+import com.opendoorlogistics.api.distances.DistancesOutputConfiguration.OutputTimeUnit;
+import com.opendoorlogistics.api.distances.ODLCostMatrix;
+import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.api.tables.ODLColumnType;
+import com.opendoorlogistics.api.tables.ODLDatastore;
+import com.opendoorlogistics.api.tables.ODLTable;
+import com.opendoorlogistics.api.tables.ODLTableAlterable;
+import com.opendoorlogistics.api.tables.ODLTableReadOnly;
+import com.opendoorlogistics.api.tables.ODLTime;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.InputTablesDfn;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn.StopType;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.CostType;
+import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;
+
+import gnu.trove.map.hash.TObjectDoubleHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import jsprit.core.problem.Location;
-import jsprit.core.problem.Skills;
 import jsprit.core.problem.VehicleRoutingProblem;
 import jsprit.core.problem.VehicleRoutingProblem.FleetSize;
-import jsprit.core.problem.constraint.ServiceDeliveriesFirstConstraint;
 import jsprit.core.problem.cost.VehicleRoutingTransportCosts;
 import jsprit.core.problem.driver.Driver;
 import jsprit.core.problem.job.Delivery;
@@ -40,31 +56,10 @@ import jsprit.core.problem.vehicle.VehicleType;
 import jsprit.core.problem.vehicle.VehicleTypeImpl;
 import jsprit.core.problem.vehicle.VehicleTypeImpl.VehicleCostParams;
 
-import com.opendoorlogistics.api.components.ComponentExecutionApi;
-import com.opendoorlogistics.api.components.PredefinedTags;
-import com.opendoorlogistics.api.distances.DistancesConfiguration;
-import com.opendoorlogistics.api.distances.DistancesOutputConfiguration.OutputDistanceUnit;
-import com.opendoorlogistics.api.distances.DistancesOutputConfiguration.OutputTimeUnit;
-import com.opendoorlogistics.api.distances.ODLCostMatrix;
-import com.opendoorlogistics.api.geometry.LatLong;
-import com.opendoorlogistics.api.tables.ODLColumnType;
-import com.opendoorlogistics.api.tables.ODLDatastore;
-import com.opendoorlogistics.api.tables.ODLTable;
-import com.opendoorlogistics.api.tables.ODLTableAlterable;
-import com.opendoorlogistics.api.tables.ODLTableReadOnly;
-import com.opendoorlogistics.api.tables.ODLTime;
-import com.opendoorlogistics.components.jsprit.VRPBuilder.BuiltStopRec;
-import com.opendoorlogistics.components.jsprit.tabledefinitions.InputTablesDfn;
-import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn;
-import com.opendoorlogistics.components.jsprit.tabledefinitions.StopsTableDefn.StopType;
-import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn;
-import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.CostType;
-import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;
-
 public class VRPBuilder {
 	private VehicleRoutingProblem vrpProblem;
 	private LocationsList locs;
-	private double maxFixedVehicleCost = 0;
+	//private double maxFixedVehicleCost = 0;
 	private VehicleRoutingTransportCostsImpl matrix;
 	private final Map<String,List<BuiltStopRec>> jspritJobIdToStopRecords;
 	private final Map<String,BuiltStopRec> stopIdToBuiltStopRecord;
@@ -164,10 +159,16 @@ public class VRPBuilder {
 	}
 
 	private class VehicleRoutingTransportCostsImpl implements VehicleRoutingTransportCosts {
-		final private ODLCostMatrix distances;
-		final private TObjectIntHashMap<String> idToIndex;
+		private final ODLCostMatrix distances;
+		private final TObjectIntHashMap<String> idToIndex;
+		private final double meanCostPerMillisecond;
+		private final double meanCostPerMetre;
+		private final double maxVehicleIndependentConnectedLocationsTravelCost;
 
-		VehicleRoutingTransportCostsImpl(DistancesConfiguration distancesConfig, ComponentExecutionApi api) {
+		VehicleRoutingTransportCostsImpl(DistancesConfiguration distancesConfig, ComponentExecutionApi api,double meanCostPerMillisecond,double meanCostPerMetre) {
+			this.meanCostPerMillisecond = meanCostPerMillisecond;
+			this.meanCostPerMetre = meanCostPerMetre;
+			
 			// take copy of the distances and ensure in correct output units
 			distancesConfig = distancesConfig.deepCopy();
 			distancesConfig.getOutputConfig().setOutputDistanceUnit(OutputDistanceUnit.METRES);
@@ -191,6 +192,20 @@ public class VRPBuilder {
 				int indx = distances.getIndex(id);
 				idToIndex.put(id, indx);
 			}
+			
+			// get the max connected transport cost...
+			double max=0;
+			for (String from : locs.ids.values()) {
+				for (String to : locs.ids.values()) {
+					float cost = getCost(from, to, null);
+					
+					// Unconnected locations would be infinite here... filter them
+					if(!Float.isInfinite(cost)){
+						max = Math.max(max, cost);
+					}
+				}
+			}
+			maxVehicleIndependentConnectedLocationsTravelCost = max;
 		}
 
 		float getTime(String fromId, String toId, Vehicle vehicle) {
@@ -205,12 +220,12 @@ public class VRPBuilder {
 		}
 		
 		private float getCost(String fromId, String toId, Vehicle vehicle) {
-			double costPerMillisecond =1;
-			double costPerMetre =0;
+			double costPerMillisecond =meanCostPerMillisecond;
+			double costPerMetre =meanCostPerMetre;
 			
 			if(vehicle!=null && vehicle.getType()!=null && vehicle.getType().getVehicleCostParams()!=null){
 				VehicleCostParams vcp = vehicle.getType().getVehicleCostParams();
-				costPerMillisecond =vcp.perTimeUnit;
+				costPerMillisecond =vcp.perTransportTimeUnit;
 				costPerMetre = vcp.perDistanceUnit;				
 			}
 			
@@ -240,6 +255,12 @@ public class VRPBuilder {
 			}
 			double distance= getDistance(fromId, toId);
 			double time = getTime(fromId, toId, vehicle);
+			
+			// Explicitly check for infinity (e.g. unconnected) and return infinity if found.
+			// If costPerX=0 and its multiplied by infinity, we get NaN which we don't process properly later-on
+			if(distance == Double.POSITIVE_INFINITY || time == Double.POSITIVE_INFINITY){
+				return Float.POSITIVE_INFINITY;
+			}
 			double cost = distance * costPerMetre + time * costPerMillisecond;
 			return (float)cost;
 		}
@@ -280,6 +301,10 @@ public class VRPBuilder {
 		@Override
 		public double getTransportCost(Location fromId, Location toId, double departureTime, Driver driver, Vehicle vehicle) {
 			return getCost(fromId.getId(), toId.getId(),vehicle);
+//			if(Double.isInfinite(cost)){
+//				return cost;
+//			}
+//			return cost;
 		}
 
 		@Override
@@ -325,7 +350,7 @@ public class VRPBuilder {
 		return builder.build();
 	}
 
-	private List<Vehicle> buildVehicles(Map<Integer,List<RowVehicleIndex>> overrideVehiclesToBuild) {
+	private List<Vehicle> buildVehicles(Map<Integer,List<RowVehicleIndex>> overrideVehiclesToBuild, BuildBlackboard bb) {
 		List<Vehicle> vehicles = new ArrayList<>();
 		final VehiclesTableDfn vDfn = dfn.vehicles;
 		ODLTableReadOnly table = ioDb.getTableByImmutableId(vDfn.tableId);
@@ -339,7 +364,7 @@ public class VRPBuilder {
 					number = 1;
 				}
 			   
-				buildVehiclesForType(vDfn, table, row, number,new VehicleIdProvider() {
+				buildVehiclesForType(bb,vDfn, table, row, number,new VehicleIdProvider() {
 					@Override
 				    public String getId(ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int vehicleNb) {
 				    	return vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, vehicleNb);
@@ -348,7 +373,7 @@ public class VRPBuilder {
 			}			
 		}else{
 			for(final Map.Entry<Integer, List<RowVehicleIndex>> entry:overrideVehiclesToBuild.entrySet()){
-				buildVehiclesForType(vDfn, table, entry.getKey(), entry.getValue().size(),new VehicleIdProvider() {
+				buildVehiclesForType(bb,vDfn, table, entry.getKey(), entry.getValue().size(),new VehicleIdProvider() {
 					int callNb=0;
 					
 					@Override
@@ -371,7 +396,7 @@ public class VRPBuilder {
 		return costPerHour /(60*60*1000);
 	}
 	
-	private void buildVehiclesForType(VehiclesTableDfn vDfn, ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int numberToBuild, VehicleIdProvider idProvider, List<Vehicle> vehicles) {
+	private void buildVehiclesForType(BuildBlackboard bb, VehiclesTableDfn vDfn, ODLTableReadOnly vehicleTypesTable, int rowInVehicleTypesTable, int numberToBuild, VehicleIdProvider idProvider, List<Vehicle> vehicles) {
 		// build type first
 		VehicleTypeImpl.Builder vehicleTypeBuilder = VehicleTypeImpl.Builder.newInstance(vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, 0));
 
@@ -381,12 +406,14 @@ public class VRPBuilder {
 		}
 
 		// set costs - remembering we use metres and milliseconds internally
-		vehicleTypeBuilder.setCostPerDistance(vDfn.getCost(vehicleTypesTable, rowInVehicleTypesTable, CostType.COST_PER_KM) / 1000);
-		vehicleTypeBuilder.setCostPerTransportTime( costPerHourToCostPerMilli(vDfn.getCost(vehicleTypesTable, rowInVehicleTypesTable, CostType.COST_PER_HOUR)) );
+		double costPerMetre=vDfn.getCost(vehicleTypesTable, rowInVehicleTypesTable, CostType.COST_PER_KM) / 1000;
+		vehicleTypeBuilder.setCostPerDistance(costPerMetre);
+		double costPerMilli=costPerHourToCostPerMilli(vDfn.getCost(vehicleTypesTable, rowInVehicleTypesTable, CostType.COST_PER_HOUR));
+		vehicleTypeBuilder.setCostPerTransportTime( costPerMilli );
 		vehicleTypeBuilder.setCostPerWaitingTime( costPerHourToCostPerMilli(vDfn.getCost(vehicleTypesTable, rowInVehicleTypesTable, CostType.WAITING_COST_PER_HOUR)) );
 		double fixedCost = vDfn.getCost(vehicleTypesTable, rowInVehicleTypesTable, CostType.FIXED_COST);
 		vehicleTypeBuilder.setFixedCost(fixedCost);
-		maxFixedVehicleCost = Math.max(maxFixedVehicleCost, fixedCost);
+	//	maxFixedVehicleCost = Math.max(maxFixedVehicleCost, fixedCost);
 
 		// get available skills
 		String [] skills = getSkillsArray((String)vehicleTypesTable.getValueAt(rowInVehicleTypesTable, dfn.vehicles.skills));
@@ -398,6 +425,11 @@ public class VRPBuilder {
 		VehicleType vehicleType = vehicleTypeBuilder.build();
 
 		for (int i = 0; i < numberToBuild; i++) {
+			
+			// Save the costs to the stats for each vehicle type, so the stats are weighted to the number of vehicles in a type
+			bb.costsPerMetre.add(costPerMetre);
+			bb.costsPerMillisecond.add(costPerMilli);
+
 			// get id
 			String id = idProvider.getId(vehicleTypesTable, rowInVehicleTypesTable, i); //vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, i);
 
@@ -629,6 +661,26 @@ public class VRPBuilder {
 		return ret;
 	}
 
+	private static class MeanCalculator{
+		private double sum;
+		private int count;
+		
+		void add(double value) {
+			count++;
+			sum += value;
+		}
+				
+		double getMean(){
+			return sum/count;
+		}
+	}
+	
+	private static class BuildBlackboard{
+		final MeanCalculator costsPerMillisecond = new MeanCalculator();
+		final MeanCalculator costsPerMetre= new MeanCalculator();
+	}
+	
+
 	private void buildProblem(ODLDatastore<? extends ODLTable> ioDb, VRPConfig config,Map<Integer,List<RowVehicleIndex>> overrideVehiclesToBuild,ComponentExecutionApi api) {
 
 //		// ensure we can't have stops with the depot names
@@ -638,14 +690,6 @@ public class VRPBuilder {
 		this.dfn = new InputTablesDfn(api.getApi(), config);
 		this.config = config;
 		VehicleRoutingProblem.Builder vrpBuilder = VehicleRoutingProblem.Builder.newInstance();
-		
-//		 P.S. This code is currently not activated/enabled. Does not work with jsprit library v1.4.2 due to
-//		 addConstraint(...) not being in VehicleRoutingProblem.Builder class. Needs to be activated/enabled
-//		 properly in the future.
-//		 if (config.isDeliveriesBeforePickups()) {
-//			vrpBuilder.addConstraint(new ServiceDeliveriesFirstConstraint());
-//		}
-		
 
 		if (config.isInfiniteFleetSize() && overrideVehiclesToBuild==null) {
 			vrpBuilder.setFleetSize(FleetSize.INFINITE);
@@ -654,14 +698,17 @@ public class VRPBuilder {
 		}
 
 		// build vehicles
-		vrpBuilder.addAllVehicles(buildVehicles(overrideVehiclesToBuild));
+		BuildBlackboard bb = new BuildBlackboard();
+		vrpBuilder.addAllVehicles(buildVehicles(overrideVehiclesToBuild,bb));
 		vrpBuilder.setFleetSize(config.isInfiniteFleetSize() ? FleetSize.INFINITE : FleetSize.FINITE);
 
 		// build stops
 		vrpBuilder.addAllJobs(buildJobs());
 
 		// build travel matrix 
-		matrix = new VehicleRoutingTransportCostsImpl(config.getDistances(), api);			
+		double meanCostPerMilli = bb.costsPerMillisecond.count>0?bb.costsPerMillisecond.getMean():1;
+		double meanCostPerMetre = bb.costsPerMetre.count>0? bb.costsPerMetre.getMean():1;
+		matrix = new VehicleRoutingTransportCostsImpl(config.getDistances(), api,meanCostPerMilli,meanCostPerMetre);			
 		
 		vrpBuilder.setRoutingCost(matrix);
 
@@ -713,6 +760,10 @@ public class VRPBuilder {
 
 	public double getTravelDistanceKM(String from ,String to){
 		return matrix.get(from, to, TravelCostType.DISTANCE_KM, null);
+	}
+	
+	public double getMaxVehicleIndependentConnectedLocationsTravelCost(){
+		return matrix.maxVehicleIndependentConnectedLocationsTravelCost;
 	}
 	
 //	public Set<String> getJobIds(){
