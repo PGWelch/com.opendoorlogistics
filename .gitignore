@@ -8,3 +8,8 @@ graphhopper-fat-jar/bin
 graphhopper-fat-jar/target
 .metadata
 .recommenders
+com.opendoorlogistics.speedregions/.settings/org.eclipse.m2e.core.prefs
+com.opendoorlogistics.speedregions/.settings/org.eclipse.jdt.core.prefs
+*.classpath
+com.opendoorlogistics.speedregions/.project
+*.prefs
