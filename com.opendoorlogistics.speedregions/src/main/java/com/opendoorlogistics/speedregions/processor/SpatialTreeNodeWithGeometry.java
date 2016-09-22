@@ -16,16 +16,16 @@
 package com.opendoorlogistics.speedregions.processor;
 
 import com.opendoorlogistics.speedregions.beans.Bounds;
-import com.opendoorlogistics.speedregions.beans.QuadtreeNode;
+import com.opendoorlogistics.speedregions.beans.SpatialTreeNode;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
-class QuadtreeNodeWithGeometry extends QuadtreeNode{
+class SpatialTreeNodeWithGeometry extends SpatialTreeNode{
 	private Geometry geometry;
 	private Envelope envelope;
 
-	public QuadtreeNodeWithGeometry(GeometryFactory factory, Bounds bounds){
+	public SpatialTreeNodeWithGeometry(GeometryFactory factory, Bounds bounds){
 		setBounds(bounds);
 		initGeometry(factory);
 	}
@@ -40,16 +40,16 @@ class QuadtreeNodeWithGeometry extends QuadtreeNode{
 	 * @param factory
 	 * @param node
 	 */
-	public QuadtreeNodeWithGeometry(GeometryFactory factory , QuadtreeNode node){
-		QuadtreeNode.copyNonChildFields(node, this);
+	public SpatialTreeNodeWithGeometry(GeometryFactory factory , SpatialTreeNode node){
+		SpatialTreeNode.copyNonChildFields(node, this);
 		initGeometry(factory);
-		for(QuadtreeNode childToCopy: node.getChildren()){
-			getChildren().add(new QuadtreeNodeWithGeometry(factory,childToCopy));
+		for(SpatialTreeNode childToCopy: node.getChildren()){
+			getChildren().add(new SpatialTreeNodeWithGeometry(factory,childToCopy));
 		}
 	}
 	
-	public static QuadtreeNodeWithGeometry createGlobal(GeometryFactory factory){
-		QuadtreeNodeWithGeometry ret = new QuadtreeNodeWithGeometry(factory,Bounds.createGlobal());
+	public static SpatialTreeNodeWithGeometry createGlobal(GeometryFactory factory){
+		SpatialTreeNodeWithGeometry ret = new SpatialTreeNodeWithGeometry(factory,Bounds.createGlobal());
 		ret.setBounds(Bounds.createGlobal());
 		return ret;
 	}

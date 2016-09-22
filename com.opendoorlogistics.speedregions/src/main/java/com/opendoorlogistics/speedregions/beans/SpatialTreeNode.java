@@ -22,30 +22,30 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.opendoorlogistics.speedregions.processor.RegionProcessorUtils;
 
 /**
- * Quadtree node with support for JSON serialisation / deserialisation
+ * Spatial tree node with support for JSON serialisation / deserialisation
  * @author Phil
  *
  */
-public class QuadtreeNode extends JSONToString{
+public class SpatialTreeNode extends JSONToString{
 	private Bounds bounds;
 	private String regionId;
 	private long assignedPriority;
-	private List<QuadtreeNode> children = new ArrayList<QuadtreeNode>(0);
+	private List<SpatialTreeNode> children = new ArrayList<SpatialTreeNode>(0);
 
-	public QuadtreeNode() {
+	public SpatialTreeNode() {
 
 	}
 
-	public QuadtreeNode(QuadtreeNode deepCopyThis) {
+	public SpatialTreeNode(SpatialTreeNode deepCopyThis) {
 		copyNonChildFields(deepCopyThis, this);
 
-		for (QuadtreeNode childToCopy : deepCopyThis.getChildren()) {
-			this.children.add(new QuadtreeNode(childToCopy));
+		for (SpatialTreeNode childToCopy : deepCopyThis.getChildren()) {
+			this.children.add(new SpatialTreeNode(childToCopy));
 		}
 
 	}
 
-	public static void copyNonChildFields(QuadtreeNode deepCopyThis, QuadtreeNode copyToThis) {
+	public static void copyNonChildFields(SpatialTreeNode deepCopyThis, SpatialTreeNode copyToThis) {
 		if (deepCopyThis.getBounds() != null) {
 			copyToThis.setBounds(new Bounds(deepCopyThis.getBounds()));
 		} else {
@@ -68,11 +68,11 @@ public class QuadtreeNode extends JSONToString{
 	 * In the built quadtree children are sorted by highest priority (numerically lowest) first
 	 * @return
 	 */
-	public List<QuadtreeNode> getChildren() {
+	public List<SpatialTreeNode> getChildren() {
 		return children;
 	}
 
-	public void setChildren(List<QuadtreeNode> children) {
+	public void setChildren(List<SpatialTreeNode> children) {
 		this.children = children;
 	}
 
@@ -111,12 +111,12 @@ public class QuadtreeNode extends JSONToString{
 	@Override
 	public String toString() {
 		// ensure we're not printing subclass fields like geometry which aren't json-friendly
-		return new QuadtreeNode(this).toJSON();
+		return new SpatialTreeNode(this).toJSON();
 	}
 
 	
 
-	public static QuadtreeNode fromJSON(String json) {
-		return RegionProcessorUtils.fromJSON(json, QuadtreeNode.class);
+	public static SpatialTreeNode fromJSON(String json) {
+		return RegionProcessorUtils.fromJSON(json, SpatialTreeNode.class);
 	}
 }

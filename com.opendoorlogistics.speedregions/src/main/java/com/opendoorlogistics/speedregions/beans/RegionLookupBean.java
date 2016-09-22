@@ -8,13 +8,13 @@ import java.util.List;
  *
  */
 public class RegionLookupBean extends JSONToString{
-	private QuadtreeNode quadtree;
+	private SpatialTreeNode quadtree;
 	private List<SpeedRule> rules;
 	
-	public QuadtreeNode getQuadtree() {
+	public SpatialTreeNode getQuadtree() {
 		return quadtree;
 	}
-	public void setQuadtree(QuadtreeNode quadtree) {
+	public void setQuadtree(SpatialTreeNode quadtree) {
 		this.quadtree = quadtree;
 	}
 	public List<SpeedRule> getRules() {

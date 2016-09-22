@@ -35,7 +35,7 @@ public class Examples {
 		rule.setMultiplier(0.75);
 		rules.getRules().add(rule);
 
-		RegionLookupBean rlb=SpeedRegionBeanBuilder.buildBeanFromSpeedRulesObjs(Arrays.asList(rules), 250);
+		RegionLookupBean rlb=SpeedRegionBeanBuilder.buildBeanFromSpeedRulesObjs(Arrays.asList(rules), 200);
 
 		System.out.println();
 		System.out.println(GeomConversion.toODLTable(rlb.getQuadtree(),true));

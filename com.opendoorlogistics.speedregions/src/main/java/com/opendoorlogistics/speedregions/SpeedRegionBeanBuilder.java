@@ -5,10 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import com.opendoorlogistics.speedregions.beans.QuadtreeNode;
+import com.opendoorlogistics.speedregions.beans.SpatialTreeNode;
 import com.opendoorlogistics.speedregions.beans.RegionLookupBean;
 import com.opendoorlogistics.speedregions.beans.SpeedRules;
-import com.opendoorlogistics.speedregions.processor.QuadtreeStats;
+import com.opendoorlogistics.speedregions.processor.SpatialTreeStats;
 import com.opendoorlogistics.speedregions.processor.RegionProcessorUtils;
 import com.opendoorlogistics.speedregions.processor.SpeedRulesFilesProcesser;
 
@@ -18,13 +18,13 @@ public class SpeedRegionBeanBuilder {
 	/**
 	 * Build a lookup bean, which can be serialised to JSON
 	 * @param files
-	 * @param minCellLengthMetres
+	 * @param minDiagonalLengthMetres
 	 * @return
 	 */
-	public static RegionLookupBean buildBeanFromSpeedRulesObjs(List<SpeedRules> files, double minCellLengthMetres) {
+	public static RegionLookupBean buildBeanFromSpeedRulesObjs(List<SpeedRules> files, double minDiagonalLengthMetres) {
 		SpeedRulesFilesProcesser processer = new SpeedRulesFilesProcesser();
-		final QuadtreeNode root=processer.buildQuadtree(files, RegionProcessorUtils.newGeomFactory(), minCellLengthMetres);
-		LOGGER.info("Built quadtree: " + QuadtreeStats.build(root).toString());
+		final SpatialTreeNode root=processer.buildQuadtree(files, RegionProcessorUtils.newGeomFactory(), minDiagonalLengthMetres);
+		LOGGER.info("Built quadtree: " + SpatialTreeStats.build(root).toString());
 		
 		RegionLookupBean built = new RegionLookupBean();
 		built.setQuadtree(root);
@@ -32,8 +32,8 @@ public class SpeedRegionBeanBuilder {
 		return built;
 	}
 	
-	public static RegionLookupBean buildBeanFromSpeedRulesFiles(List<File> files ,double minCellLengthMetres){
-		return buildBeanFromSpeedRulesObjs(loadSpeedRulesFiles(files), minCellLengthMetres);
+	public static RegionLookupBean buildBeanFromSpeedRulesFiles(List<File> files ,double minDiagonalLengthMetres){
+		return buildBeanFromSpeedRulesObjs(loadSpeedRulesFiles(files), minDiagonalLengthMetres);
 	}
 	
 	public static RegionLookupBean loadBean(File file){

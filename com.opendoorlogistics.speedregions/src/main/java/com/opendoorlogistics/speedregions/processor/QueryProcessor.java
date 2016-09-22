@@ -15,17 +15,17 @@
  */
 package com.opendoorlogistics.speedregions.processor;
 
-import com.opendoorlogistics.speedregions.beans.QuadtreeNode;
+import com.opendoorlogistics.speedregions.beans.SpatialTreeNode;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 
 public class QueryProcessor {
-	private final QuadtreeNodeWithGeometry root;
+	private final SpatialTreeNodeWithGeometry root;
 
-	public QueryProcessor(GeometryFactory factory, QuadtreeNode root) {
+	public QueryProcessor(GeometryFactory factory, SpatialTreeNode root) {
 		// add geometry objects to the tree
-		this.root = new QuadtreeNodeWithGeometry(factory, root);
+		this.root = new SpatialTreeNodeWithGeometry(factory, root);
 	}
 
 	public String query(Geometry edge) {
@@ -51,7 +51,7 @@ public class QueryProcessor {
 	 * @param node
 	 * @param obj
 	 */
-	private void queryRecurse(QuadtreeNodeWithGeometry node, QueryObj obj) {
+	private void queryRecurse(SpatialTreeNodeWithGeometry node, QueryObj obj) {
 
 		if (node.getAssignedPriority() >= obj.currentBestPriority) {
 			// Can't beat the highest priority found so far so exclude the subtree
@@ -87,7 +87,7 @@ public class QueryProcessor {
 			// Do for loop rather than iterator so we don't allocate memory..
 			int n = node.getChildren().size();
 			for (int i = 0; i < n; i++) {
-				queryRecurse((QuadtreeNodeWithGeometry) node.getChildren().get(i), obj);
+				queryRecurse((SpatialTreeNodeWithGeometry) node.getChildren().get(i), obj);
 			}
 		}
 

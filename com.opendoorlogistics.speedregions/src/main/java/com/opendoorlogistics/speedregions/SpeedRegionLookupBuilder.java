@@ -31,12 +31,12 @@ import com.vividsolutions.jts.geom.Geometry;
 public class SpeedRegionLookupBuilder {
 	public static final double DEFAULT_MIN_CELL_LENGTH_METRES = 10;
 
-	public static SpeedRegionLookup buildFromSpeedRulesFiles(List<File> files ,double minCellLengthMetres){
-		return convertFromBean(SpeedRegionBeanBuilder.buildBeanFromSpeedRulesFiles(files,minCellLengthMetres));
+	public static SpeedRegionLookup buildFromSpeedRulesFiles(List<File> files ,double minDiagonalLengthMetres){
+		return convertFromBean(SpeedRegionBeanBuilder.buildBeanFromSpeedRulesFiles(files,minDiagonalLengthMetres));
 	}
 
-	public static SpeedRegionLookup buildFromSpeedRulesObjs(List<SpeedRules> files ,double minCellLengthMetres){
-		RegionLookupBean built = SpeedRegionBeanBuilder.buildBeanFromSpeedRulesObjs(files, minCellLengthMetres);
+	public static SpeedRegionLookup buildFromSpeedRulesObjs(List<SpeedRules> files ,double minDiagonalLengthMetres){
+		RegionLookupBean built = SpeedRegionBeanBuilder.buildBeanFromSpeedRulesObjs(files, minDiagonalLengthMetres);
 		return convertFromBean( built);
 	}
 

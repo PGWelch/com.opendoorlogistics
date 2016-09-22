@@ -3,30 +3,30 @@ package com.opendoorlogistics.speedregions.processor;
 import java.util.HashSet;
 
 import com.opendoorlogistics.speedregions.beans.JSONToString;
-import com.opendoorlogistics.speedregions.beans.QuadtreeNode;
+import com.opendoorlogistics.speedregions.beans.SpatialTreeNode;
 
-public class QuadtreeStats extends JSONToString{
+public class SpatialTreeStats extends JSONToString{
 	private long nodes;
 	private long leafNodes;
 	private long regionIds;
 	
-	public static long countNodes(QuadtreeNode node){
+	public static long countNodes(SpatialTreeNode node){
 		long ret=1;
-		for(QuadtreeNode child:node.getChildren()){
+		for(SpatialTreeNode child:node.getChildren()){
 			ret += countNodes(child);
 		}
 		return ret;
 	}
 
-	public static QuadtreeStats build(QuadtreeNode node){
-		QuadtreeStats ret = new QuadtreeStats();
+	public static SpatialTreeStats build(SpatialTreeNode node){
+		SpatialTreeStats ret = new SpatialTreeStats();
 		HashSet<String> regionIds =new HashSet<>();
 		recurse(node,regionIds, ret);
 		return ret;
 		
 	}
 	
-	private static void recurse(QuadtreeNode node,HashSet<String> regionIds,QuadtreeStats stats){
+	private static void recurse(SpatialTreeNode node,HashSet<String> regionIds,SpatialTreeStats stats){
 		if(node.getRegionId()!=null){
 			if(!regionIds.contains(node.getRegionId())){
 				regionIds.add(node.getRegionId());
@@ -37,7 +37,7 @@ public class QuadtreeStats extends JSONToString{
 		if(node.getChildren().size()==0){
 			stats.leafNodes++;
 		}
-		for(QuadtreeNode child:node.getChildren()){
+		for(SpatialTreeNode child:node.getChildren()){
 			recurse(child,regionIds,stats);
 		}
 	}

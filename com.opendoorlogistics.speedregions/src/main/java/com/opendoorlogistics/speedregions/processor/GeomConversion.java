@@ -6,7 +6,7 @@ import java.util.List;
 import org.geojson.LngLatAlt;
 
 import com.opendoorlogistics.speedregions.beans.Bounds;
-import com.opendoorlogistics.speedregions.beans.QuadtreeNode;
+import com.opendoorlogistics.speedregions.beans.SpatialTreeNode;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Polygon;
@@ -53,11 +53,11 @@ public class GeomConversion {
 	 * @param node
 	 * @return
 	 */
-	public static String toODLTable(QuadtreeNode node,final boolean leafNodesOnly){
+	public static String toODLTable(SpatialTreeNode node,final boolean leafNodesOnly){
 		final StringBuilder builder = new StringBuilder();
 		final WKTWriter writer = new WKTWriter();
 		class Recurser{
-			void recurse(QuadtreeNode n){
+			void recurse(SpatialTreeNode n){
 				if(!leafNodesOnly || n.getChildren().size()==0){
 					if(builder.length()>0){
 						builder.append(System.lineSeparator());					
@@ -66,7 +66,7 @@ public class GeomConversion {
 					builder.append("\t");
 					builder.append(writer.write(toJTS(n.getBounds())));				
 				}
-				for(QuadtreeNode child:n.getChildren()){
+				for(SpatialTreeNode child:n.getChildren()){
 					recurse(child);
 				}
 				

@@ -30,7 +30,7 @@ import org.geojson.Polygon;
 
 import com.neovisionaries.i18n.CountryCode;
 import com.opendoorlogistics.speedregions.SpeedRegionConsts;
-import com.opendoorlogistics.speedregions.beans.QuadtreeNode;
+import com.opendoorlogistics.speedregions.beans.SpatialTreeNode;
 import com.opendoorlogistics.speedregions.beans.SpeedRule;
 import com.opendoorlogistics.speedregions.beans.SpeedRules;
 import com.rits.cloning.Cloner;
@@ -78,16 +78,16 @@ public class SpeedRulesFilesProcesser {
 	 * 
 	 * @param files
 	 * @param geomFactory
-	 * @param minSideLengthMetres
+	 * @param minDiagonalLengthMetres
 	 * @return
 	 */
-	public QuadtreeNode buildQuadtree(List<SpeedRules> files, GeometryFactory geomFactory, double minSideLengthMetres) {
+	public SpatialTreeNode buildQuadtree(List<SpeedRules> files, GeometryFactory geomFactory, double minDiagonalLengthMetres) {
 
 		List<SpeedRule> globalRules = new ArrayList<SpeedRule>();
 
 		TreeSet<TempPolygonRecord> prioritised = prioritisePolygons(files, globalRules);
 
-		RegionQuadtreeBuilder builder = new RegionQuadtreeBuilder(geomFactory, minSideLengthMetres);
+		RegionSpatialTreeBuilder builder = new RegionSpatialTreeBuilder(geomFactory, minDiagonalLengthMetres);
 		for (TempPolygonRecord poly : prioritised) {
 			// need to turn a geojson polygon into a JTS polygon
 			int nLists = poly.polygon.getCoordinates().size();
