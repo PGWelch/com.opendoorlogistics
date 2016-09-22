@@ -1,6 +1,8 @@
 package com.opendoorlogistics.speedregions.graphhopper;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import com.graphhopper.GraphHopper;
 import com.graphhopper.reader.OSMWay;
@@ -10,9 +12,14 @@ import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.util.CmdArgs;
 import com.graphhopper.util.PMap;
 import com.graphhopper.util.shapes.GHPoint;
+import com.opendoorlogistics.speedregions.Examples;
+import com.opendoorlogistics.speedregions.SpeedRegionBeanBuilder;
 import com.opendoorlogistics.speedregions.SpeedRegionLookup;
+import com.opendoorlogistics.speedregions.SpeedRegionLookupBuilder;
 import com.opendoorlogistics.speedregions.SpeedRegionLookup.SpeedRuleLookup;
+import com.opendoorlogistics.speedregions.beans.RegionLookupBean;
 import com.opendoorlogistics.speedregions.beans.SpeedRule;
+import com.opendoorlogistics.speedregions.beans.SpeedRules;
 import com.opendoorlogistics.speedregions.beans.SpeedUnit;
 import com.opendoorlogistics.speedregions.processor.RegionProcessorUtils;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -25,6 +32,16 @@ import com.vividsolutions.jts.geom.Point;
 public class HackBuildSpeedRegionsForCarWithGH05 {
 
 	public static void main(String[] strArgs) throws Exception {
+		System.out.println("Run dir is " + new File("").getAbsolutePath());
+		SpeedRules rules = Examples.createMaltaExample(0.2);
+		RegionLookupBean rlb = SpeedRegionBeanBuilder.buildBeanFromSpeedRulesObjs(Arrays.asList(rules), 200);		
+		SpeedRegionLookup lookup = SpeedRegionLookupBuilder.convertFromBean(rlb);
+		
+		strArgs = new String[]{
+			"config=config.properties",
+			"osmreader.osm=malta-latest.osm.pbf"				
+		};
+				
 		CmdArgs args = CmdArgs.read(strArgs);
 		args = CmdArgs.readFromConfigAndMerge(args, "config", "graphhopper.config");
 		GraphHopper hopper = new GraphHopper().forDesktop().init(args);
@@ -33,7 +50,7 @@ public class HackBuildSpeedRegionsForCarWithGH05 {
 		int bytesForFlags = args.getInt("graph.bytesForFlags", 4);
 		String[] splitEncoders = flagEncoders.split(",");
 
-		SpeedRegionLookup lookup = null;
+	//	SpeedRegionLookup lookup = null;
 		ArrayList<AbstractFlagEncoder> encoders = new ArrayList<>();
 		for (String encoder : splitEncoders) {
 			String propertiesString = "";
