@@ -70,6 +70,48 @@ class RegionQuadtreeBuilder {
 		nextPolygonPriority++;
 	}
 	
+	/**
+	 * Recombine a node's children if they are all assigned to the same region
+	 * *and* they don't have children themselves (we recursively call this anyway
+	 * so we should still recursively recombine).
+	 * @param node
+	 */
+	private void recombineChildrenIfPossible(QuadtreeNode node){
+
+		if(node.getChildren().size()!=4){
+			// Must have children
+			return;
+		}
+		
+		for(int i = 0; i<4  ; i++){
+			QuadtreeNode child = node.getChildren().get(i);
+			if(child.getChildren().size()>0){
+				// Children cannot have children
+				return;
+			}
+			
+			if(child.getRegionId()==null){
+				// Must all be assigned
+				return;
+			}
+			
+			if(i>0){
+				if( !child.getRegionId().equals(node.getChildren().get(0).getRegionId())){
+					// Must all be have same assigned id
+					return;
+				}
+				
+			}
+		}
+		
+		// recombine
+		QuadtreeNode child0 = node.getChildren().get(0);
+		node.getChildren().clear();
+		node.setRegionId(child0.getRegionId());
+		node.setAssignedPriority(child0.getAssignedPriority());
+
+	}
+	
 	private void addRecursively(QuadtreeNodeWithGeometry node, QueryGeometry geometry){
 		// check if node is already assigned, nodes are assigned to the first geometry
 		// that (a) totally encloses them, or (b) if the node is split to the finest granularity level,
@@ -84,15 +126,16 @@ class RegionQuadtreeBuilder {
 			return;
 		}
 		
-		// If we have children then pass down to them
+		// If already we have children then pass down to them
 		if(node.getChildren().size()>0){
 			for(QuadtreeNode child:node.getChildren()){
 				addRecursively((QuadtreeNodeWithGeometry)child,geometry);
 			}
+			recombineChildrenIfPossible(node);
 			return;
 		}
 		
-		// Assign and return if
+		// No children already. Assign and return if:
 		// (a) a node is totally contained by the polygon or
 		// (b) we can't split the node anymore
 		boolean nodeIsContainedByPolygon = geometry.polygon.contains(node.getGeometry());
@@ -123,6 +166,8 @@ class RegionQuadtreeBuilder {
 		for(QuadtreeNode child:node.getChildren()){
 			addRecursively((QuadtreeNodeWithGeometry)child,geometry);
 		}		
+		
+		recombineChildrenIfPossible(node);
 	}
 
 
@@ -131,6 +176,11 @@ class RegionQuadtreeBuilder {
 		if(node.getRegionId()!=null){
 			return;
 		}
+
+//		// if we have a horizontal or vertical which are assigned to the same, combine them
+//		if(node.getChildren().size()==4){
+//			
+//		}
 
 		// set no 'no assigned descendents' priority
 		node.setAssignedPriority(Long.MAX_VALUE);
@@ -156,14 +206,17 @@ class RegionQuadtreeBuilder {
 				return Long.compare(o1.getAssignedPriority(), o2.getAssignedPriority());
 			}
 		});
-		
+				
 		// if we only have one child remaining, delete this node by replacing our content with the child's
 		if(node.getChildren().size()==1){
 			QuadtreeNode child = node.getChildren().get(0);
 			node.setChildren(child.getChildren());
-			QuadtreeNode.copyNonChildFields(child, node);
+			QuadtreeNode.copyNonChildFields(child, node);			
 		}
+		
+		
 	}
+
 	
 	private double getLatCentre(QuadtreeNodeWithGeometry node) {
 		double dLatCentre = 0.5*(node.getBounds().getMinLat() + node.getBounds().getMaxLat());
