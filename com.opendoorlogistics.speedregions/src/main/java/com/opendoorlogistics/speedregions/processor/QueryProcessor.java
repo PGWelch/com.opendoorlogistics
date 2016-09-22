@@ -16,6 +16,8 @@
 package com.opendoorlogistics.speedregions.processor;
 
 import com.opendoorlogistics.speedregions.beans.SpatialTreeNode;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
@@ -60,7 +62,9 @@ public class QueryProcessor {
 
 		if(obj.geom instanceof Point){
 			// Version of JTS used appears not to support optimised point-in-rectangle tests yet, so we do it explicitly here
-			if(!node.getEnvelope().contains( ((Point)obj.geom).getCoordinate())){
+			Coordinate coordinate = ((Point)obj.geom).getCoordinate();
+			Envelope envelope = node.getEnvelope();
+			if(!envelope.contains(coordinate)){
 				return;
 			}
 		}

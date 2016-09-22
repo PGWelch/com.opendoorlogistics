@@ -22,38 +22,45 @@ public class Examples {
 		// build single quadtree
 		Feature feature = new Feature();
 		feature.setProperty(SpeedRegionConsts.REGION_ID_KEY, "malta_central");
-		org.geojson.Polygon geoJSONPolygon =GeomConversion.toGeoJSONPolygon(CENTRAL_MALTA_POLYGON);
+		org.geojson.Polygon geoJSONPolygon = GeomConversion.toGeoJSONPolygon(CENTRAL_MALTA_POLYGON);
 		feature.setGeometry(geoJSONPolygon);
-		
+
 		SpeedRules rules = new SpeedRules();
 		rules.setCountryCode("mt");
 		rules.getFeatures().add(feature);
-		
+
 		SpeedRule rule = new SpeedRule();
 		rule.getFlagEncoders().add("car");
 		rule.getRegionIds().add("valleta");
 		rule.setMultiplier(0.75);
 		rules.getRules().add(rule);
 
-		RegionLookupBean rlb=SpeedRegionBeanBuilder.buildBeanFromSpeedRulesObjs(Arrays.asList(rules), 200);
+		RegionLookupBean rlb = SpeedRegionBeanBuilder.buildBeanFromSpeedRulesObjs(Arrays.asList(rules), 200);
 
 		System.out.println();
-		System.out.println(GeomConversion.toODLTable(rlb.getQuadtree(),true));
+		System.out.println(GeomConversion.toODLTable(rlb.getQuadtree(), true));
 
 		// build some random points
 		SpeedRegionLookup lookup = SpeedRegionLookupBuilder.convertFromBean(rlb);
 		Envelope envelope = GeomConversion.toJTS(CENTRAL_MALTA_POLYGON).getEnvelopeInternal();
 		Random random = new Random(123);
 		int npoints = 100;
-		for(int i =0 ; i<npoints ; i++){
-			Coordinate coordinate = new Coordinate(random.nextDouble()*(envelope.getMaxX() - envelope.getMinX() + envelope.getMinX()),
-					random.nextDouble()*(envelope.getMaxY() - envelope.getMinY() + envelope.getMinY())
-					);
+		StringBuilder builder = new StringBuilder();
+		for (int i = 0; i < npoints; i++) {
+			Coordinate coordinate = new Coordinate(random.nextDouble() * (envelope.getMaxX() - envelope.getMinX()) + envelope.getMinX(),
+					random.nextDouble() * (envelope.getMaxY() - envelope.getMinY()) + envelope.getMinY());
 			Point point = RegionProcessorUtils.newGeomFactory().createPoint(coordinate);
-			String regionId=lookup.findRegionId(point);
-			
+			String regionId = lookup.findRegionId(point);
+			builder.append(Double.toString(coordinate.y));
+			builder.append("\t");
+			builder.append(Double.toString(coordinate.x));
+			builder.append("\t");
+			builder.append(regionId!=null?regionId:"");
+			builder.append(System.lineSeparator());
 		}
-		
+		System.out.println();
+		System.out.println(builder.toString());
+
 	}
 
 }
