@@ -16,8 +16,9 @@
 package com.opendoorlogistics.speedregions.processor;
 
 import com.opendoorlogistics.speedregions.beans.QuadtreeNode;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Point;
 
 public class QueryProcessor {
 	private final QuadtreeNodeWithGeometry root;
@@ -27,15 +28,15 @@ public class QueryProcessor {
 		this.root = new QuadtreeNodeWithGeometry(factory, root);
 	}
 
-	public String query(LineString edge) {
+	public String query(Geometry edge) {
 		QueryObj queryObj = new QueryObj();
-		queryObj.edge = edge;
+		queryObj.geom = edge;
 		queryRecurse(root, queryObj);
 		return queryObj.currentBestId;
 	}
 
 	private static class QueryObj {
-		LineString edge;
+		Geometry geom;
 		String currentBestId;
 
 		// Remember priority is higher for numerically lower values!!
@@ -57,10 +58,19 @@ public class QueryProcessor {
 			return;
 		}
 
-		// This does a bounding box test first before doing the expensive one
-		if (!node.getGeometry().intersects(obj.edge)) {
-			return;
+		if(obj.geom instanceof Point){
+			// Version of JTS used appears not to support optimised point-in-rectangle tests yet, so we do it explicitly here
+			if(!node.getEnvelope().contains( ((Point)obj.geom).getCoordinate())){
+				return;
+			}
 		}
+		else{
+			// General case (e.g. for a linestring). This still does a bounding box test first before doing the expensive one
+			if (!node.getGeometry().intersects(obj.geom)) {
+				return;
+			}			
+		}
+
 
 		// Check for leaf node
 		if (node.getRegionId() != null) {

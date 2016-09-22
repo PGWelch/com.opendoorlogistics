@@ -17,15 +17,22 @@ package com.opendoorlogistics.speedregions.processor;
 
 import com.opendoorlogistics.speedregions.beans.Bounds;
 import com.opendoorlogistics.speedregions.beans.QuadtreeNode;
+import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
 class QuadtreeNodeWithGeometry extends QuadtreeNode{
 	private Geometry geometry;
+	private Envelope envelope;
 
 	public QuadtreeNodeWithGeometry(GeometryFactory factory, Bounds bounds){
 		setBounds(bounds);
-		this.geometry = factory.toGeometry(getBounds().asEnvelope());
+		initGeometry(factory);
+	}
+
+	private void initGeometry(GeometryFactory factory) {
+		this.envelope = getBounds().asEnvelope();
+		this.geometry = factory.toGeometry(envelope);
 	}
 	
 	/**
@@ -35,6 +42,7 @@ class QuadtreeNodeWithGeometry extends QuadtreeNode{
 	 */
 	public QuadtreeNodeWithGeometry(GeometryFactory factory , QuadtreeNode node){
 		QuadtreeNode.copyNonChildFields(node, this);
+		initGeometry(factory);
 		for(QuadtreeNode childToCopy: node.getChildren()){
 			getChildren().add(new QuadtreeNodeWithGeometry(factory,childToCopy));
 		}
@@ -50,4 +58,10 @@ class QuadtreeNodeWithGeometry extends QuadtreeNode{
 		return geometry;
 	}
 
+	public Envelope getEnvelope() {
+		return envelope;
+	}
+
+
+	
 }

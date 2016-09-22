@@ -23,10 +23,10 @@ import com.opendoorlogistics.speedregions.SpeedRegionLookup.SpeedRuleLookup;
 import com.opendoorlogistics.speedregions.beans.RegionLookupBean;
 import com.opendoorlogistics.speedregions.beans.SpeedRule;
 import com.opendoorlogistics.speedregions.beans.SpeedRules;
-import com.opendoorlogistics.speedregions.processor.ProcessorUtils;
 import com.opendoorlogistics.speedregions.processor.QueryProcessor;
+import com.opendoorlogistics.speedregions.processor.RegionProcessorUtils;
 import com.opendoorlogistics.speedregions.processor.SpeedRulesFilesProcesser;
-import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Geometry;
 
 public class SpeedRegionLookupBuilder {
 	public static final double DEFAULT_MIN_CELL_LENGTH_METRES = 10;
@@ -43,7 +43,7 @@ public class SpeedRegionLookupBuilder {
 
 
 	public static SpeedRegionLookup loadFromBeanFile(File built) {
-		return convertFromBean(ProcessorUtils.fromJSON(built, RegionLookupBean.class));
+		return convertFromBean(RegionProcessorUtils.fromJSON(built, RegionLookupBean.class));
 	}
 	
 	public static SpeedRegionLookup convertFromBean(RegionLookupBean built) {
@@ -51,10 +51,10 @@ public class SpeedRegionLookupBuilder {
 		SpeedRulesFilesProcesser processer = new SpeedRulesFilesProcesser();
 		final TreeMap<String, TreeMap<String, SpeedRule>> rulesMap =processer.createRulesMap(built.getRules());
 				
-		final QueryProcessor queryProcessor = new QueryProcessor(ProcessorUtils.newGeomFactory(), built.getQuadtree());
+		final QueryProcessor queryProcessor = new QueryProcessor(RegionProcessorUtils.newGeomFactory(), built.getQuadtree());
 		return new SpeedRegionLookup() {
 			
-			public String findRegionId(LineString edge) {
+			public String findRegionId(Geometry edge) {
 				String regionId =queryProcessor.query(edge);
 				return regionId;
 			}
@@ -66,7 +66,7 @@ public class SpeedRegionLookupBuilder {
 	}
 
 	private static SpeedRuleLookup createRulesLookupForEncoder(final TreeMap<String, TreeMap<String, SpeedRule>> rulesMap, String encoder) {
-		TreeMap<String, SpeedRule> map = rulesMap.get(ProcessorUtils.stdString(encoder));
+		TreeMap<String, SpeedRule> map = rulesMap.get(RegionProcessorUtils.stdString(encoder));
 		if(map==null){
 			map = new TreeMap<String, SpeedRule>();
 		}

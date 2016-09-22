@@ -20,9 +20,11 @@ import java.util.List;
 
 import org.geojson.FeatureCollection;
 
-public class SpeedRules {
+public class SpeedRules extends JSONToString{
 	private List<SpeedRule> rules = new ArrayList<SpeedRule>();
-	private FeatureCollection features;
+	private FeatureCollection features = new FeatureCollection();
+	private String countryCode;
+	
 	public List<SpeedRule> getRules() {
 		return rules;
 	}
@@ -34,6 +36,17 @@ public class SpeedRules {
 	}
 	public void setFeatures(FeatureCollection features) {
 		this.features = features;
+	}
+	
+	/**
+	 * 2 digit country code. Must be set. See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+	 * @return
+	 */
+	public String getCountryCode() {
+		return countryCode;
+	}
+	public void setCountryCode(String countryCode) {
+		this.countryCode = countryCode;
 	}
 	
 	

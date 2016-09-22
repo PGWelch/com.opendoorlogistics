@@ -37,7 +37,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * @author Phil
  *
  */
-public class ProcessorUtils {
+public class RegionProcessorUtils {
 	private static final double EARTH_RADIUS_METRES = 6371000;
 	private static final ObjectMapper JACKSON_MAPPER;
 	static {

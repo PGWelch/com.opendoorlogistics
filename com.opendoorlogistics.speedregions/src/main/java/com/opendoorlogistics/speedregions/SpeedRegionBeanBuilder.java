@@ -7,7 +7,7 @@ import java.util.List;
 import com.opendoorlogistics.speedregions.beans.QuadtreeNode;
 import com.opendoorlogistics.speedregions.beans.RegionLookupBean;
 import com.opendoorlogistics.speedregions.beans.SpeedRules;
-import com.opendoorlogistics.speedregions.processor.ProcessorUtils;
+import com.opendoorlogistics.speedregions.processor.RegionProcessorUtils;
 import com.opendoorlogistics.speedregions.processor.SpeedRulesFilesProcesser;
 
 public class SpeedRegionBeanBuilder {
@@ -19,10 +19,10 @@ public class SpeedRegionBeanBuilder {
 	 */
 	public static RegionLookupBean buildBeanFromSpeedRulesObjs(List<SpeedRules> files, double minCellLengthMetres) {
 		SpeedRulesFilesProcesser processer = new SpeedRulesFilesProcesser();
-		final QuadtreeNode root=processer.buildQuadtree(files, ProcessorUtils.newGeomFactory(), minCellLengthMetres);
+		final QuadtreeNode root=processer.buildQuadtree(files, RegionProcessorUtils.newGeomFactory(), minCellLengthMetres);
 		RegionLookupBean built = new RegionLookupBean();
 		built.setQuadtree(root);
-		built.setRules(processer.validateRules(files));
+		built.setRules(processer.validateApplyCountryCodes(files));
 		return built;
 	}
 	
@@ -31,17 +31,17 @@ public class SpeedRegionBeanBuilder {
 	}
 	
 	public static RegionLookupBean loadBean(File file){
-		return ProcessorUtils.fromJSON(file, RegionLookupBean.class);
+		return RegionProcessorUtils.fromJSON(file, RegionLookupBean.class);
 	}
 	
 	public static void saveBean(RegionLookupBean bean,File file){
-		ProcessorUtils.toJSONFile(bean, file);
+		RegionProcessorUtils.toJSONFile(bean, file);
 	}
 
 	private static List<SpeedRules> loadSpeedRulesFiles(List<File> files) {
 		ArrayList<SpeedRules> objects = new ArrayList<SpeedRules>(files.size());
 		for(File file : files){
-			objects.add(ProcessorUtils.fromJSON(file, SpeedRules.class));
+			objects.add(RegionProcessorUtils.fromJSON(file, SpeedRules.class));
 		}
 		return objects;
 	}

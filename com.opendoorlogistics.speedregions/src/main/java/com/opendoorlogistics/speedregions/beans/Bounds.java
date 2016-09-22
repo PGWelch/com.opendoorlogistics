@@ -15,7 +15,7 @@
  */
 package com.opendoorlogistics.speedregions.beans;
 
-import com.opendoorlogistics.speedregions.processor.ProcessorUtils;
+import com.opendoorlogistics.speedregions.processor.RegionProcessorUtils;
 import com.vividsolutions.jts.geom.Envelope;
 
 /**
@@ -23,7 +23,7 @@ import com.vividsolutions.jts.geom.Envelope;
  * @author Phil
  *
  */
-public class Bounds {
+public class Bounds extends JSONToString{
 	private double minLng;
 	private double maxLng;
 	private double minLat;
@@ -80,7 +80,7 @@ public class Bounds {
 	
 	@Override
 	public String toString() {
-		return ProcessorUtils.toJSON(this);
+		return RegionProcessorUtils.toJSON(this);
 	}
 
 }

@@ -19,14 +19,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.opendoorlogistics.speedregions.processor.ProcessorUtils;
+import com.opendoorlogistics.speedregions.processor.RegionProcessorUtils;
 
 /**
  * Quadtree node with support for JSON serialisation / deserialisation
  * @author Phil
  *
  */
-public class QuadtreeNode {
+public class QuadtreeNode extends JSONToString{
 	private Bounds bounds;
 	private String regionId;
 	private long assignedPriority;
@@ -105,17 +105,18 @@ public class QuadtreeNode {
 
 	@JsonIgnore
 	public String toJSON() {
-		return ProcessorUtils.toJSON(this);
+		return RegionProcessorUtils.toJSON(this);
 	}
 
 	@Override
 	public String toString() {
-		return toJSON();
+		// ensure we're not printing subclass fields like geometry which aren't json-friendly
+		return new QuadtreeNode(this).toJSON();
 	}
 
 	
 
 	public static QuadtreeNode fromJSON(String json) {
-		return ProcessorUtils.fromJSON(json, QuadtreeNode.class);
+		return RegionProcessorUtils.fromJSON(json, QuadtreeNode.class);
 	}
 }

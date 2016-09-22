@@ -16,7 +16,7 @@
 package com.opendoorlogistics.speedregions;
 
 import com.opendoorlogistics.speedregions.beans.SpeedRule;
-import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Geometry;
 
 public interface SpeedRegionLookup {
 	/**
@@ -25,8 +25,8 @@ public interface SpeedRegionLookup {
 	 * @param edge
 	 * @return Region id (standardised) or null if none found.
 	 */
-	String findRegionId(LineString edge);
-	
+	String findRegionId(Geometry edge);
+
 	
 	public interface SpeedRuleLookup{
 		SpeedRule getSpeedRule(String standardisedRegionId);

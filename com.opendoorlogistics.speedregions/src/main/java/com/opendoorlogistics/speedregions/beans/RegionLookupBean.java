@@ -7,7 +7,7 @@ import java.util.List;
  * @author Phil
  *
  */
-public class RegionLookupBean {
+public class RegionLookupBean extends JSONToString{
 	private QuadtreeNode quadtree;
 	private List<SpeedRule> rules;
 	

@@ -28,7 +28,7 @@ class RegionQuadtreeBuilder {
 	private final GeometryFactory geomFactory;
 	private final QuadtreeNodeWithGeometry root ;
 	private final double minSideLengthMetres;
-	private long nextPolygonPriority;
+	private long nextPolygonPriority=1;
 	
 	public RegionQuadtreeBuilder(GeometryFactory geomFactory, double minSideLengthMetres) {
 		this.geomFactory = geomFactory;
@@ -54,11 +54,11 @@ class RegionQuadtreeBuilder {
 		Bounds bounds = node.getBounds();
 		double dLngCentre = getLngCentre(node);
 		double dLatCentre = getLatCentre(node);
-		double width = ProcessorUtils.greatCircleApprox(dLatCentre, bounds.getMinLng(), dLatCentre, bounds.getMaxLng());
+		double width = RegionProcessorUtils.greatCircleApprox(dLatCentre, bounds.getMinLng(), dLatCentre, bounds.getMaxLng());
 		if(width < minSideLengthMetres){
 			return false;
 		}
-		double height = ProcessorUtils.greatCircleApprox(bounds.getMinLat(), dLngCentre, bounds.getMaxLat(), dLngCentre);
+		double height = RegionProcessorUtils.greatCircleApprox(bounds.getMinLat(), dLngCentre, bounds.getMaxLat(), dLngCentre);
 		if(height < minSideLengthMetres){
 			return false;
 		}
@@ -115,11 +115,14 @@ class RegionQuadtreeBuilder {
 				double latMin = lat==0? bounds.getMinLat() : dLatCentre;
 				double latMax = lat==0? dLatCentre : bounds.getMaxLat();
 				QuadtreeNodeWithGeometry child = new QuadtreeNodeWithGeometry(geomFactory, new Bounds(lngMin, lngMax, latMin, latMax));
-				addRecursively(child, geometry);
 				node.getChildren().add(child);
 			}
 		}
 
+		// add to the child geometries after split
+		for(QuadtreeNode child:node.getChildren()){
+			addRecursively((QuadtreeNodeWithGeometry)child,geometry);
+		}		
 	}
 
 

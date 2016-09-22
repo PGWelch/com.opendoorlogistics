@@ -27,7 +27,7 @@ import java.util.TreeMap;
  * @author Phil
  *
  */
-public class SpeedRule {
+public class SpeedRule extends JSONToString{
 	private Map<String,Integer> speedsByRoadType = new TreeMap<String, Integer>();
 	private double multiplier = 1;
 	private List<String> flagEncoders = new ArrayList<String>();
