@@ -27,27 +27,31 @@ import com.vividsolutions.jts.geom.PrecisionModel;
 import com.vividsolutions.jts.precision.GeometryPrecisionReducer;
 
 /**
- * Perform union on multiple geomtries, caching the result. 
- * Union is performed in the input grid system.
+ * Perform union on multiple geomtries, caching the result. Union is performed in the input grid system.
+ * 
  * @author Phil
  *
  */
 public class GeomUnion {
 
-	private Geometry combineIntoOneGeometry( Collection<com.vividsolutions.jts.geom.Geometry> geometryCollection ){
-	     GeometryFactory factory = new GeometryFactory();
+	private Geometry combineIntoOneGeometry(Collection<com.vividsolutions.jts.geom.Geometry> geometryCollection) {
+		if (geometryCollection.size() == 1) {
+			return geometryCollection.iterator().next();
+		}
 
-	     // note the following geometry collection may be invalid (say with overlapping polygons)
-	     GeometryCollection gc =
-	          (GeometryCollection) factory.buildGeometry( geometryCollection );
+		GeometryFactory factory = new GeometryFactory();
 
-	     return gc.union();
-	 }
+		// note the following geometry collection may be invalid (say with overlapping polygons)
+		GeometryCollection gc = (GeometryCollection) factory.buildGeometry(geometryCollection);
 
-	private Object createCacheKey(Iterable<ODLGeom> inputGeoms, String ESPGCode){
-		class CacheKey{
+		return gc.union();
+	}
+
+	private Object createCacheKey(Iterable<ODLGeom> inputGeoms, String ESPGCode) {
+		class CacheKey {
 			HashSet<ODLGeom> set = new HashSet<>();
 			String espg;
+
 			@Override
 			public int hashCode() {
 				final int prime = 31;
@@ -56,6 +60,7 @@ public class GeomUnion {
 				result = prime * result + ((set == null) ? 0 : set.hashCode());
 				return result;
 			}
+
 			@Override
 			public boolean equals(Object obj) {
 				if (this == obj)
@@ -77,97 +82,96 @@ public class GeomUnion {
 					return false;
 				return true;
 			}
-			
+
 		}
 		CacheKey key = new CacheKey();
 		key.espg = ESPGCode;
 
 		// put all geoms in a hashset
-		for(ODLGeom geom:inputGeoms){
+		for (ODLGeom geom : inputGeoms) {
 			key.set.add(geom);
 		}
-		
+
 		return key;
 	}
-	
+
 	private static final String INVALID_UNION = "invalid-union";
-	
-	public ODLGeom union(Iterable<ODLGeom> inputGeoms, String ESPGCode){
+
+	public ODLGeom union(Iterable<ODLGeom> inputGeoms, String ESPGCode) {
 		Object key = createCacheKey(inputGeoms, ESPGCode);
 		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.GEOMETRY_MERGER_CACHE);
 		Object cached = cache.get(key);
-		if(cached == INVALID_UNION){
+		if (cached == INVALID_UNION) {
 			return null;
 		}
-		ODLGeom ret = (ODLGeom)cached;
-		
-		if(ret==null){
+		ODLGeom ret = (ODLGeom) cached;
+
+		if (ret == null) {
 			// estimate the key size, assuming the input geometries are stored elsewhere
-			int estimatedKeySize = 8 + com.opendoorlogistics.core.utils.iterators.IteratorUtils.size(inputGeoms)*8 + 20;
-			
+			int estimatedKeySize = 8 + com.opendoorlogistics.core.utils.iterators.IteratorUtils.size(inputGeoms) * 8 + 20;
+
 			try {
-				ret = calculateUnion(inputGeoms, ESPGCode);				
+				ret = calculateUnion(inputGeoms, ESPGCode);
 			} catch (Exception e) {
 				// record the union as invalid in-case we do it again
 				cache.put(key, INVALID_UNION, estimatedKeySize);
 				throw new RuntimeException(e);
 			}
-				
-			if(ret!=null){
+
+			if (ret != null) {
 				// estimate size of geometry in bytes
-				long size=((ODLGeomImpl)ret).getEstimatedSizeInBytes();
+				long size = ((ODLGeomImpl) ret).getEstimatedSizeInBytes();
 				size += estimatedKeySize;
-				cache.put(key, ret, size);				
+				cache.put(key, ret, size);
 			}
-			
+
 		}
 		return ret;
 	}
-	
-	private ODLGeom calculateUnion(Iterable<ODLGeom> inputGeoms, String ESPGCode){
+
+	private ODLGeom calculateUnion(Iterable<ODLGeom> inputGeoms, String ESPGCode) {
 		try {
 			Spatial.initSpatial();
 			GridTransforms transforms = new GridTransforms(ESPGCode);
-			
+
 			PrecisionModel pm = new PrecisionModel(PrecisionModel.FLOATING_SINGLE);
-			GeometryPrecisionReducer reducer = new GeometryPrecisionReducer(pm);	
-			
+			GeometryPrecisionReducer reducer = new GeometryPrecisionReducer(pm);
+
 			// process shapes into grid with reduced precision
 			ArrayList<Geometry> gridGeoms = new ArrayList<>();
-			for(ODLGeom geom:inputGeoms){
-				if(geom!=null){
-					ODLGeomImpl gimpl = (ODLGeomImpl)geom;
-					if(gimpl.getJTSGeometry()!=null){
+			for (ODLGeom geom : inputGeoms) {
+				if (geom != null) {
+					ODLGeomImpl gimpl = (ODLGeomImpl) geom;
+					if (gimpl.getJTSGeometry() != null) {
 						com.vividsolutions.jts.geom.Geometry g = gimpl.getJTSGeometry();
 
 						// convert to grid
-						g= JTS.transform(g, transforms.getWGS84ToGrid().getMathTransform());
-				
+						g = JTS.transform(g, transforms.getWGS84ToGrid().getMathTransform());
+
 						// reduce precision as it stops holes appearing with our UK postcode data
 						g = reducer.reduce(g);
-												
+
 						gridGeoms.add(g);
-	
+
 					}
 
 				}
 			}
-			
-			if(gridGeoms.size()==0){
+
+			if (gridGeoms.size() == 0) {
 				return null;
 			}
-			
+
 			// combine
 			Geometry combinedGrid = combineIntoOneGeometry(gridGeoms);
-			
+
 			// transform back
 			Geometry combinedWGS84 = JTS.transform(combinedGrid, transforms.getGridToWGS84().getMathTransform());
-			
+
 			return new ODLLoadedGeometry(combinedWGS84);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-	
 
 	}
 }
