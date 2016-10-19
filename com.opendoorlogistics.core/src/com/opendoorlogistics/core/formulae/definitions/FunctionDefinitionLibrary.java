@@ -102,6 +102,7 @@ import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.Functi
 import com.opendoorlogistics.core.geometry.functions.FmCentroid;
 import com.opendoorlogistics.core.geometry.functions.FmGeom;
 import com.opendoorlogistics.core.geometry.functions.FmGeom.GeomType;
+import com.opendoorlogistics.core.geometry.functions.FmGeomArea;
 import com.opendoorlogistics.core.geometry.functions.FmGeomBorder;
 import com.opendoorlogistics.core.geometry.functions.FmGeomContains;
 import com.opendoorlogistics.core.geometry.functions.FmLatitude;
@@ -282,7 +283,8 @@ public final class FunctionDefinitionLibrary {
 		addStandardFunction(FmLineStringEnd.class, "linestringend", "Return the end of a linestring (as another geometry).", "linestring");
 		addStandardFunction(FmTileFactory.class, "tileprovider", "Create a map tile provider", "String containing a comma-separated list of key-value pairs defining the background map - e.g. \"fade.r=255, type=MAPSFORGE\".");		
 		addStandardFunction(FmDecimalHours.class, "decimalHours", "Return the number of decimal hours in a time.","time");
-
+		addStandardFunction(FmGeomArea.class, "geomarea", "Calculate the area of the geometry in the units of the input EPSG projection. The projection must be an equal area projection or the calculation will be wrong.", "geometry", "EPSGCodeEqualArea");
+		
 		// uk postcodes
 		for(final UKPostcodeLevel level: UKPostcodeLevel.values()){
 			FunctionDefinition dfn = addStandardFunction(FmPostcodeUk.class, "postcodeuk" + level.name().toLowerCase(), "Find and return the first UK postcode " + level.name().toLowerCase() + " from the input string, or null if not found.", "input_string");
