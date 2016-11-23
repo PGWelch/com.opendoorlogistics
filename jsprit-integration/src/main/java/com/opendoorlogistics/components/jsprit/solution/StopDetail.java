@@ -6,7 +6,7 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.jsprit.solution;
 
-import jsprit.core.problem.solution.route.activity.TourActivity;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
 
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;

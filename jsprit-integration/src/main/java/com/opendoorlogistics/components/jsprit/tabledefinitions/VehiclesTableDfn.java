@@ -39,12 +39,12 @@ public class VehiclesTableDfn extends TableDfn{
 	public final int [] costs;
 	public final int skills;
 	public final int speedMultiplier;
-
 	public enum CostType{
 		COST_PER_KM(0.001),
 		COST_PER_HOUR(1),
 		WAITING_COST_PER_HOUR(0.5),
-		FIXED_COST(100);
+		FIXED_COST(100),
+		PARKING_COST(0);
 		
 		private CostType(double defaultVal) {
 			this.defaultVal = defaultVal;
