@@ -112,6 +112,14 @@ import com.opendoorlogistics.studio.utils.WindowState;
 import com.opendoorlogistics.utils.ui.Icons;
 
 public class AppFrame extends DesktopAppFrame  {
+	
+	public static void main(String[] args) {
+		InitialiseStudio.initialise(true);
+		if (!CommandLineInterface.process(args)) {
+			new AppFrame();
+		}
+	}
+
 	private final JSplitPane splitterLeftSide;
 	private final JSplitPane splitterMain;
 	private volatile boolean haltJVMOnDispose = true;
@@ -153,12 +161,6 @@ public class AppFrame extends DesktopAppFrame  {
 		new AppFrame();
 	}
 
-	public static void main(String[] args) {
-		InitialiseStudio.initialise(true);
-		if (!CommandLineInterface.process(args)) {
-			new AppFrame();
-		}
-	}
 
 	public AppFrame() {
 		this(new ActionFactory(), new MenuFactory(), null, null);

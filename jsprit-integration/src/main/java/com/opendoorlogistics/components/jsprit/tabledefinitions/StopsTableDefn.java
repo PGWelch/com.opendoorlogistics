@@ -189,7 +189,7 @@ public class StopsTableDefn extends TableDfn {
 	}
 
 	public void onRowException(String messagePrefix, int row) {
-		throw new RuntimeException(messagePrefix + " on jobs table row " + (row + 1) + ".");
+		throw new RuntimeException(messagePrefix + " on stops table row " + (row + 1) + ".");
 	}
 
 	/**

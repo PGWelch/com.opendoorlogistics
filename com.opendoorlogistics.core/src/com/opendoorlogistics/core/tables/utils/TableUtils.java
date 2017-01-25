@@ -13,6 +13,8 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.procedure.TIntObjectProcedure;
 import gnu.trove.set.hash.TLongHashSet;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -400,42 +402,64 @@ final public class TableUtils {
 		return builder.toString();
 	}
 
-	public static String convertToString(ODLTableDefinition tm) {
+	public static String convertToString(ODLTableDefinition tm, boolean includeDebugInfo) {
 		StringBuilder builder = new StringBuilder();
-		builder.append("Table " + tm.getName() + System.lineSeparator());
+		if(includeDebugInfo){
+			builder.append("Table " + tm.getName() + System.lineSeparator());			
+		}
 
 		// write header
 		int nc = tm.getColumnCount();
-		builder.append("RowID");
+		if(includeDebugInfo){
+			builder.append("RowID");			
+		}
 		for (int col = 0; col < nc; col++) {
-			builder.append("\t");
-			builder.append(tm.getColumnType(col) + " ");
+			if(includeDebugInfo || col>0){
+				builder.append("\t");				
+			}
+			
+			if(includeDebugInfo){
+				builder.append(tm.getColumnType(col) + " ");				
+			}
 			builder.append(tm.getColumnName(col) != null ? tm.getColumnName(col) : "");
-			builder.append(" (" + tm.getColumnImmutableId(col) + ")");
+			
+			if(includeDebugInfo){
+				builder.append(" (" + tm.getColumnImmutableId(col) + ")");				
+			}
 		}
 		builder.append(System.lineSeparator());
 		return builder.toString();
 	}
 
 	public static String convertToString(ODLTableReadOnly tm) {
-		StringBuilder builder = new StringBuilder();
 
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();		
+		writeToStringStream(tm, new PrintWriter(baos),true);
+		return baos.toString();
+	}
+
+	
+	public static void writeToStringStream(ODLTableReadOnly tm, PrintWriter writer, boolean includeDebugInfo) {
 		// write header
-		builder.append(convertToString((ODLTableDefinition) tm));
+		writer.append(convertToString((ODLTableDefinition) tm,includeDebugInfo));
 
 		// write rows
 		int nc = tm.getColumnCount();
 		int nr = tm.getRowCount();
 		for (int row = 0; row < nr; row++) {
-			builder.append(Long.toString(tm.getRowId(row)));
-			for (int col = 0; col < nc; col++) {
-				builder.append("\t");		
-				Object o = tm.getValueAt(row, col);
-				builder.append(o != null ? getValueAsString(tm, row, col) : "");
+			
+			if(includeDebugInfo){
+				writer.append(Long.toString(tm.getRowId(row)));				
 			}
-			builder.append(System.lineSeparator());
+			for (int col = 0; col < nc; col++) {
+				if(col>0 || includeDebugInfo){
+					writer.append("\t");							
+				}
+				Object o = tm.getValueAt(row, col);
+				writer.append(o != null ? getValueAsString(tm, row, col) : "");
+			}
+			writer.append(System.lineSeparator());
 		}
-		return builder.toString();
 	}
 
 	public static void createRows(Object[][] objs, ODLTable table) {

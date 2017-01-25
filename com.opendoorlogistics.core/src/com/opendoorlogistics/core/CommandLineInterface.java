@@ -3,6 +3,7 @@ package com.opendoorlogistics.core;
 import java.util.Arrays;
 
 import com.opendoorlogistics.core.formulae.StringTokeniser;
+import com.opendoorlogistics.core.geometry.Shapefile2TextCommand;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 
@@ -70,5 +71,9 @@ public class CommandLineInterface {
 			s= s.substring(0, s.length() - 1);
 		}
 		return s;
+	}
+	
+	static{
+		registerCommand(new Shapefile2TextCommand());
 	}
 }
