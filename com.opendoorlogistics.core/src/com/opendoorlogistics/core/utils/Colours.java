@@ -362,9 +362,21 @@ final public class Colours {
 		return new Color(to0To255Int(col.getRed() * factor), to0To255Int(col.getGreen() * factor), to0To255Int(col.getBlue() * factor), col.getAlpha());
 	}
 
-	private static final Color[] temperatureCols = { new Color(41, 10, 216), new Color(38, 77, 255), new Color(63, 160, 255), new Color(114, 217, 255), new Color(170, 247, 255), new Color(224, 255, 255), new Color(255, 255, 191),
+	private static final Color[] _old_temperatureCols = { new Color(41, 10, 216), new Color(38, 77, 255), new Color(63, 160, 255), new Color(114, 217, 255), new Color(170, 247, 255), new Color(224, 255, 255), new Color(255, 255, 191),
 			new Color(255, 224, 153), new Color(255, 173, 114), new Color(247, 109, 94), new Color(216, 38, 50), new Color(165, 0, 33) };
 
+	private static final Color[] temperatureCols = {
+	new Color(0,0,127),
+	new Color(0,0,255),
+	new Color(0,127,255),
+	new Color(0,255,255),
+	new Color(127,255,127),
+	new Color(255,255,0),
+	new Color(255,127,0),
+	new Color(255,0,0),
+	new Color(127,0,0)};
+
+	
 	public static Color temperature(double fraction) {
 		fraction = MathUtil.clamp(fraction, 0, 1);
 		int n = temperatureCols.length;

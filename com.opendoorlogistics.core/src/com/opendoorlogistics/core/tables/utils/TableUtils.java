@@ -433,8 +433,10 @@ final public class TableUtils {
 
 	public static String convertToString(ODLTableReadOnly tm) {
 
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();		
-		writeToStringStream(tm, new PrintWriter(baos),true);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		PrintWriter pw = new PrintWriter(baos);
+		writeToStringStream(tm, pw,true);
+		pw.flush();
 		return baos.toString();
 	}
 

@@ -328,7 +328,7 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 						if( parameters!=null){
 							parameters = api.tables().copyDs(parameters);
 						}
-						
+						frame.setTopLabel(cb.getReportTopLabel());
 						frame.setDependencies(getEDTDatastore(), unfiltered, dependencies, parameters,result);
 						frame.setRefresherCB(appFrame.getLoadedDatastore().getRunner());
 					}
@@ -450,7 +450,11 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 				if (refreshable && option.isSynchronised()) {
 					refreshMode = RefreshMode.AUTOMATIC;
 				} else if (refreshable) {
-					refreshMode = RefreshMode.MANUAL;
+					if(option.isRefreshButtonAlwaysEnabled()){
+						refreshMode = RefreshMode.MANUAL_ALWAYS_AVAILABLE;
+					}else{
+						refreshMode = RefreshMode.MANUAL_AUTO_DISABLE;						
+					}
 				} else {
 					refreshMode = RefreshMode.NEVER;
 				}
@@ -502,7 +506,7 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 					}
 
 					
-					frame = new ReporterFrame<T>(panel, id, frameTitle,cb.getComponent(), refreshMode, appFrame.getLoadedDatastore());
+					frame = new ReporterFrame<T>(panel, id, frameTitle,cb.getComponent(), refreshMode,option.isShowLastRefreshedTime(), appFrame.getLoadedDatastore());
 					frames.add(frame);
 					appFrame.addInternalFrame(frame, FramePlacement.AUTOMATIC);
 				}

@@ -10,6 +10,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.logging.Logger;
 
@@ -71,12 +73,16 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	private ODLDatastoreAlterable<? extends ODLTableAlterable> parametersDs;
 	private HashSet<ODLListener> listeners = new HashSet<>();
 	private String title;
+	private boolean showLastRefreshedTime;
+	private LocalDateTime lastRefreshedTime;
+	private JLabel lastRefreshedTimeLabel;
+	private JLabel topLabel;
 
 	public enum RefreshMode {
-		AUTOMATIC, MANUAL, NEVER
+		AUTOMATIC, MANUAL_AUTO_DISABLE,MANUAL_ALWAYS_AVAILABLE, NEVER
 	}
 
-	public ReporterFrame(T userPanel, ReporterFrameIdentifier id, String title, ODLComponent component, RefreshMode refreshMode, GlobalMapSelectedRowsManager gmsrm) {
+	public ReporterFrame(T userPanel, ReporterFrameIdentifier id, String title, ODLComponent component, RefreshMode refreshMode,boolean showLastRefreshedTime, GlobalMapSelectedRowsManager gmsrm) {
 		super(id.getCombinedId());
 		this.id = id;
 		this.userPanel = userPanel;
@@ -85,6 +91,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		this.refreshMode = refreshMode;
 		this.gsm = gmsrm;
 		this.callingComponent = component;
+		this.showLastRefreshedTime = showLastRefreshedTime;
 		// this.parametersPanel = new JPanel();
 		// this.parametersPanel.setLayout(new BorderLayout());
 
@@ -93,11 +100,16 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 
 		setLayout(new BorderLayout());
 		add(userPanel, BorderLayout.CENTER);
+		saveLastRefreshedTime();
 
-		if (refreshMode == RefreshMode.MANUAL) {
+		if (refreshMode == RefreshMode.MANUAL_AUTO_DISABLE || refreshMode == RefreshMode.MANUAL_ALWAYS_AVAILABLE) {
 			southPanel.addRefreshPanel(createRefreshControl());
 		}
 		updateAppearance();
+	}
+
+	private void saveLastRefreshedTime() {
+		lastRefreshedTime = LocalDateTime.now();
 	}
 
 	public void setRefresherCB(OnRefreshReport cb) {
@@ -183,16 +195,22 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		});
 		refreshBar.add(manualRefreshButton);
 
+		if(showLastRefreshedTime){
+			lastRefreshedTimeLabel = new JLabel("");
+			refreshBar.add(lastRefreshedTimeLabel);			
+		}
+		
 		// refreshBar.addSeparator();
 
 		return refreshBar;
 	}
 
 	private void updateAppearance() {
-		if (refreshMode == RefreshMode.MANUAL) {
+		if (refreshMode == RefreshMode.MANUAL_AUTO_DISABLE || refreshMode == RefreshMode.MANUAL_ALWAYS_AVAILABLE) {
 			boolean manualEnabled = isDirty && refreshCB != null;
-			manualRefreshButton.setEnabled(manualEnabled);
-			refreshLabel.setEnabled(manualEnabled);
+			boolean alwaysEnabled = refreshCB!=null && refreshMode== RefreshMode.MANUAL_ALWAYS_AVAILABLE;
+			manualRefreshButton.setEnabled(manualEnabled || alwaysEnabled);
+			refreshLabel.setEnabled(manualEnabled|| alwaysEnabled);
 
 			// boolean autoenabled = refreshCB != null && (dependencies == null
 			// || dependencies.isWritten() == false);
@@ -213,8 +231,14 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 			if (getBorder() != border) {
 				setBorder(border);
 			}
+			
 		} else {
 			setTitle(title);
+		}
+		
+		if(lastRefreshedTimeLabel!=null && lastRefreshedTime!=null){
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+			lastRefreshedTimeLabel.setText("  Last refreshed " +formatter.format(lastRefreshedTime));
 		}
 	}
 
@@ -242,6 +266,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		}
 
 		isDirty = false;
+		saveLastRefreshedTime();
 		updateAppearance();
 
 		// need revalidate here or it doesn't always repaint (repaint doesn't
@@ -406,6 +431,7 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 		// it is assumed the control is no longer dirty after a call to set
 		// dependencies
 		isDirty = false;
+		saveLastRefreshedTime();		
 		updateAppearance();
 	}
 
@@ -453,4 +479,34 @@ final public class ReporterFrame<T extends JPanel & Disposable> extends ODLInter
 	// return script;
 	// }
 
+	public void setTopLabel(String topLabelText){
+		boolean changed=false;
+		if(topLabelText==null){
+			
+			// remove top label if no longer needed
+			if(topLabel!=null){
+				remove(topLabel);
+				topLabel = null;
+				changed = true;
+			}
+		}else{
+			if(topLabel==null){
+				topLabel = new JLabel(topLabelText);				
+				topLabel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.DARK_GRAY, 1), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+				add(topLabel, BorderLayout.NORTH);
+				changed = true;
+			}else{
+				if(!topLabelText.equals(topLabel.getText())){
+					topLabel.setText(topLabelText);
+					changed = true;
+				}
+			}
+				
+		}
+		
+		if(changed){
+			revalidate();
+			repaint();			
+		}
+	}
 }

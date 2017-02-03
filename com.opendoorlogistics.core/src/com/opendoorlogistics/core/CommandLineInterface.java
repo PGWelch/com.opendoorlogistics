@@ -75,5 +75,7 @@ public class CommandLineInterface {
 	
 	static{
 		registerCommand(new Shapefile2TextCommand());
+		registerCommand(new Shapefile2TextCommand.Shapefile2TextCommandDir());
+		
 	}
 }

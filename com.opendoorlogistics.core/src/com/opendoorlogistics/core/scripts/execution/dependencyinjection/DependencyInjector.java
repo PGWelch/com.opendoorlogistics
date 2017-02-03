@@ -33,5 +33,5 @@ public interface DependencyInjector extends ProcessingApi, HasApi {
 	ODLCostMatrix calculateDistances(DistancesConfiguration request, ODLTableReadOnly... tables);
 	ODLGeom calculateRouteGeom(DistancesConfiguration request, LatLong from, LatLong to);	
 	void addInstructionDependencies(String instructionId,  DataDependencies dependencies);	
-	void submitControlLauncher(String instructionId,ODLComponent component,ODLDatastore<? extends ODLTable> parametersTableCopy, ControlLauncherCallback cb);
+	void submitControlLauncher(String instructionId,ODLComponent component,ODLDatastore<? extends ODLTable> parametersTableCopy, String reportTopLabel,ControlLauncherCallback cb);
 }

@@ -22,6 +22,7 @@ final public class InstructionConfig extends ComponentConfig implements Serializ
 	private String datastore = ScriptConstants.EXTERNAL_DS_NAME;
 	private String outputDatastore;
 	private String uuid = UUID.randomUUID().toString();
+	private String reportTopLabelFormula;
 	private int executionMode = ODLComponent.MODE_DEFAULT;
 
 	public InstructionConfig(){}
@@ -95,6 +96,14 @@ final public class InstructionConfig extends ComponentConfig implements Serializ
 	@XmlAttribute
 	public void setExecutionMode(int mode) {
 		this.executionMode = mode;
+	}
+
+	public String getReportTopLabelFormula() {
+		return reportTopLabelFormula;
+	}
+
+	public void setReportTopLabelFormula(String reportTopLabelFormula) {
+		this.reportTopLabelFormula = reportTopLabelFormula;
 	}
 
 	

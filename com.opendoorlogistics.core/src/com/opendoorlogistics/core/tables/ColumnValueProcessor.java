@@ -9,6 +9,7 @@ package com.opendoorlogistics.core.tables;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
+import java.io.File;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.regex.Matcher;
@@ -46,6 +47,7 @@ public class ColumnValueProcessor {
 	private static final WKTReader wktReader = new WKTReader();
 
 	public static Class<?> getJavaClass(ODLColumnType colType) {
+		// Each column type must have its own java class or the bean mapping gets confused...
 		switch (colType) {
 		case STRING:
 			return String.class;
@@ -74,6 +76,9 @@ public class ColumnValueProcessor {
 		case MAP_TILE_PROVIDER:
 			return MapTileProvider.class;
 
+		case FILE_DIRECTORY:
+			return File.class;
+			
 		default:
 			throw new RuntimeException();
 		}

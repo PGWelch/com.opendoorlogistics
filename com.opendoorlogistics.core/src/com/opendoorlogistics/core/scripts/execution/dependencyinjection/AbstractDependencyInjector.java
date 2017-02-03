@@ -23,6 +23,7 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.distances.DistancesSingleton;
+import com.opendoorlogistics.core.distances.DistancesSingleton.CacheOption;
 import com.opendoorlogistics.core.tables.decorators.datastores.dependencies.DataDependencies;
 
 public class AbstractDependencyInjector implements DependencyInjector{
@@ -115,14 +116,14 @@ public class AbstractDependencyInjector implements DependencyInjector{
 //	}
 
 	@Override
-	public void submitControlLauncher(String instructionId,ODLComponent component,ODLDatastore<? extends ODLTable> parametersTableCopy,ControlLauncherCallback cb) {
+	public void submitControlLauncher(String instructionId,ODLComponent component,ODLDatastore<? extends ODLTable> parametersTableCopy,String reportTopLabel,ControlLauncherCallback cb) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
 	public ODLGeom calculateRouteGeom(DistancesConfiguration request, LatLong from, LatLong to) {
-		return DistancesSingleton.singleton().calculateRouteGeom(request, from, to, this);
+		return DistancesSingleton.singleton().calculateRouteGeom(request, from, to,CacheOption.USE_CACHING, this);
 	}
 
 	@Override

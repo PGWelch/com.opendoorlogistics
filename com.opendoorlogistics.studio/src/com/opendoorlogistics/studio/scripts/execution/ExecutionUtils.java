@@ -47,6 +47,10 @@ public class ExecutionUtils {
 
 		ExecutionReportImpl report = new ExecutionReportImpl();
 		Script ret = OptionsSubpath.getSubpathScript(script, optionIds, report);
+		
+		// uuids need to match so last parameter values are saved
+		ret.setUuid(script.getUuid());
+		
 		if (report.isFailed() == false) {
 			return ret;
 		}

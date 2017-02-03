@@ -74,6 +74,7 @@ import com.opendoorlogistics.core.api.impl.scripts.ScriptTemplatesImpl;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.components.ODLWizardTemplateConfig;
+import com.opendoorlogistics.core.distances.DistancesSingleton;
 import com.opendoorlogistics.core.scripts.ScriptsProvider;
 import com.opendoorlogistics.core.scripts.elements.Script;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
@@ -83,6 +84,7 @@ import com.opendoorlogistics.core.tables.decorators.datastores.ListenerDecorator
 import com.opendoorlogistics.core.tables.decorators.datastores.deepcopying.OptimisedDeepCopierDecorator;
 import com.opendoorlogistics.core.tables.decorators.datastores.undoredo.UndoRedoDecorator;
 import com.opendoorlogistics.core.tables.memory.ODLDatastoreImpl;
+import com.opendoorlogistics.core.tables.utils.ExampleData;
 import com.opendoorlogistics.core.utils.IOUtils;
 import com.opendoorlogistics.core.utils.ui.ExecutionReportDialog;
 import com.opendoorlogistics.core.utils.ui.OkCancelDialog;
@@ -418,6 +420,7 @@ public class AppFrame extends DesktopAppFrame  {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				ApplicationCache.singleton().clearCache();
+				DistancesSingleton.singleton().closeCHGraph();
 			}
 		});
 		addSpace.add();

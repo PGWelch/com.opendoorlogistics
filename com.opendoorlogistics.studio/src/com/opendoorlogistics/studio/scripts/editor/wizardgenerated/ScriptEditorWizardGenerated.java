@@ -516,8 +516,8 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 
 				if (instruction.isUserCanEdit()) {
 
-					// add text entry box for the component
 					if (isMultiPane) {
+						// add text entry box for the component
 						TextEntryPanel dsid = new TextEntryPanel("Input datastore id: ", instruction.getDatastore(), new TextChangedListener() {
 
 							@Override
@@ -528,6 +528,19 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 						dsid.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 						ret.panel.add(dsid);
 						ret.panel.addHalfWhitespace();
+						
+						// and for reports top label
+						TextEntryPanel reportsTopLaber = new TextEntryPanel("Formula for label at the top of controls(s): ", instruction.getReportTopLabelFormula(), new TextChangedListener() {
+
+							@Override
+							public void textChange(String newText) {
+								instruction.setReportTopLabelFormula(newText);
+							}
+						});
+						reportsTopLaber.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+						ret.panel.add(reportsTopLaber);
+						ret.panel.addHalfWhitespace();
+						
 					}
 
 					ODLComponent component = ODLGlobalComponents.getProvider().getComponent(instruction.getComponent());
@@ -693,21 +706,22 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 			if (api.scripts().parameters().getControlFactory() != null) {
 				ret.panel.addWhitespace();
 
-				JCheckBox checkBox = new JCheckBox("Override visible parameters?", option.isOverrideVisibleParameters());
-				checkBox.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+				JCheckBox overrideParamsCB = new JCheckBox("Override visible parameters?", option.isOverrideVisibleParameters());
+				overrideParamsCB.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 				JLabel label = new JLabel("<html>Define as a comma-separated line in the format:<br><i>[PROMPT_TYPE] parametername, e.g. ATTACH Potential, Sales, POPUP Workload, ...</i><html>");
 				label.setBorder(BorderFactory.createEmptyBorder(5, 5, 2, 5));
-				ret.panel.add(checkBox);
+				ret.panel.add(overrideParamsCB);
 				ret.panel.add(label);
 				JTextField editCtrl = new JTextField(option.getVisibleParametersOverride() != null ? option.getVisibleParametersOverride() : "");
-				checkBox.addActionListener(new ActionListener() {
+				overrideParamsCB.addActionListener(new ActionListener() {
 
 					@Override
 					public void actionPerformed(ActionEvent e) {
-						option.setOverrideVisibleParameters(checkBox.isSelected());
+						option.setOverrideVisibleParameters(overrideParamsCB.isSelected());
 						editCtrl.setEnabled(option.isOverrideVisibleParameters());
 					}
 				});
+				
 				editCtrl.setMaximumSize(new Dimension(200, 26));
 				editCtrl.setEnabled(option.isOverrideVisibleParameters());
 
@@ -741,6 +755,21 @@ final public class ScriptEditorWizardGenerated extends ScriptEditor {
 					}
 				});
 
+				// add checkbox for refresh always visible
+				ret.panel.add(Box.createVerticalGlue());
+				JCheckBox refreshAlwaysVisibleCB = new JCheckBox("Refresh button always enabled?", option.isRefreshButtonAlwaysEnabled());
+				refreshAlwaysVisibleCB.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+				refreshAlwaysVisibleCB.addActionListener((e)->option.setRefreshButtonAlwaysEnabled(refreshAlwaysVisibleCB.isSelected()));
+				ret.panel.add(refreshAlwaysVisibleCB);
+
+				// and last refreshed label
+				ret.panel.add(Box.createVerticalGlue());
+				JCheckBox lastRefreshedLabel = new JCheckBox("Show last refreshed time?", option.isShowLastRefreshedTime());
+				lastRefreshedLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+				lastRefreshedLabel.addActionListener((e)->option.setShowLastRefreshedTime(lastRefreshedLabel.isSelected()));
+				ret.panel.add(lastRefreshedLabel);
+				
+				
 				// create glue to swallow the spare space
 				ret.panel.add(Box.createVerticalGlue());
 			}

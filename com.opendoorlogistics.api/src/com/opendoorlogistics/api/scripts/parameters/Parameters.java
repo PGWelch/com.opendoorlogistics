@@ -1,5 +1,7 @@
 package com.opendoorlogistics.api.scripts.parameters;
 
+import java.util.UUID;
+
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTable;
@@ -83,7 +85,23 @@ public interface Parameters {
 
 	}
 	
-
+	/**
+	 * Get and save last value (in-memory only, lifetime of the spreadsheet).
+	 * Beware of parameter names clashing in different scripts!!!!
+	 * @param scriptUUID
+	 * @param parameterName
+	 * @return
+	 */
+	public String getLastValue( String parameterName);
+	
+	/**
+	 * Get and save last value (in-memory only, lifetime of the spreadsheet)
+	 * Beware of parameter names clashing in different scripts!!!!
+	 * @param parameterName
+	 * @return
+	 */
+	public void saveLastValue( String parameterName, String value);
+	
 //	static final int COL_KEY=0;
 //	static final int COL_VALUE_TYPE=COL_KEY+1;
 //	static final int COL_DEFAULT_VALUE=COL_VALUE_TYPE+1;

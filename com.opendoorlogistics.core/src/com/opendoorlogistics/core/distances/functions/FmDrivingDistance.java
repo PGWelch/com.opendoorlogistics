@@ -11,18 +11,19 @@ package com.opendoorlogistics.core.distances.functions;
 import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.core.distances.DistancesSingleton;
+import com.opendoorlogistics.core.distances.DistancesSingleton.CacheOption;
 import com.opendoorlogistics.core.formulae.Function;
 
 public abstract class FmDrivingDistance extends FmAbstractDrivingCost{
 	private final double multiplyMetresBy;
 	
 	public FmDrivingDistance(Function geom1, Function geom2, Function map,double multiplyMetresBy) {
-		super(geom1, geom2, map);
+		super(geom1, geom2, map, CacheOption.USE_CACHING);
 		this.multiplyMetresBy = multiplyMetresBy;		
 	}
 
 	public FmDrivingDistance(Function lat1, Function lng1, Function lat2, Function lng2, Function map,double multiplyMetresBy) {
-		super(lat1, lng1, lat2, lng2, map);
+		super(lat1, lng1, lat2, lng2, map, CacheOption.USE_CACHING);
 		this.multiplyMetresBy = multiplyMetresBy;		
 	}
 
