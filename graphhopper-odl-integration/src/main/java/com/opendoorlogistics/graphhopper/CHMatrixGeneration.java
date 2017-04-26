@@ -38,6 +38,20 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.procedure.TIntObjectProcedure;
 
 public class CHMatrixGeneration {
+	/**
+	 * The location of these strings in graphhopper changes from 0.5 to latest code
+	 * so we keep a common reference to them here for the rest of the code to use
+	 */
+	public static final String VEHICLE_TYPE_CAR = EncodingManager.CAR;
+	public static final String VEHICLE_TYPE_BIKE = EncodingManager.BIKE;
+	public static final String VEHICLE_TYPE_FOOT = EncodingManager.FOOT;
+	public static final String VEHICLE_TYPE_BIKE2 = EncodingManager.BIKE2;
+	public static final String VEHICLE_TYPE_MOTORCYCLE = EncodingManager.MOTORCYCLE;
+	public static final String VEHICLE_TYPE_RACINGBIKE = EncodingManager.RACINGBIKE;
+	public static final String VEHICLE_TYPE_MOUNTAINBIKE = EncodingManager.MOUNTAINBIKE;
+
+
+	
 	protected final GraphHopper hopper;
 	private final EncodingManager encodingManager;
 	protected final CHGraph chGraph;
@@ -47,7 +61,7 @@ public class CHMatrixGeneration {
 	private final boolean ownsHopper;
 	private final FlagEncoder flagEncoder;
 	private final EdgeFilter edgeFilter;
-	private final PreparationWeighting prepareWeighting;
+	private final Weighting prepareWeighting;
 
 	public static interface CHProcessingApi {
 		boolean isCancelled();
@@ -114,8 +128,9 @@ public class CHMatrixGeneration {
 	 * @return
 	 */
 	public static String [] getPossibleVehicleTypes(){
-		return new String[] { EncodingManager.CAR, EncodingManager.BIKE, EncodingManager.FOOT, EncodingManager.BIKE2,
-				EncodingManager.MOTORCYCLE, EncodingManager.RACINGBIKE, EncodingManager.MOUNTAINBIKE };
+		return new String[] {	VEHICLE_TYPE_CAR, VEHICLE_TYPE_BIKE, VEHICLE_TYPE_FOOT, VEHICLE_TYPE_BIKE2,
+				VEHICLE_TYPE_MOTORCYCLE, VEHICLE_TYPE_RACINGBIKE, VEHICLE_TYPE_MOUNTAINBIKE 
+				 };
 	}
 	/**
 	 * 
@@ -156,11 +171,15 @@ public class CHMatrixGeneration {
 		edgeFilter = new DefaultEdgeFilter(flagEncoder);
 
 		WeightingMap weightingMap = new WeightingMap("fastest");
-		Weighting weighting = hopper.createWeighting(weightingMap, flagEncoder);
-		prepareWeighting = new PreparationWeighting(weighting);
+	//	Weighting weighting = hopper.createWeighting(weightingMap, flagEncoder);
+	//	prepareWeighting = new PreparationWeighting(weighting);
 
-		// save reference to the CH graph
-		chGraph = hopper.getGraphHopperStorage().getGraph(CHGraph.class);
+		// get correct weighting for flag encoder
+		Weighting weighting = hopper.getWeightingForCH(weightingMap, flagEncoder);
+		prepareWeighting = new PreparationWeighting(weighting);
+		
+		// save reference to the correct CH graph
+		chGraph = hopper.getGraphHopperStorage().getGraph(CHGraph.class,weighting);
 
 		// and create a level edge filter to ensure we (a) accept virtual (snap-to) edges and (b) don't descend into the
 		// base graph

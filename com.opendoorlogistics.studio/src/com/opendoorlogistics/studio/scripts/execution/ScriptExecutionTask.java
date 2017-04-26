@@ -276,22 +276,16 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 		return scriptName;
 	}
 
+	@Override
+	protected void finishOnEDTBeforeDatastoreMerge(ExecutionReport result) {
+		// close any outdated controls before merging the datastore so we don't
+		// trigger an unwanted refresh update which starts them up again
+		closeOutdatedControls();
+	}
 
 	@Override
 	protected void finishOnEDTAfterDatastoreMerge(ExecutionReport result) {
-		// If we're not auto-refreshing, close any controls which used an old version of the script as they will be out-of-date
-		// providing they're not an 'never refresh' control which has a null script
-		if(!isScriptRefresh){
-			String myXML = ScriptIO.instance().toXMLString(unfiltered);
-			for(ReporterFrame<?> rf:getReporterFrames(appFrame)){
-				if(getScriptId().equals(rf.getId().getScriptId()) && rf.getUnfilteredScript()!=null){
-					String otherXML = ScriptIO.instance().toXMLString(rf.getUnfilteredScript());
-					if(!Strings.equalsStd(myXML, otherXML)){
-						rf.dispose();
-					}
-				}
-			}
-		}
+		closeOutdatedControls();
 		
 		// process controls after merging back to main datastore
 		HashSet<ReporterFrame<?>> allProcessedFrames = new HashSet<>();
@@ -417,6 +411,22 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 				logMsg.append(" no data changed during running");				
 			}
 			LOGGER.info(logMsg.toString());
+		}
+	}
+
+	private void closeOutdatedControls() {
+		// If we're not auto-refreshing, close any controls which used an old version of the script as they will be out-of-date
+		// providing they're not an 'never refresh' control which has a null script
+		if(!isScriptRefresh){
+			String myXML = ScriptIO.instance().toXMLString(unfiltered);
+			for(ReporterFrame<?> rf:getReporterFrames(appFrame)){
+				if(getScriptId().equals(rf.getId().getScriptId()) && rf.getUnfilteredScript()!=null){
+					String otherXML = ScriptIO.instance().toXMLString(rf.getUnfilteredScript());
+					if(!Strings.equalsStd(myXML, otherXML)){
+						rf.dispose();
+					}
+				}
+			}
 		}
 	}
 

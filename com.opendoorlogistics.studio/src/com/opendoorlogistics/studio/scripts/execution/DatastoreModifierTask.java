@@ -164,6 +164,8 @@ public abstract class DatastoreModifierTask {
 	protected void finishOnEDT(ExecutionReport result) {
 		ExecutionUtils.throwIfNotOnEDT();
 
+		finishOnEDTBeforeDatastoreMerge(result);
+		
 		// Try merging the script result back into the primary datastore.
 		// The primary datastore is only modified on the EDT.
 		if (!result.isFailed()) {
@@ -198,6 +200,10 @@ public abstract class DatastoreModifierTask {
 	protected abstract String getFailureWindowTitle();
 
 	protected void finishOnEDTAfterDatastoreMerge(ExecutionReport result) {
+		
+	}
+
+	protected void finishOnEDTBeforeDatastoreMerge(ExecutionReport result) {
 		
 	}
 
