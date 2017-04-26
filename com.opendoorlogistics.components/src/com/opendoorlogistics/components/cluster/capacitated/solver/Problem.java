@@ -6,8 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.components.cluster.capacitated.solver;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,6 +17,8 @@ import com.opendoorlogistics.components.cluster.capacitated.data.Travel;
 import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedCache;
 import com.opendoorlogistics.core.utils.strings.Strings;
+
+import gnu.trove.map.hash.TObjectIntHashMap;
 
 final public class Problem {
 	private static final double MAX_TRAVEL_COST_MULTIPLIER = 1000;

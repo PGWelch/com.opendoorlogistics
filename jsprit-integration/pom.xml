@@ -28,15 +28,15 @@
 				and build locally with Maven, installing to local Maven repository. Use the 
 				command: mvn -DskipTests=true install. We skip tests due to an error 
 				in them (with a local file) which would otherwise prevent building. -->
-			<groupId>jsprit</groupId>
+			<groupId>com.graphhopper</groupId>
 			<artifactId>jsprit-core</artifactId>
-			<version>1.6.2</version>
+			<version>1.6.3-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
-			<groupId>jsprit</groupId>
+			<groupId>com.graphhopper</groupId>
 			<artifactId>jsprit-analysis</artifactId>
-			<version>1.6.2</version>
+			<version>1.6.3-SNAPSHOT</version>
 			<exclusions>
 				<exclusion>
 					<groupId>*</groupId>

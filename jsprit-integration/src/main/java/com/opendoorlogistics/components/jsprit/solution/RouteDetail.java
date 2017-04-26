@@ -9,8 +9,8 @@ package com.opendoorlogistics.components.jsprit.solution;
 import java.util.ArrayList;
 import java.util.List;
 
-import jsprit.core.problem.solution.route.VehicleRoute;
-import jsprit.core.problem.vehicle.Vehicle;
+import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
+import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
 
 import com.opendoorlogistics.components.jsprit.RowWriter;
 import com.opendoorlogistics.components.jsprit.VRPBuilder.TravelCostType;

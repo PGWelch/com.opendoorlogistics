@@ -12,6 +12,7 @@ import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.distances.DistancesConfiguration.CalculationMethod;
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.core.distances.DistancesSingleton;
+import com.opendoorlogistics.core.distances.DistancesSingleton.CacheOption;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
@@ -74,6 +75,6 @@ public class FmDrivingRouteGeomFromLine extends FunctionImpl{
 		DistancesConfiguration config = new DistancesConfiguration();
 		config.setMethod(CalculationMethod.ROAD_NETWORK);
 		config.getGraphhopperConfig().setGraphDirectory(dir.toString());
-		return DistancesSingleton.singleton().calculateRouteGeom(config, llStart, llEnd, null);
+		return DistancesSingleton.singleton().calculateRouteGeom(config, llStart, llEnd,CacheOption.USE_CACHING, null);
 	}
 }

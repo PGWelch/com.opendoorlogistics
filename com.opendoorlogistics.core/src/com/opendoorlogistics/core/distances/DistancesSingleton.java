@@ -11,15 +11,12 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.FilenameUtils;
-
 import com.graphhopper.util.shapes.GHPoint;
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.distances.DistancesConfiguration.CalculationMethod;
 import com.opendoorlogistics.api.distances.DistancesOutputConfiguration;
-import com.opendoorlogistics.api.distances.ExternalMatrixFileConfiguration;
 import com.opendoorlogistics.api.distances.ODLCostMatrix;
 import com.opendoorlogistics.api.geometry.LatLong;
 import com.opendoorlogistics.api.geometry.ODLGeom;
@@ -33,9 +30,9 @@ import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.distances.external.FileVersionId;
 import com.opendoorlogistics.core.distances.external.LoadedMatrixFile;
+import com.opendoorlogistics.core.distances.external.LoadedMatrixFile.ValueType;
 import com.opendoorlogistics.core.distances.external.MatrixFileReader;
 import com.opendoorlogistics.core.distances.external.RoundingGrid;
-import com.opendoorlogistics.core.distances.external.LoadedMatrixFile.ValueType;
 import com.opendoorlogistics.core.distances.external.RoundingGrid.GridNeighboursResult;
 import com.opendoorlogistics.core.distances.graphhopper.CHMatrixGenWithGeomFuncs;
 import com.opendoorlogistics.core.geometry.GreateCircle;
@@ -189,6 +186,9 @@ public final class DistancesSingleton implements Closeable{
 		String dir = request.getGraphhopperConfig().getGraphDirectory();
 		
 		File current =RelativeFiles.validateRelativeFiles(dir, AppConstants.GRAPHHOPPER_DIRECTORY);
+		if(current==null){
+			throw new RuntimeException("Cannot identify Graphhopper directory: " + dir);			
+		}
 		current = current.getAbsoluteFile();
 		
 		if(processingApi!=null){
@@ -196,11 +196,11 @@ public final class DistancesSingleton implements Closeable{
 		}
 		
 		// check current file is valid
-		if(!current.exists() || !current.isDirectory()){
-			throw new RuntimeException("Invalid Graphhopper directory: " + dir);
+		if(!current.exists() || !current.isDirectory() || current.listFiles().length==0){
+			throw new RuntimeException("Invalid or empty Graphhopper directory: " + dir);
 		}
 		
-		// check if last one has an invalid file
+		// check if last loaded file is now an invalid file (i.e. no longer exists)
 		if(lastCHGraph!=null){
 			File file = new File(lastCHGraph.getGraphFolder());
 			if(!file.exists() || !file.isDirectory()){
@@ -216,6 +216,15 @@ public final class DistancesSingleton implements Closeable{
 				lastCHGraph.dispose();
 				lastCHGraph = null;				
 			}		
+		}
+		
+		// check if different file times
+		if(lastCHGraph!=null && lastCHGraph.getNodesLastModifiedTime()!=CHMatrixGenWithGeomFuncs.getNodesFileLastModified(current.getAbsolutePath())){
+			if(processingApi!=null){
+				processingApi.postStatusMessage("Reloading the road network graph as file times have changed: " + current.getAbsolutePath());			
+			}			
+			lastCHGraph.dispose();
+			lastCHGraph = null;	
 		}
 		
 		// load the graph if needed
@@ -463,6 +472,11 @@ public final class DistancesSingleton implements Closeable{
 		return ret;
 	}
 
+	public enum CacheOption{
+		USE_CACHING,
+		NO_CACHING
+	}
+	
 	/**
 	 * This is called from the driving time function
 	 * @param request
@@ -471,26 +485,36 @@ public final class DistancesSingleton implements Closeable{
 	 * @param processingApi
 	 * @return
 	 */
-	public synchronized ODLTime calculateDrivingTime(DistancesConfiguration request, LatLong from, LatLong to, ProcessingApi processingApi){
+	public synchronized ODLTime calculateDrivingTime(DistancesConfiguration request, LatLong from, LatLong to, CacheOption cacheOption, ProcessingApi processingApi){
 		if(request.getMethod() != CalculationMethod.ROAD_NETWORK){
 			throw new IllegalArgumentException();
 		}
 		
-		AToBCacheKey key = new AToBCacheKey(request, from, to);
-		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.A_TO_B_TIME_SECONDS_CACHE);
-		ODLTime ret = (ODLTime) cache.get(key);
-		if (ret != null) {
-			return ret;
+		AToBCacheKey key=null;
+		ODLTime ret=null;
+		RecentlyUsedCache cache =null;
+		if(cacheOption != CacheOption.NO_CACHING){
+			key = new AToBCacheKey(request, from, to);
+			cache = ApplicationCache.singleton().get(ApplicationCache.A_TO_B_TIME_SECONDS_CACHE);
+			ret = (ODLTime) cache.get(key);
+			if (ret != null) {
+				return ret;
+			}			
 		}
+
 
 		initGraphhopperGraph(request, processingApi);
 		
 		ret = lastCHGraph.calculateTime(from, to);
-		if(ret!=null){
-			int estimatedSize = 16 + AToBCacheKey.ESTIMATED_SIZE_BYTES;
-			cache.put(key, ret,estimatedSize);
-		}
 		
+		if(cacheOption!=CacheOption.NO_CACHING){
+			if(ret!=null){
+				int estimatedSize = 16 + AToBCacheKey.ESTIMATED_SIZE_BYTES;
+				cache.put(key, ret,estimatedSize);
+			}
+					
+		}
+
 		return ret;
 	}
 	
@@ -505,7 +529,7 @@ public final class DistancesSingleton implements Closeable{
 	}
 
 	
-	public synchronized ODLGeom calculateRouteGeom(DistancesConfiguration request, LatLong from, LatLong to, ProcessingApi processingApi){
+	public synchronized ODLGeom calculateRouteGeom(DistancesConfiguration request, LatLong from, LatLong to,CacheOption cacheOption, ProcessingApi processingApi){
 		// If we're using great circle or external matrix just return a straight line.
 		// When using an external matrix the route geometry will be undefined / unavailable so a straight line is fine.
 		if(request.getMethod() == CalculationMethod.GREAT_CIRCLE || request.getMethod() == CalculationMethod.EXTERNAL_MATRIX){
@@ -516,15 +540,19 @@ public final class DistancesSingleton implements Closeable{
 		
 		AToBCacheKey key = new AToBCacheKey(request, from, to);
 		RecentlyUsedCache cache = ApplicationCache.singleton().get(ApplicationCache.ROUTE_GEOMETRY_CACHE);
-		ODLGeom ret = (ODLGeom) cache.get(key);
-		if (ret != null) {
-			return ret;
+		ODLGeom ret=null;
+		if(cacheOption!=CacheOption.NO_CACHING){
+			ret = (ODLGeom) cache.get(key);
+			if (ret != null) {
+				return ret;
+			}			
 		}
+
 
 		initGraphhopperGraph(request, processingApi);
 		
 		ret = lastCHGraph.calculateRouteGeom(from, to);
-		if(ret!=null){
+		if(ret!=null && cacheOption!=CacheOption.NO_CACHING){
 			int estimatedSize = 40 * ret.getPointsCount() + AToBCacheKey.ESTIMATED_SIZE_BYTES;
 			cache.put(key, ret,estimatedSize);
 		}
@@ -660,6 +688,10 @@ public final class DistancesSingleton implements Closeable{
 
 	@Override
 	public synchronized void close() {
+		closeCHGraph();
+	}
+	
+	public synchronized void closeCHGraph(){
 		if(lastCHGraph!=null){
 			lastCHGraph.dispose();
 			lastCHGraph = null;

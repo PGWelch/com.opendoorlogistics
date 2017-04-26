@@ -14,6 +14,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
+import com.graphhopper.jsprit.core.problem.Location;
+import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem;
+import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem.FleetSize;
+import com.graphhopper.jsprit.core.problem.cost.VehicleRoutingTransportCosts;
+import com.graphhopper.jsprit.core.problem.driver.Driver;
+import com.graphhopper.jsprit.core.problem.job.Delivery;
+import com.graphhopper.jsprit.core.problem.job.Job;
+import com.graphhopper.jsprit.core.problem.job.Pickup;
+import com.graphhopper.jsprit.core.problem.job.Service;
+import com.graphhopper.jsprit.core.problem.job.Shipment;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.DeliveryActivity;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.PickupActivity;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TimeWindow;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity.JobActivity;
+import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleType;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl.VehicleCostParams;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.components.PredefinedTags;
 import com.opendoorlogistics.api.distances.DistancesConfiguration;
@@ -34,27 +53,7 @@ import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.CostType;
 import com.opendoorlogistics.components.jsprit.tabledefinitions.VehiclesTableDfn.RowVehicleIndex;
 
-import gnu.trove.map.hash.TObjectDoubleHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import jsprit.core.problem.Location;
-import jsprit.core.problem.VehicleRoutingProblem;
-import jsprit.core.problem.VehicleRoutingProblem.FleetSize;
-import jsprit.core.problem.cost.VehicleRoutingTransportCosts;
-import jsprit.core.problem.driver.Driver;
-import jsprit.core.problem.job.Delivery;
-import jsprit.core.problem.job.Job;
-import jsprit.core.problem.job.Pickup;
-import jsprit.core.problem.job.Service;
-import jsprit.core.problem.job.Shipment;
-import jsprit.core.problem.solution.route.activity.DeliveryActivity;
-import jsprit.core.problem.solution.route.activity.PickupActivity;
-import jsprit.core.problem.solution.route.activity.TimeWindow;
-import jsprit.core.problem.solution.route.activity.TourActivity.JobActivity;
-import jsprit.core.problem.vehicle.Vehicle;
-import jsprit.core.problem.vehicle.VehicleImpl;
-import jsprit.core.problem.vehicle.VehicleType;
-import jsprit.core.problem.vehicle.VehicleTypeImpl;
-import jsprit.core.problem.vehicle.VehicleTypeImpl.VehicleCostParams;
 
 public class VRPBuilder {
 	private VehicleRoutingProblem vrpProblem;
@@ -67,13 +66,17 @@ public class VRPBuilder {
 	private VRPConfig config;
 	private ODLDatastore<? extends ODLTable> ioDb;
 	private final ComponentExecutionApi api;
-	private TObjectDoubleHashMap<String> invSpeedMultiplierMap;
+	private HashMap<String,ExtVehicleAttributes> extVehicleAttributeById = new HashMap<>();
 
+	private static class ExtVehicleAttributes{
+	    double invSpeedMultiplier=1;
+	    double parkingCost=0;
+	}
+	
 	private VRPBuilder(ComponentExecutionApi api){
 		this.api = api;
 		jspritJobIdToStopRecords = api.getApi().stringConventions().createStandardisedMap();
 		stopIdToBuiltStopRecord= api.getApi().stringConventions().createStandardisedMap();
-		invSpeedMultiplierMap = new TObjectDoubleHashMap<String>();
 	}
 	
 	public enum TravelCostType {
@@ -208,15 +211,20 @@ public class VRPBuilder {
 			maxVehicleIndependentConnectedLocationsTravelCost = max;
 		}
 
-		float getTime(String fromId, String toId, Vehicle vehicle) {
+		private float getTime(String fromId, String toId, Vehicle vehicle) {
 			if(fromId == VRPConstants.NOWHERE || toId == VRPConstants.NOWHERE){
 				return 0;
 			}
-			if (vehicle == null)
-			{
+			if (vehicle == null){
 				return (float) ((float)distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.TIME.matrixIndex));
 			}
-			return (float)(distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.TIME.matrixIndex)*invSpeedMultiplierMap.get(vehicle.getId()));
+			
+			double invMult=1;
+			ExtVehicleAttributes eva = extVehicleAttributeById.get(vehicle.getId());
+			if(eva!=null){
+			    invMult = eva.invSpeedMultiplier;
+			}
+			return (float)(distances.get(idToIndex.get(fromId), idToIndex.get(toId), TravelCostType.TIME.matrixIndex)*invMult);
 		}
 		
 		private float getCost(String fromId, String toId, Vehicle vehicle) {
@@ -229,7 +237,17 @@ public class VRPBuilder {
 				costPerMetre = vcp.perDistanceUnit;				
 			}
 			
-			return getCost(fromId, toId, costPerMillisecond, costPerMetre, vehicle);
+            float cost= getCost(fromId, toId, costPerMillisecond, costPerMetre, vehicle);
+			
+            // apply parking costs to non-identical locations
+            if(vehicle!=null && !fromId.equals(toId)){
+                ExtVehicleAttributes eva = extVehicleAttributeById.get(vehicle.getId());
+                if(eva!=null){
+                    cost += eva.parkingCost;
+                }
+            }
+	            
+			return cost;
 //			if(vehicle != null){
 //				if(vehicle.getType() != null){
 //					costs = distance * vehicle.getType().getVehicleCostParams().perDistanceUnit;
@@ -434,7 +452,10 @@ public class VRPBuilder {
 			String id = idProvider.getId(vehicleTypesTable, rowInVehicleTypesTable, i); //vDfn.getId(vehicleTypesTable, rowInVehicleTypesTable, i);
 
 			// add vehicle ID, speed multiplier to speedMultiplierMap
-			invSpeedMultiplierMap.put(id,  1.0/vDfn.getSpeedMultiplier(vehicleTypesTable, rowInVehicleTypesTable));
+			ExtVehicleAttributes eva = new ExtVehicleAttributes();
+			eva.parkingCost = vDfn.getCost(vehicleTypesTable, rowInVehicleTypesTable, CostType.PARKING_COST);
+			eva.invSpeedMultiplier=1.0/vDfn.getSpeedMultiplier(vehicleTypesTable, rowInVehicleTypesTable);
+			extVehicleAttributeById.put(id,  eva);
 			
 			// build the vehicle
 			VehicleImpl.Builder vehicleBuilder = VehicleImpl.Builder.newInstance(id);

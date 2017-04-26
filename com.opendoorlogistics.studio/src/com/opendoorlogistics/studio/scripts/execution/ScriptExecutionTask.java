@@ -276,22 +276,16 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 		return scriptName;
 	}
 
+	@Override
+	protected void finishOnEDTBeforeDatastoreMerge(ExecutionReport result) {
+		// close any outdated controls before merging the datastore so we don't
+		// trigger an unwanted refresh update which starts them up again
+		closeOutdatedControls();
+	}
 
 	@Override
 	protected void finishOnEDTAfterDatastoreMerge(ExecutionReport result) {
-		// If we're not auto-refreshing, close any controls which used an old version of the script as they will be out-of-date
-		// providing they're not an 'never refresh' control which has a null script
-		if(!isScriptRefresh){
-			String myXML = ScriptIO.instance().toXMLString(unfiltered);
-			for(ReporterFrame<?> rf:getReporterFrames(appFrame)){
-				if(getScriptId().equals(rf.getId().getScriptId()) && rf.getUnfilteredScript()!=null){
-					String otherXML = ScriptIO.instance().toXMLString(rf.getUnfilteredScript());
-					if(!Strings.equalsStd(myXML, otherXML)){
-						rf.dispose();
-					}
-				}
-			}
-		}
+		closeOutdatedControls();
 		
 		// process controls after merging back to main datastore
 		HashSet<ReporterFrame<?>> allProcessedFrames = new HashSet<>();
@@ -328,7 +322,7 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 						if( parameters!=null){
 							parameters = api.tables().copyDs(parameters);
 						}
-						
+						frame.setTopLabel(cb.getReportTopLabel());
 						frame.setDependencies(getEDTDatastore(), unfiltered, dependencies, parameters,result);
 						frame.setRefresherCB(appFrame.getLoadedDatastore().getRunner());
 					}
@@ -420,6 +414,22 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 		}
 	}
 
+	private void closeOutdatedControls() {
+		// If we're not auto-refreshing, close any controls which used an old version of the script as they will be out-of-date
+		// providing they're not an 'never refresh' control which has a null script
+		if(!isScriptRefresh){
+			String myXML = ScriptIO.instance().toXMLString(unfiltered);
+			for(ReporterFrame<?> rf:getReporterFrames(appFrame)){
+				if(getScriptId().equals(rf.getId().getScriptId()) && rf.getUnfilteredScript()!=null){
+					String otherXML = ScriptIO.instance().toXMLString(rf.getUnfilteredScript());
+					if(!Strings.equalsStd(myXML, otherXML)){
+						rf.dispose();
+					}
+				}
+			}
+		}
+	}
+
 	@Override
 	protected boolean isProgressMinimised(){
 		// Minimise by default if we're refreshing a script, but not on the 1st launch
@@ -450,7 +460,11 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 				if (refreshable && option.isSynchronised()) {
 					refreshMode = RefreshMode.AUTOMATIC;
 				} else if (refreshable) {
-					refreshMode = RefreshMode.MANUAL;
+					if(option.isRefreshButtonAlwaysEnabled()){
+						refreshMode = RefreshMode.MANUAL_ALWAYS_AVAILABLE;
+					}else{
+						refreshMode = RefreshMode.MANUAL_AUTO_DISABLE;						
+					}
 				} else {
 					refreshMode = RefreshMode.NEVER;
 				}
@@ -502,7 +516,7 @@ class ScriptExecutionTask extends DatastoreModifierTask{
 					}
 
 					
-					frame = new ReporterFrame<T>(panel, id, frameTitle,cb.getComponent(), refreshMode, appFrame.getLoadedDatastore());
+					frame = new ReporterFrame<T>(panel, id, frameTitle,cb.getComponent(), refreshMode,option.isShowLastRefreshedTime(), appFrame.getLoadedDatastore());
 					frames.add(frame);
 					appFrame.addInternalFrame(frame, FramePlacement.AUTOMATIC);
 				}

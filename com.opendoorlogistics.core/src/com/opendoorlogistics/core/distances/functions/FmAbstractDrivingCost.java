@@ -11,18 +11,23 @@ package com.opendoorlogistics.core.distances.functions;
 import com.opendoorlogistics.api.distances.DistancesConfiguration;
 import com.opendoorlogistics.api.distances.DistancesConfiguration.CalculationMethod;
 import com.opendoorlogistics.api.geometry.LatLong;
+import com.opendoorlogistics.core.distances.DistancesSingleton.CacheOption;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.geometry.Spatial;
 
 public abstract class FmAbstractDrivingCost extends FmAbstractTravelCost {
-	public FmAbstractDrivingCost(Function lat1, Function lng1, Function lat2, Function lng2, Function map) {
+	protected CacheOption cacheOption;
+	
+	public FmAbstractDrivingCost(Function lat1, Function lng1, Function lat2, Function lng2, Function map,CacheOption cacheOption) {
 		super(lat1, lng1, lat2, lng2,map);
+		this.cacheOption = cacheOption;
 	}
 
-	public FmAbstractDrivingCost(Function geom1, Function geom2, Function map) {
+	public FmAbstractDrivingCost(Function geom1, Function geom2, Function map,CacheOption cacheOption) {
 		super(geom1, geom2,map);
+		this.cacheOption = cacheOption;
 	}
 
 	@Override
@@ -47,6 +52,10 @@ public abstract class FmAbstractDrivingCost extends FmAbstractTravelCost {
 	}
 
 	protected abstract Object calculateDrivingTravel(LatLong[] lls, DistancesConfiguration config );
+
+	protected void setCacheOption(CacheOption cacheOption) {
+		this.cacheOption = cacheOption;
+	}
 	
 
 }

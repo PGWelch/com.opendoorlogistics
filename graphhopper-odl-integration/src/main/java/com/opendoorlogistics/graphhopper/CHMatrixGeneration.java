@@ -37,90 +37,159 @@ import com.graphhopper.util.shapes.GHPoint;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.procedure.TIntObjectProcedure;
 
-public class CHMatrixGeneration  {
-	private final String graphFolder;
+public class CHMatrixGeneration {
+	/**
+	 * The location of these strings in graphhopper changes from 0.5 to latest code
+	 * so we keep a common reference to them here for the rest of the code to use
+	 */
+	public static final String VEHICLE_TYPE_CAR = EncodingManager.CAR;
+	public static final String VEHICLE_TYPE_BIKE = EncodingManager.BIKE;
+	public static final String VEHICLE_TYPE_FOOT = EncodingManager.FOOT;
+	public static final String VEHICLE_TYPE_BIKE2 = EncodingManager.BIKE2;
+	public static final String VEHICLE_TYPE_MOTORCYCLE = EncodingManager.MOTORCYCLE;
+	public static final String VEHICLE_TYPE_RACINGBIKE = EncodingManager.RACINGBIKE;
+	public static final String VEHICLE_TYPE_MOUNTAINBIKE = EncodingManager.MOUNTAINBIKE;
+
+
+	
 	protected final GraphHopper hopper;
 	private final EncodingManager encodingManager;
-	private final EdgeFilter edgeFilter;
-	private final PreparationWeighting prepareWeighting;
-	private final FlagEncoder flagEncoder;
 	protected final CHGraph chGraph;
 	private final LevelEdgeFilter levelEdgeFilter;
 	private final boolean useExpansionCache = true;
 	private final boolean outputText = false;
+	private final boolean ownsHopper;
+	private final FlagEncoder flagEncoder;
+	private final EdgeFilter edgeFilter;
+	private final Weighting prepareWeighting;
 
-	public static interface CHProcessingApi{
+	public static interface CHProcessingApi {
 		boolean isCancelled();
+
 		void postStatusMessage(String s);
 	}
 
-
-	private static GraphHopper createHopper(boolean memoryMapped) {
+	public static GraphHopper createHopper( String graphFolder) {
+		return createHopper(false, graphFolder);
+	}
+	
+	public static GraphHopper createHopper(boolean memoryMapped, String graphFolder) {
 		GraphHopper ret = null;
-//		String config = AppProperties.getValue("graphhopper.config");
 
-//		if (Strings.equalsStd(config, "mobile")) {
-//			ret = new GraphHopper().forMobile();
-//		} else if (Strings.equalsStd(config, "server")) {
-//			ret = new GraphHopper().forServer();
-//		} else if (Strings.equalsStd(config, "desktop")) {
-//			ret = new GraphHopper().forDesktop();
-//		}
-//
-//		System.err.println("Unidentified grapphopper config, defaulting to desktop.");
 		ret = new GraphHopper().forDesktop();
 
 		// don't need to write so disable the lock file (allows us to run out of program files)
 		ret.setAllowWrites(false);
-		
-		if(memoryMapped){
+
+		if (memoryMapped) {
 			ret.setMemoryMapped();
 		}
+
+		ret.setGraphHopperLocation(graphFolder);
+		ret.importOrLoad();
+
 		return ret;
 	}
 
+	/**
+	 * Load the graph and use it in this class
+	 * @param graphFolder
+	 */
 	public CHMatrixGeneration(String graphFolder) {
 		this(graphFolder, false);
 	}
-	
-	public CHMatrixGeneration(String graphFolder, boolean memoryMapped) {
-		this.graphFolder = graphFolder;
-		this.hopper = createHopper(memoryMapped);
-		hopper.setGraphHopperLocation(this.graphFolder);
-		hopper.importOrLoad();
 
-		// Pick the first supported encoder from a standard list, ordered by most commonly used first.
-		// This allows the user to build the graph for the speed profile they want and it just works...
+	/**
+	 * Load the graph and use it in this class
+	 * @param graphFolder
+	 * @param memoryMapped
+	 */
+	public CHMatrixGeneration(String graphFolder, boolean memoryMapped) {
+		this( createHopper(memoryMapped, graphFolder), true, null);
+	}
+
+	public CHMatrixGeneration(String graphFolder, boolean memoryMapped, String vehicleType) {
+		this( createHopper(memoryMapped, graphFolder), true, vehicleType);
+	}
+
+	
+	/**
+	 * Wrap the instance of hopper but don't own it (i.e. don't dispose of it later)
+	 * @param hopper
+	 * @param namedFlagEncoder
+	 */
+	public CHMatrixGeneration(GraphHopper hopper, String namedFlagEncoder) {
+		this(hopper,false,namedFlagEncoder);
+	}
+
+	/**
+	 * Get the possible vehicle types. Just because a vehicle type is possible, it doesn't mean its supported
+	 * in the input graph
+	 * @return
+	 */
+	public static String [] getPossibleVehicleTypes(){
+		return new String[] {	VEHICLE_TYPE_CAR, VEHICLE_TYPE_BIKE, VEHICLE_TYPE_FOOT, VEHICLE_TYPE_BIKE2,
+				VEHICLE_TYPE_MOTORCYCLE, VEHICLE_TYPE_RACINGBIKE, VEHICLE_TYPE_MOUNTAINBIKE 
+				 };
+	}
+	/**
+	 * 
+	 * @param graphFolder
+	 * @param memoryMapped
+	 * @param hopper
+	 * @param ownsHopper
+	 *            Whether this class owns the graphhopper graph (and wrapper object) and should dispose of it later.
+	 * @param namedFlagEncoder
+	 */
+	private CHMatrixGeneration( GraphHopper hopper, boolean ownsHopper, String namedFlagEncoder) {
+		this.hopper = hopper;
+		this.ownsHopper = ownsHopper;
 		encodingManager = hopper.getEncodingManager();
-		FlagEncoder foundFlagEncoder=null;
-		
-		for(String vehicleType : new String[]{EncodingManager.CAR,EncodingManager.BIKE,EncodingManager.FOOT,EncodingManager.BIKE2,EncodingManager.MOTORCYCLE,EncodingManager.RACINGBIKE,EncodingManager.MOUNTAINBIKE}){
-			if(encodingManager.supports(vehicleType)){
-				foundFlagEncoder = encodingManager.getEncoder(vehicleType);
-				break;
+
+		if (namedFlagEncoder == null) {
+			// Pick the first supported encoder from a standard list, ordered by most commonly used first.
+			// This allows the user to build the graph for the speed profile they want and it just works...
+			FlagEncoder foundFlagEncoder = null;
+			for (String vehicleType : getPossibleVehicleTypes()) {
+				if (encodingManager.supports(vehicleType)) {
+					foundFlagEncoder = encodingManager.getEncoder(vehicleType);
+					break;
+				}
+			}
+			if (foundFlagEncoder == null) {
+				throw new RuntimeException("The road network graph does not support any of the standard vehicle types");
+			}
+			flagEncoder = foundFlagEncoder;
+		} else {
+			namedFlagEncoder = namedFlagEncoder.toLowerCase().trim();
+			flagEncoder = encodingManager.getEncoder(namedFlagEncoder);
+			if (flagEncoder == null) {
+				throw new RuntimeException("Vehicle type is unsuported in road network graph: " + namedFlagEncoder);
 			}
 		}
-		if(foundFlagEncoder==null){
-			throw new RuntimeException("The road network graph does not support any of the standard vehicle types");
-		}
-		flagEncoder= foundFlagEncoder;
 
 		edgeFilter = new DefaultEdgeFilter(flagEncoder);
 
-
 		WeightingMap weightingMap = new WeightingMap("fastest");
-		Weighting weighting = hopper.createWeighting(weightingMap, flagEncoder);
+	//	Weighting weighting = hopper.createWeighting(weightingMap, flagEncoder);
+	//	prepareWeighting = new PreparationWeighting(weighting);
+
+		// get correct weighting for flag encoder
+		Weighting weighting = hopper.getWeightingForCH(weightingMap, flagEncoder);
 		prepareWeighting = new PreparationWeighting(weighting);
+		
+		// save reference to the correct CH graph
+		chGraph = hopper.getGraphHopperStorage().getGraph(CHGraph.class,weighting);
 
-		// save reference to the CH graph
-		chGraph = hopper.getGraphHopperStorage().getGraph(CHGraph.class);
-
-		// and create a level edge filter to ensure we (a) accept virtual (snap-to) edges and (b) don't descend into the base graph
+		// and create a level edge filter to ensure we (a) accept virtual (snap-to) edges and (b) don't descend into the
+		// base graph
 		levelEdgeFilter = new LevelEdgeFilter(chGraph);
 	}
 
 	public void dispose() {
-		hopper.close();
+		if (ownsHopper) {
+			hopper.close();
+		}
 	}
 
 	public GHResponse getResponse(GHPoint from, GHPoint to) {
@@ -133,9 +202,6 @@ public class CHMatrixGeneration  {
 
 		return rsp;
 	}
-
-
-
 
 	public MatrixResult calculateMatrixOneByOne(GHPoint[] points) {
 		int n = points.length;
@@ -163,18 +229,11 @@ public class CHMatrixGeneration  {
 		return chGraph;
 	}
 
-
-
-	
-
 	public EdgeExplorer createBackwardsEdgeExplorer(Graph graph) {
 		return graph.createEdgeExplorer(new DefaultEdgeFilter(flagEncoder, true, false));
 	}
 
-	public QueryResult[] queryPositions(GHPoint[] points, List<QueryResult> validResults) {
-//		if (outputText) {
-//			System.out.println("Querying positions against graph");
-//		}
+	private QueryResult[] queryPositions(GHPoint[] points, List<QueryResult> validResults) {
 		QueryResult[] queryResults = new QueryResult[points.length];
 		for (int i = 0; i < points.length; i++) {
 			queryResults[i] = createSnapToResult(points[i].getLat(), points[i].getLon());
@@ -182,18 +241,12 @@ public class CHMatrixGeneration  {
 				validResults.add(queryResults[i]);
 			}
 		}
-		// for(int i =0 ; i<queryResults.length;i++){
-		// if(queryResults[i]!=null){
-		// System.out.println("" + i + " : " + queryResults[i].getQueryDistance() + " " + queryResults[i].getClosestNode());
-		// }
-		// }
 		return queryResults;
 	}
 
 	public QueryResult createSnapToResult(double latitude, double longitude) {
 		return hopper.getLocationIndex().findClosest(latitude, longitude, edgeFilter);
 	}
-
 
 	public EdgeExplorer createForwardsEdgeExplorer(Graph graph) {
 		return graph.createEdgeExplorer(new DefaultEdgeFilter(flagEncoder, false, true));
@@ -275,103 +328,16 @@ public class CHMatrixGeneration  {
 
 		}
 
-		// System.out.println("From " + startNode + (isBackwards?" (backwards) ":" (forwards) ") + shortestWeightMap.size() + " nodes found in search");
-		// if(shortestWeightMap.size()==1){
-		// shortestWeightMap.forEachEntry(new TIntObjectProcedure<EdgeEntry>() {
-		//
-		// @Override
-		// public boolean execute(int a, EdgeEntry b) {
-		// System.out.println("\t" + b.weight);
-		// return true;
-		// }
-		// });
-		// }
 		return shortestWeightMap;
-	}
-
-	// /**
-	// * Get the result of expanding a single CH edge
-	// *
-	// * @param graph
-	// * @param tmpEdge
-	// * @param endNode
-	// * @return
-	// */
-	// private DistanceTime getExpandedCHEdge(Graph graph, final int tmpEdge, final int endNode) {
-	// class SingleEdgeExpander extends Path4CH {
-	// public SingleEdgeExpander(Graph g, FlagEncoder encoder) {
-	// super(g, encoder);
-	// }
-	//
-	// /**
-	// * Override to make method available to code below...
-	// */
-	// @Override
-	// protected void processEdge(int tmpEdge, int endNode) {
-	// super.processEdge(tmpEdge, endNode);
-	// }
-	//
-	// }
-	// SingleEdgeExpander see = new SingleEdgeExpander(graph, flagEncoder);
-	// see.processEdge(tmpEdge, endNode);
-	// return new DistanceTime(see.getDistance(), see.getTime());
-	// }
-
-	public String getGraphFolder() {
-		return graphFolder;
 	}
 
 	public GraphHopper getGraphhopper() {
 		return hopper;
 	}
 
-//	public static void main(String[] args) {
-//		CHMatrixGeneration gen = new CHMatrixGeneration("C:\\Demo\\Graphhopper");
-//		int n = 1000;
-//		GHPoint a = new GHPoint(52.407995203838, -1.50572174886011);
-//		GHPoint b = new GHPoint(52., 0.3);
-//		GHPoint[] array = new GHPoint[] { a, b };
-//		gen.calculateMatrixOneByOne(array);
-//		long startMillis = System.currentTimeMillis();
-//		for (int i = 0; i < n; i++) {
-//			gen.calculateMatrixOneByOne(array);
-//		}
-//		long endMillis = System.currentTimeMillis();
-//		System.out.println("Time for " + n + " calculations:" + (endMillis - startMillis) + " milliseconds");
-//		// System.out.println(result);
-//
-//		// noRouteExample();
-//	}
-
-	public static void noRouteExample() {
-		// problem position
-		GHPoint a = new GHPoint(52.407995203838, -1.50572174886011);
-
-		// second position can be anywhere (except at the first position)
-		GHPoint b = new GHPoint(52., -1.3);
-
-		GraphHopper hopper = new GraphHopper().forDesktop();
-		hopper.setInMemory();
-
-		hopper.setGraphHopperLocation("C:\\data\\graphhopper\\graphhopper\\europe_great-britain-gh");
-		// hopper.setGraphHopperLocation("C:\\Demo\\Graphhopper");
-		hopper.importOrLoad();
-
-		GHRequest req = new GHRequest(a, b);
-		GHResponse rsp = hopper.route(req);
-		for (Throwable thr : rsp.getErrors()) {
-			System.out.println(thr);
-		}
-		// System.out.println("Found = " + rsp.isFound());
-		System.out.println("Distance = " + rsp.getDistance());
-
-	}
-
-	public FlagEncoder getFlagEncoder(){
+	public FlagEncoder getFlagEncoder() {
 		return flagEncoder;
 	}
-	
-
 
 	public MatrixResult calculateMatrix(GHPoint[] points, CHProcessingApi processingApi) {
 		if (outputText) {
@@ -423,7 +389,7 @@ public class CHMatrixGeneration  {
 
 		return ret;
 	}
-	
+
 	private MatrixResult searchAllBackward(QueryResult[] snapToResults, final QueryGraph snapToGraph, final ShortestPathTree[] forwardTrees,
 			final TIntObjectHashMap<List<FromIndexEdge>> visitedByNodeId, CHProcessingApi processingApi) {
 
@@ -446,7 +412,7 @@ public class CHMatrixGeneration  {
 		// now query all in a reverse direction, building up the final matrix
 		// for each one
 		EdgeExplorer inEdgeExplorer = createBackwardsEdgeExplorer(snapToGraph);
-//		UpdateTimer timer = new UpdateTimer(100);
+		// UpdateTimer timer = new UpdateTimer(100);
 		long lastUpdateTime = System.currentTimeMillis();
 		for (int toIndex = 0; toIndex < n; toIndex++) {
 
@@ -498,14 +464,14 @@ public class CHMatrixGeneration  {
 
 						// use a cache of expanded CH edges for performance reasons
 						PathBidirRef pathCh = new CacheablePath4CH(snapToGraph, getFlagEncoder(), expansionCache);
-					//	PathBidirRef pathCh = new Path4CH(snapToGraph, snapToGraph.getBaseGraph(),getFlagEncoder());
+						// PathBidirRef pathCh = new Path4CH(snapToGraph, snapToGraph.getBaseGraph(),getFlagEncoder());
 						pathCh.setSwitchToFrom(false);
-						EdgeEntry edgeEntry =forwardTrees[fromIndex].get(meetingPointNode); 
+						EdgeEntry edgeEntry = forwardTrees[fromIndex].get(meetingPointNode);
 						pathCh.setEdgeEntry(edgeEntry);
-						
-						EdgeEntry edgeEntryTo =reverseTree.get(meetingPointNode); 
+
+						EdgeEntry edgeEntryTo = reverseTree.get(meetingPointNode);
 						pathCh.setEdgeEntryTo(edgeEntryTo);
-						
+
 						Path path = pathCh.extract();
 						ret.setTimeMilliseconds(fromIndex, toIndex, path.getTime());
 						ret.setDistanceMetres(fromIndex, toIndex, path.getDistance());
@@ -513,16 +479,16 @@ public class CHMatrixGeneration  {
 				}
 			}
 
-			if(System.currentTimeMillis() - lastUpdateTime > 100 && processingApi!=null){
+			if (System.currentTimeMillis() - lastUpdateTime > 100 && processingApi != null) {
 				lastUpdateTime = System.currentTimeMillis();
 				processingApi.postStatusMessage("Performed backwards search for " + (toIndex + 1) + "/" + n + " points");
 			}
 		}
 		return ret;
 	}
-	
-	private void searchAllForward(QueryResult[] snapToResults, final QueryGraph queryGraph, final ShortestPathTree[] forwardTrees, final TIntObjectHashMap<List<FromIndexEdge>> visitedByNodeId,
-			CHProcessingApi continueCB) {
+
+	private void searchAllForward(QueryResult[] snapToResults, final QueryGraph queryGraph, final ShortestPathTree[] forwardTrees,
+			final TIntObjectHashMap<List<FromIndexEdge>> visitedByNodeId, CHProcessingApi continueCB) {
 
 		if (outputText) {
 			System.out.println("Running forward searches");
@@ -555,7 +521,6 @@ public class CHMatrixGeneration  {
 			}
 		}
 	}
-	
 
 	private static class FromIndexEdge {
 		private final int fromIndex;
@@ -568,6 +533,5 @@ public class CHMatrixGeneration  {
 		}
 
 	}
-
 
 }

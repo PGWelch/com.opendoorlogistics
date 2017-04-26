@@ -181,7 +181,7 @@ public class FileBrowserPanel extends JPanel {
 		return textField.getText();
 	}
 
-	private static JButton createBrowseButton(final boolean directoriesOnly,
+	public static JButton createBrowseButton(final boolean directoriesOnly,
 			final String browserApproveButtonText, final JTextField textField,
 			final FileFilter... fileFilters) {
 		JButton browseButton = new JButton("...");

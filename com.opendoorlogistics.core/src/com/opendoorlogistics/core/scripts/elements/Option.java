@@ -29,6 +29,8 @@ public class Option extends ScriptBaseElementImpl{
 	private boolean synchronised;
 	private boolean launchMultiple;
 	private boolean overrideVisibleParameters=false;
+	private boolean refreshButtonAlwaysEnabled=false;
+	private boolean showLastRefreshedTime=false;
 	private String visibleParametersOverride;
 	
 	public String getOptionId() {
@@ -174,6 +176,24 @@ public class Option extends ScriptBaseElementImpl{
 	@XmlAttribute
 	public void setLaunchMultiple(boolean launchMultiple) {
 		this.launchMultiple = launchMultiple;
+	}
+
+	public boolean isRefreshButtonAlwaysEnabled() {
+		return refreshButtonAlwaysEnabled;
+	}
+
+	@XmlAttribute
+	public void setRefreshButtonAlwaysEnabled(boolean refreshButtonAlwaysEnabled) {
+		this.refreshButtonAlwaysEnabled = refreshButtonAlwaysEnabled;
+	}
+
+	public boolean isShowLastRefreshedTime() {
+		return showLastRefreshedTime;
+	}
+
+	@XmlAttribute
+	public void setShowLastRefreshedTime(boolean showLastRefreshedTime) {
+		this.showLastRefreshedTime = showLastRefreshedTime;
 	}
 
 

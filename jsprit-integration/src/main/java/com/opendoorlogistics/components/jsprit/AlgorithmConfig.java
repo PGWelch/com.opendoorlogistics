@@ -6,7 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import jsprit.core.algorithm.box.Jsprit.Strategy;
+import com.graphhopper.jsprit.core.algorithm.box.Jsprit.Strategy;
 
 public class AlgorithmConfig implements Serializable {
 	private boolean constructionRegret;

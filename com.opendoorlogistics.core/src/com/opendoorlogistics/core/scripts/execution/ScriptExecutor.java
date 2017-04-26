@@ -49,7 +49,9 @@ import com.opendoorlogistics.api.tables.TableFlags;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 import com.opendoorlogistics.core.components.UpdateQueryComponent;
 import com.opendoorlogistics.core.formulae.Function;
+import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
+import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.TargetIODsInterpreter;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
@@ -104,7 +106,7 @@ final public class ScriptExecutor {
 		this(api, ODLDatastoreImpl.alterableFactory, ODLGlobalComponents.getProvider(), reporter, compileOnly);
 	}
 
-	private void fillParametersTable(Option script, ScriptExecutionBlackboardImpl result) {
+	private void fillParametersTable(Script script, ScriptExecutionBlackboardImpl result) {
 		Parameters parameters = api.scripts().parameters();
 		Tables tables = api.tables();
 		ODLTable paramTable = parameters.findTable(findDatastoreOrAdapter(parameters.getDSId(), result), TableType.PARAMETERS);
@@ -180,6 +182,15 @@ final public class ScriptExecutor {
 					int fromCol = noKeyCols.get(type);
 					int toCol = withKeyCols.get(type);
 					Object val = type == ParamDefinitionField.KEY ? config.getId() : newParamTable.getValueAt(0, fromCol);
+					
+					if(type== ParamDefinitionField.VALUE){
+						if(Strings.isEmptyWhenStandardised(val)){
+							// We're opening the script new again and don't have a default value.
+							// Check app properties for last value of this param type?
+							val = parameters.getLastValue( config.getId());							
+						}
+					}
+					
 					paramTable.setValueAt(val, newRow, toCol);
 				}
 
@@ -252,7 +263,7 @@ final public class ScriptExecutor {
 		return bb;
 	}
 
-	private boolean userPrompts(Option script, ScriptExecutionBlackboardImpl result) {
+	private boolean userPrompts(Script script, ScriptExecutionBlackboardImpl result) {
 		ParametersImpl parameters = (ParametersImpl) api.scripts().parameters();
 		ParametersControlFactory factory = parameters.getControlFactory();
 
@@ -281,8 +292,16 @@ final public class ScriptExecutor {
 				}
 			}
 
-			// if we used the overrview table then copy the values over into the
-			// main table
+			// save parameters last values
+			for (int row = 0; row < tableToUse.getRowCount(); row++) {
+				String key = parameters.getByRow(tableToUse, row, ParamDefinitionField.KEY);
+				if (key != null) {
+					String value =  parameters.getByRow(tableToUse, row, ParamDefinitionField.VALUE);
+					parameters.saveLastValue( key, value);
+				}
+			}
+			
+			// if we used the override table to restrict visible parameters then copy the values over into the main table
 			if (overrideTable != null) {
 				for (int row = 0; row < overrideTable.getRowCount(); row++) {
 					String key = parameters.getByRow(overrideTable, row, ParamDefinitionField.KEY);
@@ -312,7 +331,7 @@ final public class ScriptExecutor {
 	// return ret;
 	// }
 
-	private void executeAllInstructions(Option script, ScriptExecutionBlackboardImpl result) {
+	private void executeAllInstructions(Script script, ScriptExecutionBlackboardImpl result) {
 		// execute all instructions
 		for (int i = 0; i < script.getInstructions().size(); i++) {
 			// check for cancelled
@@ -348,7 +367,7 @@ final public class ScriptExecutor {
 		}
 	}
 
-	private void executeUpdateQueryInstruction(Option root, InstructionConfig instruction, ScriptExecutionBlackboardImpl result) {
+	private void executeUpdateQueryInstruction(Script root, InstructionConfig instruction, ScriptExecutionBlackboardImpl result) {
 		// check for buildable adapter
 		AdapterConfig adapterConfig = result.getAdapterConfig(instruction.getDatastore());
 		if (adapterConfig == null) {
@@ -584,7 +603,7 @@ final public class ScriptExecutor {
 	 * @param instruction
 	 * @param result
 	 */
-	private void executeBatchedInstruction(Option root, InstructionConfig instruction, final ScriptExecutionBlackboardImpl result) {
+	private void executeBatchedInstruction(Script root, InstructionConfig instruction, final ScriptExecutionBlackboardImpl result) {
 
 		// helper class to store information on the batch keys
 		class BatchKeyInformation {
@@ -722,7 +741,7 @@ final public class ScriptExecutor {
 	 * @param batchKey
 	 * @param result
 	 */
-	private void executeSingleInstruction(Option root, final InstructionConfig instruction, final ODLDatastore<? extends ODLTable> availableIODS, final String batchKey,
+	private void executeSingleInstruction(Script root, final InstructionConfig instruction, final ODLDatastore<? extends ODLTable> availableIODS, final String batchKey,
 			final ScriptExecutionBlackboardImpl result) {
 
 		// get the component
@@ -746,6 +765,25 @@ final public class ScriptExecutor {
 		} else {
 			ioDS = null;
 		}
+		
+		// if we have a formula for top label on any reports, execute it now
+		String reportTopLabel;
+		if(!Strings.isEmpty(instruction.getReportTopLabelFormula())){
+			Func func = executeFunctionCompilationFromComponent(root,instruction.getReportTopLabelFormula(), null, availableIODS, result);
+			if(result.isFailed()){
+				return;
+			}
+			
+			Object val=func.execute(-1);
+			if(val== Functions.EXECUTION_ERROR){
+				result.setFailed("Error executing report title formula: " + instruction.getReportTopLabelFormula());
+				return;
+			}
+			reportTopLabel = val!=null? val.toString():null;
+		}else{
+			reportTopLabel = null;
+		}
+
 
 		// go from the internal api to the external one
 		ComponentExecutionApi externalApi = new ComponentExecutionApi() {
@@ -814,7 +852,7 @@ final public class ScriptExecutor {
 				tables.copyTable(paramTable, copyDs);
 				tables.copyTable(paramValuesTable, copyDs);
 
-				internalExecutionApi.submitControlLauncher(instruction.getUuid(), component, copyDs, cb);
+				internalExecutionApi.submitControlLauncher(instruction.getUuid(), component, copyDs,reportTopLabel, cb);
 			}
 
 			@Override
@@ -824,7 +862,7 @@ final public class ScriptExecutor {
 
 			@Override
 			public Func compileFunction(String formulaText, String sourceTableName) {
-				return executeFunctionCompilationFromComponent(formulaText, sourceTableName, availableIODS, result);
+				return executeFunctionCompilationFromComponent(root,formulaText, sourceTableName, availableIODS, result);
 			}
 		};
 
@@ -1076,7 +1114,7 @@ final public class ScriptExecutor {
 	 * @param result
 	 * @return
 	 */
-	private Func executeFunctionCompilationFromComponent(String formulaText, String sourceTableName, final ODLDatastore<? extends ODLTable> availableIODS, final ScriptExecutionBlackboardImpl result) {
+	private Func executeFunctionCompilationFromComponent(Script root,String formulaText, String sourceTableName, final ODLDatastore<? extends ODLTable> availableIODS, final ScriptExecutionBlackboardImpl result) {
 		// find source table if set. use the availableiods?
 		final ODLTableReadOnly sourceTable;
 		if (!Strings.isEmpty(sourceTableName)) {
@@ -1098,7 +1136,8 @@ final public class ScriptExecutor {
 			dsIndx = -1;
 		}
 
-		final Function function = builder.buildFormulaWithTableVariables(sourceTable, formulaText, -1, null, null);
+		//table.getUserFormulae().addAll(script.getUserFormulae());
+		final Function function = builder.buildFormulaWithTableVariables(sourceTable, formulaText, -1, root.getUserFormulae(), null);
 
 		final int sourceTableId = sourceTable != null ? sourceTable.getImmutableId() : -1;
 		return new Func() {

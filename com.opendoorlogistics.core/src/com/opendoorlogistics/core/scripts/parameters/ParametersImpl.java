@@ -6,6 +6,7 @@ import static com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParamet
 import static com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParametersTable.COL_VALUE_TYPE;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
@@ -23,12 +24,14 @@ import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 import com.opendoorlogistics.core.api.impl.ODLApiImpl;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptAdapterImpl;
+import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.scripts.ScriptConstants;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.parameters.beans.NoKeyParameterValues;
 import com.opendoorlogistics.core.scripts.parameters.beans.NoKeyParametersTable;
 import com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParameterValues;
 import com.opendoorlogistics.core.scripts.parameters.beans.WithKeyParametersTable;
+import com.opendoorlogistics.core.scripts.parameters.controls.ControlFactory;
 import com.opendoorlogistics.core.tables.beans.BeanMapping;
 import com.opendoorlogistics.core.tables.beans.BeanMapping.BeanDatastoreMapping;
 import com.opendoorlogistics.core.utils.strings.EnumStdLookup;
@@ -49,6 +52,63 @@ public class ParametersImpl implements Parameters {
 	private final ODLApi api;
 
 	private static volatile ParametersControlFactory PARAMETERS_CONTROL;
+	
+	/**
+	 * Last used values cache for parameters is separate to main ODL Studio data cache as it doesn't store
+	 * large data and we don't want it cleared when the user clears the rest of the cache.
+	 * e.g. if the road network graph has been rebuilt the user might clear the main data cache to reload
+	 * results based on this file, but they still want the UI to remember the location of the last road network file.
+	 */
+	private RecentlyUsedCache parameterLastUsedValuesCache = new RecentlyUsedCache("ParametersLastUsedValues", 1024*1024);
+	
+	private static class CachedParameterKey{
+		final UUID scriptUUID;
+		final String key;
+		
+		CachedParameterKey(UUID scriptUUID, String key) {
+			this.scriptUUID = scriptUUID;
+			this.key = key;
+		}
+
+		/**
+		 * Estimate of size in bytes
+		 */
+		public int bytesSize(){
+			return key.length() *2 + 5*8;
+		}
+		
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((key == null) ? 0 : key.hashCode());
+			result = prime * result + ((scriptUUID == null) ? 0 : scriptUUID.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			CachedParameterKey other = (CachedParameterKey) obj;
+			if (key == null) {
+				if (other.key != null)
+					return false;
+			} else if (!key.equals(other.key))
+				return false;
+			if (scriptUUID == null) {
+				if (other.scriptUUID != null)
+					return false;
+			} else if (!scriptUUID.equals(other.scriptUUID))
+				return false;
+			return true;
+		}
+		
+	}
 
 	static {
 		List<ParametersControlFactory> ctrls = new ODLApiImpl().loadPlugins(ParametersControlFactory.class);
@@ -56,7 +116,7 @@ public class ParametersImpl implements Parameters {
 			System.out.println("Loaded parameter control factory plugin");
 			PARAMETERS_CONTROL = ctrls.get(0);
 		} else {
-			PARAMETERS_CONTROL = null;
+			PARAMETERS_CONTROL = new ControlFactory();
 		}
 
 	}
@@ -331,6 +391,21 @@ public class ParametersImpl implements Parameters {
 		}
 
 		return ret;
+	}
+
+	@Override
+	public String getLastValue(String parameterName) {
+		return (String)parameterLastUsedValuesCache.get(new CachedParameterKey(null, parameterName));
+	}
+
+	@Override
+	public void saveLastValue( String parameterName, String value) {
+		CachedParameterKey key = new CachedParameterKey(null, parameterName);
+		int bytes = key.bytesSize();
+		if(value!=null){
+			bytes += value.length()*2;
+		}
+		parameterLastUsedValuesCache.put(key, value, bytes);
 	}
 
 }

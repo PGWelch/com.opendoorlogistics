@@ -18,8 +18,10 @@ import java.util.Map;
 import com.opendoorlogistics.core.distances.functions.FmDistance;
 import com.opendoorlogistics.core.distances.functions.FmDrivingDistance;
 import com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeom;
+import com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeom.FmDrivingRouteGeomUncached;
 import com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeomFromLine;
 import com.opendoorlogistics.core.distances.functions.FmDrivingTime;
+import com.opendoorlogistics.core.distances.functions.FmDrivingTime.FmDrivingTimeUncached;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionFactory;
 import com.opendoorlogistics.core.formulae.FunctionUtils;
@@ -220,9 +222,10 @@ public final class FunctionDefinitionLibrary {
 	
 		// add distance functions
 		addStandardFunction(FmDrivingRouteGeomFromLine.class, "routegeom", "Given an input line geometry, calculate the road network route between the start and end." , "line_geometry" , "road_network_graph_directory");
+		String [] lat1lng1latlng2 = new String[]{"latitude1", "longitude1", "latitude2", "longitude2"};
 		for(String [] params : new String[][]{
 				new String[]{"geometry1",  "geometry2"},
-				new String[]{"latitude1", "longitude1", "latitude2", "longitude2"},
+				lat1lng1latlng2,
 
 		}){
 			addStandardFunction(FmDistance.Km.class, "distanceKm", "Calculate distance in kilometres between points.", params).setGroup("Distance");
@@ -234,9 +237,14 @@ public final class FunctionDefinitionLibrary {
 			addStandardFunction(FmDrivingDistance.Miles.class, "drivingDistanceMiles", "Calculate driving distance in miles between points.", extParams).setGroup("DrivingDistance");
 			addStandardFunction(FmDrivingDistance.Metres.class, "drivingDistanceMetres", "Calculate driving distance in metres between points.", extParams).setGroup("DrivingDistance");
 			addStandardFunction(FmDrivingTime.class, "drivingTime", "Calculate driving time between points.", extParams);
+			addStandardFunction(FmDrivingTimeUncached.class, "drivingTimeUncached", "Calculate driving time between points without using caching.", extParams);	
 			addStandardFunction(FmDrivingRouteGeom.class, "routegeom", "Calculate the road network route between points.", extParams);
-			
+			addStandardFunction(FmDrivingRouteGeomUncached.class, "routegeomuncached", "Calculate the road network route between points without using caching", extParams);
+						
 		}
+		
+	//	addStandardFunction(FmDrivingTime.class, "drivingTimeUncached", "Calculate driving time between points, do not cache results.", lat1lng1latlng2);_
+		
 		
 		// create time functions
 		addStandardFunction(FmTime.class, "time", "Create a time form the current system time.");			

@@ -95,7 +95,7 @@ final public class AdapterBuilder {
 
 	public AdapterBuilder(AdapterConfig adapterConfig, StandardisedStringSet callerAdapters, ScriptExecutionBlackboard env,ProcessingApi continueCb, BuiltAdapters result) {
 		this.inputConfig = adapterConfig;
-		this.id = adapterConfig.getId();
+		this.id =adapterConfig!=null? adapterConfig.getId():null;
 		this.env = env;
 		this.report = env;
 		this.callerAdapters = callerAdapters;

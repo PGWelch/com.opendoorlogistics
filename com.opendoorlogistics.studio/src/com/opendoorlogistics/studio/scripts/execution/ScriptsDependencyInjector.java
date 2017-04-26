@@ -36,13 +36,15 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 		final private String instructionId;
 		final private ODLComponent callingComponent;
 		final private ODLDatastore<? extends ODLTable> paramsDs;
+		final private String reportTopLabel;
 
-		public RecordedLauncherCallback(ControlLauncherCallback cb, String instructionId , ODLComponent callingComponent,ODLDatastore<? extends ODLTable> immutableParamsDs) {
+		public RecordedLauncherCallback(ControlLauncherCallback cb, String instructionId , ODLComponent callingComponent,ODLDatastore<? extends ODLTable> immutableParamsDs,String reportTopLabel) {
 			super();
 			this.cb = cb;
 			this.instructionId = instructionId;
 			this.callingComponent = callingComponent;
 			this.paramsDs = immutableParamsDs;
+			this.reportTopLabel = reportTopLabel;
 		}
 
 		public ControlLauncherCallback getCb() {
@@ -60,6 +62,11 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 		public ODLDatastore<? extends ODLTable> getParamsDs() {
 			return paramsDs;
 		}
+
+		public String getReportTopLabel() {
+			return reportTopLabel;
+		}
+		
 		
 	}
 
@@ -151,8 +158,8 @@ abstract class ScriptsDependencyInjector extends AbstractDependencyInjector {
 //	}
 
 	@Override
-	public void submitControlLauncher(String instructionId,ODLComponent component, ODLDatastore<? extends ODLTable> parametersTableCopy, ControlLauncherCallback cb) {
-		controlLauncherCallbacks.add(new RecordedLauncherCallback(cb, instructionId,component,parametersTableCopy));
+	public void submitControlLauncher(String instructionId,ODLComponent component, ODLDatastore<? extends ODLTable> parametersTableCopy,String reportTopLabel, ControlLauncherCallback cb) {
+		controlLauncherCallbacks.add(new RecordedLauncherCallback(cb, instructionId,component,parametersTableCopy,reportTopLabel));
 	}
 
 	public List<RecordedLauncherCallback> getControlLauncherCallbacks() {

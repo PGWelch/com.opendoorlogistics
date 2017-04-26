@@ -7,12 +7,10 @@
 package com.opendoorlogistics.core.api.impl.scripts;
 
 import com.opendoorlogistics.api.ODLApi;
-import com.opendoorlogistics.api.scripts.ScriptElement;
 import com.opendoorlogistics.api.scripts.ScriptInstruction;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.core.scripts.elements.InstructionConfig;
-import com.opendoorlogistics.core.scripts.elements.Option;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 
 public class ScriptInstructionImpl extends ScriptElementImpl implements ScriptInstruction {

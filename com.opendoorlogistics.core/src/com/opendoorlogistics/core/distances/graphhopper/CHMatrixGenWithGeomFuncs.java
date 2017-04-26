@@ -1,6 +1,7 @@
 package com.opendoorlogistics.core.distances.graphhopper;
 
-import com.graphhopper.GHRequest;
+import java.io.File;
+
 import com.graphhopper.GHResponse;
 import com.graphhopper.util.PointList;
 import com.graphhopper.util.shapes.GHPoint;
@@ -16,11 +17,20 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
 public class CHMatrixGenWithGeomFuncs extends CHMatrixGeneration{
-
+	private final long nodesLastModifiedTime;
+	
 	public CHMatrixGenWithGeomFuncs(String graphFolder) {
 		super(graphFolder);
+		nodesLastModifiedTime = getNodesFileLastModified(graphFolder);
 	}
 
+	public static long getNodesFileLastModified(String graphFolder){
+		File folder = new File(graphFolder);
+		File nodes = new File(folder, "nodes");
+		long nodesLastModified = nodes.lastModified();
+		return nodesLastModified;
+	}
+	
 	public ODLGeom calculateRouteGeom(LatLong from, LatLong to) {
 		Spatial.initSpatial();
 		
@@ -50,7 +60,7 @@ public class CHMatrixGenWithGeomFuncs extends CHMatrixGeneration{
 	public Geometry calculateJTSRouteGeom(LatLong from, LatLong to) {
 		GHResponse rsp = getResponse(new GHPoint(from.getLatitude(), from.getLongitude()), new GHPoint(to.getLatitude(), to.getLongitude()));
 
-		if (rsp.hasErrors()) {
+		if (rsp==null || rsp.hasErrors()) {
 			return null;
 		}
 
@@ -96,4 +106,10 @@ public class CHMatrixGenWithGeomFuncs extends CHMatrixGeneration{
 		return resp;
 	}
 
+	public long getNodesLastModifiedTime() {
+		return nodesLastModifiedTime;
+	}
+
+	
+	
 }

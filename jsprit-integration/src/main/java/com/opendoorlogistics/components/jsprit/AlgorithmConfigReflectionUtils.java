@@ -9,7 +9,7 @@ import java.util.List;
 
 import com.opendoorlogistics.components.jsprit.AlgorithmConfig.JSpritStrategyWeight;
 
-import jsprit.core.algorithm.box.Jsprit.Strategy;
+import com.graphhopper.jsprit.core.algorithm.box.Jsprit.Strategy;
 
 public class AlgorithmConfigReflectionUtils {
 	public static class StrategyWeightGetterSetter{

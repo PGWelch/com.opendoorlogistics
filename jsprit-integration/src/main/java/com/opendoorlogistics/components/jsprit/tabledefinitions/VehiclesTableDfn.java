@@ -39,12 +39,12 @@ public class VehiclesTableDfn extends TableDfn{
 	public final int [] costs;
 	public final int skills;
 	public final int speedMultiplier;
-
 	public enum CostType{
 		COST_PER_KM(0.001),
 		COST_PER_HOUR(1),
 		WAITING_COST_PER_HOUR(0.5),
-		FIXED_COST(100);
+		FIXED_COST(100),
+		PARKING_COST(0);
 		
 		private CostType(double defaultVal) {
 			this.defaultVal = defaultVal;
@@ -77,6 +77,11 @@ public class VehiclesTableDfn extends TableDfn{
 		costs = new int[CostType.values().length];
 		for(CostType ct:CostType.values()){
 			costs[ct.ordinal()] = addDblColumn(ct.defaultVal,ct.fieldname());
+			
+			// make the new parking cost optional
+			if(ct == CostType.PARKING_COST){
+				table.setColumnFlags(costs[ct.ordinal()], table.getColumnFlags(costs[ct.ordinal()]) | TableFlags.FLAG_IS_OPTIONAL);
+			}
 		}
 //		costs[CostType.FIXED_COST.ordinal()] = addDblColumn(100,CostType.FIXED_COST.fieldname());		
 //		costs[CostType.COST_PER_HOUR.ordinal()] = addDblColumn(1,CostType.COST_PER_HOUR.fieldname());

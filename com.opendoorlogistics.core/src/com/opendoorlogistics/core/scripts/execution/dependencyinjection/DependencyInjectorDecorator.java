@@ -63,8 +63,8 @@ public class DependencyInjectorDecorator extends ProcessingApiDecorator implemen
 
 
 	@Override
-	public void submitControlLauncher(String instructionId,ODLComponent component, ODLDatastore<? extends ODLTable>  parametersTableCopy,ControlLauncherCallback cb){
-		((DependencyInjector)decorated).submitControlLauncher(instructionId,component,parametersTableCopy,cb);
+	public void submitControlLauncher(String instructionId,ODLComponent component, ODLDatastore<? extends ODLTable>  parametersTableCopy,String reportTopLabel,ControlLauncherCallback cb){
+		((DependencyInjector)decorated).submitControlLauncher(instructionId,component,parametersTableCopy,reportTopLabel,cb);
 	}
 
 	@Override

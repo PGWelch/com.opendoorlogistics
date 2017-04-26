@@ -13,7 +13,7 @@ import javax.xml.bind.annotation.XmlEnum;
 @XmlEnum(String.class)
 public enum ODLColumnType {
 	STRING, LONG, DOUBLE, COLOUR,
-	IMAGE, GEOM, TIME, DATE, MAP_TILE_PROVIDER;
+	IMAGE, GEOM, TIME, DATE, MAP_TILE_PROVIDER, FILE_DIRECTORY;
 
 
 	private ODLColumnType() {

@@ -169,8 +169,8 @@ public class ProgressPanel extends JPanel  {
 		};
 	}
 	
-	public static final int STANDARD_DIALOG_WIDTH = 500;
-	public static final int STANDARD_DIALOG_HEIGHT = 200;
+	public static final int STANDARD_DIALOG_WIDTH = 600;
+	public static final int STANDARD_DIALOG_HEIGHT = 300;
 	
 	
 

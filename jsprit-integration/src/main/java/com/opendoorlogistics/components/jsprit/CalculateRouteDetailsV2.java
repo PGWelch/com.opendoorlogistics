@@ -7,19 +7,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import jsprit.core.analysis.SolutionAnalyser;
-import jsprit.core.problem.Capacity;
-import jsprit.core.problem.Location;
-import jsprit.core.problem.job.Delivery;
-import jsprit.core.problem.job.Job;
-import jsprit.core.problem.job.Pickup;
-import jsprit.core.problem.job.Service;
-import jsprit.core.problem.job.Shipment;
-import jsprit.core.problem.solution.VehicleRoutingProblemSolution;
-import jsprit.core.problem.solution.route.VehicleRoute;
-import jsprit.core.problem.solution.route.activity.TourActivity;
-import jsprit.core.problem.solution.route.activity.TourActivity.JobActivity;
-import jsprit.core.problem.vehicle.Vehicle;
+import com.graphhopper.jsprit.core.analysis.SolutionAnalyser;
+import com.graphhopper.jsprit.core.problem.Capacity;
+import com.graphhopper.jsprit.core.problem.Location;
+import com.graphhopper.jsprit.core.problem.cost.TransportDistance;
+import com.graphhopper.jsprit.core.problem.job.Delivery;
+import com.graphhopper.jsprit.core.problem.job.Job;
+import com.graphhopper.jsprit.core.problem.job.Pickup;
+import com.graphhopper.jsprit.core.problem.job.Service;
+import com.graphhopper.jsprit.core.problem.job.Shipment;
+import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
+import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity.JobActivity;
+import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
@@ -430,10 +431,10 @@ public class CalculateRouteDetailsV2 {
 		VehicleRoutingProblemSolution sol = new VehicleRoutingProblemSolution(vehicleRoutes, unassignedJobs, 0);
 
 		// Create a solution analyser from the solution.
-		SolutionAnalyser analyser = new SolutionAnalyser(builtProblem.getJspritProblem(), sol, new SolutionAnalyser.DistanceCalculator() {
+		SolutionAnalyser analyser = new SolutionAnalyser(builtProblem.getJspritProblem(), sol, new TransportDistance() {
 
 			@Override
-			public double getDistance(Location fromLocationId, Location toLocationId) {
+			public double getDistance(Location fromLocationId, Location toLocationId,double departureTime, Vehicle vehicle) {
 				return builtProblem.getTravelDistanceKM(fromLocationId.getId(), toLocationId.getId());
 			}
 

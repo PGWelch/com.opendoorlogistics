@@ -83,7 +83,7 @@ public class ScriptsImpl implements Scripts {
 			}
 
 			@Override
-			public void submitControlLauncher(String instructionId, ODLComponent component, ODLDatastore<? extends ODLTable>  parametersTableCopy,ControlLauncherCallback cb) {
+			public void submitControlLauncher(String instructionId, ODLComponent component, ODLDatastore<? extends ODLTable>  parametersTableCopy,String reportTopLabel,ControlLauncherCallback cb) {
 				// launch ODL Studio?
 			}
 
