@@ -19,19 +19,27 @@ import com.graphhopper.routing.Path;
 import com.graphhopper.routing.PathBidirRef;
 import com.graphhopper.routing.QueryGraph;
 import com.graphhopper.routing.ch.PreparationWeighting;
+import com.graphhopper.routing.util.BikeFlagEncoder;
+import com.graphhopper.routing.util.CarFlagEncoder;
 import com.graphhopper.routing.util.DefaultEdgeFilter;
 import com.graphhopper.routing.util.EdgeFilter;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.routing.util.FlagEncoder;
+import com.graphhopper.routing.util.FootFlagEncoder;
 import com.graphhopper.routing.util.LevelEdgeFilter;
+import com.graphhopper.routing.util.MotorcycleFlagEncoder;
 import com.graphhopper.routing.util.Weighting;
 import com.graphhopper.routing.util.WeightingMap;
 import com.graphhopper.storage.CHGraph;
+import com.graphhopper.storage.Directory;
 import com.graphhopper.storage.EdgeEntry;
 import com.graphhopper.storage.Graph;
+import com.graphhopper.storage.RAMDirectory;
+import com.graphhopper.storage.StorableProperties;
 import com.graphhopper.storage.index.QueryResult;
 import com.graphhopper.util.EdgeExplorer;
 import com.graphhopper.util.EdgeIterator;
+import com.graphhopper.util.PMap;
 import com.graphhopper.util.shapes.GHPoint;
 
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -78,6 +86,11 @@ public class CHMatrixGeneration {
 
 		ret = new GraphHopper().forDesktop();
 
+		// initialise the encoders ourselves as we can use multiple
+		// encoders for same vehicle type corresponding to different
+		// times of day (i.e. rush hours)
+		ret.setEncodingManager(createEncodingManager(graphFolder));
+		
 		// don't need to write so disable the lock file (allows us to run out of program files)
 		ret.setAllowWrites(false);
 
@@ -91,6 +104,100 @@ public class CHMatrixGeneration {
 		return ret;
 	}
 
+	/**
+	 * Encoding manager which understands the convention that car_day,
+	 * car_night and car should all use the car encoder, but returning
+	 * the relevant id in toString().
+	 * Method is public as its called from unit tests
+	 * @param directory
+	 * @return
+	 */
+	public static EncodingManager createEncodingManager(String directory) {
+		Directory dir = new RAMDirectory(directory, true);
+		StorableProperties properties = new StorableProperties(dir);
+		if (!properties.loadExisting()) {
+			properties.close();
+			throw new RuntimeException("Cannot find properties file");
+		}
+
+		// check encoding for compatiblity
+		properties.checkVersions(false);
+		
+		// get all the flag encoders, with correct ids in their toString method
+		String allEncoderString= properties.get("graph.flagEncoders");
+		List<FlagEncoder> encoders = new ArrayList<>();
+        for(String encoderString: allEncoderString.split(",")){
+        	encoderString = encoderString.trim().toLowerCase();
+        	String typeWithVariant = encoderString.split("\\|")[0];
+        	String [] splitTypeVariant = typeWithVariant.split("_");
+        	String type = splitTypeVariant[0].trim();
+        	String variant = splitTypeVariant.length>1? splitTypeVariant[1].trim():"";
+        	PMap propertiesMap = new PMap(encoderString);
+
+        	class ToStringHelper{
+        		String id(String baseId){
+        			return variant.length()>0?baseId+"_"+variant:baseId;
+        		}
+        	}
+        	ToStringHelper h= new ToStringHelper();
+        	
+        	FlagEncoder encoder = null;
+            if (type.equals(EncodingManager.CAR)){
+                encoder= new CarFlagEncoder(propertiesMap){
+                	@Override
+                	public String toString(){
+                		return h.id(super.toString());
+                	}
+                };
+            }
+
+            else if (type.equals(EncodingManager.BIKE)){
+            	encoder= new BikeFlagEncoder(propertiesMap){
+                	@Override
+                	public String toString(){
+                		return h.id(super.toString());
+                	}            		
+            	};
+            }
+            else if (type.equals(EncodingManager.FOOT)){
+            	encoder= new FootFlagEncoder(propertiesMap){
+                	@Override
+                	public String toString(){
+                		return h.id(super.toString());
+                	}
+            	};
+            }
+            else if (type.equals(EncodingManager.MOTORCYCLE)){
+            	encoder= new MotorcycleFlagEncoder(propertiesMap){
+                	@Override
+                	public String toString(){
+                		return h.id(super.toString());
+                	}
+            	};
+            }
+            else{
+            	properties.close();
+            	throw new RuntimeException("Unsupported vehicle type");
+            }
+            
+            if (propertiesMap.has("version") && encoder.getVersion()!=propertiesMap.getInt("version", -1)){
+            	properties.close();
+            	throw new RuntimeException("Graph was built with wrong encoder version - probably built using an older version of the graphhopper library?");
+            }
+
+            encoders.add(encoder);
+        }
+        
+		int bytesForFlags = 4;
+		if ("8".equals(properties.get("graph.bytesForFlags"))) {
+			bytesForFlags = 8;
+		}
+		
+		// closing properties is probably unneccessary	
+		properties.close();
+		
+		return new EncodingManager(encoders, bytesForFlags);
+	}
 	/**
 	 * Load the graph and use it in this class
 	 * @param graphFolder

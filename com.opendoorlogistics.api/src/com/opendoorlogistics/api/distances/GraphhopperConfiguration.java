@@ -10,6 +10,7 @@ import java.io.Serializable;
 
 public final class GraphhopperConfiguration implements Serializable {
 	private String graphDirectory;
+	private String vehicleType;
 	private double timeMultiplier = 1;
 	
 	public String getGraphDirectory() {
@@ -35,6 +36,15 @@ public final class GraphhopperConfiguration implements Serializable {
 		this.timeMultiplier = timeMultiplier;
 	}
 
+	
+	public String getVehicleType() {
+		return vehicleType;
+	}
+
+	public void setVehicleType(String vehicleType) {
+		this.vehicleType = vehicleType;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -43,6 +53,7 @@ public final class GraphhopperConfiguration implements Serializable {
 		long temp;
 		temp = Double.doubleToLongBits(timeMultiplier);
 		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = prime * result + ((vehicleType == null) ? 0 : vehicleType.hashCode());
 		return result;
 	}
 
@@ -62,6 +73,13 @@ public final class GraphhopperConfiguration implements Serializable {
 			return false;
 		if (Double.doubleToLongBits(timeMultiplier) != Double.doubleToLongBits(other.timeMultiplier))
 			return false;
+		if (vehicleType == null) {
+			if (other.vehicleType != null)
+				return false;
+		} else if (!vehicleType.equals(other.vehicleType))
+			return false;
 		return true;
 	}
+
+	
 }

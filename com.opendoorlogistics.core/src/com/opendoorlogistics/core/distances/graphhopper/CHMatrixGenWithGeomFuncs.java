@@ -31,10 +31,10 @@ public class CHMatrixGenWithGeomFuncs extends CHMatrixGeneration{
 		return nodesLastModified;
 	}
 	
-	public ODLGeom calculateRouteGeom(LatLong from, LatLong to) {
+	public static ODLGeom calculateRouteGeom(CHMatrixGeneration cmg,LatLong from, LatLong to) {
 		Spatial.initSpatial();
 		
-		Geometry geometry = calculateJTSRouteGeom(from, to);
+		Geometry geometry = calculateJTSRouteGeom(cmg,from, to);
 		if(geometry!=null){
 			ODLGeomImpl ret = new ODLLoadedGeometry(geometry);
 			return ret;			
@@ -49,16 +49,16 @@ public class CHMatrixGenWithGeomFuncs extends CHMatrixGeneration{
 	 * @param to
 	 * @return
 	 */
-	public ODLTime calculateTime(LatLong from, LatLong to) {
-		GHResponse resp = getResponse(from, to);
+	public static ODLTime calculateTime(CHMatrixGeneration cmg,LatLong from, LatLong to) {
+		GHResponse resp = getResponse(cmg,from, to);
 		if (resp != null) {
 			return new ODLTime(resp.getMillis());
 		}
 		return null;
 	}
 	
-	public Geometry calculateJTSRouteGeom(LatLong from, LatLong to) {
-		GHResponse rsp = getResponse(new GHPoint(from.getLatitude(), from.getLongitude()), new GHPoint(to.getLatitude(), to.getLongitude()));
+	public static Geometry calculateJTSRouteGeom(CHMatrixGeneration cmg,LatLong from, LatLong to) {
+		GHResponse rsp = cmg.getResponse(new GHPoint(from.getLatitude(), from.getLongitude()), new GHPoint(to.getLatitude(), to.getLongitude()));
 
 		if (rsp==null || rsp.hasErrors()) {
 			return null;
@@ -87,8 +87,8 @@ public class CHMatrixGenWithGeomFuncs extends CHMatrixGeneration{
 	 * @param to
 	 * @return
 	 */
-	public double calculateDistanceMetres(LatLong from, LatLong to) {
-		GHResponse resp = getResponse(from, to);
+	public static double calculateDistanceMetres(CHMatrixGeneration cmg,LatLong from, LatLong to) {
+		GHResponse resp = getResponse(cmg,from, to);
 		if (resp != null) {
 			return resp.getDistance();
 		}
@@ -101,8 +101,8 @@ public class CHMatrixGenWithGeomFuncs extends CHMatrixGeneration{
 	 * @param to
 	 * @return
 	 */
-	private GHResponse getResponse(LatLong from, LatLong to) {
-		GHResponse resp = getResponse(new GHPoint(from.getLatitude(), from.getLongitude()), new GHPoint(to.getLatitude(), to.getLongitude()));
+	private static GHResponse getResponse(CHMatrixGeneration cmg,LatLong from, LatLong to) {
+		GHResponse resp = cmg.getResponse(new GHPoint(from.getLatitude(), from.getLongitude()), new GHPoint(to.getLatitude(), to.getLongitude()));
 		return resp;
 	}
 

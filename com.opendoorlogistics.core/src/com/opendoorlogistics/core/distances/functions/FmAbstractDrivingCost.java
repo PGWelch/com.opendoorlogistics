@@ -47,7 +47,14 @@ public abstract class FmAbstractDrivingCost extends FmAbstractTravelCost {
 			return Functions.EXECUTION_ERROR;
 		};
 		
-		config.getGraphhopperConfig().setGraphDirectory(dir.toString());		
+		// use the convention that ? after road network graph name means vehicletype
+		String sdir = dir.toString();
+		String [] split = sdir.split("\\?");
+		sdir = split[0];
+		config.getGraphhopperConfig().setGraphDirectory(sdir);		
+		if(split.length>1){
+			config.getGraphhopperConfig().setVehicleType(split[1]);
+		}
 		return calculateDrivingTravel(lls, config);
 	}
 

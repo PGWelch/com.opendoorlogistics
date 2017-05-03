@@ -44,6 +44,7 @@ import com.opendoorlogistics.core.utils.iterators.IteratorUtils;
 import com.opendoorlogistics.core.utils.strings.StandardisedStringTreeMap;
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.graphhopper.CHMatrixGeneration.CHProcessingApi;
+import com.opendoorlogistics.graphhopper.CHMatrixGeneration;
 import com.opendoorlogistics.graphhopper.MatrixResult;
 
 import gnu.trove.list.array.TIntArrayList;
@@ -115,7 +116,7 @@ public final class DistancesSingleton implements Closeable{
 	}
 
 	private synchronized ODLCostMatrix calculateGraphhopper(DistancesConfiguration request, StandardisedStringTreeMap<LatLong> points, final ProcessingApi processingApi) {
-		initGraphhopperGraph(request, processingApi);
+		CHMatrixGeneration graph=initGraphhopperGraph(request, processingApi);
 		
 		final StringBuilder statusMessage = new StringBuilder();
 		statusMessage.append ("Loaded the graph " + new File(request.getGraphhopperConfig().getGraphDirectory()).getAbsolutePath());				
@@ -154,7 +155,7 @@ public final class DistancesSingleton implements Closeable{
 			}
 		};
 		
-		MatrixResult result = lastCHGraph.calculateMatrix(ghPoints,chprocApi);
+		MatrixResult result = graph.calculateMatrix(ghPoints,chprocApi);
 		if(processingApi!=null && processingApi.isCancelled()){
 			return null;
 		}
@@ -182,7 +183,7 @@ public final class DistancesSingleton implements Closeable{
 	 * @param request
 	 * @param processingApi
 	 */
-	private synchronized void initGraphhopperGraph(DistancesConfiguration request, final ProcessingApi processingApi) {
+	private synchronized CHMatrixGeneration initGraphhopperGraph(DistancesConfiguration request, final ProcessingApi processingApi) {
 		String dir = request.getGraphhopperConfig().getGraphDirectory();
 		
 		File current =RelativeFiles.validateRelativeFiles(dir, AppConstants.GRAPHHOPPER_DIRECTORY);
@@ -202,7 +203,7 @@ public final class DistancesSingleton implements Closeable{
 		
 		// check if last loaded file is now an invalid file (i.e. no longer exists)
 		if(lastCHGraph!=null){
-			File file = new File(lastCHGraph.getGraphFolder());
+			File file = new File(lastCHGraph.getGraphhopper().getGraphHopperLocation());
 			if(!file.exists() || !file.isDirectory()){
 				lastCHGraph.dispose();
 				lastCHGraph = null;
@@ -211,7 +212,7 @@ public final class DistancesSingleton implements Closeable{
 		
 		// check if using different file
 		if(lastCHGraph!=null){
-			File lastFile = new File(lastCHGraph.getGraphFolder());
+			File lastFile = new File(lastCHGraph.getGraphhopper().getGraphHopperLocation());
 			if(!lastFile.equals(current)){
 				lastCHGraph.dispose();
 				lastCHGraph = null;				
@@ -230,6 +231,15 @@ public final class DistancesSingleton implements Closeable{
 		// load the graph if needed
 		if(lastCHGraph==null){
 			lastCHGraph = new CHMatrixGenWithGeomFuncs(current.getAbsolutePath());
+		}
+		
+		// adapt to the correct vehicle type
+		String vehicleType = request.getGraphhopperConfig().getVehicleType();
+		vehicleType = Strings.std(vehicleType);
+		if(vehicleType.length()>0){
+			return new CHMatrixGeneration(lastCHGraph.getGraphhopper(), vehicleType);
+		}else{
+			return lastCHGraph;
 		}
 	}
 
@@ -462,15 +472,16 @@ public final class DistancesSingleton implements Closeable{
 			return ret;
 		}
 
-		initGraphhopperGraph(request, processingApi);
+		CHMatrixGeneration graph=initGraphhopperGraph(request, processingApi);
 		
-		ret = lastCHGraph.calculateDistanceMetres(from, to);
+		ret = CHMatrixGenWithGeomFuncs.calculateDistanceMetres(graph,from, to);
 		if(ret!=null){
 			cacheAToBDouble(key, ret, cache);
 		}
 		
 		return ret;
 	}
+
 
 	public enum CacheOption{
 		USE_CACHING,
@@ -503,9 +514,9 @@ public final class DistancesSingleton implements Closeable{
 		}
 
 
-		initGraphhopperGraph(request, processingApi);
+		CHMatrixGeneration graph=initGraphhopperGraph(request, processingApi);
 		
-		ret = lastCHGraph.calculateTime(from, to);
+		ret = CHMatrixGenWithGeomFuncs.calculateTime(graph,from, to);
 		
 		if(cacheOption!=CacheOption.NO_CACHING){
 			if(ret!=null){
@@ -517,6 +528,7 @@ public final class DistancesSingleton implements Closeable{
 
 		return ret;
 	}
+	
 	
 	/**
 	 * @param key
@@ -549,9 +561,9 @@ public final class DistancesSingleton implements Closeable{
 		}
 
 
-		initGraphhopperGraph(request, processingApi);
+		CHMatrixGeneration graph=initGraphhopperGraph(request, processingApi);
 		
-		ret = lastCHGraph.calculateRouteGeom(from, to);
+		ret = CHMatrixGenWithGeomFuncs.calculateRouteGeom(graph,from, to);
 		if(ret!=null && cacheOption!=CacheOption.NO_CACHING){
 			int estimatedSize = 40 * ret.getPointsCount() + AToBCacheKey.ESTIMATED_SIZE_BYTES;
 			cache.put(key, ret,estimatedSize);
