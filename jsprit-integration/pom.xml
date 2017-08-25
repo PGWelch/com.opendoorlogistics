@@ -37,10 +37,11 @@
 
 <!-- 
 		<dependency>
+			 Using Maven's jsprit repository gives an error for v1.6.0 and later. 
 				The simplest thing is to just get the jsprit source code for the release 
 				and build locally with Maven, installing to local Maven repository. Use the 
 				command: mvn -DskipTests=true install. We skip tests due to an error 
-				in them (with a local file) which would otherwise prevent building. -->
+				in them (with a local file) which would otherwise prevent building. 
 			<groupId>com.graphhopper</groupId>
 			<artifactId>jsprit-core</artifactId>
 			<version>1.6.3-SNAPSHOT</version>
