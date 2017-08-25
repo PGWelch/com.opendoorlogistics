@@ -81,7 +81,7 @@ final class VRPConfigPanel extends JPanel {
 		};
 
 		int nbPerLine = 2;
-		int nbLines = (int) Math.ceil((double) (boxes.length +2)/ nbPerLine);
+		int nbLines = 4;//(int) Math.ceil((double) (boxes.length +2)/ nbPerLine);
 		JPanel optPanel = new JPanel();
 		optPanel.setLayout(new GridLayout(nbLines, nbPerLine, 8, 2));
 
@@ -98,6 +98,9 @@ final class VRPConfigPanel extends JPanel {
 //			}
 			boxes[opt.ordinal()] = new JCheckBox(opt.displayName, rc.getBool(opt));
 			boxes[opt.ordinal()].addItemListener(itemListener);
+			if(opt.longDescription!=null){
+				boxes[opt.ordinal()].setToolTipText(opt.longDescription);
+			}
 			optPanel.add(boxes[opt.ordinal()]);
 		}
 		

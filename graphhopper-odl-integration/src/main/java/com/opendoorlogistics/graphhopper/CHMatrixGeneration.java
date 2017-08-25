@@ -239,20 +239,10 @@ public class CHMatrixGeneration {
 				VEHICLE_TYPE_MOTORCYCLE, VEHICLE_TYPE_RACINGBIKE, VEHICLE_TYPE_MOUNTAINBIKE 
 				 };
 	}
-	/**
-	 * 
-	 * @param graphFolder
-	 * @param memoryMapped
-	 * @param hopper
-	 * @param ownsHopper
-	 *            Whether this class owns the graphhopper graph (and wrapper object) and should dispose of it later.
-	 * @param namedFlagEncoder
-	 */
-	private CHMatrixGeneration( GraphHopper hopper, boolean ownsHopper, String namedFlagEncoder) {
-		this.hopper = hopper;
-		this.ownsHopper = ownsHopper;
-		encodingManager = hopper.getEncodingManager();
-
+	
+	public static FlagEncoder identifyFlagEncoder(GraphHopper graphHopper, String namedFlagEncoder){
+		EncodingManager encodingManager = graphHopper.getEncodingManager();
+		FlagEncoder flagEncoder=null;
 		if (namedFlagEncoder == null) {
 			// Pick the first supported encoder from a standard list, ordered by most commonly used first.
 			// This allows the user to build the graph for the speed profile they want and it just works...
@@ -274,7 +264,23 @@ public class CHMatrixGeneration {
 				throw new RuntimeException("Vehicle type is unsuported in road network graph: " + namedFlagEncoder);
 			}
 		}
-
+		return flagEncoder;
+	}
+	
+	/**
+	 * 
+	 * @param graphFolder
+	 * @param memoryMapped
+	 * @param hopper
+	 * @param ownsHopper
+	 *            Whether this class owns the graphhopper graph (and wrapper object) and should dispose of it later.
+	 * @param namedFlagEncoder
+	 */
+	private CHMatrixGeneration( GraphHopper hopper, boolean ownsHopper, String namedFlagEncoder) {
+		this.hopper = hopper;
+		this.ownsHopper = ownsHopper;
+		encodingManager = hopper.getEncodingManager();
+		flagEncoder = identifyFlagEncoder(hopper, namedFlagEncoder);
 		edgeFilter = new DefaultEdgeFilter(flagEncoder);
 
 		WeightingMap weightingMap = new WeightingMap("fastest");
@@ -369,7 +375,7 @@ public class CHMatrixGeneration {
 		public final int startNodeId;
 		public final boolean reverseQuery;
 
-		ShortestPathTree(int nodeId, boolean reverseQuery) {
+		public ShortestPathTree(int nodeId, boolean reverseQuery) {
 			this.startNodeId = nodeId;
 			this.reverseQuery = reverseQuery;
 		}
@@ -641,4 +647,11 @@ public class CHMatrixGeneration {
 
 	}
 
+	public Weighting getWeighting(){
+		return prepareWeighting;
+	}
+	
+	public LevelEdgeFilter getLevelEdgeFilter(){
+		return levelEdgeFilter;
+	}
 }

@@ -19,20 +19,22 @@ import com.opendoorlogistics.api.distances.DistancesConfiguration;
 final public class VRPConfig implements Serializable {
 	
 	enum BooleanOptions{
-		FLEET_SIZE_IS_INFINITE("Fleet size is infinite"),
-		FORCE_ALL_DELIVERIES_BEFORE_PICKUPS("Do all deliveries before all pickups"),
-		OUTPUT_STRAIGHT_LINES_BETWEEN_STOPS("Output straight lines between stops to the map"),
+		FLEET_SIZE_IS_INFINITE("Fleet size is infinite","If selected, an infinite number of vehicles can be created for each of your input vehicle types"),
+		FORCE_ALL_DELIVERIES_BEFORE_PICKUPS("Do all deliveries before all pickups","If you have stop types P and D, all D types will be served on a route before P types."),
+		LINKED_PICKUPS_AT_ROUTE_START_ONLY("Linked pickups at start of route only",
+				"<html>Used if you only want pickups to happen at the start of the route (at your depot), "
+				+ "<br>but you need to explicitly model a loading time per item (e.g. 1 minute)."
+				+ "<br>Create two stops - one LP and one LD - with LP at the depot location."
+				+ "<br>The LP stops will only appear at the start of the route,"
+				+ "<br>but their pickup time will still be included in the route's time calculations.</html>"),
+		OUTPUT_STRAIGHT_LINES_BETWEEN_STOPS("Output straight lines between stops to the map",null),
 		;
-	//	USE_PICKUP_DELIVER,
-	//	USE_SERVICE_DURATIONS,		
-	//	USE_STOP_TIME_WINDOWS,
-	//	USE_VEHICLE_TIME_WINDOW,
-	//	VEHICLE_HAS_DIFFERENT_END_LOCATION,
 		
 		public final String displayName;
-		
-		private BooleanOptions(String displayName) {
+		public final String longDescription;
+		private BooleanOptions(String displayName, String longDescription) {
 			this.displayName = displayName;
+			this.longDescription = longDescription;
 		}
 	}
 	
@@ -42,23 +44,6 @@ final public class VRPConfig implements Serializable {
 	private int nbQuantities=1;
 	private int nbThreads=1;
 	private AlgorithmConfig algorithm = AlgorithmConfig.createDefaults();
-	
-//	public boolean isStopTimeWindows() {
-//		return getBool(BooleanOptions.USE_STOP_TIME_WINDOWS);
-//	}
-//	public void setStopTimeWindows(boolean timeWindows) {
-//		setBool(BooleanOptions.USE_STOP_TIME_WINDOWS, timeWindows);
-//	}
-	
-//	public boolean isLinkedPickupDeliver() {
-//		return getBool(BooleanOptions.USE_PICKUP_DELIVER);
-//	}
-//	
-//	@XmlAttribute	
-//	public void setLinkedPickupDeliver(boolean pickupDeliver) {
-//		setBool(BooleanOptions.USE_PICKUP_DELIVER, pickupDeliver);
-//	}
-	
 	public int getNbQuantities() {
 		return nbQuantities;
 	}
@@ -68,32 +53,15 @@ final public class VRPConfig implements Serializable {
 		this.nbQuantities = nbQuantities;
 	}
 	
-//	public boolean isServiceDurations() {
-//		return getBool(BooleanOptions.USE_SERVICE_DURATIONS);
-//	}
-//	
-//	@XmlAttribute	
-//	public void setServiceDurations(boolean serviceTimes) {
-//		setBool(BooleanOptions.USE_SERVICE_DURATIONS, serviceTimes);
-//	}
-//	
-//	public boolean isVehicleTimeWindow() {
-//		return getBool(BooleanOptions.USE_VEHICLE_TIME_WINDOW);
-//	}
+
+	public boolean isLinkedPickupsAtStartOnly() {
+		return getBool(BooleanOptions.LINKED_PICKUPS_AT_ROUTE_START_ONLY);
+	}
 	
-//	@XmlAttribute	
-//	public void setVehicleTimeWindow(boolean vehicleTimeWindows) {
-//		setBool(BooleanOptions.USE_VEHICLE_TIME_WINDOW, vehicleTimeWindows);
-//	}
-	
-//	public boolean isVehicleHasDifferentEndLocation() {
-//		return getBool(BooleanOptions.VEHICLE_HAS_DIFFERENT_END_LOCATION);
-//	}
-//	
-//	@XmlAttribute	
-//	public void setVehicleHasDifferentEndLocation(boolean vehicleHasDifferentEndLocation) {
-//		setBool(BooleanOptions.VEHICLE_HAS_DIFFERENT_END_LOCATION, vehicleHasDifferentEndLocation);
-//	}
+	@XmlAttribute		
+	public void setLinkedPickupsAtStartOnly(boolean startOnly) {
+		setBool(BooleanOptions.LINKED_PICKUPS_AT_ROUTE_START_ONLY, startOnly);
+	}
 	
 	public boolean isInfiniteFleetSize() {
 		return getBool(BooleanOptions.FLEET_SIZE_IS_INFINITE);

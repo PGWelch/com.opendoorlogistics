@@ -11,13 +11,10 @@ import java.util.ArrayList;
 
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
-import com.opendoorlogistics.api.scripts.ScriptInputTables;
 import com.opendoorlogistics.api.scripts.ScriptTemplatesBuilder;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.core.components.ODLWizardTemplateConfig;
-import com.opendoorlogistics.core.scripts.elements.Script;
-import com.opendoorlogistics.core.scripts.io.ScriptIO;
 
 public class ScriptTemplatesImpl implements ScriptTemplatesBuilder {
 	private final ArrayList<ODLWizardTemplateConfig> templates = new ArrayList<>();
