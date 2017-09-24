@@ -1,0 +1,2 @@
+The api jar is a dependency for plugin components - e.g. vehicle routing, territorium.
+To export the api as a fat jar file, export as a Runnable jar from Eclipse, using the dummy main method in ODLTime.java

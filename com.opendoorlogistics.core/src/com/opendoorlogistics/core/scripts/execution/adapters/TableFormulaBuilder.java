@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.fasterxml.jackson.core.JsonParser.NumberType;
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.PredefinedTags;
@@ -19,7 +18,6 @@ import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.core.cache.ApplicationCache;
 import com.opendoorlogistics.core.cache.RecentlyUsedCache;
 import com.opendoorlogistics.core.formulae.FormulaParser;
-import com.opendoorlogistics.core.formulae.Functions.*;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionFactory;
 import com.opendoorlogistics.core.formulae.FunctionImpl;
@@ -27,13 +25,14 @@ import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.FunctionUtils;
 import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition;
-import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary;
 import com.opendoorlogistics.core.formulae.definitions.FunctionDefinition.ArgumentType;
+import com.opendoorlogistics.core.formulae.definitions.FunctionDefinitionLibrary;
 import com.opendoorlogistics.core.scripts.TableReference;
 import com.opendoorlogistics.core.scripts.elements.AdaptedTableConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterColumnConfig;
 import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
 import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
+import com.opendoorlogistics.core.scripts.formulae.TableParameters;
 import com.opendoorlogistics.core.scripts.formulae.tables.ConstTable;
 import com.opendoorlogistics.core.scripts.formulae.tables.DatastoreFormula;
 import com.opendoorlogistics.core.scripts.formulae.tables.EmptyTable;
@@ -52,8 +51,12 @@ public class TableFormulaBuilder {
 		ODLDatastore<? extends ODLTable> buildAdapter(AdapterConfig config);
 	}
 	
-	public static ODLDatastore<? extends ODLTableAlterable>  executeTableFormula(String formulaText,ODLApi api, DependencyInjector injector, ExecutionReport report){
-		FunctionDefinitionLibrary lib = buildFunctionLib(api,injector, report);
+	public static ODLDatastore<? extends ODLTableAlterable>  executeTableFormula(String formulaText,ODLApi api, DependencyInjector injector, 
+			TableParameters tableParameters,
+			int defaultDsIndx,
+			IndexedDatastores<? extends ODLTable> indexedDatastores,
+			ExecutionReport report){
+		FunctionDefinitionLibrary lib = buildFunctionLib(api,injector,defaultDsIndx,indexedDatastores, report);
 
 		FormulaParser loader = new FormulaParser(null, lib, null);
 
@@ -64,7 +67,7 @@ public class TableFormulaBuilder {
 				report.setFailed("Error building table formula: " + formulaText);				
 			}
 			else if(TableFormula.class.isInstance(formula)){
-				ODLTableAlterable table =(ODLTableAlterable)formula.execute(null);
+				ODLTableAlterable table =(ODLTableAlterable)formula.execute(tableParameters);
 				if(table==null){
 					report.setFailed("Error building table formula; formula did not return a table: " + formulaText);
 				}else{
@@ -94,7 +97,10 @@ public class TableFormulaBuilder {
 		return null;
 	}
 	
-	private static FunctionDefinitionLibrary buildFunctionLib(ODLApi api,DependencyInjector injector, ExecutionReport report){
+	private static FunctionDefinitionLibrary buildFunctionLib(ODLApi api,DependencyInjector injector,
+			int defaultDsIndx,
+			IndexedDatastores<? extends ODLTable> indexedDatastores,
+			ExecutionReport report){
 		FunctionDefinitionLibrary lib = new FunctionDefinitionLibrary(FunctionDefinitionLibrary.DEFAULT_LIB);
 		lib.addStandardFunction(Shapefile.class, "shapefile", "Load the shapefile", "filename");
 		lib.addStandardFunction(EmptyTable.class, EmptyTable.KEYWORD, "Create a table with no columns and blank rows", "tablename", "rowcount");
@@ -124,6 +130,9 @@ public class TableFormulaBuilder {
 		importDefn.addArg("cache", "Should the file be cached (true or false).");
 		importDefn.setFactory(createImporterFunctionFactory(api, true));
 		lib.add(importDefn);
+		
+		// basic lookups so we can use script parameters
+		FunctionsBuilder.buildBasicLookups(lib, indexedDatastores, defaultDsIndx, report);
 		return lib;
 	}
 

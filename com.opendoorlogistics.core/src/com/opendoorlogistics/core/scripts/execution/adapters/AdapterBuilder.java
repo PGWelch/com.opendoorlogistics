@@ -176,7 +176,8 @@ final public class AdapterBuilder {
 						}
 						return null;
 					}
-				}, report);
+				},new TableParameters(datasources, -1, -1, -1, -1, null),
+					-1,createIndexDatastoresWrapper(), report);
 				if(importedDs!=null){
 					builtAdapters.addAdapter(id, importedDs);	
 					return importedDs;

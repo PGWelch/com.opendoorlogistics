@@ -16,6 +16,7 @@ import com.opendoorlogistics.api.standardcomponents.Reporter;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor;
 import com.opendoorlogistics.api.standardcomponents.TableCreator;
 import com.opendoorlogistics.api.standardcomponents.TableViewer;
+import com.opendoorlogistics.api.standardcomponents.UpdateTable;
 import com.opendoorlogistics.core.components.ODLGlobalComponents;
 
 public class StandardComponentsImpl implements StandardComponents{
@@ -67,5 +68,10 @@ public class StandardComponentsImpl implements StandardComponents{
 	@Override
 	public MatrixExporter matrixExporter() {
 		return find(MatrixExporter.class);
+	}
+
+	@Override
+	public UpdateTable updateTable() {
+		return find(UpdateTable.class);
 	}
 }
