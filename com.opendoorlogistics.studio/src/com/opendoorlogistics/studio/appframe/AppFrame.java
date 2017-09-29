@@ -21,6 +21,7 @@ import java.util.concurrent.Future;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -47,6 +48,7 @@ import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.IO;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.app.DatastoreModifier;
+import com.opendoorlogistics.api.app.ODLApp;
 import com.opendoorlogistics.api.app.ODLAppLoadedState;
 import com.opendoorlogistics.api.app.ui.BeanEditorFactory;
 import com.opendoorlogistics.api.app.ui.ODLAppUI;
@@ -130,11 +132,20 @@ public class AppFrame extends DesktopAppFrame  {
 	private final ScriptsPanel scriptsPanel;
 	private final JToolBar mainToolbar = new JToolBar(SwingConstants.VERTICAL);
 	private final ODLApi api = new ODLApiImpl(){
+
+		@Override
+		public ODLApp app() {
+			return AppFrame.this;
+		}
+		
 		private final IO io = new IOImpl(){
 			@Override
 			public File getLoadedExcelFile() {
 				return loaded!=null ? loaded.getFile():null;
 			}
+			
+
+
 		};
 		@Override
 		public IO io() {
@@ -616,6 +627,8 @@ public class AppFrame extends DesktopAppFrame  {
 		OkCancelDialog dlg = new ButtonTableDialog(this, dialogMessage, buttons.toArray(new JButton[buttons.size()]));
 		dlg.setTitle(popupTitle);
 		dlg.setLocationRelativeTo(this);
+		dlg.getRootPane().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		dlg.pack();
 		if (icon != null) {
 			Image image = IconToImage.iconToImage(icon);
 			if (image != null) {
@@ -846,7 +859,7 @@ public class AppFrame extends DesktopAppFrame  {
 		// create button to launch the wizard
 		ArrayList<JButton> buttons = new ArrayList<>();
 		for (final ODLWizardTemplateConfig config : ScriptTemplatesImpl.getTemplates(getApi(), component)) {
-			Action action = new AbstractAction("Launch wizard \"" + config.getName() + "\" to configure new script") {
+			Action action = new AbstractAction(config.getName() ) {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
@@ -866,7 +879,7 @@ public class AppFrame extends DesktopAppFrame  {
 
 		// launch dialog to select the option
 		if (buttons.size() > 1) {
-			launchButtonsListDialog(component.getName(), "Choose \"" + component.getName() + "\" option:",
+			launchButtonsListDialog(component.getName(), "Choose the \"" + component.getName() + "\" script wizard to run:",
 					component.getIcon(getApi(), ODLComponent.MODE_DEFAULT), buttons);
 		} else {
 			// pick the only option...
@@ -1074,6 +1087,12 @@ public class AppFrame extends DesktopAppFrame  {
 
 
 		};
+	}
+
+
+	@Override
+	public JFrame getJFrame() {
+		return this;
 	}
 
 

@@ -26,8 +26,6 @@ public class ODLWizardTemplateConfig {
 	private final BuildScriptCallback buildScriptCB;
 	
 	//public static long FLAG_IO_DATASTORE_IS_FIXED = 1<<0;
-	public static long FLAG_OUTPUT_DATASTORE_IS_FIXED = 1<<1;
-	public static long STANDARD_FLAGS =  FLAG_OUTPUT_DATASTORE_IS_FIXED;
 
 //	public ODLWizardTemplateConfig(String shortName, String name, String description, Serializable config) {
 //		this(shortName, name, description, config, STANDARD_FLAGS, ODLComponent.MODE_DEFAULT);

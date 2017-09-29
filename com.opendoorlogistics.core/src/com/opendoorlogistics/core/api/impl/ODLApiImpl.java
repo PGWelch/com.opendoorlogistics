@@ -25,6 +25,8 @@ import com.opendoorlogistics.api.StandardComponents;
 import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.Values;
+import com.opendoorlogistics.api.app.ODLApp;
+import com.opendoorlogistics.api.app.ODLAppPreferences;
 import com.opendoorlogistics.api.app.ODLAppProperties;
 import com.opendoorlogistics.api.cache.ObjectCachePool;
 import com.opendoorlogistics.api.components.ODLComponentProvider;
@@ -46,7 +48,8 @@ public class ODLApiImpl implements ODLApi{
 	private volatile Functions functions;
 	private volatile IO io;
 	private volatile Scripts scripts;
-
+	private volatile ODLAppPreferences preferences;
+	
 	@Override
 	public Values values() {
 		if(conversionApi==null){
@@ -198,6 +201,19 @@ public class ODLApiImpl implements ODLApi{
 	@Override
 	public ObjectCachePool cache() {
 		return ApplicationCache.singleton();
+	}
+
+	@Override
+	public ODLApp app() {
+		throw new UnsupportedOperationException("App object access not supported");
+	}
+
+	@Override
+	public ODLAppPreferences preferences() {
+		if(preferences == null){
+			preferences = new ODLAppPreferencesImpl();
+		}
+		return preferences;
 	}
 
 

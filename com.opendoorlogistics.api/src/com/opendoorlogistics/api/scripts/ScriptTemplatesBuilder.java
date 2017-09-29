@@ -13,10 +13,22 @@ import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 
 public interface ScriptTemplatesBuilder {
+	public static long FLAG_OUTPUT_DATASTORE_IS_FIXED = 1<<1;
+	public static long STANDARD_FLAGS =  FLAG_OUTPUT_DATASTORE_IS_FIXED;
+
 	public static interface BuildScriptCallback {
 		void buildScript(ScriptOption builder);
 	}
 
+	/**
+	 * Extended interface so we don't break existing modules...
+	 * @author Phil
+	 *
+	 */
+	public static interface BuildScriptCallbackExt{
+		
+	}
+	
 	ODLApi getApi();
 
 	void registerTemplate(String shortName, String name, String description, ODLDatastore<? extends ODLTableDefinition> expectedDatastore, Serializable config);

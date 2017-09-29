@@ -6,6 +6,12 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.tables.memory;
 
+import java.time.LocalDateTime;
+import java.util.Random;
+import java.util.UUID;
+
+import org.apache.log4j.chainsaw.Main;
+
 import com.opendoorlogistics.api.tables.ODLColumnType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
@@ -18,6 +24,9 @@ import com.opendoorlogistics.core.tables.ODLTableFactory;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
 import com.opendoorlogistics.core.utils.IntIDGenerator;
 import com.opendoorlogistics.core.utils.IntIDGenerator.IsExistingId;
+
+import sun.launcher.resources.launcher;
+
 import com.opendoorlogistics.core.utils.MapList;
 
 final public class ODLTableImpl extends ODLTableDefinitionImpl implements ODLTableAlterable{
@@ -358,4 +367,20 @@ final public class ODLTableImpl extends ODLTableDefinitionImpl implements ODLTab
 		throw new UnsupportedOperationException();
 	}
 
+	public static void main(String []args){
+		// test when memory starts to run out with large tables
+		int million = 1000000;
+		ODLTableImpl table = new ODLTableImpl(1, "test");
+		table.addColumn(0, "postcode", ODLColumnType.STRING, 0);
+		table.addColumn(1, "territory", ODLColumnType.STRING, 0);
+		for(int i =0 ; i<5*million ; i++){
+			int row = table.createEmptyRow(-1);
+			table.setValueAt(UUID.randomUUID().toString(), row, 0);
+			table.setValueAt(UUID.randomUUID().toString(), row, 1);	
+			if(i%10000==0){
+				long bytes=Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+				System.out.println(LocalDateTime.now() + ": " + i + " records, " + (bytes/(1024*1024)) + " MB");
+			}
+		}
+	}
 }

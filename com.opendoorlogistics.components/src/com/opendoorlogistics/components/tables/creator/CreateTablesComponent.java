@@ -82,7 +82,7 @@ final public class CreateTablesComponent implements TableCreator{
 					ODLTableDefinitionImpl table = new ODLTableDefinitionImpl(-1, "Table" + i);
 					conf.getTables().add(table);
 				}
-				templatesApi.registerTemplate(s, s, s,getIODsDefinition(templatesApi.getApi(), conf), conf, ODLWizardTemplateConfig.STANDARD_FLAGS & (~ODLWizardTemplateConfig.FLAG_OUTPUT_DATASTORE_IS_FIXED),ODLComponent.MODE_DEFAULT);
+				templatesApi.registerTemplate(s, s, s,getIODsDefinition(templatesApi.getApi(), conf), conf, ScriptTemplatesBuilder.STANDARD_FLAGS & (~ScriptTemplatesBuilder.FLAG_OUTPUT_DATASTORE_IS_FIXED),ODLComponent.MODE_DEFAULT);
 			}
 		}
 		Helper helper = new Helper();
@@ -103,7 +103,7 @@ final public class CreateTablesComponent implements TableCreator{
 			DatastoreCopier.copyTableDefinition(src, table);
 			conf.getTables().add(table);
 		}
-		return new ODLWizardTemplateConfig("", "", "",null, conf, ODLWizardTemplateConfig.STANDARD_FLAGS & (~ODLWizardTemplateConfig.FLAG_OUTPUT_DATASTORE_IS_FIXED),ODLComponent.MODE_DEFAULT,null);
+		return new ODLWizardTemplateConfig("", "", "",null, conf, ScriptTemplatesBuilder.STANDARD_FLAGS & (~ScriptTemplatesBuilder.FLAG_OUTPUT_DATASTORE_IS_FIXED),ODLComponent.MODE_DEFAULT,null);
 	}
 	
 	@Override

@@ -1,11 +1,13 @@
 package com.opendoorlogistics.api;
 
 import java.io.File;
+import java.util.List;
 
 import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 
@@ -19,6 +21,8 @@ public interface IO {
 	File getStandardConfigDirectory();
 	
 	File getStandardScriptsDir();
+	
+	File getAsRelativeIfWithinStandardShapefileDirectory(File file);
 	
 	/**
 	 * If we're in ODL Studio this returns the file that the current datastore was loaded from.
@@ -46,4 +50,14 @@ public interface IO {
 	 * @return
 	 */
 	String normalisePath(String s);
+	
+	List<String> getShapefileFieldnames(File shapefileOrODLRG);
+	
+	/**
+	 * Import a shapefile specifying a max number of rows
+	 * @param file
+	 * @param maxRows
+	 * @return
+	 */
+	ODLTable importShapefile(File file, int maxRows);
 }

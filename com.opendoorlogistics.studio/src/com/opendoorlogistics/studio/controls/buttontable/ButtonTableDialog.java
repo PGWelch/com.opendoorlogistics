@@ -21,6 +21,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 import com.opendoorlogistics.core.utils.strings.Strings;
 import com.opendoorlogistics.core.utils.ui.LayoutUtils;
@@ -76,9 +77,11 @@ public class ButtonTableDialog extends OkCancelDialog {
 		super(parent, false, true, false);
 
 		if (Strings.isEmpty(message) == false) {
-			add(LayoutUtils.createVerticalBoxLayout(Box.createRigidArea(new Dimension(1, 8)),
+			JPanel panel = LayoutUtils.createVerticalBoxLayout(Box.createRigidArea(new Dimension(1, 8)),
 					LayoutUtils.createHorizontalBoxLayout(Box.createRigidArea(new Dimension(5, 1)), new JLabel(message)),
-					Box.createRigidArea(new Dimension(1, 10))), BorderLayout.NORTH);
+					Box.createRigidArea(new Dimension(1, 10)));
+			panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+			add(panel, BorderLayout.NORTH);
 		}
 
 		// calculate the best button size
