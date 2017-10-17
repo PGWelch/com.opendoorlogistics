@@ -18,9 +18,9 @@ final public class AppConstants {
 	
 	public static final int APP_VERSION_MAJOR = 1;
 	
-	public static final int APP_VERSION_MINOR = 3;
+	public static final int APP_VERSION_MINOR = 4;
 
-	public static final int APP_VERSION_REVISION = 6;
+	public static final int APP_VERSION_REVISION = 0;
 
 	public static final String DATA_DIRECTORY = "data" + File.separator;
 			

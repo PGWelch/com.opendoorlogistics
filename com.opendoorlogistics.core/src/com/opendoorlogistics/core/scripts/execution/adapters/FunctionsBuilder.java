@@ -89,14 +89,14 @@ final public class FunctionsBuilder {
 					throw new RuntimeException("Attempted to use this(field_name) in an unsupported formulae context.");
 				}
 
-//				// get field index
-//				String colname = FunctionUtils.getConstantString(children[0]);
-//				int indx = TableUtils.findColumnIndx(targetTableDefinition, colname);
-//				if (indx == -1) {
-//					throw new RuntimeException("Could not find column " + colname + " in this(field_name) formulae.");
-//				}
+				// get field index
+				String colname = FunctionUtils.getConstantString(children[0]);
+				int indx = TableUtils.findColumnIndx(targetTableDefinition, colname);
+				if (indx == -1) {
+					throw new RuntimeException("Could not find column " + colname + " in this(field_name) formulae.");
+				}
 
-				return new FmThis(children[0]);
+				return new FmThis(indx);
 			}
 		});
 		library.add(thisDfn);

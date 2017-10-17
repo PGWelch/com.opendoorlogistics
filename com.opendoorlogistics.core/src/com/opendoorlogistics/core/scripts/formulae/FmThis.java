@@ -12,16 +12,12 @@ import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.tables.ODLRowReadOnly;
 import com.opendoorlogistics.core.tables.utils.TableUtils;
-
-/**
- * Returns a field in the destination adapter, not the source.
- * @author Phil
- *
- */
 final public class FmThis extends FmRowDependent{
-
-	public FmThis(Function fieldname){
-		super(fieldname);
+	private final int col;
+	
+	public FmThis(int col){
+		super();
+		this.col = col;
 	}
 	
 	@Override
@@ -32,23 +28,13 @@ final public class FmThis extends FmRowDependent{
 			return Functions.EXECUTION_ERROR;
 		}
 		
-		Object object = child(0).execute(parameters);
-		if(object == Functions.EXECUTION_ERROR|| object==null){
-			return Functions.EXECUTION_ERROR;
-		}
-		String fieldname = object.toString();
-		
-		int col=TableUtils.findColumnIndx(row.getDefinition(), fieldname, true);
-		if(col==-1){
-			return Functions.EXECUTION_ERROR;
-		}
 		return row.get(col);
 
 	}
 
 	@Override
 	public Function deepCopy() {
-		return new FmThis(deepCopy(children)[0]);
+		return new FmThis(col);
 	}
 
 }
