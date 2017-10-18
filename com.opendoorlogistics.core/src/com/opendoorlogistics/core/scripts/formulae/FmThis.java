@@ -11,12 +11,7 @@ import com.opendoorlogistics.core.formulae.FunctionImpl;
 import com.opendoorlogistics.core.formulae.FunctionParameters;
 import com.opendoorlogistics.core.formulae.Functions;
 import com.opendoorlogistics.core.tables.ODLRowReadOnly;
-
-/**
- * Returns a field in the destination adapter, not the source.
- * @author Phil
- *
- */
+import com.opendoorlogistics.core.tables.utils.TableUtils;
 final public class FmThis extends FmRowDependent{
 	private final int col;
 	

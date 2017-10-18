@@ -6,7 +6,9 @@ import java.util.Set;
 /**
  * Interface for the app-wide properties.
  * Properties are accessed by string, where all lookups use standardised strings,
- * i.e. they are insensitive to case and whitespace at start and end of ley.
+ * i.e. they are insensitive to case and whitespace at start and end of key.
+ * Properties are loaded from config files and may be modified in memory
+ * but the modication is not persisted
  * @author Phil
  *
  */

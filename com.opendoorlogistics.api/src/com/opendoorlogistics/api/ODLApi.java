@@ -8,14 +8,16 @@ package com.opendoorlogistics.api;
 
 import java.util.List;
 
-import net.xeoh.plugins.base.Plugin;
-
+import com.opendoorlogistics.api.app.ODLApp;
+import com.opendoorlogistics.api.app.ODLAppPreferences;
 import com.opendoorlogistics.api.app.ODLAppProperties;
 import com.opendoorlogistics.api.cache.ObjectCachePool;
 import com.opendoorlogistics.api.components.ODLComponentProvider;
 import com.opendoorlogistics.api.geometry.Geometry;
 import com.opendoorlogistics.api.scripts.Scripts;
 import com.opendoorlogistics.api.ui.UIFactory;
+
+import net.xeoh.plugins.base.Plugin;
 
 
 public interface ODLApi {
@@ -31,6 +33,8 @@ public interface ODLApi {
 	Scripts scripts();
 	IO io();
 	ODLAppProperties properties();
+	ODLApp app();
+	ODLAppPreferences preferences();
 	
 	/**
 	 * Load all plugins of the input class from the plugins directory

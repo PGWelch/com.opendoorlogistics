@@ -9,6 +9,8 @@ import com.opendoorlogistics.api.StandardComponents;
 import com.opendoorlogistics.api.StringConventions;
 import com.opendoorlogistics.api.Tables;
 import com.opendoorlogistics.api.Values;
+import com.opendoorlogistics.api.app.ODLApp;
+import com.opendoorlogistics.api.app.ODLAppPreferences;
 import com.opendoorlogistics.api.app.ODLAppProperties;
 import com.opendoorlogistics.api.cache.ObjectCachePool;
 import com.opendoorlogistics.api.components.ODLComponentProvider;
@@ -75,6 +77,16 @@ public class ODLApiDecorator implements ODLApi{
 
 	public <T extends Plugin> List<T> loadPlugins(Class<T> cls) {
 		return api.loadPlugins(cls);
+	}
+
+	@Override
+	public ODLApp app() {
+		return api.app();
+	}
+
+	@Override
+	public ODLAppPreferences preferences() {
+		return api.preferences();
 	}
 	
 	

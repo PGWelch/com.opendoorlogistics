@@ -80,7 +80,7 @@ final public class FunctionsBuilder {
 				+ "Use this(\"field_name\") to call one calculated field in an adapter from another in the same adapter. "
 				+ "Warning - use of this(\"field_name\")) is not permitted in some formulae contexts and "
 				+ "care should be taken to never create a circular loop.");
-		thisDfn.addArg("field_name", ArgumentType.STRING_CONSTANT);
+		thisDfn.addArg("field_name", ArgumentType.GENERAL);
 		thisDfn.setFactory(new FunctionFactory() {
 
 			@Override
@@ -242,7 +242,7 @@ final public class FunctionsBuilder {
 		return ret;
 	}
 
-	private static void buildBasicLookups(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTableReadOnly> datastores,
+	public static void buildBasicLookups(FunctionDefinitionLibrary library, final IndexedDatastores<? extends ODLTableReadOnly> datastores,
 			final int defaultDatastoreIndex, final ExecutionReport result) {
 
 		// loop over every lookup type

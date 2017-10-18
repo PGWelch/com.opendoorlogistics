@@ -118,6 +118,17 @@ public final class ImportShapefile {
 		}
 	}
 	
+	/**
+	 * Import the shapefile. All geometry is transformed into WGS84.
+	 * 
+	 * @param file
+	 * @param ds
+	 */
+	public static HashMap<ShapefileLink, ODLGeom> importShapefile(
+			File file,boolean isLinkedGeometry, ODLDatastoreAlterable<? extends ODLTableAlterable> ds, 
+			boolean returnGeometry) {
+		return importShapefile(file, isLinkedGeometry, ds, returnGeometry, Integer.MAX_VALUE);
+	}
 
 	/**
 	 * Import the shapefile. All geometry is transformed into WGS84.
@@ -126,7 +137,10 @@ public final class ImportShapefile {
 	 * @param ds
 	 */
 	@SuppressWarnings("deprecation")
-	public static HashMap<ShapefileLink, ODLGeom> importShapefile(File file,boolean isLinkedGeometry, ODLDatastoreAlterable<? extends ODLTableAlterable> ds, boolean returnGeometry) {
+	public static HashMap<ShapefileLink, ODLGeom> importShapefile(
+			File file,boolean isLinkedGeometry, ODLDatastoreAlterable<? extends ODLTableAlterable> ds, 
+			boolean returnGeometry,
+			int maxRows) {
 		Spatial.initSpatial();
 		
 		file = RelativeFiles.validateRelativeFiles(file.getPath(), AppConstants.SHAPEFILES_DIRECTORY);
@@ -210,7 +224,7 @@ public final class ImportShapefile {
 				// parse all features recording all attributes, including geometry
 				it = collection.features();
 				int objectIndex=0;
-				while (it.hasNext()) {
+				while (it.hasNext() && objectIndex < maxRows) {
 					SimpleFeature feature = it.next();
 
 					//System.out.println(feature.getID());

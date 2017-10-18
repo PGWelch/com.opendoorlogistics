@@ -7,6 +7,10 @@
 package com.opendoorlogistics.core.utils.io;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import org.apache.commons.io.FilenameUtils;
 
 import com.opendoorlogistics.core.AppConstants;
 
@@ -61,6 +65,34 @@ public class RelativeFiles {
 		
 	}
 
+	public static File makeRelativeIfAbsoluteWithinDefaultDirectory(String filename, String defaultDir){
+		File file = new File(filename);
+		if(!file.isAbsolute()){
+			// if its relative already don't do anything
+			return file;
+		}
+		
+		File defaultDirObj = new File(defaultDir).getAbsoluteFile();
+		Path path = Paths.get(file.getAbsolutePath());
+		Path defaultPath = Paths.get(defaultDirObj.getAbsolutePath());
+		if(path.startsWith(defaultPath)){
+			// Path.relativize is not including the filename
+			// so we roll our own here...
+			String sDir = defaultDirObj.getAbsolutePath();
+			if(!sDir.endsWith(File.separator)){
+				sDir+= File.separator;
+			}
+			String sFile= file.getAbsolutePath();
+			sFile = sFile.replace(sDir, "");
+			file = new File(sFile);
+			return file;
+			
+//			path = path.relativize(defaultPath);
+//			return path.toFile();
+		}
+		
+		return file;
+	}
 	/**
 	 * 
 	 * @param filename

@@ -36,7 +36,7 @@ public class ScriptTemplatesImpl implements ScriptTemplatesBuilder {
 	 */
 	@Override
 	public void registerTemplate(String shortName, String name, String description,ODLDatastore<? extends ODLTableDefinition>expectedDatastore, Serializable config) {
-		registerTemplate(shortName, name, description, expectedDatastore,config, ODLWizardTemplateConfig.STANDARD_FLAGS, ODLComponent.MODE_DEFAULT);
+		registerTemplate(shortName, name, description, expectedDatastore,config, ScriptTemplatesBuilder.STANDARD_FLAGS, ODLComponent.MODE_DEFAULT);
 	}
 
 	/**
@@ -53,7 +53,7 @@ public class ScriptTemplatesImpl implements ScriptTemplatesBuilder {
 	 */
 	@Override
 	public void registerTemplate(String shortName, String name, String description,ODLDatastore<? extends ODLTableDefinition>expectedDatastore, BuildScriptCallback buildScriptCB) {
-		registerTemplate(shortName, name, description,expectedDatastore, buildScriptCB, ODLWizardTemplateConfig.STANDARD_FLAGS);		
+		registerTemplate(shortName, name, description,expectedDatastore, buildScriptCB, ScriptTemplatesBuilder.STANDARD_FLAGS);		
 	}
 
 	/**

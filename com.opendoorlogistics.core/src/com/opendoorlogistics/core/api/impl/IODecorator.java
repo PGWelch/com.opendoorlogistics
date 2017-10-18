@@ -1,6 +1,7 @@
 package com.opendoorlogistics.core.api.impl;
 
 import java.io.File;
+import java.util.List;
 
 import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.IO;
@@ -8,6 +9,7 @@ import com.opendoorlogistics.api.components.ProcessingApi;
 import com.opendoorlogistics.api.io.ImportFileType;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
+import com.opendoorlogistics.api.tables.ODLTable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 import com.opendoorlogistics.api.tables.ODLTableReadOnly;
 
@@ -49,6 +51,21 @@ public class IODecorator implements IO{
 	@Override
 	public File getLoadedExcelFile() {
 		return io.getLoadedExcelFile();
+	}
+
+	@Override
+	public List<String> getShapefileFieldnames(File shapefileOrODLRG) {
+		return io.getShapefileFieldnames(shapefileOrODLRG);
+	}
+
+	@Override
+	public ODLTable importShapefile(File file, int maxRows) {
+		return io.importShapefile(file, maxRows);
+	}
+
+	@Override
+	public File getAsRelativeIfWithinStandardShapefileDirectory(File file) {
+		return io.getAsRelativeIfWithinStandardShapefileDirectory(file);
 	}
 	
 	

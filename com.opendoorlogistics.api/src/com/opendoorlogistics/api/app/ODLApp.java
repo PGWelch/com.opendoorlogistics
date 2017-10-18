@@ -2,6 +2,8 @@ package com.opendoorlogistics.api.app;
 
 import java.io.File;
 
+import javax.swing.JFrame;
+
 import com.opendoorlogistics.api.HasApi;
 import com.opendoorlogistics.api.app.ui.ODLAppUI;
 import com.opendoorlogistics.api.io.ImportFileType;
@@ -10,6 +12,8 @@ import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTableAlterable;
 
 public interface ODLApp extends AsynchronousScriptExecutor, HasApi{
+	JFrame getJFrame();
+	
 	/**
 	 * Set the datastore open in the app 
 	 * @param newDs

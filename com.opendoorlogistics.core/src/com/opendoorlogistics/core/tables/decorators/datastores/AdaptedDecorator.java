@@ -395,7 +395,7 @@ final public class AdaptedDecorator<T extends ODLTableDefinition> extends Abstra
 				
 				@Override
 				public ODLTableDefinition getDefinition() {
-					throw new UnsupportedOperationException();
+					return destTable;
 				}
 				
 				@Override

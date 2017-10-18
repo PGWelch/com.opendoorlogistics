@@ -22,6 +22,7 @@ import com.opendoorlogistics.api.components.ComponentConfigurationEditorAPI;
 import com.opendoorlogistics.api.components.ComponentExecutionApi;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.scripts.ScriptTemplatesBuilder;
+import com.opendoorlogistics.api.standardcomponents.UpdateTable;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLDatastoreAlterable;
 import com.opendoorlogistics.api.tables.ODLTable;
@@ -40,7 +41,7 @@ import com.opendoorlogistics.core.utils.ui.VerticalLayoutPanel;
  * @author Phil
  * 
  */
-public final class UpdateQueryComponent implements ODLComponent {
+public final class UpdateQueryComponent implements ODLComponent , UpdateTable{
 
 	@XmlRootElement(name = "UpdateQuery")
 	public static class UpdateQueryConfig implements Serializable {
@@ -166,6 +167,13 @@ public final class UpdateQueryComponent implements ODLComponent {
 	@Override
 	public boolean isModeSupported(ODLApi api,int mode) {
 		return mode==ODLComponent.MODE_DEFAULT;
+	}
+
+	@Override
+	public Serializable createConfig(boolean isDelete) {
+		UpdateQueryConfig ret = new UpdateQueryConfig();
+		ret.setDeleteQuery(isDelete);
+		return ret;
 	}
 
 

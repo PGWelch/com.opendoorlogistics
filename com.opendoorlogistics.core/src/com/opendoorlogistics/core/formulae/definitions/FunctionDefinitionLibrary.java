@@ -22,6 +22,7 @@ import com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeom.FmDrivi
 import com.opendoorlogistics.core.distances.functions.FmDrivingRouteGeomFromLine;
 import com.opendoorlogistics.core.distances.functions.FmDrivingTime;
 import com.opendoorlogistics.core.distances.functions.FmDrivingTime.FmDrivingTimeUncached;
+import com.opendoorlogistics.core.formulae.FmLegendRangeText;
 import com.opendoorlogistics.core.formulae.Function;
 import com.opendoorlogistics.core.formulae.FunctionFactory;
 import com.opendoorlogistics.core.formulae.FunctionUtils;
@@ -386,6 +387,7 @@ public final class FunctionDefinitionLibrary {
 		add(switchDfn);
 		
 		// string functions
+		addStandardFunction(FmLegendRangeText.class, "legendrangetext", "Create a text description for a value according to the bin it sits in", "minValue","maxValue","nbBins","thisValue");
 		addStandardFunction(FmUpper.class, "upper", "Convert string to upper case.", "string_value");
 		addStandardFunction(FmLower.class, "lower",  "Convert string to lower case.","string_value");
 		addStandardFunction(FmCreateUUID.class, "createUUID",  "Create a type 3 (name based) UUID using the input string.","string_value");

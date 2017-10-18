@@ -6,7 +6,6 @@
  ******************************************************************************/
 package com.opendoorlogistics.core.scripts.wizard;
 
-import com.opendoorlogistics.api.ExecutionReport;
 import com.opendoorlogistics.api.ODLApi;
 import com.opendoorlogistics.api.components.ODLComponent;
 import com.opendoorlogistics.api.scripts.ScriptAdapter;
@@ -14,20 +13,13 @@ import com.opendoorlogistics.api.scripts.ScriptInputTables;
 import com.opendoorlogistics.api.scripts.ScriptInstruction;
 import com.opendoorlogistics.api.scripts.ScriptOption;
 import com.opendoorlogistics.api.scripts.ScriptOption.OutputType;
+import com.opendoorlogistics.api.scripts.ScriptTemplatesBuilder;
 import com.opendoorlogistics.api.tables.ODLDatastore;
 import com.opendoorlogistics.api.tables.ODLTableDefinition;
 import com.opendoorlogistics.core.api.impl.scripts.ScriptOptionImpl;
 import com.opendoorlogistics.core.components.ODLWizardTemplateConfig;
-import com.opendoorlogistics.core.scripts.ScriptConstants;
-import com.opendoorlogistics.core.scripts.TargetIODsInterpreter;
-import com.opendoorlogistics.core.scripts.elements.AdapterConfig;
-import com.opendoorlogistics.core.scripts.elements.ComponentConfig;
-import com.opendoorlogistics.core.scripts.elements.InstructionConfig;
 import com.opendoorlogistics.core.scripts.elements.Option;
-import com.opendoorlogistics.core.scripts.elements.OutputConfig;
 import com.opendoorlogistics.core.scripts.elements.Script;
-import com.opendoorlogistics.core.scripts.elements.ScriptEditorType;
-import com.opendoorlogistics.core.scripts.execution.ExecutionReportImpl;
 import com.opendoorlogistics.core.scripts.io.ScriptIO;
 import com.opendoorlogistics.core.scripts.utils.ScriptUtils;
 
@@ -129,7 +121,7 @@ final public class ScriptGenerator {
 			// Create copy tables for the output (if we have output)
 			ODLDatastore<? extends ODLTableDefinition> outDs = instructionBuilder.getInstructionOutput();
 			if(outDs!=null){
-				if (config.hasFlag(ODLWizardTemplateConfig.FLAG_OUTPUT_DATASTORE_IS_FIXED)) {
+				if (config.hasFlag(ScriptTemplatesBuilder.FLAG_OUTPUT_DATASTORE_IS_FIXED)) {
 					// This assumes output is fixed and allows table names to be edited
 					for (int i = 0; i < outDs.getTableCount(); i++) {
 						ODLTableDefinition outTable = outDs.getTableAt(i);

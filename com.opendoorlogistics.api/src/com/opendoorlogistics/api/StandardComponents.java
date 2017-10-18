@@ -14,6 +14,7 @@ import com.opendoorlogistics.api.standardcomponents.Reporter;
 import com.opendoorlogistics.api.standardcomponents.ScheduleEditor;
 import com.opendoorlogistics.api.standardcomponents.TableCreator;
 import com.opendoorlogistics.api.standardcomponents.TableViewer;
+import com.opendoorlogistics.api.standardcomponents.UpdateTable;
 
 public interface StandardComponents {
 	Maps map();
@@ -24,4 +25,5 @@ public interface StandardComponents {
 	ScheduleEditor scheduleEditor();
 	LineGraph lineGraph();
 	MatrixExporter matrixExporter();
+	UpdateTable updateTable();
 }
