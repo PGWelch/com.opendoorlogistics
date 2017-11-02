@@ -627,7 +627,8 @@ public class CalculateRouteDetailsV2 {
 			detail.skills = (String)vehiclesTable.getValueAt(vehicleTypeRow, dfn.vehicles.skills);
 
 			// speed multiplier
-			detail.speedMultiplier = (double)vehiclesTable.getValueAt(vehicleTypeRow, dfn.vehicles.speedMultiplier);
+			detail.speedMultiplier =dfn.vehicles.getSpeedMultiplier(vehiclesTable, vehicleTypeRow);
+			//detail.speedMultiplier = (double)vehiclesTable.getValueAt(vehicleTypeRow, dfn.vehicles.speedMultiplier);
 			
 			// save
 			ret.put(vehicleId, detail);
