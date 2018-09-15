@@ -13,3 +13,4 @@ com.opendoorlogistics.speedregions/.settings/org.eclipse.jdt.core.prefs
 *.classpath
 com.opendoorlogistics.speedregions/.project
 *.prefs
+*.attr
