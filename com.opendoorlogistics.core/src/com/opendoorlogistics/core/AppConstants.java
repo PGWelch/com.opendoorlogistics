@@ -20,7 +20,7 @@ final public class AppConstants {
 	
 	public static final int APP_VERSION_MINOR = 4;
 
-	public static final int APP_VERSION_REVISION = 1;
+	public static final int APP_VERSION_REVISION = 2;
 
 	public static final String DATA_DIRECTORY = "data" + File.separator;
 			
@@ -32,7 +32,7 @@ final public class AppConstants {
 
 	public static final String MAPSFORGE_DIRECTORY = DATA_DIRECTORY + "mapsforge" + File.separator;
 
-	public static final String OSM_COPYRIGHT = "© OpenStreetMap contributors";
+	public static final String OSM_COPYRIGHT = "ï¿½ OpenStreetMap contributors";
 	
 	public static final String EXTERNAL_MATRIX_TEXTFILE_EXTENSION = ".matrix.txt";
 	
