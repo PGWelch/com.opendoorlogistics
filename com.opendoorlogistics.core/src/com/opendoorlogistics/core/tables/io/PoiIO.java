@@ -125,6 +125,10 @@ final public class PoiIO {
 			// save schema
 			addSchema(ds, wb);
 
+			// PHILW 14/6/2022 - getting a bug where the hidden worksheet is somehow
+			// selected which is prevent the user from editing the excel in excel
+			wb.getSheetAt(0).setSelected(false);
+			
 			for (ODLTableDefinition table : TableUtils.getAlphabeticallySortedTables(ds)) {
 				ODLTableReadOnly tro = (ODLTableReadOnly) table;
 				Sheet sheet = wb.createSheet(tro.getName());
@@ -137,6 +141,11 @@ final public class PoiIO {
 				if(processing!=null && processing.isCancelled()){
 					return false;
 				}
+				
+				// PHILW 14/6/2022 - getting a bug where the hidden worksheet is somehow
+				// selected which is prevent the user from editing the excel in excel
+				// Select the latest sheet instead
+				wb.setSelectedTab(wb.getNumberOfSheets()-1);
 			}	
 
 			if(processing!=null){
