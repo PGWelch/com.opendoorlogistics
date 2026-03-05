@@ -1,0 +1,446 @@
+/* ODL Studio Theme - Mimics the Java Swing look and feel */
+
+:root {
+  /* Classic Swing/Windows look colors */
+  --odl-bg: #f0f0f0;
+  --odl-panel-bg: #ffffff;
+  --odl-border: #b0b0b0;
+  --odl-border-dark: #808080;
+  --odl-highlight: #3399ff;
+  --odl-highlight-light: #cce5ff;
+  --odl-text: #1a1a1a;
+  --odl-text-secondary: #555555;
+  --odl-toolbar-bg: #e8e8e8;
+  --odl-menu-bg: #f5f5f5;
+  --odl-sidebar-bg: #eaeaea;
+  --odl-internalframe-title: #4a7ab5;
+  --odl-internalframe-title-inactive: #999999;
+  --odl-success: #2e7d32;
+  --odl-warning: #f57c00;
+  --odl-error: #c62828;
+  --odl-tab-active: #ffffff;
+  --odl-tab-inactive: #d8d8d8;
+  --odl-splitpane-divider: #c0c0c0;
+  --odl-tree-selected: #3399ff;
+  --odl-grid-header: #dfe3e8;
+  --odl-grid-row-alt: #f7f9fc;
+  --odl-grid-row-hover: #e8f0fe;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 13px;
+  color: var(--odl-text);
+  background: var(--odl-bg);
+}
+
+/* Scrollbar styling (Swing-like) */
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border: 1px solid #d0d0d0;
+}
+::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border: 1px solid #a0a0a0;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Internal Frame (MDI-like windows) */
+.internal-frame {
+  background: var(--odl-panel-bg);
+  border: 1px solid var(--odl-border);
+  border-radius: 3px;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+.internal-frame-title {
+  background: linear-gradient(180deg, #6ba3d6 0%, var(--odl-internalframe-title) 100%);
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  min-height: 26px;
+}
+
+.internal-frame-title.inactive {
+  background: linear-gradient(180deg, #c0c0c0 0%, var(--odl-internalframe-title-inactive) 100%);
+}
+
+.internal-frame-title-buttons {
+  display: flex;
+  gap: 2px;
+}
+
+.internal-frame-title-btn {
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 2px;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.internal-frame-title-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.internal-frame-content {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+}
+
+/* Toolbar */
+.odl-toolbar {
+  background: var(--odl-toolbar-bg);
+  border-bottom: 1px solid var(--odl-border);
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  gap: 1px;
+  min-height: 32px;
+  flex-wrap: wrap;
+}
+
+.odl-toolbar-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 3px 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--odl-text);
+  white-space: nowrap;
+}
+.odl-toolbar-btn:hover {
+  background: #d0d8e0;
+  border-color: var(--odl-border);
+}
+.odl-toolbar-btn:active {
+  background: #b8c4d0;
+}
+.odl-toolbar-btn.active {
+  background: var(--odl-highlight-light);
+  border-color: var(--odl-highlight);
+}
+.odl-toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.odl-toolbar-separator {
+  width: 1px;
+  height: 22px;
+  background: var(--odl-border);
+  margin: 0 4px;
+}
+
+/* Menu bar */
+.odl-menubar {
+  background: var(--odl-menu-bg);
+  border-bottom: 1px solid var(--odl-border);
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 2px;
+}
+
+.odl-menu-item {
+  padding: 3px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  border-radius: 2px;
+  position: relative;
+}
+.odl-menu-item:hover {
+  background: var(--odl-highlight);
+  color: white;
+}
+
+.odl-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--odl-panel-bg);
+  border: 1px solid var(--odl-border);
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.15);
+  min-width: 180px;
+  z-index: 1000;
+  padding: 2px 0;
+}
+
+.odl-dropdown-item {
+  padding: 4px 20px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.odl-dropdown-item:hover {
+  background: var(--odl-highlight);
+  color: white;
+}
+
+.odl-dropdown-separator {
+  height: 1px;
+  background: var(--odl-border);
+  margin: 2px 0;
+}
+
+/* Tabs */
+.odl-tabs {
+  display: flex;
+  background: var(--odl-toolbar-bg);
+  border-bottom: 1px solid var(--odl-border);
+  padding: 0 4px;
+  min-height: 28px;
+  align-items: flex-end;
+}
+
+.odl-tab {
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  background: var(--odl-tab-inactive);
+  margin-right: 1px;
+  user-select: none;
+}
+.odl-tab:hover {
+  background: #e0e0e0;
+}
+.odl-tab.active {
+  background: var(--odl-tab-active);
+  border-color: var(--odl-border);
+  font-weight: 600;
+}
+
+/* Sidebar / Tree */
+.odl-sidebar {
+  background: var(--odl-sidebar-bg);
+  border-right: 1px solid var(--odl-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.odl-tree-node {
+  display: flex;
+  align-items: center;
+  padding: 2px 4px 2px 0;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+  user-select: none;
+}
+.odl-tree-node:hover {
+  background: var(--odl-highlight-light);
+}
+.odl-tree-node.selected {
+  background: var(--odl-tree-selected);
+  color: white;
+}
+
+.odl-tree-toggle {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--odl-text-secondary);
+}
+
+/* Status bar */
+.odl-statusbar {
+  background: var(--odl-toolbar-bg);
+  border-top: 1px solid var(--odl-border);
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--odl-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 22px;
+}
+
+/* Buttons */
+.odl-btn {
+  background: linear-gradient(180deg, #f8f8f8 0%, #e0e0e0 100%);
+  border: 1px solid var(--odl-border);
+  border-radius: 3px;
+  padding: 4px 14px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--odl-text);
+}
+.odl-btn:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #e8e8e8 100%);
+}
+.odl-btn:active {
+  background: linear-gradient(180deg, #d8d8d8 0%, #c8c8c8 100%);
+}
+.odl-btn-primary {
+  background: linear-gradient(180deg, #5b9bd5 0%, var(--odl-internalframe-title) 100%);
+  color: white;
+  border-color: #3a6a95;
+}
+.odl-btn-primary:hover {
+  background: linear-gradient(180deg, #6ba8e0 0%, #5585c0 100%);
+}
+
+/* Panels */
+.odl-panel {
+  background: var(--odl-panel-bg);
+  border: 1px solid var(--odl-border);
+  border-radius: 2px;
+}
+
+.odl-panel-header {
+  background: var(--odl-toolbar-bg);
+  border-bottom: 1px solid var(--odl-border);
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Form controls */
+.odl-input {
+  border: 1px solid var(--odl-border);
+  border-radius: 2px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  background: white;
+}
+.odl-input:focus {
+  outline: none;
+  border-color: var(--odl-highlight);
+  box-shadow: 0 0 2px rgba(51, 153, 255, 0.3);
+}
+
+.odl-select {
+  border: 1px solid var(--odl-border);
+  border-radius: 2px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+}
+
+/* Splitter */
+.odl-splitter {
+  background: var(--odl-splitpane-divider);
+  cursor: col-resize;
+  width: 5px;
+  min-width: 5px;
+}
+.odl-splitter:hover {
+  background: var(--odl-highlight);
+}
+.odl-splitter-h {
+  cursor: row-resize;
+  height: 5px;
+  min-height: 5px;
+  width: 100%;
+}
+
+/* Progress bar */
+.odl-progress {
+  background: #e0e0e0;
+  border: 1px solid var(--odl-border);
+  border-radius: 2px;
+  height: 18px;
+  overflow: hidden;
+}
+.odl-progress-bar {
+  background: linear-gradient(180deg, #6ba3d6 0%, var(--odl-internalframe-title) 100%);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* Dialog overlay */
+.odl-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.odl-dialog {
+  background: var(--odl-bg);
+  border: 1px solid var(--odl-border-dark);
+  border-radius: 4px;
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.3);
+  min-width: 300px;
+  max-width: 600px;
+}
+
+.odl-dialog-title {
+  background: linear-gradient(180deg, #6ba3d6 0%, var(--odl-internalframe-title) 100%);
+  color: white;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 4px 4px 0 0;
+}
+
+.odl-dialog-body {
+  padding: 16px;
+}
+
+.odl-dialog-footer {
+  padding: 8px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--odl-border);
+}
